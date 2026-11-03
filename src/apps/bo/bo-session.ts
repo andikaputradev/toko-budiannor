@@ -223,8 +223,10 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
       if (outcome.kind === 'error') {
         return fail(outcome.messageId);
       }
-      store.setUser(outcome.user.id);
+      // Pengguna dicatat lebih dulu: setUser memicu mount ulang, dan mount menganggap sesi
+      // belum masuk (lalu masuk otomatis lagi pada Mode Tinjau) bila pengguna belum ada.
       commit({ user: outcome.user });
+      store.setUser(outcome.user.id);
       log('masuk', `Masuk Back-Office sebagai ${outcome.user.username}`);
       return { ok: true };
     },
