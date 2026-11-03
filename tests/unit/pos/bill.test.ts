@@ -1,0 +1,118 @@
+import { describe, expect, it } from 'vitest';
+import { generateDataset } from '../../../src/shared/data/generator';
+import type { BillLine, Product } from '../../../src/shared/data/types';
+import { unitPrice } from '../../../src/shared/data/units';
+import {
+  addLine,
+  billTotal,
+  defaultUnitOf,
+  itemCount,
+  lineSubtotal,
+  MAX_BILL_LINES,
+  removeLine,
+  repriceLines,
+} from '../../../src/apps/pos/domain/bill';
+import { isShort } from '../../../src/apps/pos/domain/stock';
+
+const dataset = generateDataset();
+
+function find(prefix: string): Product {
+  const product = dataset.products.find((item) => item.name.startsWith(prefix));
+  if (product === undefined) {
+    throw new Error(prefix);
+  }
+  return product;
+}
+
+const semen = find('Semen');
+const kabel = find('Kabel NYM');
+const bata = find('Bata Merah');
+
+function line(product: Product, unit: string, quantity: number): BillLine {
+  return { productId: product.id, unit, quantity, unitPrice: unitPrice(product, unit, 'eceran') };
+}
+
+describe('total bill', () => {
+  it('menghitung subtotal sebagai jumlah dikali harga dibulatkan ke rupiah', () => {
+    expect(lineSubtotal({ productId: 'x', unit: 'Kg', quantity: 25.5, unitPrice: 1337 })).toBe(
+      34094,
+    );
+    expect(lineSubtotal({ productId: 'x', unit: 'Kg', quantity: 0.333, unitPrice: 1000 })).toBe(
+      333,
+    );
+    expect(lineSubtotal({ productId: 'x', unit: 'Kg', quantity: 1.5, unitPrice: 1337000 })).toBe(
+      2005500,
+    );
+  });
+
+  it('menjumlahkan seluruh baris dan menghitung jenis barang', () => {
+    const lines = [line(semen, 'Sak', 2), line(semen, 'Kg', 5), line(kabel, 'Meter', 12.5)];
+    const expected = lines.reduce((sum, item) => sum + lineSubtotal(item), 0);
+    expect(billTotal(lines)).toBe(expected);
+    expect(itemCount(lines)).toBe(2);
+    expect(billTotal([])).toBe(0);
+  });
+
+  it('tidak membawa galat apung pada pecahan desimal berulang', () => {
+    const first = addLine([], line(kabel, 'Meter', 0.1));
+    const second = first.ok ? addLine(first.lines, line(kabel, 'Meter', 0.2)) : first;
+    expect(second.ok && second.lines[0]?.quantity).toBe(0.3);
+  });
+});
+
+describe('baris bill', () => {
+  it('menambah jumlah pada baris yang sama tanpa baris baru', () => {
+    const first = addLine([], line(semen, 'Sak', 1));
+    const second = first.ok ? addLine(first.lines, line(semen, 'Sak', 1)) : first;
+    const third = second.ok ? addLine(second.lines, line(semen, 'Sak', 1)) : second;
+    expect(third.ok && third.lines).toHaveLength(1);
+    expect(third.ok && third.lines[0]?.quantity).toBe(3);
+  });
+
+  it('memisahkan baris untuk satuan berbeda', () => {
+    const first = addLine([], line(semen, 'Sak', 1));
+    const second = first.ok ? addLine(first.lines, line(semen, 'Kg', 1)) : first;
+    expect(second.ok && second.lines).toHaveLength(2);
+  });
+
+  it('membatasi satu bill pada 200 baris', () => {
+    let lines: readonly BillLine[] = [];
+    for (let index = 0; index < MAX_BILL_LINES; index += 1) {
+      const product = dataset.products[index];
+      if (product === undefined) {
+        throw new Error('data kurang');
+      }
+      const result = addLine(lines, line(product, product.baseUnit, 1));
+      lines = result.ok ? result.lines : lines;
+    }
+    expect(lines).toHaveLength(200);
+    const extra = dataset.products[200];
+    expect(extra && addLine(lines, line(extra, extra.baseUnit, 1))).toEqual({
+      ok: false,
+      reason: 'max-lines',
+    });
+    expect(addLine(lines, line(semen, semen.baseUnit, 1)).ok).toBe(true);
+  });
+
+  it('menghapus baris dan menghitung ulang harga saat tier berganti', () => {
+    const lines = [line(semen, 'Sak', 2), line(bata, 'Pcs', 100)];
+    expect(removeLine(lines, 0)).toHaveLength(1);
+    const map = new Map(dataset.products.map((item) => [item.id, item]));
+    const repriced = repriceLines(lines, map, 'grosir');
+    expect(repriced[0]?.unitPrice).toBe(unitPrice(semen, 'Sak', 'grosir'));
+    expect(repriced[0]?.unitPrice).toBeLessThan(lines[0]?.unitPrice ?? 0);
+  });
+
+  it('memilih satuan bawaan Sak untuk semen dan satuan dasar untuk barang lain', () => {
+    expect(defaultUnitOf(semen).code).toBe('Sak');
+    expect(defaultUnitOf(bata).code).toBe('Pcs');
+  });
+
+  it('menandai stok kurang bila jumlah bill melebihi stok dikurangi yang terjual', () => {
+    const total = semen.stock.display + semen.stock.besar;
+    const ok = [line(semen, 'Kg', Math.floor(total))];
+    expect(isShort(ok, semen, 0)).toBe(false);
+    expect(isShort(ok, semen, 5)).toBe(true);
+    expect(isShort([line(semen, 'Sak', Math.ceil(total / 40) + 1)], semen, 0)).toBe(true);
+  });
+});

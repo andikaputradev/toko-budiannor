@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+public/fonts/
+public/icons/
+*.log
+.DS_Store
+.env
+.env.*
+verifikasi/
+sbom/
+
+.claude/
+.vercel/

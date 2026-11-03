@@ -1,0 +1,73 @@
+.bo-sales__filter {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+  margin-bottom: var(--primitive-space-3);
+}
+
+.bo-sales__body {
+  display: grid;
+  grid-template-columns: 49fr 39fr;
+  gap: var(--primitive-space-4);
+  align-items: start;
+}
+
+.bo-sales__table {
+  overflow-x: auto;
+}
+
+.bo-sales__open {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent-pressed);
+  font: inherit;
+  font-weight: var(--primitive-font-weight-semibold);
+  text-decoration: underline;
+}
+
+.bo-sales__pager {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--primitive-space-3);
+}
+
+.bo-sales__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--primitive-space-1) var(--primitive-space-4);
+  margin: 0 0 var(--primitive-space-3);
+}
+
+.bo-sales__facts dt {
+  color: var(--color-text-secondary);
+}
+
+.bo-sales__facts dd {
+  margin: 0;
+}
+
+.bo-sales__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  margin-top: var(--primitive-space-3);
+}
+
+.bo-sales__actions .btn {
+  height: 50px;
+}
+
+.bo-copy {
+  max-height: 50vh;
+  margin: 0;
+  padding: var(--primitive-space-3);
+  overflow: auto;
+  border: 1px dashed var(--color-text-secondary);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+}

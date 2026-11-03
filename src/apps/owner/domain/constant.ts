@@ -1,0 +1,9 @@
+export const DAILY_TARGET = 10_000_000;
+export const LATE_DAYS_THRESHOLD = 7;
+export const SESSION_DAYS = 30;
+export const REFRESH_MS = 60_000;
+export const PAGE_SIZE = 30;
+export const PULL_THRESHOLD = 70;
+export const SYNC_STEP_MS = 400;
+export const OWNER_DEVICE = 'HP Owner (aplikasi mobile)';
+export const OWNER_IP = '192.168.1.45';

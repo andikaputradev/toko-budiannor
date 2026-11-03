@@ -1,0 +1,33 @@
+.pos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pos-table th {
+  position: sticky;
+  top: 0;
+  height: 40px;
+  padding: 0 var(--primitive-space-2);
+  background: var(--color-bg-table-header);
+  font-size: 14px;
+  text-align: left;
+}
+
+.pos-table td {
+  height: 48px;
+  padding: 0 var(--primitive-space-2);
+  border-bottom: 1px solid var(--color-border-default);
+  font-size: 14px;
+}
+
+.pos-table--dense td {
+  height: 38px;
+}
+
+.pos-table .is-end {
+  text-align: right;
+}
+
+.pos-table tr.is-selected td {
+  background: var(--color-bg-selected);
+}

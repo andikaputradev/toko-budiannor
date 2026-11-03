@@ -1,0 +1,45 @@
+{
+  "name": "pos-toko-budiannor-mockup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "npm run tokens && npm run assets && vite",
+    "build": "npm run tokens && npm run assets && npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && prettier --check .",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test",
+    "tokens": "node scripts/build-tokens.mjs",
+    "kontras": "node scripts/check-contrast.mjs",
+    "lint:teks": "node scripts/lint-text.mjs",
+    "assets": "node scripts/copy-assets.mjs",
+    "tree": "node scripts/tree.mjs",
+    "serve": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "budget": "node scripts/budget.mjs",
+    "audit:dep": "npm audit --omit=dev --audit-level=low",
+    "audit:semua": "npm audit",
+    "sbom": "cyclonedx-npm --ignore-npm-errors --no-validate --spec-version 1.6 --output-format JSON --output-file sbom/bom.cdx.json",
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "verifikasi:axe": "node scripts/axe-summary.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@cyclonedx/cyclonedx-npm": "6.0.1",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.14.0",
+    "lighthouse": "12.8.2",
+    "lucide-static": "1.66.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

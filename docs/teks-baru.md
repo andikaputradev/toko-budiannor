@@ -1,0 +1,747 @@
+# Teks antarmuka baru untuk persetujuan klien
+
+Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien. Kunci merujuk ke katalog src/shared/messages.ts.
+
+- TB-001: "Toko Budiannor". Judul tab peramban (elemen title pada index.html).
+- TB-002: "Bayar". Kunci bayar.
+- TB-003: "Tahan Bill". Kunci tahanBill.
+- TB-004: "Simpan". Kunci simpan.
+- TB-005: "Menyimpan...". Kunci menyimpan.
+- TB-006: "Batal". Kunci batal.
+- TB-007: "Hapus". Kunci hapus.
+- TB-008: "Cetak". Kunci cetak.
+- TB-009: "Tutup". Kunci tutup.
+- TB-010: "Lunas". Kunci statusLunas.
+- TB-011: "Pending". Kunci statusPending.
+- TB-012: "Menunggu". Kunci statusMenunggu.
+- TB-013: "Gagal". Kunci statusGagal.
+- TB-014: "Terkirim". Kunci statusTerkirim.
+- TB-015: "Aman". Kunci statusAman.
+- TB-016: "Di bawah minimum". Kunci statusDiBawahMinimum.
+- TB-017: "Ditinjau". Kunci statusDitinjau.
+- TB-018: "Draf". Kunci statusDraf.
+- TB-019: "Diterapkan". Kunci statusDiterapkan.
+- TB-020: "Kode". Kunci kolomKode.
+- TB-021: "Nama barang". Kunci kolomNamaBarang.
+- TB-022: "Stok". Kunci kolomStok.
+- TB-023: "Harga". Kunci kolomHarga.
+- TB-024: "Daftar barang contoh". Kunci tabelContoh.
+- TB-025: "Jumlah". Kunci jumlah.
+- TB-026: "Kategori harga". Kunci kategoriHarga.
+- TB-027: "Semua". Kunci semua.
+- TB-028: "Eceran". Kunci tierEceran.
+- TB-029: "Grosir". Kunci tierGrosir.
+- TB-030: "Kontraktor". Kunci tierKontraktor.
+- TB-031: "Hapus". Kunci pinHapus.
+- TB-032: "Kosong". Kunci pinKosong.
+- TB-033: "{jumlah} dari {maks} angka dimasukkan". Kunci pinTercatat.
+- TB-034: "Memuat data". Kunci memuatData.
+- TB-035: "Hapus item". Kunci modalJudulHapus.
+- TB-036: "Buka modal". Kunci tombolBukaModal.
+- TB-037: "Toast sukses". Kunci tombolToastSukses.
+- TB-038: "Toast informasi". Kunci tombolToastInfo.
+- TB-039: "Toast error". Kunci tombolToastError.
+- TB-040: "Panduan gaya". Kunci gayaJudul.
+- TB-041: "Kerangka POS". Kunci frameJudulPos.
+- TB-042: "Kerangka Back-Office". Kunci frameJudulBo.
+- TB-043: "Kerangka Owner terang". Kunci frameJudulOwnerTerang.
+- TB-044: "Kerangka Owner gelap". Kunci frameJudulOwnerGelap.
+- TB-045: "Tombol". Kunci bagianTombol.
+- TB-046: "Kolom input dan pilihan". Kunci bagianInput.
+- TB-047: "Chip". Kunci bagianChip.
+- TB-048: "Banner". Kunci bagianBanner.
+- TB-049: "Lencana status". Kunci bagianLencana.
+- TB-050: "Tabel 3.600 baris". Kunci bagianTabel.
+- TB-051: "Papan angka PIN". Kunci bagianPin.
+- TB-052: "Tab". Kunci bagianTab.
+- TB-053: "Keadaan kosong". Kunci bagianKosong.
+- TB-054: "Kerangka pemuatan". Kunci bagianKerangka.
+- TB-055: "Modal dan toast". Kunci bagianModalToast.
+- TB-056: "Panel Simulasi". Kunci panelJudul.
+- TB-057: "Peran". Kunci panelPeran.
+- TB-058: "Owner". Kunci peranOwner.
+- TB-059: "Supervisor". Kunci peranSupervisor.
+- TB-060: "Kasir". Kunci peranKasir.
+- TB-061: "Frontliner". Kunci peranFrontliner.
+- TB-062: "Online". Kunci koneksiOnline.
+- TB-063: "Offline". Kunci koneksiOffline.
+- TB-064: "Picu limit ditolak". Kunci picuLimit.
+- TB-065: "Picu stok negatif". Kunci picuStokNegatif.
+- TB-066: "Atur ulang data". Kunci aturUlangData.
+- TB-067: "Data diatur ulang.". Kunci dataDiaturUlang.
+- TB-068: "Mode Tinjau". Kunci modeTinjau.
+- TB-069: "POS Kasir". Kunci posKasir.
+- TB-070: "Pilih Kasir". Kunci judulPilihKasir.
+- TB-071: "Jual". Kunci judulJual.
+- TB-072: "Pembayaran". Kunci judulPembayaran.
+- TB-073: "Belum ada kasir terdaftar. Hubungi Owner untuk menambah pengguna di Back-Office.". Kunci kasirKosong.
+- TB-074: "Masuk". Kunci masuk.
+- TB-075: "PIN". Kunci pinLabel.
+- TB-076: "Cari nama, kode, atau pindai barcode". Kunci cariPlaceholder.
+- TB-077: "Cari". Kunci cari.
+- TB-078: "Foto produk". Kunci fotoProduk.
+- TB-079: "Stok Toko {toko} | Gudang {gudang}". Kunci stokKartu.
+- TB-080: "{harga} / {satuan}". Kunci hargaPerSatuan.
+- TB-081: "Pelanggan: {nama} ({tier})". Kunci pelangganTerpilih.
+- TB-082: "Umum". Kunci pelangganUmum.
+- TB-083: "Ganti". Kunci ganti.
+- TB-084: "Barang". Kunci kolomBarang.
+- TB-085: "Jml". Kunci kolomJumlahPendek.
+- TB-086: "Satuan". Kunci kolomSatuan.
+- TB-087: "Subtotal". Kunci kolomSubtotal.
+- TB-088: "Jumlah item". Kunci jumlahItem.
+- TB-089: "TOTAL". Kunci totalHuruf.
+- TB-090: "Pelanggan". Kunci pelanggan.
+- TB-091: "Cetak Struk Draf". Kunci cetakStrukDraf.
+- TB-092: "Stok kurang". Kunci stokKurang.
+- TB-093: "Menampilkan 60 hasil pertama. Perjelas kata kunci.". Kunci hasilDibatasi.
+- TB-094: "Pilih Pelanggan". Kunci pilihPelanggan.
+- TB-095: "Cari pelanggan". Kunci cariPelanggan.
+- TB-096: "Nama". Kunci kolomNama.
+- TB-097: "Kategori". Kunci kolomKategori.
+- TB-098: "Sisa limit". Kunci kolomSisaLimit.
+- TB-099: "F4". Kunci pintasanBayar.
+- TB-100: "F6". Kunci pintasanTahan.
+- TB-101: "Gudang Display: {display} Gudang Besar: {besar}". Kunci stokGudangModal.
+- TB-102: "Tambahkan ke Bill". Kunci tambahkanKeBill.
+- TB-103: "Simpan Perubahan". Kunci simpanPerubahan.
+- TB-104: "Hapus Item". Kunci hapusItem.
+- TB-105: ",". Kunci tombolKoma.
+- TB-106: "Tunai". Kunci metodeTunai.
+- TB-107: "QRIS". Kunci metodeQris.
+- TB-108: "Transfer". Kunci metodeTransfer.
+- TB-109: "DP". Kunci metodeDp.
+- TB-110: "Piutang". Kunci metodePiutang.
+- TB-111: "Jumlah diterima". Kunci jumlahDiterima.
+- TB-112: "Uang Pas". Kunci uangPas.
+- TB-113: "Kembalian". Kunci kembalian.
+- TB-114: "Total tagihan". Kunci totalTagihan.
+- TB-115: "Rincian pembayaran". Kunci rincianPembayaran.
+- TB-116: "Kembali". Kunci kembali.
+- TB-117: "Selesaikan dan Cetak Struk". Kunci selesaikanCetak.
+- TB-118: "Minta Otorisasi Owner". Kunci mintaOtorisasi.
+- TB-119: "Ganti Cara Bayar". Kunci gantiCaraBayar.
+- TB-120: "Sisa limit piutang: {jumlah}". Kunci sisaLimitPiutang.
+- TB-121: "Nomor referensi". Kunci nomorReferensi.
+- TB-122: "Hapus pembayaran {cara}". Kunci hapusPembayaran.
+- TB-123: "Transaksi {nomor} tersimpan.". Kunci transaksiTersimpan.
+- TB-124: "Otorisasi Owner". Kunci otorisasiJudul.
+- TB-125: "Tindakan: Piutang melebihi limit". Kunci otorisasiTindakan.
+- TB-126: "Tindakan: Piutang dengan tagihan terlambat". Kunci otorisasiTindakanTerlambat.
+- TB-127: "Transaksi: Bill {nomor}, {jumlah}". Kunci otorisasiTransaksi.
+- TB-128: "Alasan". Kunci alasan.
+- TB-129: "PIN Owner". Kunci pinOwner.
+- TB-130: "Setujui". Kunci setujui.
+- TB-131: "Printer terhubung". Kunci printerTerhubung.
+- TB-132: "Printer terputus". Kunci printerTerputus.
+- TB-133: "Riwayat". Kunci navRiwayat.
+- TB-134: "Biaya". Kunci navBiaya.
+- TB-135: "STRUK DRAF, BUKAN BUKTI BAYAR". Kunci judulStrukDraf.
+- TB-136: "SALINAN". Kunci strukSalinan.
+- TB-137: "No.". Kunci strukNomor.
+- TB-138: "Waktu". Kunci strukWaktu.
+- TB-139: "Kasir". Kunci strukKasir.
+- TB-140: "Bayar". Kunci strukBayar.
+- TB-141: "Terima kasih.". Kunci strukTerimaKasih.
+- TB-142: "Pratinjau struk". Kunci pratinjauStruk.
+- TB-143: "Lebar kertas". Kunci lebarKertas.
+- TB-144: "58 mm". Kunci lebar58.
+- TB-145: "80 mm". Kunci lebar80.
+- TB-146: "Struk draf tercetak.". Kunci strukDrafTercetak.
+- TB-147: "Salinan struk tercetak.". Kunci salinanTercetak.
+- TB-148: "Struk tercetak.". Kunci strukTercetak.
+- TB-149: "Struk draf belum tercetak. Periksa printer lalu coba lagi.". Kunci strukDrafGagal.
+- TB-150: "Cetak Ulang". Kunci cetakUlang.
+- TB-151: "Bill Gantung". Kunci judulBill.
+- TB-152: "Cari bill". Kunci cariBill.
+- TB-153: "No. Bill". Kunci kolomNoBill.
+- TB-154: "Waktu". Kunci kolomWaktu.
+- TB-155: "Item". Kunci kolomItem.
+- TB-156: "Total". Kunci kolomTotal.
+- TB-157: "Dibuat oleh". Kunci kolomDibuatOleh.
+- TB-158: "Isi bill". Kunci isiBill.
+- TB-159: "Panggil Bill". Kunci panggilBill.
+- TB-160: "Hapus Bill". Kunci hapusBill.
+- TB-161: "Kembali ke Jual". Kunci kembaliKeJual.
+- TB-162: "Tidak ada bill gantung. Tahan bill dari layar Jual untuk menyimpannya di sini.". Kunci billKosong.
+- TB-163: "Bill {nomor} dihapus.". Kunci billDihapus.
+- TB-164: "Riwayat Penjualan". Kunci judulRiwayat.
+- TB-165: "Dari tanggal". Kunci dariTanggal.
+- TB-166: "Sampai tanggal". Kunci sampaiTanggal.
+- TB-167: "Cari transaksi". Kunci cariTransaksi.
+- TB-168: "No. Transaksi". Kunci kolomNoTransaksi.
+- TB-169: "Status". Kunci kolomStatus.
+- TB-170: "Belum tersinkron". Kunci belumTersinkron.
+- TB-171: "Tanggal". Kunci detailTanggal.
+- TB-172: "Kasir". Kunci detailKasir.
+- TB-173: "Cara bayar". Kunci detailCaraBayar.
+- TB-174: "Belum ada transaksi pada rentang tanggal ini.". Kunci riwayatKosong.
+- TB-175: "Cetak Ulang Struk". Kunci cetakUlangStruk.
+- TB-176: "Ajukan Koreksi". Kunci ajukanKoreksi.
+- TB-177: "Retur Penjualan". Kunci returPenjualan.
+- TB-178: "Halaman {halaman} dari {total}". Kunci halaman.
+- TB-179: "Sebelumnya". Kunci sebelumnya.
+- TB-180: "Berikutnya". Kunci berikutnya.
+- TB-181: "Pengajuan koreksi disetujui. Ubah transaksi di Back-Office.". Kunci koreksiDisetujui.
+- TB-182: "Tindakan: Koreksi transaksi selesai". Kunci otorisasiTindakanKoreksi.
+- TB-183: "Transaksi: {nomor}, {jumlah}". Kunci otorisasiTransaksiNomor.
+- TB-184: "Mode offline: otorisasi dicatat dan ditinjau saat sinkron.". Kunci otorisasiOffline.
+- TB-185: "Pilih". Kunci kolomPilih.
+- TB-186: "Dibeli". Kunci kolomDibeli.
+- TB-187: "Sudah diretur". Kunci kolomSudahDiretur.
+- TB-188: "Jumlah retur". Kunci kolomJumlahRetur.
+- TB-189: "Alasan retur". Kunci alasanRetur.
+- TB-190: "Simpan Retur". Kunci simpanRetur.
+- TB-191: "Retur {nomor} tersimpan. Nilai retur {nilai}.". Kunci returTersimpan.
+- TB-192: "Biaya Kasir". Kunci judulBiaya.
+- TB-193: "Bensin armada". Kunci biayaBensin.
+- TB-194: "Parkir". Kunci biayaParkir.
+- TB-195: "Bayar ekspedisi". Kunci biayaEkspedisi.
+- TB-196: "Lainnya". Kunci biayaLainnya.
+- TB-197: "Jenis biaya". Kunci jenisBiaya.
+- TB-198: "Keterangan". Kunci keterangan.
+- TB-199: "Saldo kas sebelum". Kunci saldoSebelum.
+- TB-200: "Saldo kas sesudah". Kunci saldoSesudah.
+- TB-201: "Simpan Biaya". Kunci simpanBiaya.
+- TB-202: "Biaya hari ini". Kunci biayaHariIni.
+- TB-203: "Jam". Kunci kolomJam.
+- TB-204: "Jenis". Kunci kolomJenis.
+- TB-205: "Belum ada biaya tercatat hari ini.". Kunci biayaKosong.
+- TB-206: "Pelanggan Baru". Kunci judulPelangganBaru.
+- TB-207: "Pelanggan Baru". Kunci pelangganBaru.
+- TB-208: "Nama pelanggan". Kunci namaPelanggan.
+- TB-209: "Nomor telepon". Kunci teleponPelanggan.
+- TB-210: "Alamat". Kunci alamat.
+- TB-211: "Limit piutang dasar". Kunci limitPiutangDasar.
+- TB-212: "Jatuh tempo (hari)". Kunci jatuhTempoHari.
+- TB-213: "Jatuh tempo harus bilangan bulat 0 sampai 365.". Kunci jatuhTempoSalah.
+- TB-214: "Simpan Pelanggan". Kunci simpanPelanggan.
+- TB-215: "Batalkan pendaftaran". Kunci batalkanJudul.
+- TB-216: "Isian akan hilang bila ditutup. Lanjutkan?". Kunci batalkanTeks.
+- TB-217: "Lanjut Mengisi". Kunci lanjutMengisi.
+- TB-218: "Tutup Tanpa Menyimpan". Kunci tutupTanpaSimpan.
+- TB-219: "Status Offline dan Antrean". Kunci judulStatus.
+- TB-220: "Terakhir tersambung: {waktu}". Kunci terakhirTersambung.
+- TB-221: "Terakhir sinkron: {waktu}". Kunci terakhirSinkron.
+- TB-222: "Antrean". Kunci jumlahAntrean.
+- TB-223: "Sinkronkan Sekarang". Kunci sinkronSekarang.
+- TB-224: "Mengirim {ke} dari {total}...". Kunci mengirimProgres.
+- TB-225: "Antrean sinkronisasi". Kunci antreanTabel.
+- TB-226: "Stok negatif sementara". Kunci stokNegatifTabel.
+- TB-227: "Keterangan". Kunci kolomKeterangan.
+- TB-228: "Gudang". Kunci kolomGudang.
+- TB-229: "Display". Kunci gudangDisplay.
+- TB-230: "Besar". Kunci gudangBesar.
+- TB-231: "Mengirim". Kunci statusMengirim.
+- TB-232: "Tidak ada stok negatif.". Kunci stokNegatifKosong.
+- TB-233: "Ditinjau (negatif)". Kunci ditinjauNegatif.
+- TB-234: "Transaksi". Kunci antreanTransaksi.
+- TB-235: "Biaya kasir". Kunci antreanBiaya.
+- TB-236: "Pelanggan baru". Kunci antreanPelanggan.
+- TB-237: "Otorisasi Owner". Kunci antreanOtorisasi.
+- TB-238: "Aktif". Kunci aktif.
+- TB-239: "Antrean POS". Kunci antreanPos.
+- TB-240: "Back-Office". Kunci backOffice.
+- TB-241: "Berhasil". Kunci backupBerhasil.
+- TB-242: "Gagal". Kunci backupGagal.
+- TB-243: "Backup terakhir". Kunci backupTerakhir.
+- TB-244: "Belum ada barang. Tambah barang atau gunakan Impor Excel.". Kunci barangKosong.
+- TB-245: "Barcode". Kunci barcode.
+- TB-246: "Barcode satuan harus 8 sampai 14 angka.". Kunci barcodeSatuanSalah.
+- TB-247: "Belum ada mutasi.". Kunci belumAdaMutasi.
+- TB-248: "Belum ada penjualan 7 hari terakhir.". Kunci belumAdaPenjualan.
+- TB-249: "Boleh dijual pecahan". Kunci bolehPecahan.
+- TB-250: "Cari atau pindai barang". Kunci cariAtauPindai.
+- TB-251: "Cari atau pindai barang". Kunci cariBarang.
+- TB-252: "Catatan". Kunci catatan.
+- TB-253: "Daftar barang". Kunci daftarBarang.
+- TB-254: "(dasar)". Kunci dasarTanda.
+- TB-255: "Di bawah minimum". Kunci diBawahMinimum.
+- TB-256: "Diperbarui {waktu}". Kunci diperbarui.
+- TB-257: "Draf opname tersimpan.". Kunci draftOpnameTersimpan.
+- TB-258: "Ekspor Excel". Kunci eksporExcel.
+- TB-259: "Ekspor PDF". Kunci eksporPdf.
+- TB-260: "Filter stok". Kunci filterStok.
+- TB-261: "Form barang". Kunci formBarang.
+- TB-262: "Barang dan Stok". Kunci grupBarangStok.
+- TB-263: "Ringkasan". Kunci grupRingkasan.
+- TB-264: "Gudang". Kunci gudang.
+- TB-265: "Gudang asal". Kunci gudangAsal.
+- TB-266: "Gudang tujuan". Kunci gudangTujuan.
+- TB-267: "Hanya baca. Perubahan harga dilakukan oleh Owner.". Kunci hanyaBaca.
+- TB-268: "Harga di bawah HPP". Kunci hargaDiBawahHpp.
+- TB-269: "Harga per tier". Kunci hargaPerTier.
+- TB-270: "Harga tersimpan.". Kunci hargaTersimpan.
+- TB-271: "HPP per satuan dasar". Kunci hppPerSatuanDasar.
+- TB-272: "HPP rata-rata". Kunci hppRataRata.
+- TB-273: "Isi (satuan dasar)". Kunci isiSatuanDasar.
+- TB-274: "Masuk ke Back-Office". Kunci judulMasukBo.
+- TB-275: "{jumlah} barang". Kunci jumlahBarang.
+- TB-276: "{jumlah} barang". Kunci jumlahBarangDaftar.
+- TB-277: "Jumlah mutasi". Kunci jumlahMutasi.
+- TB-278: "{jumlah} transaksi". Kunci jumlahTransaksi.
+- TB-279: "Jurnal selisih: {nilai}". Kunci jurnalSelisih.
+- TB-280: "Kata sandi". Kunci kataSandi.
+- TB-281: "Kategori". Kunci kategori.
+- TB-282: "Keluar". Kunci keluar.
+- TB-283: "Kembali ke Dashboard". Kunci kembaliKeDashboard.
+- TB-284: "Kode barang". Kunci kodeBarang.
+- TB-285: "Kode barang harus 3 sampai 20 karakter.". Kunci kodeBarangPanjang.
+- TB-286: "Min". Kunci kolomMin.
+- TB-287: "Satuan dasar". Kunci kolomSatuanDasar.
+- TB-288: "Kosongkan". Kunci kosongkan.
+- TB-289: "Kosongkan form". Kunci kosongkanFormJudul.
+- TB-290: "Daftar barang akan dikosongkan. Lanjutkan?". Kunci kosongkanFormTeks.
+- TB-291: "Lewati ke konten". Kunci lewatiKonten.
+- TB-292: "Lihat Semua Stok". Kunci lihatSemuaStok.
+- TB-293: "Logo toko". Kunci logoToko.
+- TB-294: "Lupa kata sandi? Hubungi Owner.". Kunci lupaKataSandi.
+- TB-295: "Margin Eceran". Kunci marginEceran.
+- TB-296: "Menu Back-Office". Kunci menuBackOffice.
+- TB-297: "Barang". Kunci menuBarang.
+- TB-298: "Dashboard". Kunci menuDashboard.
+- TB-299: "Satuan dan Harga". Kunci menuHarga.
+- TB-300: "Mutasi Antar Gudang". Kunci menuMutasi.
+- TB-301: "Opname Stok". Kunci menuOpname.
+- TB-302: "Stok per Gudang". Kunci menuStok.
+- TB-303: "Merek". Kunci merek.
+- TB-304: "Belum ada barang. Cari atau pindai barang untuk dimutasi.". Kunci mutasiKosong.
+- TB-305: "Mutasi Stok". Kunci mutasiStok.
+- TB-306: "Nama barang". Kunci namaBarang.
+- TB-307: "Gudang Besar". Kunci namaGudangBesar.
+- TB-308: "Gudang Display". Kunci namaGudangDisplay.
+- TB-309: "Nama pengguna". Kunci namaPengguna.
+- TB-310: "Nama satuan wajib diisi.". Kunci namaSatuanKosong.
+- TB-311: "Nilai Gudang Besar". Kunci nilaiBesar.
+- TB-312: "Nilai Gudang Display". Kunci nilaiDisplay.
+- TB-313: "Nilai persediaan". Kunci nilaiPersediaan.
+- TB-314: "Nilai total". Kunci nilaiTotal.
+- TB-315: "No. Mutasi". Kunci noMutasi.
+- TB-316: "No. Opname". Kunci noOpname.
+- TB-317: "Nonaktif". Kunci nonaktif.
+- TB-318: "Nonaktifkan". Kunci nonaktifkan.
+- TB-319: "Nonaktifkan Barang". Kunci nonaktifkanBarang.
+- TB-320: "Barang {kode} disembunyikan dari POS. Riwayatnya tetap tersimpan. Lanjutkan?". Kunci nonaktifkanTeks.
+- TB-321: "Omzet 7 hari". Kunci omzet7Hari.
+- TB-322: "Omzet hari ini". Kunci omzetHariIni.
+- TB-323: "Opname Baru". Kunci opnameBaru.
+- TB-324: "Penyesuaian stok diterapkan.". Kunci opnameDiterapkan.
+- TB-325: "Belum ada barang di daftar opname. Cari atau pindai barang.". Kunci opnameKosong.
+- TB-326: "Peringatan stok minimum". Kunci peringatanStok.
+- TB-327: "Perlu ditinjau". Kunci perluDitinjau.
+- TB-328: "Pilih barang". Kunci pilihBarang.
+- TB-329: "Pilih barang untuk melihat satuan dan harga.". Kunci pilihBarangDulu.
+- TB-330: "Pilih satuan dasar". Kunci pilihSatuanDasar.
+- TB-331: "Piutang jatuh tempo". Kunci piutangJatuhTempo.
+- TB-332: "Pratinjau ekspor Excel". Kunci pratinjauExcel.
+- TB-333: "Pratinjau ekspor PDF". Kunci pratinjauPdf.
+- TB-334: "{judul}: {baris} baris siap diekspor.". Kunci ringkasEkspor.
+- TB-335: "Riwayat mutasi terakhir". Kunci riwayatMutasi.
+- TB-336: "Satuan baru". Kunci satuanBaru.
+- TB-337: "Satuan dan harga eceran". Kunci satuanDanHarga.
+- TB-338: "Satuan dan konversi". Kunci satuanDanKonversi.
+- TB-339: "Satuan dasar". Kunci satuanDasar.
+- TB-340: "Satuan jual bawaan". Kunci satuanJualBawaan.
+- TB-341: "Selisih". Kunci selisih.
+- TB-342: "Simpan Barang". Kunci simpanBarang.
+- TB-343: "Simpan Draf Opname". Kunci simpanDrafOpname.
+- TB-344: "Simpan Harga". Kunci simpanHarga.
+- TB-345: "Simpan Mutasi". Kunci simpanMutasi.
+- TB-346: "Simpan Tetap". Kunci simpanTetap.
+- TB-347: "Simulasi: berkas tidak diunduh pada mockup.". Kunci simulasiEkspor.
+- TB-348: "Stok asal". Kunci stokAsal.
+- TB-349: "Besar". Kunci stokBesar.
+- TB-350: "Stok di bawah minimum". Kunci stokDiBawahMinimum.
+- TB-351: "Display". Kunci stokDisplay.
+- TB-352: "Tidak ada barang yang cocok dengan filter.". Kunci stokFilterKosong.
+- TB-353: "Stok fisik". Kunci stokFisik.
+- TB-354: "Stok minimum Gudang Besar". Kunci stokMinBesar.
+- TB-355: "Stok minimum Gudang Display". Kunci stokMinDisplay.
+- TB-356: "Stok negatif". Kunci stokNegatif.
+- TB-357: "{jumlah} barang berstok negatif, buka daftar". Kunci stokNegatifAria.
+- TB-358: "Stok per gudang". Kunci stokPerGudang.
+- TB-359: "Stok sistem". Kunci stokSistem.
+- TB-360: "Stok ditandai sudah ditinjau.". Kunci sudahDitinjau.
+- TB-361: "Tabel stok per gudang". Kunci tabelStok.
+- TB-362: "Tambah Barang". Kunci tambahBarang.
+- TB-363: "Tambah Satuan". Kunci tambahSatuan.
+- TB-364: "Tampilkan". Kunci tampilkan.
+- TB-365: "Tandai Sudah Ditinjau". Kunci tandaiSudahDitinjau.
+- TB-366: "Tanggal". Kunci tanggal.
+- TB-367: "Terapkan". Kunci terapkan.
+- TB-368: "Terapkan penyesuaian stok". Kunci terapkanJudul.
+- TB-369: "Terapkan Penyesuaian Stok". Kunci terapkanPenyesuaian.
+- TB-370: "Stok sistem akan diubah sesuai stok fisik pada {jumlah} barang dan jurnal selisih dibuat. Lanjutkan?". Kunci terapkanTeks.
+- TB-371: "Terisi {terisi} dari {total}". Kunci terisiDari.
+- TB-372: "Tidak". Kunci tidak.
+- TB-373: "Transaksi hari ini". Kunci transaksiHariIni.
+- TB-374: "Ya". Kunci ya.
+- TB-375: "Tidak ada data yang menunggu dikirim.". Kunci antreanKosong.
+- TB-376: "Aplikasi mobile Flutter offline-first". Kunci aplikasiMobile.
+- TB-377: "Barang tidak ditemukan.". Kunci barangTidakDitemukan.
+- TB-378: "Beban Operasional". Kunci bebanOperasional.
+- TB-379: "Beban operasional". Kunci bebanOperasionalBaris.
+- TB-380: "Belum ada data pada periode ini.". Kunci belumAdaData.
+- TB-381: "Belum ada notifikasi.". Kunci belumAdaNotifikasi.
+- TB-382: "Belum ada pembanding". Kunci belumAdaPembanding.
+- TB-383: "Belum ada penjualan hari ini.". Kunci belumAdaPenjualanHariIni.
+- TB-384: "Belum ada penjualan pada periode ini.". Kunci belumAdaPenjualanPeriode.
+- TB-385: "Belum ada Purchase Order.". Kunci belumAdaPo.
+- TB-386: "Belum ada Sales Order.". Kunci belumAdaSo.
+- TB-387: "Belum dibaca". Kunci belumDibaca.
+- TB-388: "Buat Mutasi". Kunci buatMutasi.
+- TB-389: "Buat PO". Kunci buatPo.
+- TB-390: "Cara bayar". Kunci caraBayar.
+- TB-391: "Cari nama, kode, atau barcode". Kunci cariPlaceholderOwner.
+- TB-392: "Catat Bayar Piutang". Kunci catatBayarPiutang.
+- TB-393: "dibanding 7 hari sebelumnya". Kunci dibanding7Hari.
+- TB-394: "dibanding kemarin". Kunci dibandingKemarin.
+- TB-395: "dibanding sehari sebelumnya". Kunci dibandingSebelumnya.
+- TB-396: "Ekspor PDF dan Excel tersedia di Back-Office.". Kunci eksporDiBackOffice.
+- TB-397: "Gudang penerima". Kunci gudangPenerima.
+- TB-398: "Harga beli". Kunci hargaBeli.
+- TB-399: "Harga pokok penjualan". Kunci hargaPokokPenjualan.
+- TB-400: "{hari} hari". Kunci hariAngka.
+- TB-401: "Hubungi Pelanggan". Kunci hubungiPelanggan.
+- TB-402: "Jam". Kunci jam.
+- TB-403: "Jatuh tempo". Kunci jatuhTempo.
+- TB-404: "Jatuh tempo {tanggal}". Kunci jatuhTempoTgl.
+- TB-405: "Jenis laporan". Kunci jenisLaporan.
+- TB-406: "Cek Stok". Kunci judulCekStok.
+- TB-407: "Laporan". Kunci judulLaporan.
+- TB-408: "Monitoring Owner". Kunci judulMonitoringOwner.
+- TB-409: "Piutang Jatuh Tempo". Kunci judulPiutang.
+- TB-410: "Ringkasan Omzet". Kunci judulRingkasan.
+- TB-411: "Transaksi". Kunci judulTransaksi.
+- TB-412: "Jumlah bayar". Kunci jumlahBayar.
+- TB-413: "Ketuk batang untuk melihat nilai.". Kunci ketukBatang.
+- TB-414: "Kirim Tagihan WA (PDF)". Kunci kirimTagihanWa.
+- TB-415: "Kirim via WA". Kunci kirimViaWa.
+- TB-416: "Invoice". Kunci kolomInvoice.
+- TB-417: "Laba bersih". Kunci labaBersih.
+- TB-418: "Laba kotor". Kunci labaKotor.
+- TB-419: "Laba Rugi". Kunci labaRugi.
+- TB-420: "Tidak ada koneksi internet. Masuk memerlukan internet.". Kunci masukButuhInternet.
+- TB-421: "Mengirim {jumlah}". Kunci mengirimAntrean.
+- TB-422: "Menunggu persetujuan ({jumlah})". Kunci menungguPersetujuan.
+- TB-423: "Muat {jumlah} lagi". Kunci muatLebihBanyak.
+- TB-424: "Muat Ulang". Kunci muatUlang.
+- TB-425: "Laporan". Kunci navLaporan.
+- TB-426: "Piutang". Kunci navPiutang.
+- TB-427: "Ringkasan". Kunci navRingkasan.
+- TB-428: "Stok". Kunci navStok.
+- TB-429: "Transaksi". Kunci navTransaksi.
+- TB-430: "Navigasi utama". Kunci navUtama.
+- TB-431: "Omzet hari ini {omzet}, di bawah target {target}.". Kunci notifOmzetIsi.
+- TB-432: "Omzet harian di bawah target". Kunci notifOmzetJudul.
+- TB-433: "{jumlah} pelanggan terlambat lebih dari 7 hari, total {total}. Terlama: {nama} ({hari} hari).". Kunci notifPiutangIsi.
+- TB-434: "Piutang terlambat lebih dari 7 hari". Kunci notifPiutangJudul.
+- TB-435: "{jumlah} barang di bawah stok minimum. Paling kritis: {nama}.". Kunci notifStokIsi.
+- TB-436: "Stok di bawah minimum". Kunci notifStokJudul.
+- TB-437: "Notifikasi". Kunci notifikasi.
+- TB-438: "Notifikasi, {jumlah} belum dibaca". Kunci notifikasiBelumDibaca.
+- TB-439: "Tidak ada koneksi internet. Data terakhir diperbarui pukul {jam}.". Kunci offlineDataTerakhir.
+- TB-440: "Offline, data lokal". Kunci offlineLokal.
+- TB-441: "Tidak ada koneksi internet. Masuk memerlukan internet.". Kunci offlineMasuk.
+- TB-442: "Offline, {jumlah} menunggu". Kunci offlineMenunggu.
+- TB-443: "Omzet". Kunci omzet.
+- TB-444: "Omzet per hari". Kunci omzetPerHari.
+- TB-445: "Omzet per jam". Kunci omzetPerJam.
+- TB-446: "Pemasok". Kunci pemasok.
+- TB-447: "Pembayaran {jumlah} tercatat.". Kunci pembayaranTercatat.
+- TB-448: "Penjualan bersih". Kunci penjualanBersih.
+- TB-449: "Periode". Kunci periode.
+- TB-450: "7 hari". Kunci periode7Hari.
+- TB-451: "Bulan ini". Kunci periodeBulanIni.
+- TB-452: "Hari ini". Kunci periodeHariIni.
+- TB-453: "Kemarin". Kunci periodeKemarin.
+- TB-454: "Persetujuan {nomor} disetujui.". Kunci persetujuanDisetujui.
+- TB-455: "Diskon". Kunci persetujuanDiskon.
+- TB-456: "Persetujuan {nomor} ditolak.". Kunci persetujuanDitolak.
+- TB-457: "Koreksi transaksi". Kunci persetujuanKoreksi.
+- TB-458: "Piutang over-limit". Kunci persetujuanPiutang.
+- TB-459: "Pilih gudang penerima". Kunci pilihGudangPenerima.
+- TB-460: "Pilih pemasok". Kunci pilihPemasok.
+- TB-461: "Pilih tanggal". Kunci pilihTanggal.
+- TB-462: "Purchase Order {nomor} tersimpan.". Kunci poTersimpan.
+- TB-463: "Pratinjau tagihan". Kunci pratinjauTagihan.
+- TB-464: "Pusat notifikasi". Kunci pusatNotifikasi.
+- TB-465: "Rata-rata per transaksi". Kunci rataPerTransaksi.
+- TB-466: "Riwayat persetujuan". Kunci riwayatPersetujuan.
+- TB-467: "Purchase Order terakhir". Kunci riwayatPo.
+- TB-468: "Sales Order terakhir". Kunci riwayatSo.
+- TB-469: "Selamat siang {nama}, berikut rincian tagihan piutang Anda di Toko Budiannor.". Kunci salamTagihan.
+- TB-470: "Saldo piutang {saldo}". Kunci saldoPiutang.
+- TB-471: "Simpan Pembayaran". Kunci simpanPembayaran.
+- TB-472: "Simpan Purchase Order". Kunci simpanPo.
+- TB-473: "Simpan Sales Order". Kunci simpanSo.
+- TB-474: "Simulasi: PDF tidak dibuat dan WhatsApp tidak benar-benar terkirim.". Kunci simulasiPdf.
+- TB-475: "Simulasi notifikasi push". Kunci simulasiPush.
+- TB-476: "Tombol berikut memicu notifikasi bila kondisinya terpenuhi.". Kunci simulasiPushKet.
+- TB-477: "Simulasikan: omzet di bawah target". Kunci simulasiPushOmzet.
+- TB-478: "Simulasikan: piutang terlambat lebih dari 7 hari". Kunci simulasiPushPiutang.
+- TB-479: "Simulasikan: stok di bawah minimum". Kunci simulasiPushStok.
+- TB-480: "Sisa". Kunci sisa.
+- TB-481: "Sales Order {nomor} tersimpan sebagai Draf.". Kunci soTersimpan.
+- TB-482: "Dipesan". Kunci statusDipesan.
+- TB-483: "Disetujui". Kunci statusDisetujui.
+- TB-484: "Ditolak". Kunci statusDitolak.
+- TB-485: "Status sinkronisasi". Kunci statusSinkron.
+- TB-486: "Besar: {nilai}". Kunci stokBarisBesar.
+- TB-487: "Display: {nilai}". Kunci stokBarisDisplay.
+- TB-488: "Total {nilai}". Kunci stokBarisTotal.
+- TB-489: "Sudah dibaca". Kunci sudahDibaca.
+- TB-490: "Notifikasi". Kunci tabNotifikasi.
+- TB-491: "Persetujuan". Kunci tabPersetujuan.
+- TB-492: "Purchase Order". Kunci tabPo.
+- TB-493: "Sales Order". Kunci tabSo.
+- TB-494: "Tagihan akan dikirim ke {telepon} saat internet pulih.". Kunci tagihanAntre.
+- TB-495: "TAGIHAN PIUTANG". Kunci tagihanJudul.
+- TB-496: "Kepada". Kunci tagihanKepada.
+- TB-497: "Tagihan PDF terkirim ke {telepon} via WA (simulasi).". Kunci tagihanTerkirim.
+- TB-498: "Tandai semua dibaca". Kunci tandaiSemuaDibaca.
+- TB-499: "Telepon". Kunci telepon.
+- TB-500: "Terlambat". Kunci terlambat.
+- TB-501: "Terlambat {hari} hari". Kunci terlambatHari.
+- TB-502: "Tersinkron". Kunci tersinkron.
+- TB-503: "Belum ada kondisi yang memicu notifikasi ini.". Kunci tidakAdaPemicu.
+- TB-504: "Tidak ada persetujuan yang menunggu.". Kunci tidakAdaPersetujuan.
+- TB-505: "Tidak ada piutang jatuh tempo.". Kunci tidakAdaPiutang.
+- TB-506: "Tolak". Kunci tolak.
+- TB-507: "Total beban". Kunci totalBeban.
+- TB-508: "Total jatuh tempo". Kunci totalJatuhTempo.
+- TB-509: "Total jatuh tempo {jumlah}". Kunci totalJatuhTempoNilai.
+- TB-510: "Total piutang jatuh tempo". Kunci totalPiutangJatuhTempo.
+- TB-511: "Total Purchase Order". Kunci totalPo.
+- TB-512: "Total Sales Order". Kunci totalSo.
+- TB-513: "Transaksi". Kunci transaksi.
+- TB-514: "Uang muka (DP)". Kunci uangMuka.
+- TB-515: "WhatsApp". Kunci whatsapp.
+- TB-516: "Sales". Kunci peranSales.
+- TB-517: "Belum ada Sales Order. Buat dari Katalog atau Order.". Kunci belumAdaSoSales.
+- TB-518: "Butuh Approval Owner.". Kunci butuhApprovalOwner.
+- TB-519: "Cetak via Bluetooth (simulasi)". Kunci cetakBluetooth.
+- TB-520: "{nama} ditambahkan ke order.". Kunci ditambahKeOrder.
+- TB-521: "Aplikasi ini hanya untuk peran Sales.". Kunci hanyaSales.
+- TB-522: "Katalog". Kunci judulKatalog.
+- TB-523: "Sales Order". Kunci judulOrder.
+- TB-524: "Riwayat Sales Order". Kunci judulRiwayatSo.
+- TB-525: "Sales Lapangan". Kunci judulSales.
+- TB-526: "Order tetap tersimpan sebagai Draf dan menunggu persetujuan Owner di aplikasi Owner.". Kunci ketPersetujuan.
+- TB-527: "Kirim Salinan SO (PDF) via WA". Kunci kirimSalinanSo.
+- TB-528: "Lihat Order". Kunci lihatOrder.
+- TB-529: "Masuk pertama di HP ini memerlukan internet.". Kunci masukPertamaButuhInternet.
+- TB-530: "Minta Persetujuan Owner". Kunci mintaPersetujuan.
+- TB-531: "Katalog". Kunci navKatalog.
+- TB-532: "Order". Kunci navOrder.
+- TB-533: "No. SO". Kunci noSo.
+- TB-534: "Nomor WhatsApp pelanggan". Kunci nomorWa.
+- TB-535: "Mode offline: hanya akun yang pernah masuk di HP ini yang dapat masuk.". Kunci offlineMasukSales.
+- TB-536: "Mode offline: order tetap tersimpan di HP dan dikirim otomatis saat internet pulih. Antrean: {antrean}.". Kunci offlineSales.
+- TB-537: "Pilih printer Bluetooth pada Status sinkronisasi terlebih dahulu.". Kunci pilihPrinterDulu.
+- TB-538: "Pelanggan ini ada piutang terlambat {jumlah}, sudah {hari} hari. Lanjutkan? Butuh Approval Owner.". Kunci piutangTerlambatSales.
+- TB-539: "Pratinjau salinan SO (PDF)". Kunci pratinjauSalinan.
+- TB-540: "Printer Bluetooth (simulasi)". Kunci printerBluetooth.
+- TB-541: "Salinan SO akan dikirim ke {telepon} saat internet pulih.". Kunci salinanAntre.
+- TB-542: "Salinan SO dicetak ke {printer} (simulasi).". Kunci salinanDicetak.
+- TB-543: "SALINAN SALES ORDER". Kunci salinanSoJudul.
+- TB-544: "Salinan SO (PDF) terkirim ke {telepon} via WA (simulasi).". Kunci salinanTerkirim.
+- TB-545: "Salinan terkirim via WA". Kunci salinanTerkirimBadge.
+- TB-546: "Salinan terkirim {waktu}". Kunci salinanTerkirimPada.
+- TB-547: "Simulasi: tidak ada printer yang benar-benar terhubung.". Kunci simulasiPrinter.
+- TB-548: "Sisa tagihan". Kunci sisaTagihan.
+- TB-549: "Salinan SO tidak dapat dikirim karena Owner menolak persetujuan.". Kunci soDitolakOwner.
+- TB-550: "Sales Order {nomor} tersimpan sebagai Draf dan menunggu persetujuan Owner.". Kunci soMenungguApproval.
+- TB-551: "Draf, disetujui Owner". Kunci statusSoDisetujui.
+- TB-552: "Draf, ditolak Owner". Kunci statusSoDitolak.
+- TB-553: "Draf, menunggu persetujuan Owner". Kunci statusSoMenunggu.
+- TB-554: "Tambah ke Order". Kunci tambahKeOrder.
+- TB-555: "Tanpa printer". Kunci tanpaPrinter.
+- TB-556: "Tier harga mengikuti pelanggan: {tier}". Kunci tierDariPelanggan.
+- TB-557: "Tier harga". Kunci tierHarga.
+- TB-558: "Tier harga: {tier}". Kunci tierHargaNilai.
+- TB-559: "Salinan SO dapat dikirim setelah Owner menyetujui.". Kunci tungguPersetujuan.
+- TB-560: "Ubah Order". Kunci ubahOrder.
+- TB-561: "Validasi piutang". Kunci validasiPiutang.
+- TB-562: "Disetujui Owner dari HP: {alasan}". Kunci disetujuiDariHp.
+- TB-563: "Penjualan". Kunci menuPenjualan.
+- TB-564: "Penjualan". Kunci grupPenjualan.
+- TB-565: "Penjualan dan Riwayat Invoice". Kunci judulPenjualan.
+- TB-566: "No. Invoice". Kunci noInvoice.
+- TB-567: "Tidak ada invoice pada filter ini.". Kunci tidakAdaInvoice.
+- TB-568: "Cetak Ulang Invoice". Kunci cetakUlangInvoice.
+- TB-569: "Buat Surat Jalan". Kunci buatSuratJalan.
+- TB-570: "Koreksi Transaksi (Otorisasi Owner)". Kunci koreksiTransaksi.
+- TB-571: "Tersedia pada tahap berikutnya.". Kunci tahapBerikutnya.
+- TB-572: "SALINAN". Kunci salinanInvoice.
+- TB-573: "Sumber". Kunci sumberInvoice.
+- TB-574: "Kasir POS". Kunci sumberPos.
+- TB-575: "Sales Lapangan". Kunci sumberSales.
+- TB-576: "Laba kotor transaksi". Kunci labaKotorTransaksi.
+- TB-577: "Cari invoice atau pelanggan". Kunci cariInvoice.
+- TB-578: "Detail invoice". Kunci detailInvoice.
+- TB-579: "Pilih invoice untuk melihat detail.". Kunci pilihInvoice.
+- TB-580: "Halaman sebelumnya". Kunci halamanSebelumnya.
+- TB-581: "Halaman berikutnya". Kunci halamanBerikutnya.
+- TB-582: "Halaman {halaman} dari {total}". Kunci halamanDari.
+- TB-583: "Subtotal". Kunci subtotalBaris.
+- TB-584: "Portal Tinjau Sistem POS Toko Budiannor". Kunci judulPortal.
+- TB-585: "Spesifikasi UI/UX v1.0 dan addendum v1.1: {layar} layar dan {alur} alur ujung ke ujung.". Kunci subjudulPortal.
+- TB-586: "Mockup mencakup {tersedia} dari {total} layar; sisanya dijadwalkan pada tahap berikutnya.". Kunci statusMockup.
+- TB-587: "Mulai Mode Tinjau". Kunci mulaiTinjau.
+- TB-588: "Galeri Gaya". Kunci galeriGaya.
+- TB-589: "Tiga ekosistem". Kunci ekosistem.
+- TB-590: "POS Kasir". Kunci ekosistemPos.
+- TB-591: "Back-Office". Kunci ekosistemBo.
+- TB-592: "Aplikasi Mobile". Kunci ekosistemMobile.
+- TB-593: "Kasir di tablet atau PC: jual, bayar, bill gantung, retur, dan antrean offline.". Kunci deskripsiPos.
+- TB-594: "Supervisor dan Owner di PC: barang, stok, mutasi, opname, dan penjualan.". Kunci deskripsiBo.
+- TB-595: "Owner dan Sales Lapangan di HP: pantau, setujui, dan input order secara offline-first.". Kunci deskripsiMobile.
+- TB-596: "{tersedia} dari {total} layar tersedia". Kunci layarTersedia.
+- TB-597: "Buka POS Kasir". Kunci bukaPos.
+- TB-598: "Buka Back-Office". Kunci bukaBo.
+- TB-599: "Buka Aplikasi Owner". Kunci bukaOwner.
+- TB-600: "Buka Aplikasi Sales". Kunci bukaSales.
+- TB-601: "Daftar layar ({jumlah})". Kunci daftarLayar.
+- TB-602: "Cari ID atau nama layar". Kunci cariLayar.
+- TB-603: "Filter ekosistem". Kunci filterEkosistem.
+- TB-604: "Menampilkan {tampil} dari {total} layar". Kunci jumlahLayarTampil.
+- TB-605: "Tersedia". Kunci statusTersedia.
+- TB-606: "Belum dibangun". Kunci belumDibangun.
+- TB-607: "Buka". Kunci bukaLayar.
+- TB-608: "Tinjau". Kunci tinjauLayar.
+- TB-609: "Alur ujung ke ujung ({jumlah})". Kunci daftarAlur.
+- TB-610: "Lengkap". Kunci alurLengkap.
+- TB-611: "Sebagian: {layar} belum dibangun". Kunci alurSebagian.
+- TB-612: "Mulai Alur". Kunci mulaiAlur.
+- TB-613: "Buka dari POS-02: tahan kartu barang 0,5 detik atau ketuk baris item.". Kunci petunjukPos03.
+- TB-614: "Buka dari POS-04: saat limit ditolak, tekan Minta Otorisasi Owner.". Kunci petunjukPos10.
+- TB-615: "Buka dari SALES-03: simpan SO piutang yang melebihi limit atau menunggak.". Kunci petunjukSales04.
+- TB-616: "Portal". Kunci kePortal.
+- TB-617: "Layar". Kunci pilihLayar.
+- TB-618: "Alur". Kunci pilihAlur.
+- TB-619: "Tanpa alur". Kunci tanpaAlur.
+- TB-620: "Layar sebelumnya". Kunci layarSebelumnya.
+- TB-621: "Layar berikutnya". Kunci layarBerikutnya.
+- TB-622: "Koneksi". Kunci koneksiJudul.
+- TB-623: "Pratinjau aplikasi". Kunci pratinjauAplikasi.
+- TB-624: "Layar ini belum dibangun pada mockup dan dijadwalkan pada tahap berikutnya. Catatan revisi tetap dapat ditulis.". Kunci layarBelumDibangun.
+- TB-625: "Alur". Kunci alurJudul.
+- TB-626: "Langkah sebelumnya". Kunci langkahSebelumnya.
+- TB-627: "Langkah berikutnya". Kunci langkahBerikutnya.
+- TB-628: "Langkah {nomor} dari {total}". Kunci langkahDari.
+- TB-629: "Catatan Revisi". Kunci catatanRevisi.
+- TB-630: "Catatan Revisi". Kunci judulCatatanRevisi.
+- TB-631: "Maksimal dua putaran revisi tanpa biaya tambahan. Fungsi, layar, data, alur bisnis, integrasi, atau laporan baru dinilai sebagai Change Request.". Kunci aturanRevisi.
+- TB-632: "Layar: {layar}". Kunci layarAktif.
+- TB-633: "Isi catatan". Kunci isiCatatan.
+- TB-634: "Jenis". Kunci jenisCatatan.
+- TB-635: "Revisi (tanpa biaya)". Kunci jenisRevisi.
+- TB-636: "Change Request". Kunci jenisChangeRequest.
+- TB-637: "Putaran". Kunci putaranLabel.
+- TB-638: "Putaran {nomor}". Kunci putaranNomor.
+- TB-639: "Simpan Catatan". Kunci simpanCatatan.
+- TB-640: "Catatan wajib diisi.". Kunci catatanKosong.
+- TB-641: "Belum ada catatan untuk layar ini.". Kunci belumAdaCatatanLayar.
+- TB-642: "Hapus catatan". Kunci hapusCatatan.
+- TB-643: "Total catatan: {total}. Putaran 1: {putaran1}. Putaran 2: {putaran2}. Change Request: {cr}.". Kunci ringkasanCatatan.
+- TB-644: "Ekspor JSON". Kunci eksporJson.
+- TB-645: "Ekspor Markdown". Kunci eksporMarkdown.
+- TB-646: "Catatan diekspor ke {berkas}.". Kunci catatanDiekspor.
+- TB-647: "Tidak ada catatan pada putaran ini.". Kunci tidakAdaCatatanPutaran.
+- TB-648: "Diekspor". Kunci diekspor.
+- TB-649: "Login dan Pilih Kasir". Kunci layarPos01.
+- TB-650: "Jual Utama". Kunci layarPos02.
+- TB-651: "Pilih Satuan dan Jumlah". Kunci layarPos03.
+- TB-652: "Pembayaran". Kunci layarPos04.
+- TB-653: "Bill Gantung dan Struk Draf". Kunci layarPos05.
+- TB-654: "Riwayat Penjualan dan Cetak Ulang". Kunci layarPos06.
+- TB-655: "Biaya Kasir". Kunci layarPos07.
+- TB-656: "Pelanggan Baru". Kunci layarPos08.
+- TB-657: "Status Offline dan Antrean Sinkronisasi". Kunci layarPos09.
+- TB-658: "Otorisasi Owner". Kunci layarPos10.
+- TB-659: "Masuk ke Back-Office". Kunci layarBo01.
+- TB-660: "Dashboard". Kunci layarBo02.
+- TB-661: "Barang". Kunci layarBo03.
+- TB-662: "Satuan dan Harga Bertingkat". Kunci layarBo04.
+- TB-663: "Stok per Gudang". Kunci layarBo05.
+- TB-664: "Mutasi Antar Gudang". Kunci layarBo06.
+- TB-665: "Opname Stok". Kunci layarBo07.
+- TB-666: "Pembelian dan Penerimaan". Kunci layarBo08.
+- TB-667: "Penjualan dan Riwayat Invoice". Kunci layarBo09.
+- TB-668: "Retur Penjualan dan Pembelian". Kunci layarBo10.
+- TB-669: "Pelanggan dan Piutang". Kunci layarBo11.
+- TB-670: "Surat Jalan dan Koli". Kunci layarBo12.
+- TB-671: "Cetak Label Barcode dan Rak". Kunci layarBo13.
+- TB-672: "Komisi". Kunci layarBo14.
+- TB-673: "Impor Data Excel". Kunci layarBo15.
+- TB-674: "Laporan Operasional". Kunci layarBo16.
+- TB-675: "Laporan Keuangan". Kunci layarBo17.
+- TB-676: "Price List". Kunci layarBo18.
+- TB-677: "Jurnal dan Beban Operasional". Kunci layarBo19.
+- TB-678: "Pengguna dan Hak Akses". Kunci layarBo20.
+- TB-679: "Log Aktivitas". Kunci layarBo21.
+- TB-680: "Pengaturan". Kunci layarBo22.
+- TB-681: "Masuk Monitoring Owner". Kunci layarOwn01.
+- TB-682: "Ringkasan Omzet". Kunci layarOwn02.
+- TB-683: "Cek Stok". Kunci layarOwn03.
+- TB-684: "Laporan Laba Rugi dan Beban". Kunci layarOwn04.
+- TB-685: "Piutang Jatuh Tempo". Kunci layarOwn05.
+- TB-686: "Transaksi". Kunci layarOwn06.
+- TB-687: "Masuk dan Mode Offline". Kunci layarSales01.
+- TB-688: "Katalog dan Cek Stok". Kunci layarSales02.
+- TB-689: "Input Sales Order". Kunci layarSales03.
+- TB-690: "Validasi Piutang". Kunci layarSales04.
+- TB-691: "Salinan SO dan Kirim via WhatsApp". Kunci layarSales05.
+- TB-692: "Jual tunai". Kunci alurF01.
+- TB-693: "Jual piutang dengan pemeriksaan limit". Kunci alurF02.
+- TB-694: "Limit ditolak lalu otorisasi Owner". Kunci alurF03.
+- TB-695: "Hold bill dan panggil ulang". Kunci alurF04.
+- TB-696: "Transaksi saat offline lalu sinkronisasi". Kunci alurF05.
+- TB-697: "Mutasi antar gudang". Kunci alurF06.
+- TB-698: "Surat jalan dengan pengelompokan koli". Kunci alurF07.
+- TB-699: "Owner memeriksa omzet dan piutang dari HP". Kunci alurF08.
+- TB-700: "Owner menyetujui dari HP lalu transaksi POS lanjut". Kunci alurF09.
+- TB-701: "Sales membuat SO offline, sinkron, Draf di BO-09, kirim PDF via WA". Kunci alurF10.
+- TB-702: "Masuk sebagai kasir dengan PIN.". Kunci langkahF01a.
+- TB-703: "Pindai atau ketuk kartu barang agar masuk bill.". Kunci langkahF01b.
+- TB-704: "Untuk barang pecahan, tahan kartu lalu isi jumlah.". Kunci langkahF01c.
+- TB-705: "Tekan Bayar, pilih Tunai lalu Uang Pas.". Kunci langkahF01d.
+- TB-706: "Selesaikan dan Cetak Struk; bill baru terbuka.". Kunci langkahF01e.
+- TB-707: "Pilih pelanggan terdaftar lalu tambah barang.". Kunci langkahF02a.
+- TB-708: "Pilih Piutang; sistem memeriksa limit dan jatuh tempo.". Kunci langkahF02b.
+- TB-709: "Saldo piutang bertambah pada kartu piutang.". Kunci langkahF02c.
+- TB-710: "Banner penolakan tampil dengan dua tombol.". Kunci langkahF03a.
+- TB-711: "Isi alasan dan PIN Owner lalu Setujui.". Kunci langkahF03b.
+- TB-712: "Log Aktivitas mencatat nama Owner, alasan, waktu, dan perangkat.". Kunci langkahF03c.
+- TB-713: "Tahan Bill pada bill yang sedang disusun.". Kunci langkahF04a.
+- TB-714: "Cetak Struk Draf sebagai daftar ambil barang.". Kunci langkahF04b.
+- TB-715: "Panggil Bill setelah barang siap.". Kunci langkahF04c.
+- TB-716: "Bill terbuka kembali di Jual Utama.". Kunci langkahF04d.
+- TB-717: "Lanjut ke pembayaran.". Kunci langkahF04e.
+- TB-718: "Putuskan koneksi lalu jual terus dari data lokal.". Kunci langkahF05a.
+- TB-719: "Pantau antrean dan stok negatif.". Kunci langkahF05b.
+- TB-720: "Tinjau barang Ditinjau (negatif) lalu tandai sudah ditinjau.". Kunci langkahF05c.
+- TB-721: "Pilih gudang asal dan tujuan, lalu tambah barang dan jumlah.". Kunci langkahF06a.
+- TB-722: "Simpan Mutasi; stok dua gudang berubah.". Kunci langkahF06b.
+- TB-723: "Periksa stok kedua gudang.". Kunci langkahF06c.
+- TB-724: "Pilih invoice lalu Buat Surat Jalan.". Kunci langkahF07a.
+- TB-725: "Tempatkan item ke koli, isi armada dan sopir, Simpan, lalu cetak.". Kunci langkahF07b.
+- TB-726: "Masuk sebagai Owner.". Kunci langkahF08a.
+- TB-727: "Baca omzet hari ini dan grafik per jam.". Kunci langkahF08b.
+- TB-728: "Cek stok per gudang.". Kunci langkahF08c.
+- TB-729: "Lihat piutang jatuh tempo, terlama lebih dulu.". Kunci langkahF08d.
+- TB-730: "Baca Laba Rugi atau Beban Operasional.". Kunci langkahF08e.
+- TB-731: "Masuk sebagai Owner (haris.owner).". Kunci langkahF09a.
+- TB-732: "Setujui permintaan piutang over-limit bill B-0002 dengan alasan dan PIN Owner; persetujuan diskon hanya tercatat karena POS belum memiliki fitur diskon.". Kunci langkahF09b.
+- TB-733: "Masuk sebagai kasir dengan PIN.". Kunci langkahF09c.
+- TB-734: "Panggil Bill B-0002 dari bill gantung.". Kunci langkahF09d.
+- TB-735: "Bayar dengan Piutang: banner Disetujui Owner dari HP tampil dan PIN tidak diminta lagi.". Kunci langkahF09e.
+- TB-736: "Transaksi piutang tercatat pada riwayat penjualan.". Kunci langkahF09f.
+- TB-737: "Masuk sebagai Sales (budi.sales).". Kunci langkahF10a.
+- TB-738: "Tambah barang dari katalog.". Kunci langkahF10b.
+- TB-739: "Putuskan koneksi lalu Simpan Sales Order; antrean menunjukkan Offline, 1 menunggu.". Kunci langkahF10c.
+- TB-740: "Pulihkan koneksi; antrean terkirim otomatis dan SO ditandai tersinkron.". Kunci langkahF10d.
+- TB-741: "Masuk Back-Office sebagai Supervisor.". Kunci langkahF10e.
+- TB-742: "SO muncul sebagai Draf dari sumber Sales Lapangan.". Kunci langkahF10f.
+- TB-743: "Kirim Salinan SO (PDF) via WA.". Kunci langkahF10g.
