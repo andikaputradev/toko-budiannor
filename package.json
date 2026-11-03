@@ -42,11 +42,5 @@
     "typescript-eslint": "8.72.1",
     "vite": "8.3.5",
     "vitest": "5.0.5"
-  },
-  "overrides": {
-    "@opentelemetry/api": "1.9.1",
-    "@cyclonedx/cyclonedx-library": {
-      "ajv": "8.20.0"
-    }
   }
 }
