@@ -13,6 +13,8 @@ export interface BarChartOptions {
   readonly width?: number | undefined;
   readonly height?: number | undefined;
   readonly minTop?: number | undefined;
+  /** Lebar minimal area ketuk tiap batang; bila kurang, grafik melebar dan dapat digulir. */
+  readonly minSlot?: number | undefined;
   readonly selectedIndex?: number | undefined;
   readonly onSelect?: ((datum: BarDatum, index: number) => void) | undefined;
 }
@@ -39,9 +41,13 @@ function niceStep(max: number): number {
 }
 
 export function createBarChart(options: BarChartOptions): HTMLElement {
-  const width = options.width ?? 520;
+  const baseWidth = options.width ?? 520;
   const height = options.height ?? 360;
-  const pad = { top: 16, right: 12, bottom: 36, left: width < 400 ? 48 : 64 };
+  const pad = { top: 16, right: 12, bottom: 36, left: baseWidth < 400 ? 48 : 64 };
+  const count = Math.max(1, options.data.length);
+  const minSlot = options.minSlot ?? 0;
+  const scrolls = (baseWidth - pad.left - pad.right) / count < minSlot;
+  const width = scrolls ? pad.left + pad.right + count * minSlot : baseWidth;
   const max = Math.max(1, options.minTop ?? 1, ...options.data.map((item) => item.value));
   const step = niceStep(max);
   const top = Math.ceil(max / step) * step;
@@ -121,6 +127,10 @@ export function createBarChart(options: BarChartOptions): HTMLElement {
     tick.textContent = item.label;
     chart.append(tick);
   });
+  if (scrolls) {
+    chart.style.width = `${String(width)}px`;
+    chart.style.maxWidth = 'none';
+  }
   const table = el(
     'table',
     { className: 'visually-hidden' },
@@ -133,5 +143,10 @@ export function createBarChart(options: BarChartOptions): HTMLElement {
       ),
     ),
   );
-  return el('figure', { className: 'bo-chart' }, chart, table);
+  return el(
+    'figure',
+    { className: scrolls ? 'bo-chart bo-chart--scroll' : 'bo-chart' },
+    chart,
+    table,
+  );
 }

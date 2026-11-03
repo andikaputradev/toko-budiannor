@@ -97,7 +97,10 @@ export function renderStatus(session: PosSession, go: (path: string) => void): S
         ? el('p', { className: 't-label', text: message('MSG-019') })
         : el(
             'div',
-            { className: 'pos-status__scroll' },
+            {
+              className: 'pos-status__scroll',
+              attrs: { tabindex: '0', 'aria-label': label('antreanTabel') },
+            },
             el(
               'table',
               { className: 'pos-table pos-table--dense' },

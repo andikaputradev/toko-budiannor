@@ -203,7 +203,10 @@ export function renderExpense(session: PosSession, go: (path: string) => void): 
       ),
       el(
         'section',
-        { className: 'pos-expense__side' },
+        {
+          className: 'pos-expense__side',
+          attrs: { tabindex: '0', 'aria-label': label('biayaHariIni') },
+        },
         el('h2', { className: 't-section-title', text: label('biayaHariIni') }),
         tableBox,
       ),

@@ -104,6 +104,7 @@ export function renderSummary(session: OwnerSession): ScreenHandle {
         width: 296,
         height: 240,
         minTop: 1_000_000,
+        minSlot: 48,
         selectedIndex: selected,
         onSelect: (_datum, index) => {
           selected = index;

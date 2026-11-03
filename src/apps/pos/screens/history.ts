@@ -276,7 +276,10 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
       row(label('pelanggan'), session.customerName(sale.customerId)),
       el(
         'ul',
-        { className: 'pos-bills__lines' },
+        {
+          className: 'pos-bills__lines',
+          attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
+        },
         ...sale.lines.map((line) =>
           el(
             'li',

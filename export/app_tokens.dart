@@ -218,7 +218,7 @@ abstract final class AppSizesPos {
   static const double buttonHeight = 52;
   static const double inputHeight = 52;
   static const double tableRowHeight = 48;
-  static const double chipHeight = 36;
+  static const double chipHeight = 48;
   static const double topbarHeight = 56;
 }
 

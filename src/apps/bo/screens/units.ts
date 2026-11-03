@@ -42,7 +42,10 @@ export function renderUnits(session: BoSession, query: URLSearchParams): ScreenH
   let counter = 0;
 
   const unitsBox = el('section', { className: 'bo-panel bo-units-table' });
-  const pricesBox = el('section', { className: 'bo-panel' });
+  const pricesBox = el('section', {
+    className: 'bo-panel',
+    attrs: { tabindex: '0', 'aria-label': label('hargaPerTier') },
+  });
   const valueCard = el('section', { className: 'bo-panel bo-value' });
   const error = el('p', { className: 'bo-error', attrs: { role: 'alert' } });
   const info = el('p', { className: 't-label' });

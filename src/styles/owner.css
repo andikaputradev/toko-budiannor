@@ -14,6 +14,9 @@
 }
 
 .skip-link {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-touch-target-min);
   position: absolute;
   top: 0;
   left: -9999px;
@@ -65,7 +68,7 @@
   display: inline-flex;
   gap: var(--primitive-space-1);
   align-items: center;
-  min-height: 44px;
+  min-height: var(--size-touch-target-min);
   padding: 0 var(--primitive-space-3);
   border: 1px solid var(--color-border-default);
   border-radius: 999px;
@@ -83,8 +86,8 @@
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
   padding: 0;
   border: 0;
   border-radius: var(--radius-control);
@@ -218,7 +221,7 @@
 }
 
 .own .chip {
-  min-height: 44px;
+  min-height: var(--size-touch-target-min);
 }
 
 .own-card {
@@ -602,6 +605,10 @@
 
 .bo-chart {
   margin: 0;
+}
+
+.bo-chart--scroll {
+  overflow-x: auto;
 }
 
 .bo-chart__svg {

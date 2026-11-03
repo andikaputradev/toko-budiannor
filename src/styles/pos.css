@@ -46,6 +46,10 @@
   font-weight: var(--primitive-font-weight-semibold);
 }
 
+a.pos-chip {
+  height: var(--size-touch-target-min);
+}
+
 .pos-chip--online {
   background: var(--color-status-success-bg);
   color: var(--color-status-success-fg);
@@ -329,7 +333,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--primitive-space-2);
-  min-height: 44px;
+  min-width: var(--size-touch-target-min);
+  min-height: var(--size-touch-target-min);
   padding: 0;
   border: 0;
   background: none;

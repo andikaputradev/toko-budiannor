@@ -157,7 +157,10 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
     const canDelete = isAllowed(session.store.getState().role, 'POS-05', 'Hapus Bill');
     const lines = el(
       'ul',
-      { className: 'pos-bills__lines' },
+      {
+        className: 'pos-bills__lines',
+        attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
+      },
       ...bill.lines.map((line) =>
         el(
           'li',
