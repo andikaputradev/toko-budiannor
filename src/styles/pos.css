@@ -84,8 +84,8 @@ a.pos-chip {
   display: grid;
   place-items: center;
   width: 100%;
-  max-width: 147px;
-  height: 93px;
+  max-width: none;
+  height: 96px;
   border: 1px dashed var(--color-text-secondary);
   background: var(--color-bg-page);
   color: var(--color-text-secondary);
@@ -187,8 +187,8 @@ a.pos-chip {
 .pos-sell {
   display: grid;
   flex: 1;
-  grid-template-columns: 55fr 45fr;
-  gap: var(--primitive-space-3);
+  grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+  gap: var(--primitive-space-4);
   min-height: 0;
   padding: var(--primitive-space-3) var(--space-screen-margin);
 }
@@ -198,14 +198,32 @@ a.pos-chip {
   display: flex;
   flex-direction: column;
   gap: var(--primitive-space-2);
+  min-width: 0;
   min-height: 0;
 }
 
 .pos-bill-panel {
-  padding: var(--primitive-space-3);
+  gap: var(--primitive-space-3);
+  padding: var(--primitive-space-4);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
+}
+
+@media (max-width: 700px) {
+  .pos-sell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    overflow-y: auto;
+  }
+
+  .pos-grid {
+    max-height: 70vh;
+  }
+
+  .pos-bill-panel {
+    min-height: 420px;
+  }
 }
 
 .pos-search {
@@ -229,16 +247,23 @@ a.pos-chip {
 .pos-categories {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
   gap: var(--primitive-space-2);
-  height: 40px;
-  overflow-x: auto;
+}
+
+.pos-categories .chip {
+  flex: none;
+  justify-content: center;
+  min-width: var(--size-touch-target-min);
+  padding: 0 var(--primitive-space-3);
+  white-space: nowrap;
 }
 
 .pos-grid {
   display: grid;
   flex: 1;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: minmax(186px, auto);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-auto-rows: minmax(196px, auto);
   gap: var(--primitive-space-3);
   align-content: start;
   min-height: 0;
@@ -265,18 +290,18 @@ a.pos-chip {
 .pos-card__name {
   display: -webkit-box;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: var(--primitive-font-weight-semibold);
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
 .pos-card__price {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .pos-card__stock {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .pos-note {
@@ -305,18 +330,18 @@ a.pos-chip {
 .pos-bill th {
   position: sticky;
   top: 0;
-  height: 36px;
-  padding: 0 var(--primitive-space-2);
+  height: 44px;
+  padding: 0 var(--primitive-space-3);
   background: var(--color-bg-table-header);
-  font-size: 14px;
+  font-size: 15px;
   text-align: left;
 }
 
 .pos-bill td {
-  height: 44px;
-  padding: 0 var(--primitive-space-2);
+  height: 60px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
   border-bottom: 1px solid var(--color-border-default);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .pos-bill .is-end,
@@ -357,7 +382,9 @@ a.pos-chip {
 
 .pos-totals {
   flex: none;
-  min-height: 80px;
+  min-height: 88px;
+  padding-top: var(--primitive-space-2);
+  border-top: 2px solid var(--color-border-default);
 }
 
 .pos-totals p {
@@ -379,7 +406,9 @@ a.pos-chip {
 }
 
 .pos-actions .btn {
-  height: 52px;
+  height: 56px;
+  padding: 0 var(--primitive-space-2);
+  white-space: nowrap;
 }
 
 .pos-bill-panel > .btn--pay {

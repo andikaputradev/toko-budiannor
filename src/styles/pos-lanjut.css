@@ -39,22 +39,22 @@
 .pos-table th {
   position: sticky;
   top: 0;
-  height: 40px;
-  padding: 0 var(--primitive-space-2);
+  height: 44px;
+  padding: 0 var(--primitive-space-3);
   background: var(--color-bg-table-header);
-  font-size: 14px;
+  font-size: 15px;
   text-align: left;
 }
 
 .pos-table td {
-  height: 48px;
-  padding: 0 var(--primitive-space-2);
+  height: 52px;
+  padding: 0 var(--primitive-space-3);
   border-bottom: 1px solid var(--color-border-default);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .pos-table--dense td {
-  height: 38px;
+  height: 44px;
 }
 
 .pos-table .is-end {
@@ -173,7 +173,8 @@
   display: flex;
   gap: var(--primitive-space-2);
   justify-content: space-between;
-  padding: var(--primitive-space-1) 0;
+  padding: var(--primitive-space-2) 0;
+  font-size: 16px;
   border-bottom: 1px solid var(--color-border-default);
 }
 

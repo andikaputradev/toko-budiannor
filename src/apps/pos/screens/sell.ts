@@ -405,7 +405,10 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       customerRow,
       el(
         'div',
-        { className: 'pos-bill__scroll' },
+        {
+          className: 'pos-bill__scroll',
+          attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
+        },
         el(
           'table',
           { className: 'pos-bill' },
