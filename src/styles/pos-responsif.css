@@ -1,0 +1,113 @@
+/* Titik henti POS: 900 px (mode ringkas) dan 600 px (mode ponsel). Dimuat paling akhir. */
+
+.pos-split {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--primitive-space-4);
+  min-height: 0;
+  padding: var(--primitive-space-3) var(--space-screen-margin);
+}
+
+.pos-split__back {
+  display: none;
+  justify-self: start;
+}
+
+@media (max-width: 899px) {
+  .pos-split {
+    display: flex;
+    flex-direction: column;
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-split__list,
+  .pos-split__detail {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pos-split[data-pane='daftar'] > .pos-split__detail,
+  .pos-split[data-pane='detail'] > .pos-split__list {
+    display: none;
+  }
+
+  .pos-split[data-pane='detail'] > .pos-split__back {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .pos-login {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: calc(var(--space-screen-margin) + 56px);
+  }
+
+  .pos-login__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pos-login__card {
+    height: 168px;
+  }
+
+  .pos-login__panel,
+  .pos-login__submit {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 599px) {
+  .pos-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-topbar__center,
+  .pos-topbar__cashier,
+  .pos-topbar .pos-chip span {
+    display: none;
+  }
+
+  .pos-topbar__lead {
+    min-width: 0;
+  }
+
+  .pos-topbar__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pos-topbar__status {
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-login__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-login__card {
+    height: 148px;
+  }
+
+  .pos-login__avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .modal-overlay:not(.modal-overlay--drawer) {
+    padding: 0;
+  }
+
+  .modal-overlay .modal:not(.modal--drawer) {
+    width: 100vw;
+    min-width: 0;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    padding: var(--primitive-space-4);
+    border-radius: 0;
+  }
+}

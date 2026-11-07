@@ -29,6 +29,7 @@ import type { ScreenHandle } from './login';
 import { openReceiptPreview, saleReceipt } from './receipt-preview';
 import { openReturnModal } from './retur-modal';
 import { openShareReceipt } from './share-receipt';
+import { createSplitPane, type SplitPane } from '../split';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
@@ -67,6 +68,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   let query = '';
   let page = 1;
   let selectedNumber: string | undefined;
+  const paneRef: { current: SplitPane | undefined } = { current: undefined };
 
   const startInput = el('input', {
     className: 'input pos-history__date',
@@ -192,6 +194,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
               pick.addEventListener('click', () => {
                 selectedNumber = sale.number;
                 render();
+                paneRef.current?.showDetail();
               });
               return el('li', {}, pick);
             }),
@@ -450,38 +453,36 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   const stop = session.subscribe(render);
   const stopStore = session.store.subscribe(render);
 
-  const element = el(
-    'div',
-    { className: 'pos' },
-    topbar.element,
+  const listSection = el(
+    'section',
+    { className: 'pos-history__main' },
     el(
-      'main',
-      { className: 'pos-history' },
-      el(
-        'section',
-        { className: 'pos-history__main' },
-        el(
-          'div',
-          { className: 'pos-history__filters' },
-          startInput,
-          endInput,
-          search,
-          createButton({
-            text: label('kembaliKeJual'),
-            variant: 'secondary',
-            onClick: () => {
-              go('/pos/jual');
-            },
-          }),
-        ),
-        rangeError,
-        chipBox,
-        listBox,
-        pager,
-      ),
-      detail,
+      'div',
+      { className: 'pos-history__filters' },
+      startInput,
+      endInput,
+      search,
+      createButton({
+        text: label('kembaliKeJual'),
+        variant: 'secondary',
+        onClick: () => {
+          go('/pos/jual');
+        },
+      }),
     ),
+    rangeError,
+    chipBox,
+    listBox,
+    pager,
   );
+  const pane = createSplitPane({
+    list: listSection,
+    detail,
+    backLabel: 'kembali',
+    className: 'pos-history',
+  });
+  paneRef.current = pane;
+  const element = el('div', { className: 'pos' }, topbar.element, pane.element);
   render();
   return {
     element,

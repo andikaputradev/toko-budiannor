@@ -4,6 +4,7 @@ import '../../styles/pos-jual.css';
 import '../../styles/pos-bayar.css';
 import '../../styles/pos-riwayat.css';
 import '../../styles/pos-retur.css';
+import '../../styles/pos-responsif.css';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';

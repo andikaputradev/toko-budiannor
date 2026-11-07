@@ -53,6 +53,7 @@ export function createTopbar(session: PosSession, title: LabelKey): Topbar {
     const online = state.online;
     menu.hidden = !loggedIn;
     chip.className = online ? 'pos-chip pos-chip--online' : 'pos-chip pos-chip--offline';
+    chip.setAttribute('aria-label', label(online ? 'koneksiOnline' : 'koneksiOffline'));
     chip.replaceChildren(
       icon(online ? 'wifi' : 'wifi-off'),
       el('span', { text: label(online ? 'koneksiOnline' : 'koneksiOffline') }),
