@@ -154,6 +154,40 @@ export async function clickPay(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^Bayar/ }).click();
 }
 
+// Penjualan satu barang pertama. Seluruh langkah bayar ada di sini supaya perubahan layar bayar
+// cukup memperbarui satu tempat.
+export async function sellFirstProduct(
+  page: Page,
+  method: 'tunai' | 'qris' = 'tunai',
+): Promise<void> {
+  await page.locator('.pos-card__main').first().click();
+  await clickPay(page);
+  if (method === 'qris') {
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+  }
+  await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+  await finishPaymentDialog(page);
+}
+
+// Penjualan satu barang pertama (Rp 70.000) dengan tiga baris pembayaran: Tunai, QRIS, EDC.
+export async function sellSplitThree(page: Page): Promise<void> {
+  await page.locator('.pos-card__main').first().click();
+  await clickPay(page);
+  await page.getByRole('switch', { name: 'Split Payment' }).click();
+  await page.getByLabel('Jumlah diterima').fill('30000');
+  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+  await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+  await page.getByLabel('Jumlah diterima').fill('20000');
+  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+  await page.getByRole('button', { name: 'EDC', exact: true }).click();
+  await page.getByLabel('Jumlah diterima').fill('20000');
+  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+  await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+  await finishPaymentDialog(page);
+}
+
 export async function openRoute(page: Page, route: RouteCase): Promise<void> {
   if (route.app === 'portal' || isLoginPath(route.path)) {
     await page.goto(`/#${route.path}`);

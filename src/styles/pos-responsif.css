@@ -19,6 +19,13 @@
   justify-self: start;
 }
 
+/* Lorong kiri selebar tab Panel Simulasi supaya kontrol di tepi kiri tetap dapat diketuk. */
+@media (min-width: 600px) {
+  .pos main:not(.pos-login) {
+    padding-left: calc(var(--space-screen-margin) + 32px);
+  }
+}
+
 @media (max-width: 899px) {
   .pos-sell {
     display: flex;

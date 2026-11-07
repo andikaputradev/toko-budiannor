@@ -867,3 +867,11 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-857: "Alamat email tidak sah.". Kunci emailSalah.
 - TB-858: "Kirim lewat WhatsApp". Kunci kirimLewatWhatsapp.
 - TB-859: "Kirim lewat email". Kunci kirimLewatEmail.
+- TB-860: "Cari Penjualan". Kunci cariPenjualan.
+- TB-861: "Filter". Kunci filter.
+- TB-862: "Metode". Kunci kolomMetode.
+- TB-863: "Diskon". Kunci diskon.
+- TB-864: "Grand Total". Kunci grandTotal.
+- TB-865: "+ {jumlah} Penerimaan Lainnya". Kunci penerimaanLainnya.
+- TB-866: "Sembunyikan". Kunci sembunyikanPenerimaan.
+- TB-867: "Diinput Oleh: {nama} - {peran}". Kunci diinputOlehPeran.

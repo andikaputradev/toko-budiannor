@@ -5,12 +5,15 @@ import {
   groupByDay,
   isPending,
   isUnsynced,
+  methodSummary,
   pageCount,
   pageSlice,
   PAGE_SIZE,
   paymentKeyOf,
   paymentRowsOf,
   receivableInfo,
+  saleBreakdown,
+  visibleReceipts,
   type HistoryFilter,
 } from '../../../src/apps/pos/domain/history';
 
@@ -184,5 +187,91 @@ describe('kanal pada riwayat', () => {
       { method: 'transfer', amount: 60000, channel: 'BCA' },
       { method: 'qris', amount: 40000, channel: 'Gopay' },
     ]);
+  });
+});
+
+describe('ringkasan metode dan penerimaan', () => {
+  it('methodSummary mengembalikan Split, nama kanal, atau metode', () => {
+    const split: Sale = {
+      ...sale('T-1', '2026-10-19T03:00:00Z', 'tunai', 100000),
+      payments: [
+        { method: 'tunai', amount: 30000 },
+        { method: 'qris', amount: 70000 },
+      ],
+    };
+    expect(methodSummary(split)).toEqual({ kind: 'split' });
+    const bank: Sale = {
+      ...sale('T-2', '2026-10-19T03:00:00Z', 'transfer', 100000),
+      payments: [{ method: 'transfer', amount: 100000, channel: 'BCA' }],
+    };
+    expect(methodSummary(bank)).toEqual({ kind: 'transfer', channel: 'BCA' });
+    const plain: Sale = {
+      ...sale('T-3', '2026-10-19T03:00:00Z', 'qris', 100000),
+      payments: [{ method: 'qris', amount: 100000 }],
+    };
+    expect(methodSummary(plain)).toEqual({ kind: 'qris' });
+    expect(methodSummary(sale('T-4', '2026-10-19T03:00:00Z', 'tunai', 100000))).toEqual({
+      kind: 'tunai',
+    });
+  });
+
+  it('visibleReceipts menampilkan dua baris dan menghitung sisa', () => {
+    const rows = [1, 2, 3, 4].map((n) => ({ method: 'tunai' as const, amount: n * 1000 }));
+    expect(visibleReceipts(rows, false)).toMatchObject({ hidden: 2, extra: 2 });
+    expect(visibleReceipts(rows, false).shown).toHaveLength(2);
+    expect(visibleReceipts(rows, true)).toMatchObject({ hidden: 0, extra: 2 });
+    expect(visibleReceipts(rows, true).shown).toHaveLength(4);
+    expect(visibleReceipts(rows.slice(0, 2), false)).toMatchObject({ hidden: 0, extra: 0 });
+  });
+
+  it('saleBreakdown memisahkan subtotal, diskon, dan grand total', () => {
+    const line = { productId: 'P-01', unit: 'SAK', quantity: 2, unitPrice: 50000 };
+    const discounted: Sale = {
+      ...sale('T-5', '2026-10-19T03:00:00Z', 'tunai', 90000),
+      lines: [line],
+      total: 90000,
+    };
+    expect(saleBreakdown(discounted)).toEqual({
+      subtotal: 100000,
+      discount: 10000,
+      grandTotal: 90000,
+    });
+    const full: Sale = { ...discounted, total: 100000 };
+    expect(saleBreakdown(full)).toEqual({ subtotal: 100000, discount: 0, grandTotal: 100000 });
+    expect(saleBreakdown(sale('T-6', '2026-10-19T03:00:00Z', 'tunai', 100000))).toEqual({
+      subtotal: 100000,
+      discount: 0,
+      grandTotal: 100000,
+    });
+  });
+
+  it('filterSales menyaring menurut metode, Split, dan piutang termasuk DP', () => {
+    const tunai = sale('T-7', '2026-10-19T03:00:00Z', 'tunai', 100000);
+    const qris = sale('T-8', '2026-10-19T04:00:00Z', 'qris', 100000);
+    const dp = sale('T-9', '2026-10-19T05:00:00Z', 'dp', 20000);
+    const credit = sale('T-10', '2026-10-19T06:00:00Z', 'piutang', 0);
+    const split: Sale = {
+      ...sale('T-11', '2026-10-19T07:00:00Z', 'tunai', 100000),
+      payments: [
+        { method: 'tunai', amount: 50000 },
+        { method: 'qris', amount: 50000 },
+      ],
+    };
+    const all = [tunai, qris, dp, credit, split];
+    const base: HistoryFilter = {
+      start: '',
+      end: '',
+      status: 'semua',
+      query: '',
+      onlyDevice: undefined,
+    };
+    const numbers = (method: HistoryFilter['method']) =>
+      filterSales(all, [], { ...base, method }, () => '').map((item) => item.number);
+    expect(numbers('semua').sort()).toEqual(['T-10', 'T-11', 'T-7', 'T-8', 'T-9']);
+    expect(numbers(undefined)).toHaveLength(5);
+    expect(numbers('tunai')).toEqual(['T-7']);
+    expect(numbers('qris')).toEqual(['T-8']);
+    expect(numbers('split')).toEqual(['T-11']);
+    expect(numbers('piutang').sort()).toEqual(['T-10', 'T-9']);
   });
 });

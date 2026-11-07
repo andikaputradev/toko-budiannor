@@ -14,24 +14,17 @@
   display: none;
 }
 
+/* Tab vertikal sempit di tepi kiri agar tidak menutupi isi layar; layar POS menyisakan lorongnya. */
 .sim__launcher {
-  height: var(--size-touch-target-min);
-  padding: 0 var(--primitive-space-3);
+  min-width: var(--size-touch-target-min);
+  min-height: 120px;
+  padding: var(--primitive-space-3) 4px;
   border: 2px dashed var(--primitive-color-night-100);
   border-radius: 0 var(--radius-control) var(--radius-control) 0;
   background: var(--primitive-color-night-950);
   color: var(--primitive-color-night-100);
   cursor: pointer;
-}
-
-@media (max-width: 500px) {
-  .sim__launcher {
-    min-width: var(--size-touch-target-min);
-    height: auto;
-    min-height: 120px;
-    padding: var(--primitive-space-3) 4px;
-    writing-mode: vertical-rl;
-  }
+  writing-mode: vertical-rl;
 }
 
 .sim__body {

@@ -150,6 +150,7 @@ test.describe('POS-05 sampai POS-10', () => {
   }) => {
     await login(page, 'Ibu Sinta');
     await openDrawerItem(page, 'Riwayat Penjualan');
+    await page.getByRole('button', { name: 'Filter' }).click();
     await page.locator('.pos-history__date').first().fill('2026-10-01');
     await page.locator('.pos-history__chips').getByRole('button', { name: 'Pending' }).click();
     const rows = page.locator('.pos-history__item');

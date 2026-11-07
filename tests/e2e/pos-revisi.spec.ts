@@ -639,7 +639,7 @@ test.describe('riwayat penjualan', () => {
   }) => {
     await loginPos(page);
     await openDrawerItem(page, 'Riwayat Penjualan');
-    const search = page.getByRole('searchbox', { name: 'Cari transaksi' });
+    const search = page.getByRole('searchbox', { name: 'Cari Penjualan' });
     await search.fill('T-000101');
     await search.press('Enter');
     const detail = page.locator('.pos-history__detail');

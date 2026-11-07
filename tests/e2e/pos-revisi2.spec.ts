@@ -1,6 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { finishPaymentDialog, loginPos, openDrawerItem, settle } from './helpers/routes';
+import {
+  finishPaymentDialog,
+  loginPos,
+  openDrawerItem,
+  sellFirstProduct,
+  sellSplitThree,
+  settle,
+} from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const THEME_KEY = 'toko-budiannor-tema-pos';
@@ -213,5 +220,98 @@ test.describe('Kirim Struk', () => {
       share.getByText('Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.'),
     ).toBeVisible();
     await expect(share.getByText('Alamat email tidak sah.')).toHaveCount(0);
+  });
+});
+
+test.describe('riwayat', () => {
+  async function openHistory(page: Page): Promise<void> {
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await expect(page.locator('.pos-split')).toBeVisible();
+  }
+
+  test('baris daftar memuat nomor, total, jam, metode, dan kasir', async ({ page }) => {
+    await loginPos(page);
+    await sellFirstProduct(page);
+    await openHistory(page);
+    const first = page.locator('.pos-history__item').first();
+    await expect(first).toContainText('T-000141');
+    await expect(first).toContainText('Rp 70.000');
+    await expect(first).toContainText(/\d{2}[.:]\d{2}/);
+    await expect(first.locator('.pos-history__meta')).toContainText('Tunai');
+    await expect(first.locator('.pos-history__meta')).toContainText('Dewi');
+    await expect(first.locator('.pos-history__icon svg')).toBeVisible();
+  });
+
+  test('tombol Filter membuka panel dan menyaring metode', async ({ page }) => {
+    await loginPos(page);
+    await sellFirstProduct(page, 'tunai');
+    await sellFirstProduct(page, 'qris');
+    await openHistory(page);
+    const filter = page.getByRole('button', { name: 'Filter' });
+    await expect(filter).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('group', { name: 'Metode' })).toBeHidden();
+    await filter.click();
+    await expect(filter).toHaveAttribute('aria-expanded', 'true');
+    const before = await page.locator('.pos-history__item').count();
+    await page.getByRole('group', { name: 'Metode' }).getByRole('button', { name: 'QRIS' }).click();
+    const metas = page.locator('.pos-history__item .pos-history__meta');
+    await expect(metas.first()).toContainText('QRIS');
+    expect(await page.locator('.pos-history__item').count()).toBeLessThan(before);
+    for (const text of await metas.allTextContents()) {
+      expect(text).toContain('QRIS');
+    }
+  });
+
+  test('pencarian menyaring nomor dan nama pelanggan', async ({ page }) => {
+    await loginPos(page);
+    await openHistory(page);
+    await page.getByRole('searchbox', { name: 'Cari Penjualan' }).fill('Anton');
+    const rows = page.locator('.pos-history__item');
+    await expect(rows.first()).toContainText('Pak Anton');
+    for (const text of await rows.allTextContents()) {
+      expect(text).toContain('Pak Anton');
+    }
+  });
+
+  test('detail memuat Informasi Penjualan, tiga kartu penerimaan, dan Barang & Jasa dengan foto kecil', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await sellFirstProduct(page);
+    await openHistory(page);
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail.getByText('Informasi Penjualan')).toBeVisible();
+    await expect(detail.locator('.pos-history__figure')).toHaveCount(3);
+    await expect(detail.getByText('Barang & Jasa')).toBeVisible();
+    await expect(detail.locator('.pos-history__lines img.pos-photo--sm')).toHaveCount(1);
+    await expect(detail.locator('.pos-history__lines')).toContainText('Diinput Oleh: Dewi - Kasir');
+    await expect(detail).toContainText('Grand Total');
+  });
+
+  test('+ N Penerimaan Lainnya membuka sisa baris penerimaan', async ({ page }) => {
+    await loginPos(page);
+    await sellSplitThree(page);
+    await openHistory(page);
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail.locator('.pos-history__pay li')).toHaveCount(2);
+    const more = detail.getByRole('button', { name: '+ 1 Penerimaan Lainnya' });
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await more.click();
+    await expect(detail.locator('.pos-history__pay li')).toHaveCount(3);
+    await expect(detail.getByRole('button', { name: 'Sembunyikan' })).toBeVisible();
+  });
+
+  test('riwayat lolos axe pada mode terang dan gelap', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await loginPos(page);
+    await sellFirstProduct(page);
+    await openHistory(page);
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(result.violations, scheme).toEqual([]);
+    }
   });
 });

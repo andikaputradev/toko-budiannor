@@ -1,5 +1,6 @@
-import { append, el } from '../../../shared/dom';
+import { append, el, nextId } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { icon, type IconName } from '../../../shared/icons';
 import type { PaymentMethod, Sale, SalePayment } from '../../../shared/data/types';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import { isAllowed } from '../../../shared/permissions';
@@ -13,23 +14,28 @@ import {
   groupByDay,
   isPending,
   isUnsynced,
+  methodSummary,
   pageCount,
   pageSlice,
-  paymentKeyOf,
   paymentRowsOf,
   receivableInfo,
+  saleBreakdown,
   saleDate,
+  visibleReceipts,
+  type MethodFilter,
   type StatusFilter,
 } from '../domain/history';
 import { changeOf } from '../domain/receipt';
 import type { PosSession } from '../pos-session';
+import { ROLE_LABELS } from '../roles';
+import { createSplitPane, type SplitPane } from '../split';
+import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
 import type { ScreenHandle } from './login';
 import { openReceiptPreview, saleReceipt } from './receipt-preview';
 import { openReturnModal } from './retur-modal';
 import { openShareReceipt } from './share-receipt';
-import { createSplitPane, type SplitPane } from '../split';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
@@ -40,10 +46,30 @@ const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   piutang: 'metodePiutang',
 };
 
+const METHOD_ICONS: Readonly<Record<'split' | PaymentMethod, IconName>> = {
+  tunai: 'banknote',
+  qris: 'qr-code',
+  edc: 'credit-card',
+  transfer: 'arrow-left-right',
+  dp: 'banknote',
+  piutang: 'wallet',
+  split: 'layout-grid',
+};
+
 const STATUS_CHIPS: readonly (readonly [StatusFilter, LabelKey])[] = [
   ['semua', 'semua'],
   ['lunas', 'statusLunas'],
   ['pending', 'statusPending'],
+];
+
+const METHOD_CHIPS: readonly (readonly [MethodFilter, LabelKey])[] = [
+  ['semua', 'semua'],
+  ['tunai', 'metodeTunai'],
+  ['qris', 'metodeQris'],
+  ['edc', 'metodeEdc'],
+  ['transfer', 'metodeTransfer'],
+  ['split', 'caraBayarSplit'],
+  ['piutang', 'metodePiutang'],
 ];
 
 function isPc(): boolean {
@@ -54,9 +80,19 @@ function isPc(): boolean {
 }
 
 function rowLabel(row: SalePayment): string {
-  return row.method === 'dp'
-    ? `${label('metodeDp')} (${label(METHOD_LABELS[row.via ?? 'tunai'])})`
-    : label(METHOD_LABELS[row.method]);
+  if (row.method === 'dp') {
+    return `${label('metodeDp')} (${label(METHOD_LABELS[row.via ?? 'tunai'])})`;
+  }
+  const base = label(METHOD_LABELS[row.method]);
+  return row.channel === undefined ? base : `${base} ${row.channel}`;
+}
+
+function methodText(sale: Sale): string {
+  const summary = methodSummary(sale);
+  if (summary.kind === 'split') {
+    return label('caraBayarSplit');
+  }
+  return summary.channel ?? label(METHOD_LABELS[summary.kind]);
 }
 
 export function renderHistory(session: PosSession, go: (path: string) => void): ScreenHandle {
@@ -65,10 +101,14 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   let start = today;
   let end = today;
   let status: StatusFilter = 'semua';
+  let method: MethodFilter = 'semua';
   let query = '';
   let page = 1;
   let selectedNumber: string | undefined;
+  let shownNumber: string | undefined;
+  let receiptsExpanded = false;
   const paneRef: { current: SplitPane | undefined } = { current: undefined };
+  const filterId = nextId('filter-riwayat');
 
   const startInput = el('input', {
     className: 'input pos-history__date',
@@ -81,13 +121,45 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   startInput.value = start;
   endInput.value = end;
   const search = el('input', {
-    className: 'input pos-history__search',
-    attrs: { type: 'search', autocomplete: 'off', 'aria-label': label('cariTransaksi') },
+    className: 'input pos-search__input pos-history__search',
+    attrs: { type: 'search', autocomplete: 'off', 'aria-label': label('cariPenjualan') },
   });
+  const filterButton = el(
+    'button',
+    {
+      className: 'pos-scan pos-history__filterbtn',
+      attrs: {
+        type: 'button',
+        'aria-label': label('filter'),
+        'aria-expanded': 'false',
+        'aria-controls': filterId,
+      },
+    },
+    icon('funnel'),
+  );
   const rangeError = el('p', { className: 'pos-history__error', attrs: { role: 'alert' } });
+  const methodBox = el('div', {
+    className: 'pos-history__methods',
+    attrs: { role: 'group', 'aria-label': label('kolomMetode') },
+  });
   const chipBox = el('div', {
     className: 'pos-history__chips',
     attrs: { role: 'group', 'aria-label': label('kolomStatus') },
+  });
+  const filterPanel = el(
+    'div',
+    { className: 'pos-history__filterpanel', attrs: { id: filterId } },
+    el('div', { className: 'pos-history__dates' }, startInput, endInput),
+    rangeError,
+    el('p', { className: 't-label', text: label('kolomMetode') }),
+    methodBox,
+    el('p', { className: 't-label', text: label('kolomStatus') }),
+    chipBox,
+  );
+  filterPanel.hidden = true;
+  filterButton.addEventListener('click', () => {
+    filterPanel.hidden = !filterPanel.hidden;
+    filterButton.setAttribute('aria-expanded', filterPanel.hidden ? 'false' : 'true');
   });
   const listBox = el('div', { className: 'pos-history__list' });
   const pager = el('div', { className: 'pos-history__pager' });
@@ -103,6 +175,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         start,
         end,
         status,
+        method,
         query,
         onlyDevice: online ? undefined : new Set(state.deviceSales),
       },
@@ -112,25 +185,39 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   const selected = (rows: readonly Sale[]): Sale | undefined =>
     rows.find((sale) => sale.number === selectedNumber) ?? rows[0];
 
+  const chips = <T extends string>(
+    items: readonly (readonly [T, LabelKey])[],
+    current: T,
+    onPick: (value: T) => void,
+  ): HTMLElement[] =>
+    items.map(([value, key]) => {
+      const chip = el('button', {
+        className: 'chip',
+        text: label(key),
+        attrs: { type: 'button', 'aria-pressed': value === current ? 'true' : 'false' },
+      });
+      chip.addEventListener('click', () => {
+        onPick(value);
+        page = 1;
+        render();
+      });
+      return chip;
+    });
+
   const renderChips = (): void => {
     chipBox.replaceChildren(
-      ...STATUS_CHIPS.map(([value, key]) => {
-        const chip = el('button', {
-          className: 'chip',
-          text: label(key),
-          attrs: { type: 'button', 'aria-pressed': value === status ? 'true' : 'false' },
-        });
-        chip.addEventListener('click', () => {
-          status = value;
-          page = 1;
-          render();
-        });
-        return chip;
+      ...chips(STATUS_CHIPS, status, (value) => {
+        status = value;
+      }),
+    );
+    methodBox.replaceChildren(
+      ...chips(METHOD_CHIPS, method, (value) => {
+        method = value;
       }),
     );
   };
 
-  const renderList = (rows: readonly Sale[], current: Sale | undefined): void => {
+  const renderList = (rows: readonly Sale[]): void => {
     if (rows.length === 0) {
       listBox.replaceChildren(createEmptyState({ icon: 'inbox', title: label('riwayatKosong') }));
       pager.replaceChildren();
@@ -154,16 +241,21 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
             { className: 'pos-history__items' },
             ...group.sales.map((sale) => {
               const pending = isPending(sale, queue);
-              const key = paymentKeyOf(sale);
+              const kind = methodSummary(sale).kind;
               const pick = el(
                 'button',
                 {
                   className: 'pos-history__item',
                   attrs: {
                     type: 'button',
-                    'aria-pressed': sale.number === current?.number ? 'true' : 'false',
+                    'aria-pressed': sale.number === selectedNumber ? 'true' : 'false',
                   },
                 },
+                el(
+                  'span',
+                  { className: 'pos-history__icon', attrs: { 'aria-hidden': 'true' } },
+                  icon(METHOD_ICONS[kind]),
+                ),
                 el('strong', { className: 'pos-history__no', text: sale.number }),
                 el('span', {
                   className: 'pos-history__time t-label',
@@ -182,7 +274,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
                 }),
                 el('span', {
                   className: 'pos-history__meta t-label',
-                  text: `${key === 'split' ? label('caraBayarSplit') : label(METHOD_LABELS[key])} · ${session.userName(sale.cashierId)}`,
+                  text: `${methodText(sale)} · ${session.userName(sale.cashierId)}`,
                 }),
                 isUnsynced(sale, queue)
                   ? el('span', {
@@ -231,19 +323,37 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   const renderDetail = (sale: Sale | undefined): void => {
     if (sale === undefined) {
       detail.replaceChildren();
+      shownNumber = undefined;
       return;
+    }
+    if (sale.number !== shownNumber) {
+      shownNumber = sale.number;
+      receiptsExpanded = false;
     }
     const role = session.store.getState().role;
     const at = new Date(sale.createdAt);
     const customer = session.store
       .getState()
       .data.customers.find((item) => item.id === sale.customerId);
-    const row = (name: string, value: string): HTMLElement =>
+    const cashier = session.store.getState().data.users.find((item) => item.id === sale.cashierId);
+    const iconRow = (iconName: IconName, name: string, value: string): HTMLElement =>
       el(
         'p',
         { className: 'pos-history__row' },
+        el(
+          'span',
+          { className: 'pos-history__rowicon', attrs: { 'aria-hidden': 'true' } },
+          icon(iconName),
+        ),
         el('span', { className: 't-label', text: name }),
-        el('span', { text: value }),
+        el('span', { className: 'pos-history__value', text: value }),
+      );
+    const row = (name: string, value: string): HTMLElement =>
+      el(
+        'p',
+        { className: 'pos-history__row pos-history__row--plain' },
+        el('span', { className: 't-label', text: name }),
+        el('span', { className: 'pos-history__value', text: value }),
       );
     const figure = (name: string, value: number): HTMLElement =>
       el(
@@ -320,14 +430,38 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
       .filter((item) => item.method !== 'piutang')
       .reduce((sum, item) => sum + item.amount, 0);
     const owed = receivableInfo(sale);
+    const receipts = visibleReceipts(payRows, receiptsExpanded);
+    const moreButton =
+      receipts.extra === 0
+        ? false
+        : el('button', {
+            className: 'pos-history__more',
+            text: receiptsExpanded
+              ? label('sembunyikanPenerimaan')
+              : label('penerimaanLainnya', { jumlah: receipts.extra }),
+            attrs: { type: 'button', 'aria-expanded': receiptsExpanded ? 'true' : 'false' },
+          });
+    if (moreButton !== false) {
+      moreButton.addEventListener('click', () => {
+        receiptsExpanded = !receiptsExpanded;
+        renderDetail(sale);
+        detail.querySelector<HTMLElement>('.pos-history__more')?.focus();
+      });
+    }
+    const breakdown = saleBreakdown(sale);
+    const roleText = cashier === undefined ? '' : label(ROLE_LABELS[cashier.role]);
+    const enteredBy =
+      roleText === ''
+        ? label('diinputOleh', { nama: session.userName(sale.cashierId) })
+        : label('diinputOlehPeran', { nama: session.userName(sale.cashierId), peran: roleText });
     detail.replaceChildren();
     append(detail, [
       actions,
       el('h2', { className: 't-section-title', text: label('infoPenjualan') }),
-      row(label('nomorPenjualan'), sale.number),
-      row(label('tanggalPenjualan'), `${formatDate(at)} ${formatTime(at)}`),
-      row(label('namaPelanggan'), session.customerName(sale.customerId)),
-      row(label('dibuatOleh'), session.userName(sale.cashierId)),
+      iconRow('file-text', label('nomorPenjualan'), sale.number),
+      iconRow('calendar', label('tanggalPenjualan'), `${formatDate(at)} ${formatTime(at)}`),
+      iconRow('users', label('namaPelanggan'), session.customerName(sale.customerId)),
+      iconRow('user-round', label('dibuatOleh'), session.userName(sale.cashierId)),
       el('h2', { className: 't-section-title', text: label('infoPenerimaan') }),
       el(
         'div',
@@ -340,7 +474,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
       el(
         'ul',
         { className: 'pos-history__pay' },
-        ...payRows.map((item) =>
+        ...receipts.shown.map((item) =>
           el(
             'li',
             {},
@@ -349,6 +483,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
           ),
         ),
       ),
+      moreButton,
       owed === undefined
         ? false
         : el(
@@ -363,33 +498,58 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
             row(label('sisaTagihan'), formatRupiah(owed.sisa)),
           ),
       el('h2', { className: 't-section-title', text: label('barangJasa') }),
+      el('p', {
+        className: 'pos-history__sub t-label',
+        text: label('pesananJumlah', { jumlah: sale.lines.length }),
+      }),
       el(
         'ul',
         {
           className: 'pos-bills__lines pos-history__lines',
           attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
         },
-        ...sale.lines.map((line) =>
-          el(
+        ...sale.lines.map((line) => {
+          const product = session.product(line.productId);
+          return el(
             'li',
             {},
-            el('strong', { text: session.product(line.productId)?.name ?? line.productId }),
-            el('span', {
-              className: 't-label',
-              text: `${formatDecimal(line.quantity)} ${line.unit} x ${formatRupiah(line.unitPrice)}`,
-            }),
-            el('span', {
-              className: 't-label',
-              text: label('diinputOleh', { nama: session.userName(sale.cashierId) }),
-            }),
+            product === undefined
+              ? el('span', { className: 'pos-photo pos-photo--sm' })
+              : createProductThumb(product, 'sm'),
+            el(
+              'span',
+              { className: 'pos-history__linebody' },
+              el('strong', { text: product?.name ?? line.productId }),
+              el('span', {
+                className: 't-label',
+                text: `${formatDecimal(line.quantity)} ${line.unit} x ${formatRupiah(line.unitPrice)}`,
+              }),
+              el('span', { className: 't-label', text: enteredBy }),
+            ),
             el('output', {
               className: 'is-end',
               text: formatRupiah(Math.round(line.quantity * line.unitPrice)),
             }),
-          ),
+          );
+        }),
+      ),
+      el(
+        'div',
+        { className: 'pos-history__totals' },
+        row(label('kolomSubtotal'), formatRupiah(breakdown.subtotal)),
+        breakdown.discount > 0
+          ? row(label('diskon'), `-${formatRupiah(breakdown.discount)}`)
+          : false,
+        el(
+          'p',
+          { className: 'pos-history__row pos-history__row--grand' },
+          el('span', { text: label('grandTotal') }),
+          el('output', {
+            className: 'pos-history__value',
+            text: formatRupiah(breakdown.grandTotal),
+          }),
         ),
       ),
-      row(label('kolomTotal'), formatRupiah(sale.total)),
     ]);
   };
 
@@ -398,7 +558,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     renderChips();
     const rows = results();
     const current = selected(rows);
-    renderList(rows, current);
+    renderList(rows);
     renderDetail(current);
   };
 
@@ -458,10 +618,16 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     { className: 'pos-history__main' },
     el(
       'div',
-      { className: 'pos-history__filters' },
-      startInput,
-      endInput,
-      search,
+      { className: 'pos-history__top' },
+      el('div', { className: 'pos-search' }, icon('search'), search),
+      filterButton,
+    ),
+    filterPanel,
+    listBox,
+    el(
+      'div',
+      { className: 'pos-history__footer' },
+      pager,
       createButton({
         text: label('kembaliKeJual'),
         variant: 'secondary',
@@ -470,10 +636,6 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         },
       }),
     ),
-    rangeError,
-    chipBox,
-    listBox,
-    pager,
   );
   const pane = createSplitPane({
     list: listSection,

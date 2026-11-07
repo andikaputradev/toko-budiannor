@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { chooseCustomer, loginPos, loginPosRaw, settle } from './helpers/routes';
+import { chooseCustomer, loginPos, loginPosRaw, sellFirstProduct, settle } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -16,6 +16,29 @@ async function horizontalOverflow(page: Page): Promise<number> {
   return page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
+}
+
+// Kontrol POS yang bersinggungan dengan peluncur Panel Simulasi tidak dapat diketuk pengguna.
+async function controlsUnderLauncher(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const launcher = document.querySelector('.sim__launcher');
+    if (launcher === null) {
+      return [];
+    }
+    const box = launcher.getBoundingClientRect();
+    return [...document.querySelectorAll('.pos main button, .pos main input, .pos main a')]
+      .filter((node) => {
+        const rect = node.getBoundingClientRect();
+        const visible = rect.width > 0 && rect.height > 0;
+        const overlaps =
+          rect.right > box.left &&
+          rect.left < box.right &&
+          rect.bottom > box.top &&
+          rect.top < box.bottom;
+        return visible && overlaps;
+      })
+      .map((node) => (node.textContent.trim() || node.className).slice(0, 30));
+  });
 }
 
 async function openHistory(page: Page): Promise<void> {
@@ -72,6 +95,16 @@ test.describe('ponsel 360 x 800', () => {
 test.describe('tablet potret 768 x 1024', () => {
   test.use({ viewport: { width: 768, height: 1024 } });
 
+  test('Panel Simulasi tidak menutupi kontrol di layar jual dan riwayat pada 768 px', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    expect(await controlsUnderLauncher(page), 'jual').toEqual([]);
+    await openHistory(page);
+    await page.getByRole('button', { name: 'Filter' }).click();
+    expect(await controlsUnderLauncher(page), 'riwayat').toEqual([]);
+  });
+
   test('login tidak punya scroll horizontal pada 768 px', async ({ page }) => {
     await page.goto('/#/pos');
     await expect(page.getByRole('radio', { name: /Dewi/ })).toBeVisible();
@@ -81,6 +114,38 @@ test.describe('tablet potret 768 x 1024', () => {
 
 test.describe('tablet lanskap 1280 x 800', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('riwayat pada 360 px dengan transaksi Bu Sherly Tjoandra tidak meluap atau terpotong', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await chooseCustomer(page, 'Bu Sherly');
+    await sellFirstProduct(page);
+    await page.setViewportSize({ width: 360, height: 800 });
+    await openHistory(page);
+    await page.getByRole('searchbox', { name: 'Cari Penjualan' }).fill('Sherly');
+    const row = page.locator('.pos-history__item').first();
+    await expect(row).toContainText('Bu Sherly Tjoandra');
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const clipped = await page
+      .locator('.pos-history__item')
+      .evaluateAll((rows) => rows.filter((node) => node.scrollWidth > node.clientWidth + 1).length);
+    expect(clipped).toBe(0);
+    await row.click();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const detailClipped = await page
+      .locator('.pos-history__detail')
+      .evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(detailClipped).toBeLessThanOrEqual(1);
+  });
+
+  test('Panel Simulasi tidak menutupi kontrol di layar jual dan riwayat', async ({ page }) => {
+    await loginPos(page);
+    expect(await controlsUnderLauncher(page), 'jual').toEqual([]);
+    await openHistory(page);
+    await page.getByRole('button', { name: 'Filter' }).click();
+    expect(await controlsUnderLauncher(page), 'riwayat').toEqual([]);
+  });
 
   test('riwayat: daftar dan detail berdampingan tanpa tombol Kembali', async ({ page }) => {
     await loginPos(page);
