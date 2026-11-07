@@ -94,6 +94,7 @@ export function openReturnDone(
               customerName: session.customerName(sale?.customerId),
               phone: customer?.phone ?? '',
               sentLabel: 'buktiReturTerkirimWa',
+              sentEmailLabel: 'buktiReturTerkirimEmail',
             });
           },
         }),

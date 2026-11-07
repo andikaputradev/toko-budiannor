@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_DUE_DAYS,
   isRangeValid,
+  isValidEmail,
   isValidPhone,
   normalizePhone,
   parseDueDays,
@@ -45,5 +46,30 @@ describe('validasi formulir POS', () => {
     expect(parseRupiahInput('Rp 1.337.000')).toBe(1337000);
     expect(parseRupiahInput('')).toBe(0);
     expect(parseRupiahInput('9'.repeat(20))).toBe(999999999999);
+  });
+
+  it('isValidEmail menerima alamat umum, termasuk titik dan tanda plus pada bagian nama', () => {
+    expect(isValidEmail('budi@toko.co.id')).toBe(true);
+    expect(isValidEmail('a.b+c@mail.example.com')).toBe(true);
+    expect(isValidEmail('  kasir@toko-budiannor.id  ')).toBe(true);
+  });
+
+  it('isValidEmail menolak kosong, tanpa @, tanpa domain bertitik, spasi, titik ganda, dan dua @', () => {
+    for (const bad of [
+      '',
+      '   ',
+      'budi',
+      'budi@',
+      '@toko.com',
+      'budi@toko',
+      'budi @toko.com',
+      'budi@toko..com',
+      '.budi@toko.com',
+      'budi@toko.c',
+      'a@b@c.com',
+    ]) {
+      expect(isValidEmail(bad), bad).toBe(false);
+    }
+    expect(isValidEmail(`${'a'.repeat(250)}@toko.com`)).toBe(false);
   });
 });

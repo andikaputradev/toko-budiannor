@@ -157,6 +157,26 @@
   gap: var(--primitive-space-3);
 }
 
+.pos-share__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--primitive-space-2);
+  align-items: end;
+}
+
+.pos-share__icon {
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  color: var(--color-text-secondary);
+}
+
+.pos-share__row .btn {
+  min-width: 96px;
+  height: var(--size-touch-target-min);
+}
+
 .pos-share__summary {
   display: flex;
   flex-direction: column;

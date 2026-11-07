@@ -18,6 +18,16 @@ export function isValidPhone(raw: string): boolean {
   return digits >= 9 && digits <= 14;
 }
 
+// Pola sederhana: bagian nama dan domain dipisah satu @, tiap bagian berupa label bertitik tanpa
+// titik di awal, akhir, atau ganda; domain minimal dua label dengan label terakhir 2 huruf atau lebih.
+const EMAIL_PATTERN = /^[^\s@.]+(\.[^\s@.]+)*@[^\s@.]+(\.[^\s@.]+)*\.[^\s@.]{2,}$/;
+const MAX_EMAIL_LENGTH = 254;
+
+export function isValidEmail(raw: string): boolean {
+  const value = raw.trim();
+  return value.length <= MAX_EMAIL_LENGTH && EMAIL_PATTERN.test(value);
+}
+
 export function isRangeValid(start: string, end: string): boolean {
   return start === '' || end === '' || start <= end;
 }

@@ -6,7 +6,7 @@ export interface TextFieldOptions {
   readonly value?: string;
   readonly error?: string;
   readonly disabled?: boolean;
-  readonly inputMode?: 'text' | 'numeric' | 'decimal';
+  readonly inputMode?: 'text' | 'numeric' | 'decimal' | 'email';
 }
 
 export interface TextField {

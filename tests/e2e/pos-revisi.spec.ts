@@ -507,7 +507,7 @@ test.describe('pembayaran berhasil', () => {
     await dialog.getByRole('button', { name: 'Kirim WA' }).click();
     const share = page.getByRole('dialog', { name: 'Kirim Struk' });
     await expect(share.getByLabel('Nomor WhatsApp')).toHaveValue('');
-    await share.getByRole('button', { name: 'Kirim', exact: true }).click();
+    await share.getByRole('button', { name: 'Kirim lewat WhatsApp' }).click();
     await expect(
       share.getByText('Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.'),
     ).toBeVisible();
@@ -519,7 +519,7 @@ test.describe('pembayaran berhasil', () => {
     await dialog.getByRole('button', { name: 'Kirim WA' }).click();
     const share = page.getByRole('dialog', { name: 'Kirim Struk' });
     await expect(share.getByLabel('Nomor WhatsApp')).toHaveValue('');
-    await share.getByRole('button', { name: 'Kirim', exact: true }).click();
+    await share.getByRole('button', { name: 'Kirim lewat WhatsApp' }).click();
     await expect(
       share.getByText('Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.'),
     ).toBeVisible();
@@ -534,7 +534,7 @@ test.describe('pembayaran berhasil', () => {
     await expect(share.getByLabel('Nomor WhatsApp')).toHaveValue('0811230988');
     const requests: string[] = [];
     page.on('request', (request) => requests.push(request.url()));
-    await share.getByRole('button', { name: 'Kirim', exact: true }).click();
+    await share.getByRole('button', { name: 'Kirim lewat WhatsApp' }).click();
     await expect(page.getByText('Struk dikirim lewat WhatsApp (simulasi).')).toBeVisible();
     await expect(share).toBeHidden();
     expect(requests).toEqual([]);

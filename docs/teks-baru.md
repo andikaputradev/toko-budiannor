@@ -861,3 +861,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-851: "Gelap". Kunci modeGelap.
 - TB-852: "Tutup Pesanan". Kunci tutupPesanan.
 - TB-853: "Kanal tidak sah untuk metode ini.". Kunci kanalTidakSah.
+- TB-854: "Struk dikirim lewat email (simulasi).". Kunci strukTerkirimEmail.
+- TB-855: "Bukti retur dikirim lewat email (simulasi).". Kunci buktiReturTerkirimEmail.
+- TB-856: "Alamat Email". Kunci alamatEmail.
+- TB-857: "Alamat email tidak sah.". Kunci emailSalah.
+- TB-858: "Kirim lewat WhatsApp". Kunci kirimLewatWhatsapp.
+- TB-859: "Kirim lewat email". Kunci kirimLewatEmail.

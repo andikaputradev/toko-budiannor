@@ -166,3 +166,52 @@ test.describe('Retur untuk Kasir', () => {
     await expect(page.getByRole('dialog', { name: 'Retur Berhasil' })).toBeVisible();
   });
 });
+
+test.describe('Kirim Struk', () => {
+  async function openShare(page: Page) {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Pembayaran Berhasil' });
+    await done.getByRole('button', { name: 'Kirim WA' }).click();
+    return page.getByRole('dialog', { name: 'Kirim Struk' });
+  }
+
+  test('memiliki baris WA dan baris email masing-masing dengan tombol Kirim', async ({ page }) => {
+    const share = await openShare(page);
+    await expect(share.getByLabel('Nomor WhatsApp')).toBeVisible();
+    await expect(share.getByLabel('Alamat Email')).toBeVisible();
+    await expect(share.getByRole('button', { name: 'Kirim lewat WhatsApp' })).toBeVisible();
+    await expect(share.getByRole('button', { name: 'Kirim lewat email' })).toBeVisible();
+  });
+
+  test('email salah menampilkan galat tanpa menutup modal', async ({ page }) => {
+    const share = await openShare(page);
+    await share.getByLabel('Alamat Email').fill('budi@toko');
+    await share.getByRole('button', { name: 'Kirim lewat email' }).click();
+    await expect(share.getByText('Alamat email tidak sah.')).toBeVisible();
+    await expect(share).toBeVisible();
+  });
+
+  test('email benar menampilkan toast terkirim tanpa permintaan jaringan', async ({ page }) => {
+    const share = await openShare(page);
+    const requests: string[] = [];
+    page.on('request', (request) => requests.push(request.url()));
+    await share.getByLabel('Alamat Email').fill('budi@toko.co.id');
+    await share.getByRole('button', { name: 'Kirim lewat email' }).click();
+    await expect(page.getByText('Struk dikirim lewat email (simulasi).')).toBeVisible();
+    await expect(share).toBeHidden();
+    expect(requests).toEqual([]);
+  });
+
+  test('WA kosong tetap ditolak dan galatnya tidak memengaruhi baris email', async ({ page }) => {
+    const share = await openShare(page);
+    await share.getByRole('button', { name: 'Kirim lewat WhatsApp' }).click();
+    await expect(
+      share.getByText('Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.'),
+    ).toBeVisible();
+    await expect(share.getByText('Alamat email tidak sah.')).toHaveCount(0);
+  });
+});
