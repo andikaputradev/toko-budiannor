@@ -849,3 +849,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-842: "Kurangi jumlah". Kunci kurangiJumlah.
 - TB-843: "Tambah jumlah". Kunci tambahJumlah.
 - TB-844: "Dibeli {dibeli} {satuan}, sisa {sisa}". Kunci dibeliSisa.
+
+## Revisi POS putaran kedua
+
+- TB-845: "Biru". Kunci temaBiru.
+- TB-846: "Hijau". Kunci temaHijau.
+- TB-847: "Ungu". Kunci temaUngu.

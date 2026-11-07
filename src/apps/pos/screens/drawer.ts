@@ -29,7 +29,9 @@ const THEME_LABELS: Readonly<Record<PosTheme, LabelKey>> = {
   oranye: 'temaOranye',
   terakota: 'temaTerakota',
   teal: 'temaTeal',
-  gelap: 'temaGelap',
+  biru: 'temaBiru',
+  hijau: 'temaHijau',
+  ungu: 'temaUngu',
 };
 
 export function openDrawer(session: PosSession, go: (path: string) => void): void {
