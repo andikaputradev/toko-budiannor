@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos, settle } from './helpers/routes';
+import { finishPaymentDialog, loginPos, openDrawerItem, settle } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const THEME_KEY = 'toko-budiannor-tema-pos';
@@ -144,5 +144,25 @@ test.describe('foto kartu barang', () => {
       'src',
       /produk\/semen-gresik-40kg\.webp$/,
     );
+  });
+});
+
+test.describe('Retur untuk Kasir', () => {
+  test('Kasir melakukan Retur dari riwayat sampai Retur Berhasil', async ({ page }) => {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: /Retur Penjualan/ });
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Retur Berhasil' })).toBeVisible();
   });
 });

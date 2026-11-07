@@ -860,3 +860,4 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-850: "Terang". Kunci modeTerang.
 - TB-851: "Gelap". Kunci modeGelap.
 - TB-852: "Tutup Pesanan". Kunci tutupPesanan.
+- TB-853: "Kanal tidak sah untuk metode ini.". Kunci kanalTidakSah.

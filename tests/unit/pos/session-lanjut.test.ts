@@ -244,8 +244,8 @@ describe('retur penjualan', () => {
     return { session, store, sale, index };
   }
 
-  it('melarang Kasir meretur', () => {
-    const { session } = setup('U-3');
+  it('melarang Frontliner meretur', () => {
+    const { session } = setup('U-5');
     expect(session.returnSale('T-000101', [{ index: 0, quantity: 1 }], 'rusak')).toMatchObject({
       messageId: 'MSG-003',
     });

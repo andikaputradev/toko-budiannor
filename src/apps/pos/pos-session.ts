@@ -48,6 +48,7 @@ import {
   type PaymentRow,
   type PaymentSummary,
 } from './domain/payment';
+import { isValidChannel } from './domain/channels';
 import {
   checkPin,
   INITIAL_GUARD,
@@ -92,7 +93,13 @@ export interface ReturnRecord {
   readonly value: number;
   readonly lines: readonly { readonly index: number; readonly quantity: number }[];
   readonly reasonKind?: ReturReason | undefined;
-  readonly refund?: { readonly method: RefundMethod; readonly amount: number } | undefined;
+  readonly refund?:
+    | {
+        readonly method: RefundMethod;
+        readonly amount: number;
+        readonly channel?: string | undefined;
+      }
+    | undefined;
   readonly photoName?: string | undefined;
 }
 
@@ -458,6 +465,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     const value = itemsValue(sale, input.items);
     const refund = input.refund;
     if (refund !== undefined) {
+      if (!isValidChannel(refund.method, refund.channel)) {
+        return failLabel('kanalTidakSah');
+      }
       const check = validateRefundAmount(refund.amount, value);
       if (check === 'not-positive') {
         return fail('MSG-029');

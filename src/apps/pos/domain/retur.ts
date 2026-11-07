@@ -16,7 +16,13 @@ export interface ReturnInput {
   readonly items: readonly { readonly index: number; readonly quantity: number }[];
   readonly reason: ReturReason;
   readonly note: string;
-  readonly refund: { readonly method: RefundMethod; readonly amount: number } | undefined;
+  readonly refund:
+    | {
+        readonly method: RefundMethod;
+        readonly amount: number;
+        readonly channel?: string | undefined;
+      }
+    | undefined;
   readonly photoName?: string | undefined;
 }
 

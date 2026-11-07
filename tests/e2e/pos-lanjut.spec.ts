@@ -187,12 +187,12 @@ test.describe('POS-05 sampai POS-10', () => {
     await expect(page.getByRole('dialog', { name: 'Retur Berhasil' })).toBeVisible();
   });
 
-  test('POS-06: Kasir tidak melihat Ajukan Koreksi dan Retur Penjualan', async ({ page }) => {
+  test('POS-06: Kasir melihat Retur tetapi tidak Ajukan Koreksi', async ({ page }) => {
     await login(page, 'Dewi');
     await openDrawerItem(page, 'Riwayat Penjualan');
     await expect(page.getByRole('button', { name: 'Cetak Struk' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Ajukan Koreksi' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Retur', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Retur', exact: true })).toBeVisible();
   });
 
   test('POS-07: biaya kasir dengan validasi persis dan saldo kas', async ({ page }) => {

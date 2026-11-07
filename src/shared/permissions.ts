@@ -84,7 +84,7 @@ export const PERMISSION_ROWS: readonly (readonly [string, string, string])[] = [
   ['BO-09', 'Koreksi Transaksi (Otorisasi Owner)', 'YAT'],
   ['BO-09', 'Hapus Transaksi', 'TTT'],
   ['BO-10', 'Cari', 'YYT'],
-  ['BO-10', 'Simpan Retur', 'YYT'],
+  ['BO-10', 'Simpan Retur', 'YYY'],
   ['BO-10', 'Batal', 'YYT'],
   ['BO-11', 'Tambah Pelanggan', 'YYT'],
   ['BO-11', 'Catat Pembayaran Piutang', 'YYT'],

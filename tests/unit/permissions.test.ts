@@ -61,11 +61,13 @@ describe('matriks hak akses Lampiran B', () => {
     expect(accessFor('supervisor', 'BO-17', 'Tab laporan')).toBe('tidak');
   });
 
-  it('menolak seluruh aksi Back-Office bagi Kasir kecuali menampilkan kata sandi', () => {
+  it('menolak seluruh aksi Back-Office bagi Kasir kecuali menampilkan kata sandi dan Simpan Retur', () => {
     const boRules = PERMISSION_RULES.filter((rule) => rule.screen.startsWith('BO-'));
     for (const rule of boRules) {
-      const expected = rule.screen === 'BO-01' && rule.action === 'Tampilkan' ? 'ya' : 'tidak';
-      expect(rule.kasir).toBe(expected);
+      const allowed =
+        (rule.screen === 'BO-01' && rule.action === 'Tampilkan') ||
+        (rule.screen === 'BO-10' && rule.action === 'Simpan Retur');
+      expect(rule.kasir, `${rule.screen} ${rule.action}`).toBe(allowed ? 'ya' : 'tidak');
     }
   });
 
@@ -84,6 +86,20 @@ describe('matriks hak akses Lampiran B', () => {
     expect(canOpenScreen('supervisor', 'BO-21')).toBe(true);
     expect(canOpenScreen('owner', 'OWN-05')).toBe(true);
     expect(canOpenScreen('owner', 'TIDAK-ADA')).toBe(false);
+  });
+});
+
+describe('hak Retur (perubahan atas proposal, keputusan pemilik proyek 7 November 2026)', () => {
+  it('Owner, Supervisor, dan Kasir boleh Simpan Retur; Frontliner dan Sales tidak', () => {
+    expect(accessFor('owner', 'BO-10', 'Simpan Retur')).toBe('ya');
+    expect(accessFor('supervisor', 'BO-10', 'Simpan Retur')).toBe('ya');
+    expect(accessFor('kasir', 'BO-10', 'Simpan Retur')).toBe('ya');
+    expect(accessFor('frontliner', 'BO-10', 'Simpan Retur')).toBe('tidak');
+    expect(accessFor('sales', 'BO-10', 'Simpan Retur')).toBe('tidak');
+  });
+
+  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur', () => {
+    expect(PERMISSION_RULES).toHaveLength(148);
   });
 });
 

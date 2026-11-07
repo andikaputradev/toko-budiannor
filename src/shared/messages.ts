@@ -526,6 +526,7 @@ export const labels = {
   nomorWhatsapp: 'Nomor WhatsApp',
   strukTerkirimWa: 'Struk dikirim lewat WhatsApp (simulasi).',
   nominalMelebihi: 'Jumlah dikembalikan melebihi nilai barang.',
+  kanalTidakSah: 'Kanal tidak sah untuk metode ini.',
   alasanBarang: 'Pengembalian Barang',
   alasanBatal: 'Pembatalan Transaksi',
   alasanSalahBayar: 'Kesalahan Pembayaran',

@@ -257,8 +257,8 @@ describe('sesi: returnItems', () => {
     ).toMatchObject({ ok: false, messageId: 'MSG-085' });
   });
 
-  it('Kasir tidak berhak meretur (MSG-003)', () => {
-    const { session } = setup('U-3');
+  it('Frontliner tetap tidak berhak meretur (MSG-003)', () => {
+    const { session } = setup('U-5');
     expect(
       session.returnItems('T-000101', {
         items: [{ index: 0, quantity: 1 }],
@@ -267,6 +267,76 @@ describe('sesi: returnItems', () => {
         refund: undefined,
       }),
     ).toMatchObject({ ok: false, messageId: 'MSG-003' });
+  });
+
+  it('Kasir boleh menyimpan retur', () => {
+    const { session } = setup('U-3');
+    const sale = sellThree(session);
+    const result = session.returnItems(sale.number, {
+      items: [{ index: 0, quantity: 1 }],
+      reason: 'barang',
+      note: '',
+      refund: { method: 'tunai', amount: 70000 },
+    });
+    expect(result).toMatchObject({ ok: true, value: 70000 });
+    expect(session.state().returns).toHaveLength(1);
+  });
+
+  it('retur tunai oleh Kasir tetap memerlukan shift dan saldo laci cukup', () => {
+    const store = createStore({ dataset });
+    store.setUser('U-3');
+    const noShift = createPosSession(store, { clock: () => 1_000_000 });
+    const sale = sellThree(noShift, 'qris');
+    expect(
+      noShift.returnItems(sale.number, {
+        items: [{ index: 0, quantity: 1 }],
+        reason: 'barang',
+        note: '',
+        refund: { method: 'tunai', amount: 70000 },
+      }),
+    ).toMatchObject({ ok: false, labelKey: 'butuhShift' });
+    noShift.startShift(0);
+    expect(
+      noShift.returnItems(sale.number, {
+        items: [{ index: 0, quantity: 1 }],
+        reason: 'barang',
+        note: '',
+        refund: { method: 'tunai', amount: 70000 },
+      }),
+    ).toMatchObject({ ok: false, messageId: 'MSG-041' });
+  });
+
+  it('kanal pengembalian hanya sah untuk QRIS dan Transfer', () => {
+    const { session } = setup('U-3');
+    const sale = sellThree(session, 'qris');
+    const attempt = (method: 'tunai' | 'qris' | 'edc' | 'transfer', channel: string) =>
+      session.returnItems(sale.number, {
+        items: [{ index: 0, quantity: 1 }],
+        reason: 'barang',
+        note: '',
+        refund: { method, amount: 70000, channel },
+      });
+    expect(attempt('transfer', 'OVO')).toMatchObject({ ok: false, labelKey: 'kanalTidakSah' });
+    expect(attempt('tunai', 'BCA')).toMatchObject({ ok: false, labelKey: 'kanalTidakSah' });
+    expect(attempt('edc', 'Gopay')).toMatchObject({ ok: false, labelKey: 'kanalTidakSah' });
+    expect(session.state().returns).toHaveLength(0);
+    expect(attempt('transfer', 'BCA')).toMatchObject({ ok: true });
+  });
+
+  it('retur mencatat kanal pada ReturnRecord.refund', () => {
+    const { session } = setup('U-3');
+    const sale = sellThree(session, 'qris');
+    session.returnItems(sale.number, {
+      items: [{ index: 0, quantity: 1 }],
+      reason: 'barang',
+      note: '',
+      refund: { method: 'qris', amount: 70000, channel: 'Gopay' },
+    });
+    expect(session.state().returns[0]?.refund).toEqual({
+      method: 'qris',
+      amount: 70000,
+      channel: 'Gopay',
+    });
   });
 
   it('transaksi bawaan lama tanpa payments dapat diretur dengan cara kembali pilihan', () => {

@@ -240,3 +240,11 @@ Sumber: `PROPOSAL-KEBUTUHAN-SYSTEM.pdf` (sketsa POS di halaman 3 PDF, Form Data 
 ### Perkakas dan pengujian
 
 - R-15 [Asumsi] `.superpowers` (ruang kerja pelaksana rencana) dikecualikan dari ESLint, Prettier, dan `lint:teks`. Semua login POS di e2e memakai `loginPos` yang juga memulai shift. Uji axe pada layar yang baru berubah menunggu transisi CSS selesai (`settle`) agar warna di tengah transisi tidak terukur.
+
+## 14. Revisi POS putaran kedua
+
+Sumber: PDF `Screenshot 2026-11-07 134637.pdf` (32 halaman, tangkapan layar aplikasi kasir lain, dipakai untuk gaya dan alur saja) dan permintaan pemilik proyek 7 November 2026. Rancangan dan rencana ada di `docs/superpowers/specs/2026-11-07-revisi-pos-2-design.md` dan `docs/superpowers/plans/2026-11-07-revisi-pos-2.md`. Penomoran R2-nn melanjutkan R-nn bagian 13.
+
+### Hak akses
+
+- R2-01 [Perubahan atas proposal, keputusan pemilik proyek] Kasir boleh Retur langsung. Aturan `BO-10 Simpan Retur` berubah dari `YYT` menjadi `YYY` (Owner ya, Supervisor ya, Kasir ya); Frontliner dan Sales tetap tidak. Retur tunai tetap memerlukan shift berjalan dan saldo laci cukup (MSG-041). Jumlah aturan matriks tetap 148.
