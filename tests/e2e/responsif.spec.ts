@@ -19,14 +19,15 @@ async function horizontalOverflow(page: Page): Promise<number> {
 }
 
 // Kontrol POS yang bersinggungan dengan peluncur Panel Simulasi tidak dapat diketuk pengguna.
-async function controlsUnderLauncher(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+async function controlsUnderLauncher(page: Page, scope = '.pos main'): Promise<string[]> {
+  return page.evaluate((root) => {
     const launcher = document.querySelector('.sim__launcher');
     if (launcher === null) {
       return [];
     }
     const box = launcher.getBoundingClientRect();
-    return [...document.querySelectorAll('.pos main button, .pos main input, .pos main a')]
+    const selector = ['button', 'input', 'a'].map((tag) => `${root} ${tag}`).join(', ');
+    return [...document.querySelectorAll(selector)]
       .filter((node) => {
         const rect = node.getBoundingClientRect();
         const visible = rect.width > 0 && rect.height > 0;
@@ -38,7 +39,7 @@ async function controlsUnderLauncher(page: Page): Promise<string[]> {
         return visible && overlaps;
       })
       .map((node) => (node.textContent.trim() || node.className).slice(0, 30));
-  });
+  }, scope);
 }
 
 async function openHistory(page: Page): Promise<void> {
@@ -133,10 +134,57 @@ test.describe('tablet lanskap 1280 x 800', () => {
     expect(clipped).toBe(0);
     await row.click();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const wrapped = await page
+      .locator('.pos-history__figure output')
+      .evaluateAll(
+        (nodes) => nodes.filter((node) => node.getBoundingClientRect().height > 30).length,
+      );
+    expect(wrapped, 'angka kartu penerimaan satu baris').toBe(0);
     const detailClipped = await page
       .locator('.pos-history__detail')
       .evaluate((node) => node.scrollWidth - node.clientWidth);
     expect(detailClipped).toBeLessThanOrEqual(1);
+  });
+
+  test('modal Retur layar penuh pada 360 px dengan tombol Retur menempel di bawah', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await sellFirstProduct(page);
+    await openHistory(page);
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    await page.setViewportSize({ width: 360, height: 800 });
+    const dialog = page.getByRole('dialog', { name: /Retur Penjualan/ });
+    const box = await dialog.boundingBox();
+    expect(box?.x).toBeCloseTo(0, 0);
+    expect(box?.width).toBeCloseTo(360, 0);
+    const retur = dialog.getByRole('button', { name: 'Retur', exact: true });
+    await expect(retur).toBeInViewport({ ratio: 1 });
+    const returBox = await retur.boundingBox();
+    expect((returBox?.x ?? -1) + (returBox?.width ?? 0)).toBeLessThanOrEqual(360);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const name = await dialog.locator('.pos-return__name').first().boundingBox();
+    expect(name?.width ?? 0).toBeGreaterThanOrEqual(150);
+  });
+
+  test('Panel Simulasi tidak menutupi kontrol di jual, riwayat, dan modal Retur pada 360 px', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await sellFirstProduct(page);
+    await page.setViewportSize({ width: 360, height: 800 });
+    expect(await controlsUnderLauncher(page), 'jual').toEqual([]);
+    await openHistory(page);
+    expect(await controlsUnderLauncher(page), 'daftar riwayat').toEqual([]);
+    await page.locator('.pos-history__item').first().click();
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    expect(await controlsUnderLauncher(page, '.modal'), 'modal Retur').toEqual([]);
   });
 
   test('Panel Simulasi tidak menutupi kontrol di layar jual dan riwayat', async ({ page }) => {
@@ -145,6 +193,8 @@ test.describe('tablet lanskap 1280 x 800', () => {
     await openHistory(page);
     await page.getByRole('button', { name: 'Filter' }).click();
     expect(await controlsUnderLauncher(page), 'riwayat').toEqual([]);
+    await page.getByRole('button', { name: 'Menu' }).click();
+    expect(await controlsUnderLauncher(page, '.modal--drawer'), 'menu samping').toEqual([]);
   });
 
   test('riwayat: daftar dan detail berdampingan tanpa tombol Kembali', async ({ page }) => {

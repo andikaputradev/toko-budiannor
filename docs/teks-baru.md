@@ -875,3 +875,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-865: "+ {jumlah} Penerimaan Lainnya". Kunci penerimaanLainnya.
 - TB-866: "Sembunyikan". Kunci sembunyikanPenerimaan.
 - TB-867: "Diinput Oleh: {nama} - {peran}". Kunci diinputOlehPeran.
+- TB-868: "Retur Barang & Jasa". Kunci returBarangJasa.
+- TB-869: "Pilih barang dan jumlah yang dikembalikan pelanggan.". Kunci infoReturBarang.
+- TB-870: "Kanal". Kunci pilihKanal.
+- TB-871: "Umum". Kunci kanalUmum.
+- TB-872: "Tambah foto bukti". Kunci tambahFotoBukti.
+- TB-873: "Total {jumlah}". Kunci totalBarisRetur.

@@ -19,6 +19,11 @@
   justify-self: start;
 }
 
+/* Laci menu memberi lorong yang sama pada semua lebar. */
+.modal--drawer {
+  padding-left: calc(var(--primitive-space-6) + 28px);
+}
+
 /* Lorong kiri selebar tab Panel Simulasi supaya kontrol di tepi kiri tetap dapat diketuk. */
 @media (min-width: 600px) {
   .pos main:not(.pos-login) {
@@ -206,6 +211,11 @@
     height: 100dvh;
     max-height: none;
     padding: var(--primitive-space-4);
+    padding-left: calc(var(--primitive-space-4) + 16px);
     border-radius: 0;
+  }
+
+  .pos main:not(.pos-login) {
+    padding-left: calc(var(--space-screen-margin) + 16px);
   }
 }

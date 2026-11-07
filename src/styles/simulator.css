@@ -27,6 +27,13 @@
   writing-mode: vertical-rl;
 }
 
+@media (max-width: 599px) {
+  .sim__launcher {
+    min-width: 0;
+    padding: var(--primitive-space-3) 2px;
+  }
+}
+
 .sim__body {
   display: flex;
   flex-direction: column;

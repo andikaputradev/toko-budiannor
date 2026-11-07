@@ -43,6 +43,11 @@ function itemsOf(session: PosSession, lines: Sale['lines']): ReceiptItem[] {
   }));
 }
 
+function methodText(method: PaymentMethod, channel: string | undefined): string {
+  const base = label(METHOD_LABELS[method]);
+  return channel === undefined ? base : `${base} ${channel}`;
+}
+
 function paymentsOf(sale: Sale): ReceiptPayment[] {
   if (sale.payments === undefined) {
     const owed = sale.total - sale.paid;
@@ -57,7 +62,7 @@ function paymentsOf(sale: Sale): ReceiptPayment[] {
       method:
         row.method === 'dp'
           ? `${label('metodeDp')} (${label(METHOD_LABELS[row.via ?? 'tunai'])})`
-          : label(METHOD_LABELS[row.method]),
+          : methodText(row.method, row.channel),
       amount: row.amount,
     }));
 }
@@ -115,7 +120,7 @@ export function returnReceipt(
     payments:
       refund === undefined
         ? []
-        : [{ method: label(METHOD_LABELS[refund.method]), amount: refund.amount }],
+        : [{ method: methodText(refund.method, refund.channel), amount: refund.amount }],
     change: 0,
   };
 }

@@ -7,6 +7,8 @@ import { round3 } from '../../../shared/data/units';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { createStepper, type Stepper } from '../../../shared/ui/stepper';
+import { lineSubtotal } from '../domain/bill';
+import { channelsOf } from '../domain/channels';
 import {
   defaultRefundMethod,
   itemsValue,
@@ -17,6 +19,8 @@ import {
 } from '../domain/retur';
 import { failureText } from '../failure';
 import type { PosSession, ReturnRecord } from '../pos-session';
+import { ROLE_LABELS } from '../roles';
+import { createProductThumb } from '../thumb';
 import { openReceiptPreview, returnReceipt } from './receipt-preview';
 import { openShareReceipt } from './share-receipt';
 
@@ -125,6 +129,7 @@ export function openReturnModal(
 ): void {
   let amountTouched = false;
   let method: RefundMethod = defaultRefundMethod(sale);
+  let channel: string | undefined;
   const groupName = nextId('alasan');
   const amountId = nextId('nominal-retur');
   const noteId = nextId('keterangan-retur');
@@ -141,7 +146,16 @@ export function openReturnModal(
   const itemList = el('ul', { className: 'pos-return__items' });
   sale.lines.forEach((line, index) => {
     const room = rooms[index] ?? 0;
-    const name = session.product(line.productId)?.name ?? line.productId;
+    const product = session.product(line.productId);
+    const name = product?.name ?? line.productId;
+    const cashier = session.store.getState().data.users.find((user) => user.id === sale.cashierId);
+    const enteredBy =
+      cashier === undefined
+        ? label('diinputOleh', { nama: session.userName(sale.cashierId) })
+        : label('diinputOlehPeran', {
+            nama: cashier.name,
+            peran: label(ROLE_LABELS[cashier.role]),
+          });
     const box = el('input', {
       attrs: { type: 'checkbox', 'aria-label': name, disabled: room <= 0 && '' },
     });
@@ -166,10 +180,17 @@ export function openReturnModal(
         'li',
         { className: 'pos-return__item' },
         box,
+        product === undefined
+          ? el('span', { className: 'pos-photo pos-photo--sm' })
+          : createProductThumb(product, 'sm'),
         el(
           'span',
           { className: 'pos-return__name' },
           el('strong', { text: name }),
+          el('span', {
+            className: 't-label',
+            text: label('totalBarisRetur', { jumlah: formatRupiah(lineSubtotal(line)) }),
+          }),
           el('span', {
             className: 't-label',
             text: label('dibeliSisa', {
@@ -178,6 +199,7 @@ export function openReturnModal(
               sisa: formatDecimal(Math.max(room, 0)),
             }),
           }),
+          el('span', { className: 't-label', text: enteredBy }),
         ),
         stepper.element,
       ),
@@ -204,6 +226,7 @@ export function openReturnModal(
       variant: 'secondary',
       onClick: () => {
         method = value;
+        channel = undefined;
         paint();
       },
     });
@@ -211,6 +234,32 @@ export function openReturnModal(
     methodButtons.set(value, button);
     methodGroup.append(button);
   }
+  const channelGroup = el('div', {
+    className: 'pos-return__channels',
+    attrs: { role: 'radiogroup', 'aria-label': label('pilihKanal') },
+  });
+  const renderChannels = (): void => {
+    const options = channelsOf(method);
+    const hadFocus = channelGroup.contains(document.activeElement);
+    channelGroup.hidden = options.length === 0;
+    const chips = [undefined, ...options].map((value) => {
+      const chip = createButton({
+        text: value ?? label('kanalUmum'),
+        variant: 'secondary',
+        onClick: () => {
+          channel = value;
+          paint();
+        },
+      });
+      chip.setAttribute('role', 'radio');
+      chip.setAttribute('aria-checked', value === channel ? 'true' : 'false');
+      return chip;
+    });
+    channelGroup.replaceChildren(...chips);
+    if (hadFocus) {
+      chips.find((chip) => chip.getAttribute('aria-checked') === 'true')?.focus();
+    }
+  };
 
   const reasonBoxes = new Map<ReturReason, HTMLInputElement>();
   const reasonGroup = el('div', {
@@ -244,6 +293,22 @@ export function openReturnModal(
     className: 'pos-return__photo',
     attrs: { type: 'file', accept: 'image/*', 'aria-label': label('fotoBuktiRetur') },
   });
+  photo.hidden = true;
+  const photoName = el('span', { className: 't-label pos-return__photoname' });
+  const photoTile = el(
+    'button',
+    {
+      className: 'pos-return__phototile',
+      attrs: { type: 'button', 'aria-label': label('tambahFotoBukti') },
+    },
+    icon('image-plus'),
+  );
+  photoTile.addEventListener('click', () => {
+    photo.click();
+  });
+  photo.addEventListener('change', () => {
+    photoName.textContent = photo.files?.[0]?.name ?? '';
+  });
   const error = el('p', { className: 'pos-return__error', attrs: { role: 'alert' } });
   const totalOutput = el('output', { className: 't-total pos-return__total' });
   const quantityText = el('p', { className: 't-label pos-return__quantity' });
@@ -263,6 +328,7 @@ export function openReturnModal(
     for (const [key, button] of methodButtons) {
       button.setAttribute('aria-checked', key === method ? 'true' : 'false');
     }
+    renderChannels();
     noteField.hidden = chosenReason() !== 'lainnya';
     const enabled = checks.filter((box) => !box.disabled);
     selectAll.checked = enabled.length > 0 && enabled.every((box) => box.checked);
@@ -287,12 +353,18 @@ export function openReturnModal(
     body: el(
       'div',
       { className: 'pos-return' },
+      el('h3', { className: 't-section-title pos-return__title', text: label('returBarangJasa') }),
+      el('p', { className: 't-label pos-return__info', text: label('infoReturBarang') }),
       el(
         'label',
         { className: 'pos-return__all' },
         selectAll,
         el('span', { text: label('pilihSemua') }),
       ),
+      el('h4', {
+        className: 'pos-return__band',
+        text: label('pesananJumlah', { jumlah: sale.lines.length }),
+      }),
       itemList,
       el('h3', { className: 't-section-title', text: label('pembayaranDikembalikan') }),
       el('label', {
@@ -303,11 +375,12 @@ export function openReturnModal(
       amountInput,
       el('h3', { className: 't-section-title', text: label('metodePengembalian') }),
       methodGroup,
+      channelGroup,
       el('h3', { className: 't-section-title', text: label('alasanRetur') }),
       reasonGroup,
       noteField,
       el('h3', { className: 't-section-title', text: label('fotoBuktiRetur') }),
-      photo,
+      el('div', { className: 'pos-return__photobox' }, photoTile, photoName, photo),
       error,
     ),
     actions: [],
@@ -340,7 +413,11 @@ export function openReturnModal(
               items: selection(),
               reason: chosenReason(),
               note: note.value,
-              refund: { method, amount: digitsOf(amountInput.value) },
+              refund: {
+                method,
+                amount: digitsOf(amountInput.value),
+                ...(channel === undefined ? {} : { channel }),
+              },
               photoName: photo.files?.[0]?.name,
             });
             if (!result.ok) {

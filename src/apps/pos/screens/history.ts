@@ -122,7 +122,12 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   endInput.value = end;
   const search = el('input', {
     className: 'input pos-search__input pos-history__search',
-    attrs: { type: 'search', autocomplete: 'off', 'aria-label': label('cariPenjualan') },
+    attrs: {
+      type: 'search',
+      autocomplete: 'off',
+      placeholder: label('cariPenjualan'),
+      'aria-label': label('cariPenjualan'),
+    },
   });
   const filterButton = el(
     'button',

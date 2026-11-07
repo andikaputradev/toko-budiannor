@@ -301,6 +301,20 @@ test.describe('riwayat', () => {
     await expect(detail.getByRole('button', { name: 'Sembunyikan' })).toBeVisible();
   });
 
+  test('daftar barang pada detail tidak terhimpit dan kolom cari punya teks petunjuk', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await sellSplitThree(page);
+    await openHistory(page);
+    const search = page.getByRole('searchbox', { name: 'Cari Penjualan' });
+    await expect(search).toHaveAttribute('placeholder', 'Cari Penjualan');
+    const lines = page.locator('.pos-history__detail .pos-history__lines');
+    const clipped = await lines.evaluate((node) => node.scrollHeight - node.clientHeight);
+    expect(clipped).toBeLessThanOrEqual(1);
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThan(40);
+  });
+
   test('riwayat lolos axe pada mode terang dan gelap', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await loginPos(page);
@@ -312,6 +326,107 @@ test.describe('riwayat', () => {
       await settle(page);
       const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
       expect(result.violations, scheme).toEqual([]);
+    }
+  });
+});
+
+test.describe('modal Retur', () => {
+  async function openReturDialog(page: Page) {
+    await loginPos(page);
+    const card = page.locator('.pos-card__main').first();
+    for (let index = 0; index < 3; index += 1) {
+      await card.click();
+    }
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    return page.getByRole('dialog', { name: /Retur Penjualan/ });
+  }
+
+  test('baris barang menampilkan foto, Total, jumlah dengan satuan, dan Diinput Oleh', async ({
+    page,
+  }) => {
+    const dialog = await openReturDialog(page);
+    await expect(dialog.getByRole('heading', { name: 'Retur Barang & Jasa' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Pesanan (1)' })).toBeVisible();
+    const first = dialog.locator('.pos-return__item').first();
+    await expect(first.locator('img.pos-photo--sm')).toBeVisible();
+    await expect(first).toContainText('Total Rp 210.000');
+    await expect(first).toContainText('Dibeli 3 SAK, sisa 3');
+    await expect(first).toContainText('Diinput Oleh: Dewi - Kasir');
+  });
+
+  test('memilih Transfer menampilkan chip kanal dan kanal tersimpan di bukti retur', async ({
+    page,
+  }) => {
+    const dialog = await openReturDialog(page);
+    const channels = dialog.getByRole('radiogroup', { name: 'Kanal' });
+    await expect(channels).toBeHidden();
+    await dialog.getByRole('radio', { name: 'QRIS' }).click();
+    await expect(channels.getByRole('radio', { name: 'Gopay' })).toBeVisible();
+    await expect(channels.getByRole('radio', { name: 'Umum' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await dialog.getByRole('radio', { name: 'Transfer' }).click();
+    for (const bank of ['BCA', 'BRI', 'Mandiri']) {
+      await expect(channels.getByRole('radio', { name: bank })).toBeVisible();
+    }
+    await expect(channels.getByRole('radio', { name: 'Gopay' })).toHaveCount(0);
+    await channels.getByRole('radio', { name: 'BCA' }).click();
+    await expect(channels.getByRole('radio', { name: 'BCA' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await dialog.getByRole('radio', { name: 'Tunai' }).click();
+    await expect(channels).toBeHidden();
+    await dialog.getByRole('radio', { name: 'Transfer' }).click();
+    await channels.getByRole('radio', { name: 'BCA' }).click();
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Retur Berhasil' });
+    await done.getByRole('button', { name: 'Cetak Bukti Retur' }).click();
+    await expect(page.locator('.pos-receipt')).toContainText('Transfer BCA');
+  });
+
+  test('tile foto bukti menampilkan nama berkas yang dipilih', async ({ page }) => {
+    const dialog = await openReturDialog(page);
+    await expect(dialog.getByRole('button', { name: 'Tambah foto bukti' })).toBeVisible();
+    await dialog.locator('input[type=file]').setInputFiles({
+      name: 'bukti-retur.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('gambar'),
+    });
+    await expect(dialog.getByText('bukti-retur.png')).toBeVisible();
+  });
+
+  test('modal Retur lolos axe dan target 48 px pada mode terang dan gelap', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    const dialog = await openReturDialog(page);
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await dialog.getByRole('radio', { name: 'Transfer' }).click();
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(result.violations, scheme).toEqual([]);
+      const heights = await dialog
+        .locator('button, input:not([type=file]), textarea')
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.getBoundingClientRect().height),
+        );
+      for (const height of heights) {
+        expect(height).toBeGreaterThanOrEqual(47.5);
+      }
     }
   });
 });
