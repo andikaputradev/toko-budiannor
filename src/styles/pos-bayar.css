@@ -107,3 +107,58 @@
 .pos-pay__inline .pos-pay__methods {
   grid-template-columns: repeat(4, minmax(0, 110px));
 }
+
+.modal:has(.pos-done),
+.modal:has(.pos-share) {
+  width: min(480px, 94vw);
+}
+
+.pos-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--primitive-space-2);
+  text-align: center;
+}
+
+.pos-done__mark .icon {
+  width: 56px;
+  height: 56px;
+  color: var(--color-accent-default);
+}
+
+.pos-done__total {
+  display: block;
+}
+
+.pos-done__who,
+.pos-done__change {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.pos-done__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  justify-content: center;
+  margin-top: var(--primitive-space-3);
+}
+
+.pos-done__actions .btn {
+  min-width: 180px;
+  height: 56px;
+}
+
+.pos-share {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.pos-share__summary {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}

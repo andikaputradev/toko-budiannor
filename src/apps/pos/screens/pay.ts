@@ -13,6 +13,7 @@ import { dueDateOf, parseTermDays, TERM_CHOICES } from '../domain/terms';
 import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
+import { openPaymentDone } from './payment-done';
 import type { ScreenHandle } from './login';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
@@ -257,7 +258,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
         return;
       }
       showToast({ kind: 'success', text: label('transaksiTersimpan', { nomor: sale.number }) });
-      go('/pos/jual');
+      openPaymentDone(session, sale, go);
     },
   });
 

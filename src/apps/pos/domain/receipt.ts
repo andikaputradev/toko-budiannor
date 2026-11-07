@@ -1,3 +1,4 @@
+import type { Sale } from '../../../shared/data/types';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 
@@ -30,6 +31,14 @@ export interface ReceiptInput {
   readonly total: number;
   readonly payments: readonly ReceiptPayment[];
   readonly change: number;
+}
+
+// Kembalian = jumlah baris terbayar dikurangi total; 0 untuk penjualan lama tanpa rincian.
+export function changeOf(sale: Sale): number {
+  const paid = (sale.payments ?? [])
+    .filter((row) => row.method !== 'piutang')
+    .reduce((sum, row) => sum + row.amount, 0);
+  return Math.max(0, paid - sale.total);
 }
 
 function center(text: string, width: number): string {

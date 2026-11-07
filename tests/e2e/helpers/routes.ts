@@ -89,6 +89,13 @@ export async function settle(page: Page): Promise<void> {
   );
 }
 
+export async function finishPaymentDialog(page: Page): Promise<void> {
+  await page
+    .getByRole('dialog', { name: 'Pembayaran Berhasil' })
+    .getByRole('button', { name: 'Selesai' })
+    .click();
+}
+
 export async function openOrderMenu(page: Page, item: string): Promise<void> {
   await page.getByRole('button', { name: 'Opsi pesanan' }).click();
   await page.getByRole('menuitem', { name: item }).click();

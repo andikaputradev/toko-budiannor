@@ -8,10 +8,12 @@ import { showToast } from '../../../shared/ui/toast';
 import { lineSubtotal } from '../domain/bill';
 import {
   buildReceipt,
+  changeOf,
   type PaperWidth,
   type ReceiptInput,
   type ReceiptItem,
   type ReceiptKind,
+  type ReceiptPayment,
 } from '../domain/receipt';
 import type { PosSession } from '../pos-session';
 
@@ -40,13 +42,31 @@ function itemsOf(session: PosSession, lines: Sale['lines']): ReceiptItem[] {
   }));
 }
 
+function paymentsOf(sale: Sale): ReceiptPayment[] {
+  if (sale.payments === undefined) {
+    const owed = sale.total - sale.paid;
+    return [
+      ...(sale.paid > 0 ? [{ method: label(METHOD_LABELS[sale.payment]), amount: sale.paid }] : []),
+      ...(owed > 0 ? [{ method: label('metodePiutang'), amount: owed }] : []),
+    ];
+  }
+  return sale.payments
+    .filter((row) => row.amount > 0)
+    .map((row) => ({
+      method:
+        row.method === 'dp'
+          ? `${label('metodeDp')} (${label(METHOD_LABELS[row.via ?? 'tunai'])})`
+          : label(METHOD_LABELS[row.method]),
+      amount: row.amount,
+    }));
+}
+
 export function saleReceipt(
   session: PosSession,
   sale: Sale,
   kind: ReceiptKind,
   width: PaperWidth,
 ): ReceiptInput {
-  const owed = sale.total - sale.paid;
   return {
     kind,
     width,
@@ -56,11 +76,8 @@ export function saleReceipt(
     customer: session.customerName(sale.customerId),
     items: itemsOf(session, sale.lines),
     total: sale.total,
-    payments: [
-      ...(sale.paid > 0 ? [{ method: label(METHOD_LABELS[sale.payment]), amount: sale.paid }] : []),
-      ...(owed > 0 ? [{ method: label('metodePiutang'), amount: owed }] : []),
-    ],
-    change: 0,
+    payments: paymentsOf(sale),
+    change: changeOf(sale),
   };
 }
 

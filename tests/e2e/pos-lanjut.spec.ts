@@ -1,6 +1,11 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared, openDrawerItem, openOrderMenu } from './helpers/routes';
+import {
+  finishPaymentDialog,
+  loginPos as loginPosShared,
+  openDrawerItem,
+  openOrderMenu,
+} from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -114,6 +119,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await page.getByRole('button', { name: 'Uang Pas' }).click();
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+    await finishPaymentDialog(page);
     await expect(page.getByText('Antrean: 4 transaksi.')).toBeVisible();
 
     await page.getByRole('link', { name: /Offline/ }).click();
@@ -249,6 +255,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
     await expect(
       page.getByText('Struk belum tercetak. Periksa printer lalu tekan Cetak Ulang.'),
     ).toBeVisible();

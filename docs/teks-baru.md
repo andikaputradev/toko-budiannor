@@ -804,3 +804,11 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-797: "Hari lainnya". Kunci hariLainnya.
 - TB-798: "DP". Kunci dpLabel.
 - TB-799: "Cara bayar DP". Kunci caraBayarDp.
+- TB-800: "Pembayaran Berhasil". Kunci pembayaranBerhasil.
+- TB-801: "Cetak Struk". Kunci cetakStruk.
+- TB-802: "Kirim WA". Kunci kirimWa.
+- TB-803: "Kirim Struk". Kunci kirimStruk.
+- TB-804: "Kirim". Kunci kirim.
+- TB-805: "Selesai". Kunci selesai.
+- TB-806: "Nomor WhatsApp". Kunci nomorWhatsapp.
+- TB-807: "Struk dikirim lewat WhatsApp (simulasi).". Kunci strukTerkirimWa.

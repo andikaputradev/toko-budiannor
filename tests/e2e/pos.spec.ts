@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared, openOrderMenu } from './helpers/routes';
+import { finishPaymentDialog, loginPos as loginPosShared, openOrderMenu } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -69,6 +69,7 @@ test.describe('POS-01 sampai POS-04', () => {
     const taps = await page.evaluate(() => (window as unknown as { taps: number }).taps);
     expect(taps).toBe(3);
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+    await finishPaymentDialog(page);
     await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
   });
 

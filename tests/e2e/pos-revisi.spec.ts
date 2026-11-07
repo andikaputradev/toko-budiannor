@@ -434,3 +434,118 @@ test.describe('pembayaran', () => {
     }
   });
 });
+
+test.describe('pembayaran berhasil', () => {
+  async function payCash(page: Page, options: { customer?: string; given?: string } = {}) {
+    await loginPos(page);
+    if (options.customer !== undefined) {
+      await chooseCustomer(page, options.customer);
+    }
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    if (options.given === undefined) {
+      await page.getByRole('button', { name: 'Uang Pas' }).click();
+    } else {
+      await page.getByLabel('Jumlah diterima').fill(options.given);
+    }
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Pembayaran Berhasil' });
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+
+  test('tunai lebih Rp 20.000: dialog memuat nomor, total, dan kembalian', async ({ page }) => {
+    const dialog = await payCash(page, { given: '90000' });
+    await expect(dialog).toContainText('T-000141');
+    await expect(dialog).toContainText('Rp 70.000');
+    await expect(dialog).toContainText('Kembalian');
+    await expect(dialog).toContainText('Rp 20.000');
+  });
+
+  test('Cetak Struk membuka pratinjau bernomor transaksi', async ({ page }) => {
+    const dialog = await payCash(page);
+    await dialog.getByRole('button', { name: 'Cetak Struk' }).click();
+    await expect(page.locator('.pos-receipt')).toContainText('T-000141');
+  });
+
+  test('Cetak Struk dengan printer terputus menampilkan pesan MSG-040', async ({ page }) => {
+    const dialog = await payCash(page);
+    await page.getByRole('button', { name: 'Panel Simulasi' }).click();
+    await page.locator('.sim__action', { hasText: 'Printer' }).click();
+    await page.getByRole('button', { name: 'Panel Simulasi' }).click();
+    await dialog.getByRole('button', { name: 'Cetak Struk' }).click();
+    await page
+      .getByRole('dialog', { name: 'Pratinjau Struk' })
+      .getByRole('button', { name: 'Cetak', exact: true })
+      .click();
+    await expect(
+      page.getByText('Struk belum tercetak. Periksa printer lalu coba lagi.'),
+    ).toBeVisible();
+  });
+
+  test('Kirim WA untuk pelanggan tanpa telepon: kolom kosong dan validasi', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    const dialog = await payCash(page, { customer: 'Pak Wahyudi' });
+    await dialog.getByRole('button', { name: 'Kirim WA' }).click();
+    const share = page.getByRole('dialog', { name: 'Kirim Struk' });
+    await expect(share.getByLabel('Nomor WhatsApp')).toHaveValue('');
+    await share.getByRole('button', { name: 'Kirim', exact: true }).click();
+    await expect(
+      share.getByText('Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.'),
+    ).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('Kirim WA untuk Pelanggan Umum juga memvalidasi kolom kosong', async ({ page }) => {
+    const dialog = await payCash(page);
+    await dialog.getByRole('button', { name: 'Kirim WA' }).click();
+    const share = page.getByRole('dialog', { name: 'Kirim Struk' });
+    await expect(share.getByLabel('Nomor WhatsApp')).toHaveValue('');
+    await share.getByRole('button', { name: 'Kirim', exact: true }).click();
+    await expect(
+      share.getByText('Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.'),
+    ).toBeVisible();
+  });
+
+  test('Kirim WA Bu Sherly: nomor terisi, toast, dan tanpa permintaan jaringan', async ({
+    page,
+  }) => {
+    const dialog = await payCash(page, { customer: 'Bu Sherly' });
+    await dialog.getByRole('button', { name: 'Kirim WA' }).click();
+    const share = page.getByRole('dialog', { name: 'Kirim Struk' });
+    await expect(share.getByLabel('Nomor WhatsApp')).toHaveValue('0811230988');
+    const requests: string[] = [];
+    page.on('request', (request) => requests.push(request.url()));
+    await share.getByRole('button', { name: 'Kirim', exact: true }).click();
+    await expect(page.getByText('Struk dikirim lewat WhatsApp (simulasi).')).toBeVisible();
+    await expect(share).toBeHidden();
+    expect(requests).toEqual([]);
+  });
+
+  test('Selesai kembali ke layar jual dengan pesanan kosong', async ({ page }) => {
+    const dialog = await payCash(page);
+    await dialog.getByRole('button', { name: 'Selesai' }).click();
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
+  });
+
+  test('axe dan target 48 px pada dialog Pembayaran Berhasil dan Kirim Struk', async ({ page }) => {
+    const dialog = await payCash(page);
+    await page.evaluate(() => document.fonts.ready);
+    await settle(page);
+    const done = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(done.violations).toEqual([]);
+    await dialog.getByRole('button', { name: 'Kirim WA' }).click();
+    await settle(page);
+    const share = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(share.violations).toEqual([]);
+    const boxes = await page
+      .getByRole('dialog', { name: 'Kirim Struk' })
+      .locator('button, input')
+      .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+    for (const height of boxes) {
+      expect(height).toBeGreaterThanOrEqual(47.5);
+    }
+  });
+});
