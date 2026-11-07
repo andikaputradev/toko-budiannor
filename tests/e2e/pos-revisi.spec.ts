@@ -602,6 +602,18 @@ test.describe('riwayat penjualan', () => {
     await expect(detail).toContainText('Barang & Jasa');
   });
 
+  test('pil status pada daftar riwayat selebar teksnya, tidak merentang selebar sel', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await saleSplit(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const pill = page.locator('.pos-history__item .pos-status').first();
+    await expect(pill).toBeVisible();
+    const width = await pill.evaluate((node) => node.getBoundingClientRect().width);
+    expect(width).toBeLessThan(120);
+  });
+
   test('transaksi piutang menampilkan jatuh tempo dan sisa tagihan', async ({ page }) => {
     await loginPos(page);
     await saleCredit(page);

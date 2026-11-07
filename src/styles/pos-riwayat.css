@@ -62,6 +62,10 @@
   text-align: right;
 }
 
+.pos-history__item .pos-status {
+  justify-self: start;
+}
+
 .pos-history__meta {
   grid-column: 1 / -1;
 }
