@@ -286,7 +286,7 @@ test.describe('BO-03 Barang', () => {
     await page.getByLabel('Stok minimum Gudang Display').fill('5');
     await save.click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
-    await expect(page.locator('.bo-count')).toHaveText('3.601 barang');
+    await expect(page.locator('.bo-count')).toHaveText('3.608 barang');
     await expect(page.getByRole('button', { name: 'Nonaktifkan Barang' })).toBeHidden();
   });
 

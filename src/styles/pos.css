@@ -1015,3 +1015,29 @@ a.pos-chip {
   width: 18px;
   height: 18px;
 }
+
+@media (max-width: 700px) {
+  .pos-login {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: calc(var(--space-screen-margin) + 56px);
+  }
+
+  .pos-login__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-login__card {
+    height: 148px;
+  }
+
+  .pos-login__avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .pos-login__panel,
+  .pos-login__submit {
+    width: 100%;
+  }
+}

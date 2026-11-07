@@ -409,3 +409,26 @@
 .modal:has(.pos-customers) {
   width: min(560px, 94vw);
 }
+
+@media (max-width: 700px) {
+  .pos-sell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .pos-toolbar .dropdown {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .pos-toolbar .pos-search {
+    flex: 1 1 160px;
+  }
+}
