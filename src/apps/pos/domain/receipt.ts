@@ -3,7 +3,7 @@ import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../sh
 import { label } from '../../../shared/messages';
 
 export type PaperWidth = 58 | 80;
-export type ReceiptKind = 'draft' | 'sale' | 'copy';
+export type ReceiptKind = 'draft' | 'sale' | 'copy' | 'retur';
 
 export const PAPER_CHARS: Readonly<Record<PaperWidth, number>> = { 58: 32, 80: 48 };
 
@@ -84,6 +84,8 @@ export function buildReceipt(input: ReceiptInput): string[] {
     }
   } else if (input.kind === 'copy') {
     lines.push(center(label('strukSalinan'), width));
+  } else if (input.kind === 'retur') {
+    lines.push(center(label('judulBuktiRetur'), width));
   }
   lines.push(
     rule('-'),

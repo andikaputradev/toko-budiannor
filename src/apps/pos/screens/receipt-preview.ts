@@ -15,7 +15,7 @@ import {
   type ReceiptKind,
   type ReceiptPayment,
 } from '../domain/receipt';
-import type { PosSession } from '../pos-session';
+import type { PosSession, ReturnRecord } from '../pos-session';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
@@ -30,6 +30,7 @@ const SUCCESS_LABELS: Readonly<Record<ReceiptKind, LabelKey>> = {
   draft: 'strukDrafTercetak',
   copy: 'salinanTercetak',
   sale: 'strukTercetak',
+  retur: 'buktiReturTercetak',
 };
 
 function itemsOf(session: PosSession, lines: Sale['lines']): ReceiptItem[] {
@@ -78,6 +79,44 @@ export function saleReceipt(
     total: sale.total,
     payments: paymentsOf(sale),
     change: changeOf(sale),
+  };
+}
+
+export function returnReceipt(
+  session: PosSession,
+  record: ReturnRecord,
+  width: PaperWidth,
+): ReceiptInput {
+  const sale = session.state().sales.find((item) => item.number === record.saleNumber);
+  const items = record.lines.flatMap((entry): ReceiptItem[] => {
+    const line = sale?.lines[entry.index];
+    return line === undefined
+      ? []
+      : [
+          {
+            name: session.product(line.productId)?.name ?? line.productId,
+            quantity: entry.quantity,
+            unit: line.unit,
+            unitPrice: line.unitPrice,
+            subtotal: Math.round(entry.quantity * line.unitPrice),
+          },
+        ];
+  });
+  const refund = record.refund;
+  return {
+    kind: 'retur',
+    width,
+    number: record.number,
+    at: new Date(record.at),
+    cashier: session.userName(session.store.getState().userId),
+    customer: session.customerName(sale?.customerId),
+    items,
+    total: refund?.amount ?? record.value,
+    payments:
+      refund === undefined
+        ? []
+        : [{ method: label(METHOD_LABELS[refund.method]), amount: refund.amount }],
+    change: 0,
   };
 }
 

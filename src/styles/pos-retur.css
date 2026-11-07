@@ -1,0 +1,149 @@
+.modal:has(.pos-return) {
+  width: min(680px, 94vw);
+  max-width: none;
+}
+
+.pos-return {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.pos-return h3 {
+  margin: var(--primitive-space-2) 0 0;
+}
+
+.pos-return__all,
+.pos-return__reason-option {
+  display: flex;
+  align-items: center;
+  gap: var(--primitive-space-3);
+  min-height: var(--size-touch-target-min);
+  cursor: pointer;
+}
+
+.pos-return input[type='checkbox'],
+.pos-return input[type='radio'] {
+  flex: none;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  margin: 0;
+  accent-color: var(--color-accent-default);
+}
+
+.pos-return__items {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-return__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--primitive-space-3);
+  min-height: 64px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-return__name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-return__amount {
+  width: 320px;
+  max-width: 100%;
+  height: 54px;
+  font-size: 20px;
+  text-align: right;
+}
+
+.pos-return__methods,
+.pos-return__reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+}
+
+.pos-return__methods .btn {
+  min-width: 120px;
+  height: 56px;
+}
+
+.pos-return__methods .btn[aria-checked='true'] {
+  border-color: transparent;
+  background: var(--chip-selected-bg);
+  color: var(--chip-selected-text);
+}
+
+.pos-return__reasons {
+  flex-direction: column;
+  gap: 0;
+}
+
+.pos-return__note[hidden] {
+  display: none;
+}
+
+.pos-return__photo {
+  min-height: var(--size-touch-target-min);
+  font: inherit;
+}
+
+.pos-return__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--primitive-space-3);
+  margin-top: var(--primitive-space-4);
+  padding-top: var(--primitive-space-3);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.pos-return__summary {
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-return__summary p {
+  margin: 0;
+}
+
+.pos-return__actions {
+  display: flex;
+  gap: var(--primitive-space-2);
+}
+
+.pos-return__actions .btn {
+  min-width: 140px;
+  height: 56px;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--primitive-space-1);
+}
+
+.stepper__button {
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  padding: 0;
+  border: 1px solid var(--color-text-primary);
+  border-radius: 50%;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.stepper__input {
+  width: 72px;
+  height: var(--size-touch-target-min);
+  text-align: center;
+}

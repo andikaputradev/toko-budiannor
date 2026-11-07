@@ -80,3 +80,24 @@ describe('struk 58 mm dan 80 mm', () => {
     expect(narrow).toBeGreaterThan(wide);
   });
 });
+
+describe('struk bukti retur', () => {
+  for (const width of [58, 80] as const) {
+    it(`memuat judul BUKTI RETUR, tanpa kembalian, dan muat ${String(PAPER_CHARS[width])} karakter`, () => {
+      const lines = buildReceipt({
+        ...input('retur', width),
+        number: 'R-0001',
+        total: 140000,
+        payments: [{ method: 'QRIS', amount: 140000 }],
+        change: 0,
+      });
+      const text = lines.join('\n');
+      expect(text).toContain('BUKTI RETUR');
+      expect(text).toContain('R-0001');
+      expect(text).not.toContain('Kembalian');
+      for (const line of lines) {
+        expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[width]);
+      }
+    });
+  }
+});

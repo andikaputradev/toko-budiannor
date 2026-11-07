@@ -656,3 +656,104 @@ test.describe('riwayat penjualan', () => {
     }
   });
 });
+
+test.describe('retur penjualan', () => {
+  async function openRetur(page: Page) {
+    await loginPos(page, 'Ibu Sinta');
+    const semen = page.locator('.pos-card__main').first();
+    for (let index = 0; index < 3; index += 1) {
+      await semen.click();
+    }
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: /Retur Penjualan/ });
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+
+  test('tanpa barang terpilih: pesan MSG-084', async ({ page }) => {
+    const dialog = await openRetur(page);
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(dialog.getByText('Pilih minimal satu barang untuk diretur.')).toBeVisible();
+  });
+
+  test('Pilih Semua, Total Retur, stepper, dan nominal bawaan mengikuti pilihan', async ({
+    page,
+  }) => {
+    const dialog = await openRetur(page);
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await expect(dialog.getByText('Dari 3 Kuantitas')).toBeVisible();
+    await expect(dialog.getByLabel('Jumlah Dikembalikan')).toHaveValue('210.000');
+    await dialog.getByRole('button', { name: 'Kurangi jumlah' }).click();
+    await expect(dialog.getByText('Dari 2 Kuantitas')).toBeVisible();
+    await expect(dialog.getByLabel('Jumlah Dikembalikan')).toHaveValue('140.000');
+    await dialog.getByRole('button', { name: 'Tambah jumlah' }).click();
+    await dialog.getByRole('button', { name: 'Tambah jumlah' }).click();
+    await expect(dialog.getByText('Dari 3 Kuantitas')).toBeVisible();
+  });
+
+  test('nominal melebihi nilai barang ditolak, alasan Lainnya wajib keterangan', async ({
+    page,
+  }) => {
+    const dialog = await openRetur(page);
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await dialog.getByLabel('Jumlah Dikembalikan').fill('999999');
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(dialog.getByText('Jumlah dikembalikan melebihi nilai barang.')).toBeVisible();
+    await dialog.getByLabel('Jumlah Dikembalikan').fill('210000');
+    await dialog.getByRole('radio', { name: 'Lainnya' }).check();
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(dialog.getByText('Alasan retur wajib diisi.')).toBeVisible();
+  });
+
+  test('retur sah: Retur Berhasil, bukti retur, dan sisa yang bisa diretur berkurang', async ({
+    page,
+  }) => {
+    const dialog = await openRetur(page);
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await dialog.getByRole('button', { name: 'Kurangi jumlah' }).click();
+    await dialog.getByRole('radio', { name: 'Pembatalan Transaksi' }).check();
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Retur Berhasil' });
+    await expect(done).toContainText('Dikembalikan Rp 140.000');
+    await done.getByRole('button', { name: 'Cetak Bukti Retur' }).click();
+    await expect(page.locator('.pos-receipt')).toContainText('BUKTI RETUR');
+    await expect(page.locator('.pos-receipt')).toContainText('R-0001');
+    await page
+      .getByRole('dialog', { name: 'Pratinjau struk' })
+      .getByRole('button', { name: 'Tutup' })
+      .click();
+    await done.getByRole('button', { name: 'Selesai' }).click();
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    await expect(page.getByRole('dialog', { name: /Retur Penjualan/ })).toContainText('sisa 1');
+  });
+
+  test('axe dan target 48 px pada modal Retur', async ({ page }) => {
+    const dialog = await openRetur(page);
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await page.evaluate(() => document.fonts.ready);
+    await settle(page);
+    const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(result.violations).toEqual([]);
+    const heights = await dialog
+      .locator('button, input:not([type=file]), textarea')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((node) => node.getClientRects().length > 0)
+          .map((node) => node.getBoundingClientRect().height),
+      );
+    for (const height of heights) {
+      expect(height).toBeGreaterThanOrEqual(47.5);
+    }
+  });
+});

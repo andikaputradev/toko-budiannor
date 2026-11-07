@@ -174,19 +174,17 @@ test.describe('POS-05 sampai POS-10', () => {
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'Retur', exact: true }).click();
-    const retur = page.getByRole('dialog');
-    await retur.getByRole('button', { name: 'Simpan Retur' }).click();
+    const retur = page.getByRole('dialog', { name: /Retur Penjualan/ });
+    await retur.getByRole('button', { name: 'Retur', exact: true }).click();
     await expect(retur.getByText('Pilih minimal satu barang untuk diretur.')).toBeVisible();
-    await retur.locator('input[type=checkbox]').first().check();
-    await retur.locator('.pos-return__qty').first().fill('999');
-    await retur.getByRole('button', { name: 'Simpan Retur' }).click();
-    await expect(retur.getByText(/Jumlah retur melebihi jumlah yang dibeli \(/)).toBeVisible();
-    await retur.locator('.pos-return__qty').first().fill('1');
-    await retur.getByRole('button', { name: 'Simpan Retur' }).click();
+    await retur.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await retur.getByRole('radio', { name: 'Transfer' }).click();
+    await retur.getByRole('radio', { name: 'Lainnya' }).check();
+    await retur.getByRole('button', { name: 'Retur', exact: true }).click();
     await expect(retur.getByText('Alasan retur wajib diisi.')).toBeVisible();
-    await retur.locator('.pos-return__reason').fill('Barang rusak');
-    await retur.getByRole('button', { name: 'Simpan Retur' }).click();
-    await expect(page.getByText(/Retur R-0001 tersimpan\. Nilai retur Rp /)).toBeVisible();
+    await retur.getByRole('radio', { name: 'Pengembalian Barang' }).check();
+    await retur.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Retur Berhasil' })).toBeVisible();
   });
 
   test('POS-06: Kasir tidak melihat Ajukan Koreksi dan Retur Penjualan', async ({ page }) => {

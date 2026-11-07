@@ -831,3 +831,21 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-824: "Share Struk". Kunci shareStruk.
 - TB-825: "Hari Ini". Kunci hariIni.
 - TB-826: "Split". Kunci caraBayarSplit.
+- TB-827: "Pilih Semua". Kunci pilihSemua.
+- TB-828: "Pembayaran Dikembalikan". Kunci pembayaranDikembalikan.
+- TB-829: "Jumlah Dikembalikan". Kunci jumlahDikembalikan.
+- TB-830: "Metode Pengembalian". Kunci metodePengembalian.
+- TB-831: "Foto Bukti Retur (Opsional)". Kunci fotoBuktiRetur.
+- TB-832: "Pilih Foto". Kunci pilihFoto.
+- TB-833: "Total Retur". Kunci totalRetur.
+- TB-834: "Dari {jumlah} Kuantitas". Kunci dariKuantitas.
+- TB-835: "Retur Berhasil". Kunci returBerhasil.
+- TB-836: "Dikembalikan {jumlah}". Kunci dikembalikanNominal.
+- TB-837: "Cetak Bukti Retur". Kunci cetakBuktiRetur.
+- TB-838: "Kirim Bukti Retur". Kunci kirimBuktiRetur.
+- TB-839: "BUKTI RETUR". Kunci judulBuktiRetur.
+- TB-840: "Bukti retur tercetak.". Kunci buktiReturTercetak.
+- TB-841: "Bukti retur dikirim lewat WhatsApp (simulasi).". Kunci buktiReturTerkirimWa.
+- TB-842: "Kurangi jumlah". Kunci kurangiJumlah.
+- TB-843: "Tambah jumlah". Kunci tambahJumlah.
+- TB-844: "Dibeli {dibeli} {satuan}, sisa {sisa}". Kunci dibeliSisa.
