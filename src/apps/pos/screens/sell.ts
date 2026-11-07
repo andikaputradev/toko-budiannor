@@ -1,4 +1,4 @@
-import { el } from '../../../shared/dom';
+import { el, nextId } from '../../../shared/dom';
 import { formatDecimal, formatDocumentNumber, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
@@ -99,7 +99,44 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
   const searchError = el('p', { className: 'pos-search__error', attrs: { role: 'alert' } });
   const grid = el('div', { className: 'pos-grid' });
   const note = el('p', { className: 't-label pos-note' });
-  const order = el('section', { className: 'pos-bill-panel' });
+  const orderId = nextId('pesanan');
+  const order = el('section', { className: 'pos-bill-panel', attrs: { id: orderId } });
+  const main = el('main', { className: 'pos-sell', attrs: { 'data-sheet': 'closed' } });
+  const bar = el('button', {
+    className: 'pos-order-bar',
+    attrs: { type: 'button', 'aria-expanded': 'false', 'aria-controls': orderId },
+  });
+  const closeSheet = el(
+    'button',
+    {
+      className: 'pos-order__close',
+      attrs: { type: 'button', 'aria-label': label('tutupPesanan') },
+    },
+    icon('x'),
+  );
+  let sheetOpen = false;
+  // Di bawah 900 px panel pesanan menjadi lembar bawah yang dibuka lewat bilah.
+  const setSheet = (open: boolean): void => {
+    sheetOpen = open;
+    main.dataset['sheet'] = open ? 'open' : 'closed';
+    bar.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      closeSheet.focus();
+    } else {
+      bar.focus();
+    }
+  };
+  bar.addEventListener('click', () => {
+    setSheet(!sheetOpen);
+  });
+  closeSheet.addEventListener('click', () => {
+    setSheet(false);
+  });
+  main.addEventListener('click', (event) => {
+    if (event.target === main && sheetOpen) {
+      setSheet(false);
+    }
+  });
   const banner = el('div', { className: 'pos-banner' });
   const customerButton = el('button', {
     className: 'pos-customer-btn',
@@ -365,7 +402,13 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     }
     footer.append(createMenuButton({ labelText: label('opsiPesanan'), items: menuItems }));
 
+    bar.replaceChildren(
+      icon('shopping-cart'),
+      el('span', { text: label('pesananJumlah', { jumlah: state.lines.length }) }),
+      el('strong', { className: 'pos-order-bar__total', text: formatRupiah(total) }),
+    );
     order.replaceChildren(
+      closeSheet,
       el('h2', {
         className: 'pos-order__title t-section-title',
         text: label('pesananJumlah', { jumlah: state.lines.length }),
@@ -440,7 +483,15 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
   };
 
   const onKey = (event: KeyboardEvent): void => {
-    if (!isPc() || document.querySelector('.modal-overlay') !== null) {
+    if (document.querySelector('.modal-overlay') !== null) {
+      return;
+    }
+    if (event.key === 'Escape' && sheetOpen) {
+      event.preventDefault();
+      setSheet(false);
+      return;
+    }
+    if (!isPc()) {
       return;
     }
     const actions: Readonly<Record<string, () => void>> = {
@@ -523,25 +574,19 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     note.textContent = label('petunjukPindai');
   });
 
-  const element = el(
-    'div',
-    { className: 'pos' },
-    topbar.element,
-    banner,
+  main.append(
     el(
-      'main',
-      { className: 'pos-sell' },
-      el(
-        'section',
-        { className: 'pos-catalog' },
-        el('div', { className: 'pos-toolbar' }, dropdown.element, form, scan, customerButton),
-        searchError,
-        grid,
-        note,
-      ),
-      order,
+      'section',
+      { className: 'pos-catalog' },
+      el('div', { className: 'pos-toolbar' }, dropdown.element, form, scan, customerButton),
+      searchError,
+      grid,
+      note,
     ),
+    order,
+    bar,
   );
+  const element = el('div', { className: 'pos' }, topbar.element, banner, main);
   const unguard = guardWithShift(session, element);
   renderCustomerButton();
   renderGrid();

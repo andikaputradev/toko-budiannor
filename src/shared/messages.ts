@@ -487,6 +487,7 @@ export const labels = {
   modeOtomatis: 'Otomatis',
   modeTerang: 'Terang',
   modeGelap: 'Gelap',
+  tutupPesanan: 'Tutup Pesanan',
   shiftDimulai: 'Shift Dimulai',
   shiftDimulaiOleh: 'Shift Dimulai ({nama})',
   openBillJumlah: 'Open Bill, {jumlah} bill',

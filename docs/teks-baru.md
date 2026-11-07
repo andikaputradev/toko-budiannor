@@ -859,3 +859,4 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-849: "Otomatis". Kunci modeOtomatis.
 - TB-850: "Terang". Kunci modeTerang.
 - TB-851: "Gelap". Kunci modeGelap.
+- TB-852: "Tutup Pesanan". Kunci tutupPesanan.

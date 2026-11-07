@@ -1,5 +1,10 @@
 /* Titik henti POS: 900 px (mode ringkas) dan 600 px (mode ponsel). Dimuat paling akhir. */
 
+.pos-order-bar,
+.pos-order__close {
+  display: none;
+}
+
 .pos-split {
   display: grid;
   flex: 1;
@@ -15,6 +20,79 @@
 }
 
 @media (max-width: 899px) {
+  .pos-sell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-catalog {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pos-bill-panel {
+    display: none;
+  }
+
+  .pos-order-bar {
+    display: flex;
+    flex: none;
+    gap: var(--primitive-space-2);
+    align-items: center;
+    min-height: 56px;
+    padding: 0 var(--primitive-space-4);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-weight: var(--primitive-font-weight-semibold);
+    cursor: pointer;
+  }
+
+  .pos-order-bar span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .pos-order-bar__total {
+    color: var(--color-accent-default);
+  }
+
+  .pos-sell[data-sheet='open']::after {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: var(--modal-overlay-bg);
+    content: '';
+  }
+
+  .pos-sell[data-sheet='open'] > .pos-bill-panel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    display: flex;
+    max-height: 85dvh;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+  }
+
+  .pos-order__close {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    align-self: flex-end;
+    width: var(--size-touch-target-min);
+    height: var(--size-touch-target-min);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
   .pos-split {
     display: flex;
     flex-direction: column;
@@ -81,6 +159,19 @@
 
   .pos-topbar__status {
     gap: var(--primitive-space-2);
+  }
+
+  .pos-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .pos-toolbar .dropdown {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .pos-toolbar .pos-search {
+    flex: 1 1 160px;
   }
 
   .pos-login__cards {
