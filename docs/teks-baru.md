@@ -762,3 +762,18 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-755: "Penjualan tunai". Kunci penjualanTunai.
 - TB-756: "Retur tunai". Kunci returTunai.
 - TB-757: "Saldo akhir kas". Kunci saldoAkhirKas.
+- TB-758: "Menu". Kunci menu.
+- TB-759: "Menu utama". Kunci menuUtama.
+- TB-760: "Pesanan Baru". Kunci pesananBaru.
+- TB-761: "Open Bill". Kunci openBill.
+- TB-762: "Riwayat Penjualan". Kunci riwayatPenjualan.
+- TB-763: "Status Sinkronisasi". Kunci statusSinkronisasi.
+- TB-764: "Tema". Kunci tema.
+- TB-765: "Oranye". Kunci temaOranye.
+- TB-766: "Terakota". Kunci temaTerakota.
+- TB-767: "Teal". Kunci temaTeal.
+- TB-768: "Gelap". Kunci temaGelap.
+- TB-769: "Shift Dimulai". Kunci shiftDimulai.
+- TB-770: "Shift Dimulai ({nama})". Kunci shiftDimulaiOleh.
+- TB-771: "Open Bill, {jumlah} bill". Kunci openBillJumlah.
+- TB-772: "Pilih Pengguna". Kunci judulPilihKasir (sebelumnya "Pilih Kasir").

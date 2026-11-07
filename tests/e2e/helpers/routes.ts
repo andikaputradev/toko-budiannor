@@ -55,7 +55,9 @@ function userNamed(name: string): { readonly pin: string; readonly role: string 
 }
 
 export async function loginPosRaw(page: Page, name = 'Dewi'): Promise<void> {
-  await page.goto('/#/pos');
+  if (!page.url().endsWith('#/pos')) {
+    await page.goto('/#/pos');
+  }
   await page.getByRole('radio', { name: new RegExp(name) }).click();
   await typePin(page, userNamed(name).pin);
   await page.getByRole('button', { name: 'Masuk' }).click();
@@ -70,6 +72,14 @@ export async function startShift(page: Page, amount = 500000): Promise<void> {
   }
   await dialog.getByRole('button', { name: 'Lanjut' }).click();
   await expect(page.locator('.pos-card').first()).toBeVisible();
+}
+
+export async function openDrawerItem(page: Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page
+    .getByRole('dialog', { name: 'Toko Budiannor' })
+    .getByRole('link', { name, exact: true })
+    .click();
 }
 
 async function loginPos(page: Page, name = 'Dewi'): Promise<void> {

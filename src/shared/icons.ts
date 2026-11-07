@@ -35,6 +35,15 @@ export const ICON_NAMES = [
   'plus',
   'check',
   'chevron-left',
+  'menu',
+  'ellipsis-vertical',
+  'scan-barcode',
+  'user-round',
+  'receipt',
+  'log-out',
+  'minus',
+  'delete',
+  'shopping-cart',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];

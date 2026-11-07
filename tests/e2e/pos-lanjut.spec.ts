@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared } from './helpers/routes';
+import { loginPos as loginPosShared, openDrawerItem } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -145,7 +145,7 @@ test.describe('POS-05 sampai POS-10', () => {
     page,
   }) => {
     await login(page, 'Ibu Sinta');
-    await page.getByRole('link', { name: 'Riwayat' }).click();
+    await openDrawerItem(page, 'Riwayat Penjualan');
     await page.locator('.pos-history__date').first().fill('2026-10-01');
     await page.locator('.pos-history__chips').getByRole('button', { name: 'Pending' }).click();
     const rows = page.locator('.pos-history__list tbody tr');
@@ -187,7 +187,7 @@ test.describe('POS-05 sampai POS-10', () => {
 
   test('POS-06: Kasir tidak melihat Ajukan Koreksi dan Retur Penjualan', async ({ page }) => {
     await login(page, 'Dewi');
-    await page.getByRole('link', { name: 'Riwayat' }).click();
+    await openDrawerItem(page, 'Riwayat Penjualan');
     await expect(page.getByRole('button', { name: 'Cetak Ulang Struk' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Ajukan Koreksi' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Retur Penjualan' })).toHaveCount(0);
@@ -195,7 +195,7 @@ test.describe('POS-05 sampai POS-10', () => {
 
   test('POS-07: biaya kasir dengan validasi persis dan saldo kas', async ({ page }) => {
     await login(page, 'Dewi');
-    await page.getByRole('link', { name: 'Biaya' }).click();
+    await openDrawerItem(page, 'Biaya');
     const save = page.getByRole('button', { name: 'Simpan Biaya' });
     await save.click();
     await expect(page.getByText('Jumlah harus lebih dari 0.')).toBeVisible();
@@ -263,7 +263,9 @@ test.describe('POS-05 sampai POS-10', () => {
     page,
   }) => {
     await login(page, 'Agus');
-    await expect(page.getByRole('link', { name: 'Riwayat' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await expect(page.getByRole('link', { name: 'Riwayat Penjualan' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
     await page.goto('/#/pos/riwayat');
     await expect(page).toHaveURL(/#\/pos\/jual$/);
     await page.locator('.pos-card').first().click();

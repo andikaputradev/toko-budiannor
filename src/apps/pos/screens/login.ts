@@ -1,20 +1,13 @@
 import { el } from '../../../shared/dom';
-import { label, type LabelKey } from '../../../shared/messages';
+import { label } from '../../../shared/messages';
 import { failureText } from '../failure';
 import { icon } from '../../../shared/icons';
-import type { AppUser, Role } from '../../../shared/data/types';
+import type { AppUser } from '../../../shared/data/types';
 import { createButton } from '../../../shared/ui/button';
 import { createPinPad } from '../../../shared/ui/pinpad';
 import type { PosSession } from '../pos-session';
+import { ROLE_LABELS } from '../roles';
 import { createTopbar } from '../topbar';
-
-const ROLE_LABELS: Readonly<Record<Role, LabelKey>> = {
-  owner: 'peranOwner',
-  supervisor: 'peranSupervisor',
-  kasir: 'peranKasir',
-  frontliner: 'peranFrontliner',
-  sales: 'peranSales',
-};
 
 export interface ScreenHandle {
   readonly element: HTMLElement;
@@ -116,7 +109,7 @@ export function renderLogin(session: PosSession, go: (path: string) => void): Sc
 
   const element = el(
     'div',
-    { className: 'pos' },
+    { className: 'pos', attrs: { 'data-app': 'pos', 'data-pos-surface': 'dark' } },
     topbar.element,
     el(
       'main',

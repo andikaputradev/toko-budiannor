@@ -44,6 +44,15 @@ const ICONS = [
   'plus',
   'check',
   'chevron-left',
+  'menu',
+  'ellipsis-vertical',
+  'scan-barcode',
+  'user-round',
+  'receipt',
+  'log-out',
+  'minus',
+  'delete',
+  'shopping-cart',
 ];
 const ALLOWED_TAGS = new Set(['path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse']);
 

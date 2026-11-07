@@ -107,11 +107,17 @@ function posThemeBlocks(forcedDarkLines) {
   const blocks = [
     `[data-app='pos'][data-pos-surface='dark'] {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
   ];
-  for (const [name, overrides] of Object.entries(document.$themes ?? {})) {
-    const paths = Object.keys(overrides).filter((key) => !key.startsWith('$'));
-    if (name.startsWith('$') || paths.length === 0) {
-      continue;
-    }
+  const themes = Object.entries(document.$themes ?? {}).filter(([name]) => !name.startsWith('$'));
+  // Setiap tema mengeluarkan seluruh token yang ditimpa tema mana pun (terakota memulihkan
+  // nilai bawaan), supaya contoh warna di pemilih tema tidak ikut tema yang sedang aktif.
+  const paths = [
+    ...new Set(
+      themes.flatMap(([, overrides]) =>
+        Object.keys(overrides).filter((key) => !key.startsWith('$')),
+      ),
+    ),
+  ];
+  for (const [name, overrides] of themes) {
     const themedTokens = withThemeOverrides(tokens, overrides);
     const lines = (theme) =>
       paths.map((path) => {
@@ -120,7 +126,8 @@ function posThemeBlocks(forcedDarkLines) {
         return declaration(cssName(path), cssValue(token, raw, { theme, profile: undefined }));
       });
     const scope = `[data-pos-theme='${name}']`;
-    const roots = `${scope}[data-app='pos'],\n${scope} [data-app='pos']`;
+    // :where() menjaga kekhususan turunan tetap rendah agar blok akar tema itu sendiri menang.
+    const roots = `${scope}[data-app='pos'],\n:where(${scope}) [data-app='pos']`;
     if (name === 'gelap') {
       blocks.push(
         `${roots} {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n${lines('dark').join('\n')}\n}`,
@@ -128,7 +135,7 @@ function posThemeBlocks(forcedDarkLines) {
     } else {
       blocks.push(`${roots} {\n${lines('light').join('\n')}\n}`);
       blocks.push(
-        `${scope} [data-app='pos'][data-pos-surface='dark'] {\n${lines('dark').join('\n')}\n}`,
+        `:where(${scope}) [data-app='pos'][data-pos-surface='dark'] {\n${lines('dark').join('\n')}\n}`,
       );
     }
   }

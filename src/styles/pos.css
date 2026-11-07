@@ -808,3 +808,210 @@ a.pos-chip {
   font-size: 20px;
   font-weight: 600;
 }
+
+.pos-topbar__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--primitive-space-3);
+}
+
+.pos-topbar__center {
+  display: flex;
+  justify-content: center;
+}
+
+.pos-menu {
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.pos-menu[hidden],
+.pos-shiftchip[hidden],
+.pos-billlink[hidden] {
+  display: none;
+}
+
+.pos-menu .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.pos-shiftchip {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 var(--primitive-space-4);
+  border-radius: var(--radius-chip);
+  background: var(--color-accent-soft);
+  color: var(--color-text-primary);
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-billlink {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  color: var(--color-text-primary);
+}
+
+.pos-billlink .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.pos-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-chip);
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 22px;
+  text-align: center;
+}
+
+.modal-overlay--drawer {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.modal--drawer {
+  width: min(340px, 90vw);
+  min-width: 0;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+}
+
+.pos-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  min-height: calc(100dvh - 120px);
+}
+
+.pos-drawer__user {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding-bottom: var(--primitive-space-3);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-drawer__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+}
+
+.pos-drawer__link,
+.pos-drawer__theme {
+  display: flex;
+  align-items: center;
+  gap: var(--primitive-space-3);
+  min-height: var(--size-touch-target-min);
+  padding: 0 var(--primitive-space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pos-drawer__link[aria-current='page'],
+.pos-drawer__theme[aria-checked='true'] {
+  background: var(--color-accent-soft);
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-drawer__themes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--primitive-space-1);
+}
+
+.pos-swatch {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-text-primary);
+  border-radius: 50%;
+  background: var(--color-accent-default);
+}
+
+.pos-drawer__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin-top: auto;
+}
+
+.pos-drawer__footer .btn {
+  height: 56px;
+}
+
+.pos-login {
+  padding-left: calc(var(--space-screen-margin) + 128px);
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+.pos-login__cards {
+  grid-template-columns: repeat(3, 200px);
+}
+
+.pos-login__card {
+  flex-direction: column;
+  justify-content: center;
+  height: 188px;
+  padding: var(--primitive-space-3);
+  text-align: center;
+}
+
+.pos-login__avatar {
+  width: 88px;
+  height: 88px;
+  font-size: 36px;
+}
+
+.pos-login__who {
+  align-items: center;
+}
+
+.pos-login .pinpad {
+  --pinpad-key-width: 72px;
+  --pinpad-key-height: 72px;
+  --pinpad-gap: 12px;
+}
+
+.pos-login .pinpad__key {
+  border-radius: 50%;
+}
+
+.pos-login .pinpad__dots {
+  gap: var(--primitive-space-4);
+}
+
+.pos-login .pinpad__dot {
+  width: 18px;
+  height: 18px;
+}
