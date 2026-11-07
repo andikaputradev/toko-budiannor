@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared } from './helpers/routes';
+import { loginPos as loginPosShared, openOrderMenu } from './helpers/routes';
 
 test.beforeEach(({ page }) => {
   const size = page.viewportSize();
@@ -37,7 +37,7 @@ async function simulate(page: Page, action: string): Promise<void> {
 }
 
 async function recallBill(page: Page, number: string): Promise<void> {
-  await page.getByRole('button', { name: 'Panggil Bill' }).click();
+  await openOrderMenu(page, 'Panggil Bill');
   await expect(page).toHaveURL(/#\/pos\/bill$/);
   await page
     .locator('.pos-bills__list tbody tr', { hasText: number })
@@ -97,7 +97,7 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
 
     await loginPos(page, 'Dewi');
     await recallBill(page, 'B-0002');
-    await expect(page.locator('.pos-bill tbody tr')).toHaveCount(3);
+    await expect(page.locator('.pos-order__item')).toHaveCount(3);
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
     await page.getByRole('button', { name: 'Piutang' }).click();

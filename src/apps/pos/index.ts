@@ -1,5 +1,6 @@
 import '../../styles/pos.css';
 import '../../styles/pos-lanjut.css';
+import '../../styles/pos-jual.css';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';

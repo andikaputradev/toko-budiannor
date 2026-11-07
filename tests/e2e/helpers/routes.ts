@@ -71,7 +71,7 @@ export async function startShift(page: Page, amount = 500000): Promise<void> {
     await dialog.getByRole('button', { name: digit, exact: true }).click();
   }
   await dialog.getByRole('button', { name: 'Lanjut' }).click();
-  await expect(page.locator('.pos-card').first()).toBeVisible();
+  await expect(page.locator('.pos-card__main').first()).toBeVisible();
 }
 
 export async function openDrawerItem(page: Page, name: string): Promise<void> {
@@ -80,6 +80,16 @@ export async function openDrawerItem(page: Page, name: string): Promise<void> {
     .getByRole('dialog', { name: 'Toko Budiannor' })
     .getByRole('link', { name, exact: true })
     .click();
+}
+
+export async function openOrderMenu(page: Page, item: string): Promise<void> {
+  await page.getByRole('button', { name: 'Opsi pesanan' }).click();
+  await page.getByRole('menuitem', { name: item }).click();
+}
+
+export async function chooseCustomer(page: Page, name: string): Promise<void> {
+  await page.locator('.pos-customer-btn').click();
+  await page.locator('.pos-customers__row', { hasText: name }).click();
 }
 
 async function loginPos(page: Page, name = 'Dewi'): Promise<void> {
@@ -127,7 +137,7 @@ export async function openRoute(page: Page, route: RouteCase): Promise<void> {
   } else {
     await loginFor(page, route.app);
     if (route.path === '/pos/bayar') {
-      await page.locator('.pos-card').first().click();
+      await page.locator('.pos-card__main').first().click();
       await page.getByRole('button', { name: /^Bayar/ }).click();
     } else if (route.path !== page.url().split('#')[1]) {
       await page.evaluate((hash) => {
@@ -145,7 +155,7 @@ export const OVERLAYS: readonly OverlayCase[] = [
     id: 'POS-03',
     app: 'pos',
     open: async (page) => {
-      await page.locator('.pos-card').first().click();
+      await page.locator('.pos-card__main').first().click();
       await page.locator('.pos-bill__name').first().click();
       await expect(page.getByRole('dialog')).toBeVisible();
     },
@@ -154,12 +164,11 @@ export const OVERLAYS: readonly OverlayCase[] = [
     id: 'POS-10',
     app: 'pos',
     open: async (page) => {
-      await page.locator('.pos-card').first().click();
+      await page.locator('.pos-card__main').first().click();
       await page.locator('.pos-bill__name').first().click();
       await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
       await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
-      await page.locator('.pos-actions').getByRole('button', { name: 'Pelanggan' }).click();
-      await page.locator('.pos-customers__row', { hasText: 'UD Maju Jaya' }).click();
+      await chooseCustomer(page, 'UD Maju Jaya');
       await page.getByRole('button', { name: /^Bayar/ }).click();
       await page.getByRole('button', { name: 'Piutang' }).click();
       await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();

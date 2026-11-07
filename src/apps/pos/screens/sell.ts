@@ -2,20 +2,31 @@ import { el } from '../../../shared/dom';
 import { formatDecimal, formatDocumentNumber, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
-import { failureText } from '../failure';
 import { canOpenScreen, isAllowed } from '../../../shared/permissions';
 import { createSearchIndex, type SearchIndex } from '../../../shared/data/search-index';
-import type { Customer, HeldBill, Product, Role } from '../../../shared/data/types';
-import { fromBase, unitPrice } from '../../../shared/data/units';
+import type { HeldBill, Product, Role, UnitDef } from '../../../shared/data/types';
+import { unitPrice } from '../../../shared/data/units';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
-import { createChip } from '../../../shared/ui/chip';
+import { createDropdown } from '../../../shared/ui/dropdown';
 import { createEmptyState } from '../../../shared/ui/empty';
+import { createIllustration } from '../../../shared/ui/illustration';
+import { createMenuButton, type MenuItem } from '../../../shared/ui/menu';
 import { showToast } from '../../../shared/ui/toast';
-import { billTotal, defaultUnitOf, itemCount, lineSubtotal } from '../domain/bill';
+import { billTotal, lineSubtotal } from '../domain/bill';
+import {
+  categoriesOf,
+  customerLabel,
+  initialsOf,
+  proposalFirst,
+  stockLines,
+  type StockKey,
+} from '../domain/catalog-view';
 import { isShort } from '../domain/stock';
+import { failureText } from '../failure';
 import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
+import { openCustomerPicker } from './customer-picker';
 import type { ScreenHandle } from './login';
 import { billReceipt, openReceiptPreview } from './receipt-preview';
 import { guardWithShift } from './shift';
@@ -23,6 +34,12 @@ import { openUnitModal } from './unit-modal';
 
 const RESULT_LIMIT = 60;
 const LONG_PRESS_MS = 500;
+
+const STOCK_LABELS = {
+  toko: 'stokToko',
+  gudang: 'stokGudang',
+  po: 'stokPo',
+} as const satisfies Record<StockKey, string>;
 
 let cache: { readonly products: readonly Product[]; readonly index: SearchIndex } | undefined;
 
@@ -40,15 +57,33 @@ function isPc(): boolean {
   );
 }
 
+function unitText(unit: UnitDef): string {
+  return unit.factor === 1 ? unit.code : `${unit.code} (${formatDecimal(unit.factor, 3, 0)})`;
+}
+
+function photoOf(product: Product): HTMLElement {
+  if (product.photoUrl === undefined) {
+    return el('span', { className: 'pos-photo', text: label('fotoProduk') });
+  }
+  return el('img', {
+    className: 'pos-photo pos-photo--img',
+    attrs: {
+      src: `${import.meta.env.BASE_URL}${product.photoUrl}`,
+      alt: '',
+      width: '160',
+      height: '96',
+    },
+  });
+}
+
 export function renderSell(session: PosSession, go: (path: string) => void): ScreenHandle {
   const store = session.store;
   const products = store.getState().data.products.filter((product) => product.active !== false);
+  const ordered = proposalFirst(products);
   const index = indexFor(products);
-  const topbar = createTopbar(session, 'judulJual');
+  const topbar = createTopbar(session, 'judulPesananBaru');
   let query = '';
   let category = '';
-  let customers = false;
-  let customerQuery = '';
 
   const searchInput = el('input', {
     className: 'input pos-search__input',
@@ -57,18 +92,18 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       type: 'search',
       autocomplete: 'off',
       'aria-label': label('cari'),
-      placeholder: label('cariPlaceholder'),
+      placeholder: label('cariBarangPlaceholder'),
     },
   });
   const searchError = el('p', { className: 'pos-search__error', attrs: { role: 'alert' } });
   const grid = el('div', { className: 'pos-grid' });
   const note = el('p', { className: 't-label pos-note' });
-  const chips = el('div', {
-    className: 'pos-categories',
-    attrs: { role: 'group', 'aria-label': label('kategoriHarga') },
-  });
-  const bill = el('section', { className: 'pos-bill-panel' });
+  const order = el('section', { className: 'pos-bill-panel' });
   const banner = el('div', { className: 'pos-banner' });
+  const customerButton = el('button', {
+    className: 'pos-customer-btn',
+    attrs: { type: 'button' },
+  });
 
   const role = (): Role => store.getState().role;
   const refocus = (): void => {
@@ -80,42 +115,25 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     showToast({ kind: 'error', text });
   };
 
-  const addProduct = (product: Product): void => {
-    const result = session.addProduct(product);
+  const addProduct = (product: Product, unit?: string): void => {
+    const result = session.addProduct(product, unit);
     if (!result.ok) {
       fail(message('MSG-027'));
     }
     refocus();
   };
 
-  const createCard = (product: Product): HTMLButtonElement => {
-    const unit = defaultUnitOf(product);
+  const createCard = (product: Product): HTMLElement => {
     const tier = session.customer()?.tier ?? 'eceran';
-    const stock = (value: number): string =>
-      formatDecimal(fromBase(product, unit.code, value), 1, 0);
-    const card = el(
+    const main = el(
       'button',
-      { className: 'pos-card', attrs: { type: 'button' } },
-      el('span', { className: 'pos-photo', text: label('fotoProduk') }),
+      { className: 'pos-card__main', attrs: { type: 'button' } },
+      photoOf(product),
       el('span', { className: 'pos-card__name', text: product.name }),
-      el('span', {
-        className: 'pos-card__price t-value',
-        text: label('hargaPerSatuan', {
-          harga: formatRupiah(unitPrice(product, unit.code, tier)),
-          satuan: unit.code,
-        }),
-      }),
-      el('span', {
-        className: 'pos-card__stock t-label',
-        text: label('stokKartu', {
-          toko: stock(product.stock.display),
-          gudang: stock(product.stock.besar),
-        }),
-      }),
     );
     let timer: number | undefined;
     let pressed = false;
-    card.addEventListener('pointerdown', () => {
+    main.addEventListener('pointerdown', () => {
       pressed = false;
       timer = window.setTimeout(() => {
         pressed = true;
@@ -123,31 +141,73 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       }, LONG_PRESS_MS);
     });
     for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
-      card.addEventListener(type, () => {
+      main.addEventListener(type, () => {
         window.clearTimeout(timer);
       });
     }
-    card.addEventListener('click', () => {
+    main.addEventListener('click', () => {
       if (pressed) {
         pressed = false;
         return;
       }
       addProduct(product);
     });
-    card.addEventListener('keydown', (event) => {
+    main.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && event.shiftKey) {
         event.preventDefault();
         openUnitModal({ session, product, onDone: refocus });
       }
     });
-    return card;
+
+    const prices = el(
+      'div',
+      { className: 'pos-card__prices', attrs: { role: 'group', 'aria-label': label('blokHarga') } },
+      ...product.units.map((unit) => {
+        const row = el(
+          'button',
+          { className: 'pos-card__price', attrs: { type: 'button' } },
+          el('span', { className: 'pos-card__unit', text: unitText(unit) }),
+          el('span', {
+            className: 'pos-card__amount t-value',
+            text: formatRupiah(unitPrice(product, unit.code, tier)),
+          }),
+        );
+        row.addEventListener('click', () => {
+          addProduct(product, unit.code);
+        });
+        return row;
+      }),
+    );
+    const stock = el(
+      'dl',
+      { className: 'pos-card__stock', attrs: { 'aria-label': label('blokStok') } },
+      ...stockLines(product).map((line) =>
+        el(
+          'div',
+          { className: 'pos-card__stockrow' },
+          el('dt', { text: label(STOCK_LABELS[line.key]) }),
+          el('dd', {
+            text:
+              line.quantity === undefined
+                ? '-'
+                : `${formatDecimal(line.quantity, 1, 0)} ${line.unit}`,
+          }),
+        ),
+      ),
+    );
+    return el(
+      'article',
+      { className: 'pos-card' },
+      main,
+      el('div', { className: 'pos-card__table' }, prices, stock),
+    );
   };
 
   const renderGrid = (): void => {
     const hits =
       query.trim().length >= 2
         ? index.search(query, products.length)
-        : { hits: products, total: products.length };
+        : { hits: ordered, total: ordered.length };
     const filtered = hits.hits.filter(
       (product) => category === '' || product.category === category,
     );
@@ -160,24 +220,19 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     note.textContent = filtered.length > RESULT_LIMIT ? label('hasilDibatasi') : '';
   };
 
-  const renderChips = (): void => {
-    const names = ['', ...new Set(products.map((product) => product.category))];
-    chips.replaceChildren(
-      ...names.map((name) => {
-        const chip = createChip({
-          text: name === '' ? label('semua') : name,
-          selected: name === category,
-          onToggle: () => {
-            category = name;
-            renderChips();
-            renderGrid();
-            refocus();
-          },
-        });
-        return chip;
-      }),
-    );
-  };
+  const dropdown = createDropdown({
+    labelText: label('kategoriBarang'),
+    options: [
+      { value: '', text: label('semuaKategori') },
+      ...categoriesOf(products).map((name) => ({ value: name, text: name })),
+    ],
+    value: category,
+    onChange: (value) => {
+      category = value;
+      renderGrid();
+      refocus();
+    },
+  });
 
   const draftReceipt = (): void => {
     const lines = session.state().lines;
@@ -224,129 +279,24 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     }
     go('/pos/bill');
   };
-  const showCustomers = (): void => {
-    customers = true;
-    customerQuery = '';
-    renderBill();
-  };
 
-  const withHint = (button: HTMLButtonElement, hint: 'pintasanBayar' | 'pintasanTahan'): void => {
-    if (isPc()) {
-      button.append(
-        el('kbd', { className: 'pos-kbd', text: label(hint), attrs: { 'aria-hidden': 'true' } }),
-      );
-    }
-  };
-
-  const renderCustomerPanel = (): void => {
-    const input = el('input', {
-      className: 'input',
-      attrs: {
-        type: 'search',
-        'aria-label': label('cariPelanggan'),
-        placeholder: label('cariPelanggan'),
-      },
-    });
-    input.value = customerQuery;
-    const list = el('div', { className: 'pos-customers__list' });
-    const entries = (): (Customer | undefined)[] => {
-      const all = store.getState().data.customers;
-      const needle = customerQuery.trim().toLowerCase();
-      return [undefined, ...all.filter((item) => item.name.toLowerCase().includes(needle))];
-    };
-    const fill = (): void => {
-      list.replaceChildren(
-        el(
-          'div',
-          { className: 'pos-customers__head t-label' },
-          el('span', { text: label('kolomNama') }),
-          el('span', { text: label('kolomKategori') }),
-          el('span', { text: label('kolomSisaLimit') }),
-        ),
-        ...entries().map((item) => {
-          const button = el(
-            'button',
-            { className: 'pos-customers__row', attrs: { type: 'button' } },
-            el('span', { text: item === undefined ? label('pelangganUmum') : item.name }),
-            el('span', { text: label(tierKey(item?.tier ?? 'eceran')) }),
-            el('span', {
-              text: item === undefined ? '' : formatRupiah(Math.max(0, remaining(item))),
-            }),
-          );
-          button.addEventListener('click', () => {
-            session.setCustomer(item?.id);
-            customers = false;
-            renderBill();
-            renderGrid();
-            refocus();
-          });
-          return button;
-        }),
-      );
-    };
-    input.addEventListener('input', () => {
-      customerQuery = input.value;
-      fill();
-    });
-    bill.replaceChildren(
-      el('h2', { className: 't-section-title', text: label('pilihPelanggan') }),
-      input,
-      list,
-      createButton({
-        text: label('pelangganBaru'),
-        variant: 'secondary',
-        onClick: () => {
-          go('/pos/pelanggan-baru');
-        },
-      }),
-      createButton({
-        text: label('kembali'),
-        variant: 'secondary',
-        onClick: () => {
-          customers = false;
-          renderBill();
-          refocus();
-        },
-      }),
-    );
-    fill();
-    input.focus();
-  };
-
-  const renderBill = (): void => {
-    if (customers) {
-      renderCustomerPanel();
-      return;
-    }
-    const state = session.state();
+  const renderCustomerButton = (): void => {
     const current = session.customer();
-    const frontliner = role() === 'frontliner';
-    const customerRow = el(
-      'div',
-      { className: 'pos-customer' },
-      el('span', {
-        text: label('pelangganTerpilih', {
-          nama: current === undefined ? label('pelangganUmum') : current.name,
-          tier: label(tierKey(current?.tier ?? 'eceran')),
-        }),
-      }),
-      createButton({ text: label('ganti'), variant: 'secondary', onClick: showCustomers }),
+    customerButton.replaceChildren(
+      el(
+        'span',
+        { className: 'pos-customer-btn__avatar', attrs: { 'aria-hidden': 'true' } },
+        current === undefined ? icon('user-round') : initialsOf(current.name),
+      ),
+      el('span', { className: 'pos-customer-btn__text', text: customerLabel(current) }),
     );
-    const body = el('tbody');
-    if (state.lines.length === 0) {
-      body.append(
-        el(
-          'tr',
-          {},
-          el('td', {
-            className: 'pos-bill__empty',
-            text: message('MSG-007'),
-            attrs: { colspan: '4' },
-          }),
-        ),
-      );
-    }
-    state.lines.forEach((line, position) => {
+  };
+
+  const renderOrder = (): void => {
+    const state = session.state();
+    const frontliner = role() === 'frontliner';
+    const total = billTotal(state.lines);
+    const items = state.lines.map((line, position) => {
       const product = session.product(line.productId);
       const short = product !== undefined && isShort(state.lines, product, 0);
       const open = el(
@@ -366,100 +316,76 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
           openUnitModal({ session, product, lineIndex: position, onDone: refocus });
         }
       });
-      body.append(
-        el(
-          'tr',
-          {},
-          el('td', {}, open),
-          el('td', { className: 'is-end', text: formatDecimal(line.quantity, 3, 0) }),
-          el('td', { text: line.unit }),
-          el('td', { className: 'is-end', text: formatRupiah(lineSubtotal(line)) }),
-        ),
-      );
-    });
-    const holdButton = createButton({
-      text: label('tahanBill'),
-      variant: 'secondary',
-      icon: 'pause',
-      onClick: hold,
-    });
-    withHint(holdButton, 'pintasanTahan');
-    const actions = el(
-      'div',
-      { className: 'pos-actions' },
-      holdButton,
-      createButton({ text: label('panggilBill'), variant: 'secondary', onClick: recall }),
-    );
-    if (frontliner) {
-      actions.append(
-        createButton({
-          text: label('cetakStrukDraf'),
-          variant: 'secondary',
-          icon: 'printer',
-          onClick: draftReceipt,
-        }),
-      );
-    }
-    actions.append(
-      createButton({ text: label('pelanggan'), variant: 'secondary', onClick: showCustomers }),
-    );
-    const children: (HTMLElement | false)[] = [
-      customerRow,
-      el(
-        'div',
-        {
-          className: 'pos-bill__scroll',
-          attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
-        },
-        el(
-          'table',
-          { className: 'pos-bill' },
-          el(
-            'thead',
-            {},
-            el(
-              'tr',
-              {},
-              el('th', { text: label('kolomBarang') }),
-              el('th', { className: 'is-end', text: label('kolomJumlahPendek') }),
-              el('th', { text: label('kolomSatuan') }),
-              el('th', { className: 'is-end', text: label('kolomSubtotal') }),
-            ),
-          ),
-          body,
-        ),
-      ),
-      el(
-        'div',
-        { className: 'pos-totals' },
-        el('p', {
-          className: 't-label',
-          text: `${label('jumlahItem')}: ${String(itemCount(state.lines))}`,
-        }),
-        el(
-          'p',
-          { className: 'pos-totals__row' },
-          el('span', { className: 't-section-title', text: label('totalHuruf') }),
-          el('output', {
-            className: 't-total pos-totals__value',
-            text: formatRupiah(billTotal(state.lines)),
+      return el(
+        'li',
+        { className: 'pos-order__item' },
+        open,
+        el('span', {
+          className: 'pos-order__qty',
+          text: label('qtyBaris', {
+            jumlah: formatDecimal(line.quantity, 3, 0),
+            harga: formatRupiah(line.unitPrice).replace('Rp ', ''),
           }),
-        ),
-      ),
-      actions,
+        }),
+        el('span', { className: 'pos-order__unit t-label', text: line.unit }),
+        el('output', { className: 'pos-order__amount', text: formatRupiah(lineSubtotal(line)) }),
+      );
+    });
+
+    const menuItems: MenuItem[] = [
+      { text: label('tahanBill'), icon: 'pause', onSelect: hold },
+      { text: label('panggilBill'), icon: 'clipboard-list', onSelect: recall },
     ];
+    if (frontliner) {
+      menuItems.push({ text: label('cetakStrukDraf'), icon: 'printer', onSelect: draftReceipt });
+    }
+    const footer = el('div', { className: 'pos-order__footer' });
     if (!frontliner && isAllowed(role(), 'POS-02', 'Bayar')) {
       const payButton = createButton({
-        text: label('bayar'),
+        text: label('bayarJumlah', { jumlah: formatRupiah(total) }),
         icon: 'banknote',
         pay: true,
         onClick: pay,
       });
       payButton.toggleAttribute('data-inactive', state.lines.length === 0);
-      withHint(payButton, 'pintasanBayar');
-      children.push(payButton);
+      if (isPc()) {
+        payButton.append(
+          el('kbd', {
+            className: 'pos-kbd',
+            text: label('pintasanBayar'),
+            attrs: { 'aria-hidden': 'true' },
+          }),
+        );
+      }
+      footer.append(payButton);
     }
-    bill.replaceChildren(...children.filter((child): child is HTMLElement => child !== false));
+    footer.append(createMenuButton({ labelText: label('opsiPesanan'), items: menuItems }));
+
+    order.replaceChildren(
+      el('h2', {
+        className: 'pos-order__title t-section-title',
+        text: label('pesananJumlah', { jumlah: state.lines.length }),
+      }),
+      items.length === 0
+        ? el(
+            'div',
+            { className: 'pos-order__empty' },
+            createIllustration('keranjang'),
+            el('p', { text: label('belumAdaBarangDipilih') }),
+          )
+        : el(
+            'ul',
+            { className: 'pos-order', attrs: { 'aria-label': label('daftarBarang') } },
+            ...items,
+          ),
+      el(
+        'p',
+        { className: 'pos-order__subtotal' },
+        el('span', { className: 't-section-title', text: label('kolomSubtotal') }),
+        el('output', { className: 't-total pos-totals__value', text: formatRupiah(total) }),
+      ),
+      footer,
+    );
   };
 
   const renderBanner = (): void => {
@@ -496,6 +422,19 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     banner.replaceChildren(...children);
   };
 
+  const pickCustomer = (): void => {
+    openCustomerPicker(
+      session,
+      () => {
+        renderCustomerButton();
+        renderOrder();
+        renderGrid();
+        refocus();
+      },
+      go,
+    );
+  };
+
   const onKey = (event: KeyboardEvent): void => {
     if (!isPc() || document.querySelector('.modal-overlay') !== null) {
       return;
@@ -508,7 +447,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
         }
       },
       F6: hold,
-      F9: showCustomers,
+      F9: pickCustomer,
     };
     const action = actions[event.key];
     if (action !== undefined) {
@@ -545,17 +484,17 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       refocus();
     }
   });
+  customerButton.addEventListener('click', pickCustomer);
 
   const unsubscribers = [
     session.subscribe(() => {
-      renderBill();
+      renderCustomerButton();
+      renderOrder();
       renderBanner();
-      if (!customers) {
-        renderGrid();
-      }
+      renderGrid();
     }),
     store.subscribe(() => {
-      renderBill();
+      renderOrder();
       renderBanner();
     }),
   ];
@@ -563,12 +502,21 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
   const form = el(
     'form',
     { className: 'pos-search', attrs: { role: 'search' } },
+    icon('search'),
     searchInput,
-    createButton({ text: label('cari'), type: 'submit', variant: 'secondary', icon: 'search' }),
   );
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     renderGrid();
+  });
+  const scan = el(
+    'button',
+    { className: 'pos-scan', attrs: { type: 'button', 'aria-label': label('pindai') } },
+    icon('scan-barcode'),
+  );
+  scan.addEventListener('click', () => {
+    searchInput.focus();
+    note.textContent = label('petunjukPindai');
   });
 
   const element = el(
@@ -579,14 +527,21 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     el(
       'main',
       { className: 'pos-sell' },
-      el('section', { className: 'pos-catalog' }, form, searchError, chips, grid, note),
-      bill,
+      el(
+        'section',
+        { className: 'pos-catalog' },
+        el('div', { className: 'pos-toolbar' }, dropdown.element, form, scan, customerButton),
+        searchError,
+        grid,
+        note,
+      ),
+      order,
     ),
   );
   const unguard = guardWithShift(session, element);
-  renderChips();
+  renderCustomerButton();
   renderGrid();
-  renderBill();
+  renderOrder();
   renderBanner();
   window.setTimeout(refocus, 0);
   return {
@@ -600,19 +555,6 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       topbar.destroy();
     },
   };
-}
-
-function tierKey(
-  tier: 'eceran' | 'grosir' | 'kontraktor',
-): 'tierEceran' | 'tierGrosir' | 'tierKontraktor' {
-  return tier === 'eceran' ? 'tierEceran' : tier === 'grosir' ? 'tierGrosir' : 'tierKontraktor';
-}
-
-function remaining(customer: Customer): number {
-  return (
-    customer.limit -
-    customer.invoices.reduce((sum, invoice) => sum + Math.max(0, invoice.amount - invoice.paid), 0)
-  );
 }
 
 export const SELL_SCREEN = 'POS-02';

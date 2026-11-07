@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared, openDrawerItem } from './helpers/routes';
+import { loginPos as loginPosShared, openDrawerItem, openOrderMenu } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -29,16 +29,14 @@ async function lineLengths(page: Page): Promise<number[]> {
 test.describe('POS-05 sampai POS-10', () => {
   test('F-04: tahan bill, cetak struk draf 58 dan 80 mm, lalu panggil bill', async ({ page }) => {
     await login(page, 'Dewi');
-    await page.locator('.pos-card').first().click();
-    await page.locator('.pos-card').nth(1).click();
-    await page.getByRole('button', { name: /^Tahan Bill/ }).click();
+    await page.locator('.pos-card__main').first().click();
+    await page.locator('.pos-card__main').nth(1).click();
+    await openOrderMenu(page, 'Tahan Bill');
     await expect(page.getByText('Bill B-0004 ditahan.')).toBeVisible();
-    await expect(
-      page.getByText('Belum ada barang. Pindai barcode atau ketuk barang.'),
-    ).toBeVisible();
+    await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
 
-    await page.locator('.pos-card').nth(2).click();
-    await page.getByRole('button', { name: 'Panggil Bill' }).click();
+    await page.locator('.pos-card__main').nth(2).click();
+    await openOrderMenu(page, 'Panggil Bill');
     await expect(
       page.getByText('Bill saat ini belum selesai. Tahan dahulu agar tidak hilang.'),
     ).toBeVisible();
@@ -50,7 +48,7 @@ test.describe('POS-05 sampai POS-10', () => {
       .getByRole('button', { name: 'Hapus', exact: true })
       .click();
 
-    await page.getByRole('button', { name: 'Panggil Bill' }).click();
+    await openOrderMenu(page, 'Panggil Bill');
     await expect(page).toHaveURL(/#\/pos\/bill$/);
     const rows = page.locator('.pos-bills__list tbody tr');
     await expect(rows).toHaveCount(4);
@@ -80,8 +78,8 @@ test.describe('POS-05 sampai POS-10', () => {
 
     await page.getByRole('button', { name: 'Panggil Bill' }).click();
     await expect(page).toHaveURL(/#\/pos\/jual$/);
-    await expect(page.locator('.pos-bill tbody tr')).toHaveCount(2);
-    await page.getByRole('button', { name: 'Panggil Bill' }).click();
+    await expect(page.locator('.pos-order__item')).toHaveCount(2);
+    await openOrderMenu(page, 'Panggil Bill');
     await expect(page.getByText('Bill saat ini belum selesai.')).toBeVisible();
   });
 
@@ -107,7 +105,7 @@ test.describe('POS-05 sampai POS-10', () => {
       ),
     ).toBeVisible();
 
-    await page.locator('.pos-card').first().click();
+    await page.locator('.pos-card__main').first().click();
     await page.locator('.pos-bill__name').first().click();
     await page.getByRole('textbox', { name: 'Jumlah' }).fill('9999');
     await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
@@ -123,7 +121,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await expect(page.locator('.pos-status__queue tbody tr')).toHaveCount(4);
     await expect(page.locator('.pos-sync--menunggu')).toHaveCount(4);
     await expect(page.locator('.pos-status-card__count')).toHaveText('4');
-    await expect(page.locator('.pos-status__negative')).toContainText('Semen PCC Karya Mandiri');
+    await expect(page.locator('.pos-status__negative')).toContainText('SEMEN GRESIK 40KG');
     await expect(page.locator('.pos-status__negative')).toContainText('Ditinjau (negatif)');
     await expect(page.locator('.pos-status-card--connection')).toHaveClass(/is-offline/);
 
@@ -218,8 +216,8 @@ test.describe('POS-05 sampai POS-10', () => {
     page,
   }) => {
     await login(page, 'Dewi');
-    await page.getByRole('button', { name: 'Pelanggan', exact: true }).click();
-    await page.getByRole('button', { name: 'Pelanggan Baru' }).click();
+    await page.locator('.pos-customer-btn').click();
+    await page.getByRole('button', { name: 'Tambah Pelanggan' }).click();
     const save = page.getByRole('button', { name: 'Simpan Pelanggan' });
     await save.click();
     await expect(page.getByText('Nama pelanggan wajib diisi.')).toBeVisible();
@@ -239,7 +237,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await save.click();
     await expect(page.getByText('Pelanggan tersimpan.')).toBeVisible();
     await expect(page).toHaveURL(/#\/pos\/jual$/);
-    await expect(page.getByText('Pelanggan: Toko Baru Sentosa (Eceran)')).toBeVisible();
+    await expect(page.locator('.pos-customer-btn')).toContainText('TOKO BARU SENTOSA');
   });
 
   test('printer terputus: struk transaksi tertahan sampai Cetak Ulang berhasil', async ({
@@ -247,7 +245,7 @@ test.describe('POS-05 sampai POS-10', () => {
   }) => {
     await login(page, 'Dewi');
     await simulate(page, 'Printer');
-    await page.locator('.pos-card').first().click();
+    await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();
     await page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' }).click();
@@ -268,8 +266,8 @@ test.describe('POS-05 sampai POS-10', () => {
     await page.keyboard.press('Escape');
     await page.goto('/#/pos/riwayat');
     await expect(page).toHaveURL(/#\/pos\/jual$/);
-    await page.locator('.pos-card').first().click();
-    await page.getByRole('button', { name: 'Cetak Struk Draf' }).click();
+    await page.locator('.pos-card__main').first().click();
+    await openOrderMenu(page, 'Cetak Struk Draf');
     await expect(page.locator('.pos-receipt')).toContainText('STRUK DRAF, BUKAN BUKTI BAYAR');
   });
 

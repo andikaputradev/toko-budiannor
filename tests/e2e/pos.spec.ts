@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared } from './helpers/routes';
+import { loginPos as loginPosShared, openOrderMenu } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -14,14 +14,14 @@ async function login(page: Page, name: string): Promise<void> {
 }
 
 async function addLargeQuantity(page: Page): Promise<void> {
-  await page.locator('.pos-card').first().click();
+  await page.locator('.pos-card__main').first().click();
   await page.locator('.pos-bill__name').first().click();
   await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
   await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
 }
 
 async function chooseCustomer(page: Page, name: string): Promise<void> {
-  await page.locator('.pos-actions').getByRole('button', { name: 'Pelanggan' }).click();
+  await page.locator('.pos-customer-btn').click();
   await page.locator('.pos-customers__row', { hasText: name }).click();
 }
 
@@ -49,8 +49,8 @@ test.describe('POS-01 sampai POS-04', () => {
     page,
   }) => {
     await login(page, 'Dewi');
-    await page.locator('.pos-card').first().click();
-    await page.locator('.pos-card').nth(3).click();
+    await page.locator('.pos-card__main').first().click();
+    await page.locator('.pos-card__main').nth(3).click();
     await page.evaluate(() => {
       Object.assign(window, { taps: 0 });
       document.addEventListener(
@@ -69,15 +69,13 @@ test.describe('POS-01 sampai POS-04', () => {
     const taps = await page.evaluate(() => (window as unknown as { taps: number }).taps);
     expect(taps).toBe(3);
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
-    await expect(
-      page.getByText('Belum ada barang. Pindai barcode atau ketuk barang.'),
-    ).toBeVisible();
+    await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
   });
 
   test('P-06: tombol Bayar 72 px selalu terlihat walau bill panjang', async ({ page }) => {
     await login(page, 'Dewi');
     for (let index = 0; index < 12; index += 1) {
-      await page.locator('.pos-card').nth(index).click();
+      await page.locator('.pos-card__main').nth(index).click();
     }
     const pay = page.getByRole('button', { name: /^Bayar/ });
     await expect(pay).toBeInViewport();
@@ -104,7 +102,7 @@ test.describe('POS-01 sampai POS-04', () => {
 
   test('F-02: tagihan lewat jatuh tempo menolak piutang', async ({ page }) => {
     await login(page, 'Dewi');
-    await page.locator('.pos-card').first().click();
+    await page.locator('.pos-card__main').first().click();
     await chooseCustomer(page, 'PT Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Piutang' }).click();
@@ -138,7 +136,11 @@ test.describe('POS-01 sampai POS-04', () => {
 
   test('POS-03: jumlah desimal berkoma dan pesan validasi persis', async ({ page }) => {
     await login(page, 'Dewi');
-    await page.locator('.pos-card').first().click();
+    await page
+      .locator('.pos-card', { hasText: 'KABEL NYM' })
+      .locator('.pos-card__main')
+      .first()
+      .click();
     await page.locator('.pos-bill__name').first().click();
     const quantity = page.getByRole('textbox', { name: 'Jumlah' });
     await quantity.fill('0');
@@ -149,7 +151,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await expect(page.getByText('Maksimal 3 angka di belakang koma.')).toBeVisible();
     await quantity.fill('2,5');
     await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
-    await expect(page.locator('.pos-bill tbody td.is-end').first()).toHaveText('2,5');
+    await expect(page.locator('.pos-order__item').first()).toContainText('QTY : 2,5 X');
   });
 
   test('pemindai: kode yang sama dua kali menambah jumlah tanpa baris baru', async ({ page }) => {
@@ -159,8 +161,8 @@ test.describe('POS-01 sampai POS-04', () => {
     await search.press('Enter');
     await search.fill('8990000000001');
     await search.press('Enter');
-    await expect(page.locator('.pos-bill tbody tr')).toHaveCount(1);
-    await expect(page.locator('.pos-bill tbody td.is-end').first()).toHaveText('2');
+    await expect(page.locator('.pos-order__item')).toHaveCount(1);
+    await expect(page.locator('.pos-order__item').first()).toContainText('QTY : 2 X');
     await search.fill('8990000009999');
     await search.press('Enter');
     await expect(page.getByText('Barcode 8990000009999 tidak ditemukan.')).toBeVisible();
@@ -170,8 +172,8 @@ test.describe('POS-01 sampai POS-04', () => {
   test('Frontliner: tanpa Bayar, dengan Tahan Bill dan Cetak Struk Draf', async ({ page }) => {
     await login(page, 'Agus');
     await expect(page.getByRole('button', { name: /^Bayar/ })).toHaveCount(0);
-    await page.locator('.pos-card').first().click();
-    await page.getByRole('button', { name: 'Cetak Struk Draf' }).click();
+    await page.locator('.pos-card__main').first().click();
+    await openOrderMenu(page, 'Cetak Struk Draf');
     await expect(page.getByText('STRUK DRAF, BUKAN BUKTI BAYAR')).toBeVisible();
   });
 
@@ -180,7 +182,7 @@ test.describe('POS-01 sampai POS-04', () => {
     const login01 = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(login01.violations).toEqual([]);
     await login(page, 'Dewi');
-    await page.locator('.pos-card').first().click();
+    await page.locator('.pos-card__main').first().click();
     const sell = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(sell.violations).toEqual([]);
     await page.getByRole('button', { name: /^Bayar/ }).click();

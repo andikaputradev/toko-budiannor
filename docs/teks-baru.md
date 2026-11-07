@@ -777,3 +777,20 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-770: "Shift Dimulai ({nama})". Kunci shiftDimulaiOleh.
 - TB-771: "Open Bill, {jumlah} bill". Kunci openBillJumlah.
 - TB-772: "Pilih Pengguna". Kunci judulPilihKasir (sebelumnya "Pilih Kasir").
+- TB-773: "Pesanan Baru". Kunci judulPesananBaru.
+- TB-774: "Masukkan kode / nama barang". Kunci cariBarangPlaceholder.
+- TB-775: "Semua Kategori". Kunci semuaKategori.
+- TB-776: "Kategori barang". Kunci kategoriBarang.
+- TB-777: "Pindai". Kunci pindai.
+- TB-778: "Arahkan pemindai ke barcode, lalu tekan Enter.". Kunci petunjukPindai.
+- TB-779: "Harga". Kunci blokHarga.
+- TB-780: "Stok". Kunci blokStok.
+- TB-781: "Toko". Kunci stokToko.
+- TB-782: "Gudang". Kunci stokGudang.
+- TB-783: "PO". Kunci stokPo.
+- TB-784: "Pesanan ({jumlah})". Kunci pesananJumlah.
+- TB-785: "Belum ada barang yang dipilih". Kunci belumAdaBarangDipilih.
+- TB-786: "QTY : {jumlah} X {harga}". Kunci qtyBaris.
+- TB-787: "Bayar {jumlah}". Kunci bayarJumlah.
+- TB-788: "Opsi pesanan". Kunci opsiPesanan.
+- TB-789: "Tambah Pelanggan". Kunci tambahPelanggan.

@@ -178,3 +178,127 @@ test.describe('tema', () => {
     });
   }
 });
+
+test.describe('layar jual', () => {
+  test('kartu proposal memuat harga per satuan serta stok toko, gudang, dan PO', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    const semen = page.locator('.pos-card').first();
+    await expect(semen).toContainText('SEMEN GRESIK 40KG');
+    await expect(semen.getByRole('button', { name: /^SAK/ })).toContainText('Rp 70.000');
+    await expect(semen.locator('.pos-card__stock')).toContainText('28 SAK');
+    await expect(semen.locator('.pos-card__stock')).toContainText('800 SAK');
+    const fox = page.locator('.pos-card', { hasText: 'LEM FOX 70 GRAM' });
+    await expect(fox.locator('.pos-card__stock')).toContainText('72 KLG');
+    await fox.getByRole('button', { name: /^DOS/ }).click();
+    const line = page.locator('.pos-order__item').first();
+    await expect(line).toContainText('LEM FOX 70 GRAM');
+    await expect(line).toContainText('QTY : 1 X 600.000');
+    await expect(page.getByRole('heading', { name: 'Pesanan (1)' })).toBeVisible();
+  });
+
+  test('dropdown kategori memfilter kartu dan Esc menutupnya', async ({ page }) => {
+    await loginPos(page);
+    await page.getByRole('button', { name: /Semua Kategori/ }).click();
+    const list = page.getByRole('listbox', { name: 'Kategori barang' });
+    await expect(list).toBeVisible();
+    await list.getByRole('option', { name: 'Door & Window' }).click();
+    await expect(list).toBeHidden();
+    await expect(page.locator('.pos-card')).toHaveCount(1);
+    await expect(page.locator('.pos-card').first()).toContainText('ENGSEL BELLUCCI SN 5');
+    await page.getByRole('button', { name: /Door & Window/ }).click();
+    await expect(list).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+  });
+
+  test('pelanggan: label KODE - NAMA (TIER) dan modal daftar dengan Tambah Pelanggan', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    const button = page.locator('.pos-customer-btn');
+    await expect(button).toContainText('Umum');
+    await button.click();
+    const dialog = page.getByRole('dialog', { name: 'Pilih Pelanggan' });
+    await dialog.locator('.pos-customers__row', { hasText: 'Kevin Wahyudi' }).click();
+    await expect(button).toContainText('PL387 - KEVIN WAHYUDI (RETAIL)');
+    await button.click();
+    await page
+      .getByRole('dialog', { name: 'Pilih Pelanggan' })
+      .getByRole('button', { name: 'Tambah Pelanggan' })
+      .click();
+    await expect(page).toHaveURL(/#\/pos\/pelanggan-baru$/);
+  });
+
+  test('panel pesanan: kosong, lalu jumlah, baris QTY, dan Bayar dengan total', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
+    const semen = page.locator('.pos-card').first();
+    for (let index = 0; index < 3; index += 1) {
+      await semen.locator('.pos-card__main').click();
+    }
+    await expect(page.getByRole('heading', { name: 'Pesanan (1)' })).toBeVisible();
+    await expect(page.locator('.pos-order__item').first()).toContainText('QTY : 3 X 70.000');
+    await expect(page.getByRole('button', { name: /^Bayar Rp 210\.000/ })).toBeVisible();
+  });
+
+  test('menu titik tiga: Tahan Bill menaikkan lencana Open Bill dan mengosongkan pesanan', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await page.locator('.pos-card').first().locator('.pos-card__main').click();
+    await page.getByRole('button', { name: 'Opsi pesanan' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Panggil Bill' })).toBeVisible();
+    await page.getByRole('menuitem', { name: 'Tahan Bill' }).click();
+    await expect(page.locator('.pos-billlink .pos-badge')).toHaveText('4');
+    await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
+  });
+
+  test('Frontliner: tanpa Bayar, dengan Cetak Struk Draf pada menu titik tiga', async ({
+    page,
+  }) => {
+    await loginPosRaw(page, 'Agus');
+    await page.locator('.pos-card').first().locator('.pos-card__main').click();
+    await expect(page.getByRole('button', { name: /^Bayar/ })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Opsi pesanan' }).click();
+    await page.getByRole('menuitem', { name: 'Cetak Struk Draf' }).click();
+    await expect(page.locator('.pos-receipt')).toContainText('STRUK DRAF, BUKAN BUKTI BAYAR');
+  });
+
+  test('axe dan target 48 px pada layar jual dengan dropdown dan menu terbuka', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await page.locator('.pos-card').first().locator('.pos-card__main').click();
+    await page.getByRole('button', { name: 'Opsi pesanan' }).click();
+    await page.evaluate(() => document.fonts.ready);
+    const menu = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(menu.violations).toEqual([]);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /Semua Kategori/ }).click();
+    const dropdown = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(dropdown.violations).toEqual([]);
+    await page.keyboard.press('Escape');
+    const boxes = await page
+      .locator('.pos-sell button, .pos-sell input, .pos-sell a')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((node) => node.getClientRects().length > 0)
+          .map((node) => {
+            const box = node.getBoundingClientRect();
+            return {
+              name: node.getAttribute('class') ?? '',
+              width: box.width,
+              height: box.height,
+            };
+          }),
+      );
+    for (const box of boxes) {
+      expect(box.width, box.name).toBeGreaterThanOrEqual(47.5);
+      expect(box.height, box.name).toBeGreaterThanOrEqual(47.5);
+    }
+  });
+});
