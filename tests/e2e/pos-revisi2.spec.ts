@@ -1,0 +1,111 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
+import { loginPos, settle } from './helpers/routes';
+
+const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+const THEME_KEY = 'toko-budiannor-tema-pos';
+const MODE_KEY = 'toko-budiannor-mode-pos';
+
+test.beforeEach(({ page }) => {
+  const size = page.viewportSize();
+  test.skip(size === null || size.width < 1000, 'POS dirancang untuk layar landscape');
+});
+
+async function seedStorage(page: Page, values: Record<string, string | null>): Promise<void> {
+  await page.goto('/#/pos');
+  await page.evaluate((entries) => {
+    for (const [key, value] of Object.entries(entries)) {
+      if (value === null) {
+        localStorage.removeItem(key);
+      } else {
+        localStorage.setItem(key, value);
+      }
+    }
+  }, values);
+  await page.reload();
+}
+
+async function openDrawer(page: Page) {
+  await page.getByRole('button', { name: 'Menu' }).click();
+  return page.getByRole('dialog', { name: 'Toko Budiannor' });
+}
+
+test.describe('tampilan', () => {
+  test('mode Otomatis mengikuti emulateMedia gelap dan terang tanpa memuat ulang', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await loginPos(page);
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('data-pos-mode', 'otomatis');
+    await expect(root).toHaveAttribute('data-pos-scheme', 'terang');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(root).toHaveAttribute('data-pos-scheme', 'terang');
+  });
+
+  test('memilih palet Biru mengubah warna aksen yang dipakai tombol utama', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await loginPos(page);
+    const accent = () =>
+      page.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--color-accent-default')
+          .trim()
+          .toLowerCase(),
+      );
+    expect(await accent()).toBe('#b94f00');
+    const drawer = await openDrawer(page);
+    await drawer
+      .getByRole('radiogroup', { name: 'Tema' })
+      .getByRole('radio', { name: 'Biru' })
+      .click();
+    await expect(page.locator('html')).toHaveAttribute('data-pos-theme', 'biru');
+    expect(await accent()).toBe('#1d4ed8');
+  });
+
+  test('pilihan Mode Gelap bertahan setelah muat ulang dan mengalahkan perangkat terang', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await loginPos(page);
+    const drawer = await openDrawer(page);
+    await drawer
+      .getByRole('radiogroup', { name: 'Mode Tampilan' })
+      .getByRole('radio', { name: 'Gelap' })
+      .click();
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
+    await page.reload();
+    await expect(root).toHaveAttribute('data-pos-mode', 'gelap');
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
+  });
+
+  test('tema gelap lama pada penyimpanan menjadi Oranye mode Gelap', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await seedStorage(page, { [THEME_KEY]: 'gelap', [MODE_KEY]: null });
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('data-pos-theme', 'oranye');
+    await expect(root).toHaveAttribute('data-pos-mode', 'gelap');
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
+  });
+
+  test('layar jual lolos axe pada mode gelap', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await seedStorage(page, { [THEME_KEY]: 'oranye', [MODE_KEY]: 'gelap' });
+    await loginPos(page);
+    await expect(page.locator('html')).toHaveAttribute('data-pos-scheme', 'gelap');
+    const pageBackground = await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-bg-page')
+        .trim()
+        .toLowerCase(),
+    );
+    expect(pageBackground).toBe('#16181b');
+    await page.evaluate(() => document.fonts.ready);
+    await settle(page);
+    const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(result.violations).toEqual([]);
+  });
+});

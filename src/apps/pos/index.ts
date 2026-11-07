@@ -9,7 +9,16 @@ import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
 import { needsShift, REVIEW_OPENING_CASH } from './domain/shift';
 import { createPosSession, type PosSession } from './pos-session';
-import { applyTheme, loadTheme } from './theme';
+import {
+  applyAppearance,
+  loadMode,
+  loadTheme,
+  migrateLegacyTheme,
+  parseMode,
+  parseTheme,
+  prefersDark,
+  watchScheme,
+} from './theme';
 import { renderBills } from './screens/bill';
 import { renderCustomerForm } from './screens/customer-form';
 import { renderExpense } from './screens/expense';
@@ -42,6 +51,19 @@ let session: PosSession | undefined;
 let current: ScreenHandle | undefined;
 let watched: Store | undefined;
 let currentPath = '/pos';
+let stopSchemeWatch: (() => void) | undefined;
+
+// Setelah dipasang, pilihan palet dan mode hidup di atribut akar; pengamat perangkat memakainya
+// sehingga tetap benar walau penyimpanan diblokir.
+function refreshScheme(): void {
+  const root = document.documentElement;
+  applyAppearance(
+    root,
+    parseTheme(root.dataset['posTheme'] ?? null),
+    parseMode(root.dataset['posMode'] ?? null),
+    prefersDark(),
+  );
+}
 
 function sessionFor(store: Store): PosSession {
   if (session?.store !== store) {
@@ -53,7 +75,9 @@ function sessionFor(store: Store): PosSession {
 export function mount(root: HTMLElement, path: string, context: AppContext): void {
   const active = sessionFor(context.store);
   document.documentElement.dataset['app'] = 'pos';
-  applyTheme(document.documentElement, loadTheme());
+  migrateLegacyTheme();
+  applyAppearance(document.documentElement, loadTheme(), loadMode(), prefersDark());
+  stopSchemeWatch ??= watchScheme(refreshScheme);
   currentPath = path;
   if (watched !== context.store) {
     watched = context.store;

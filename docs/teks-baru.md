@@ -855,3 +855,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-845: "Biru". Kunci temaBiru.
 - TB-846: "Hijau". Kunci temaHijau.
 - TB-847: "Ungu". Kunci temaUngu.
+- TB-848: "Mode Tampilan". Kunci modeTampilan.
+- TB-849: "Otomatis". Kunci modeOtomatis.
+- TB-850: "Terang". Kunci modeTerang.
+- TB-851: "Gelap". Kunci modeGelap.

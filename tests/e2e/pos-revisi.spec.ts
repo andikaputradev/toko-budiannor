@@ -167,12 +167,21 @@ test.describe('kerangka', () => {
 });
 
 test.describe('tema', () => {
-  for (const theme of ['oranye', 'terakota', 'teal', 'gelap']) {
-    test(`axe: login, gerbang shift, dan layar jual pada tema ${theme}`, async ({ page }) => {
+  const combos = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu'].flatMap((theme) =>
+    ['terang', 'gelap'].map((mode) => ({ theme, mode })),
+  );
+  for (const { theme, mode } of combos) {
+    test(`axe: login, gerbang shift, dan layar jual pada palet ${theme} mode ${mode}`, async ({
+      page,
+    }) => {
       await page.goto('/#/pos');
-      await page.evaluate((value) => {
-        localStorage.setItem('toko-budiannor-tema-pos', value);
-      }, theme);
+      await page.evaluate(
+        ({ themeValue, modeValue }) => {
+          localStorage.setItem('toko-budiannor-tema-pos', themeValue);
+          localStorage.setItem('toko-budiannor-mode-pos', modeValue);
+        },
+        { themeValue: theme, modeValue: mode },
+      );
       await page.reload();
       await page.evaluate(() => document.fonts.ready);
       const login = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
