@@ -145,6 +145,15 @@ function isLoginPath(path: string): boolean {
   return path === '/pos' || path === '/bo' || path === '/owner' || path === '/sales';
 }
 
+// Di bawah 900 px panel pesanan (dan tombol Bayar) ada di lembar yang dibuka lewat bilah Pesanan.
+export async function clickPay(page: Page): Promise<void> {
+  const bar = page.locator('.pos-order-bar');
+  if (await bar.isVisible()) {
+    await bar.click();
+  }
+  await page.getByRole('button', { name: /^Bayar/ }).click();
+}
+
 export async function openRoute(page: Page, route: RouteCase): Promise<void> {
   if (route.app === 'portal' || isLoginPath(route.path)) {
     await page.goto(`/#${route.path}`);
@@ -152,7 +161,7 @@ export async function openRoute(page: Page, route: RouteCase): Promise<void> {
     await loginFor(page, route.app);
     if (route.path === '/pos/bayar') {
       await page.locator('.pos-card__main').first().click();
-      await page.getByRole('button', { name: /^Bayar/ }).click();
+      await clickPay(page);
     } else if (route.path !== page.url().split('#')[1]) {
       await page.evaluate((hash) => {
         window.location.hash = hash;
@@ -183,7 +192,7 @@ export const OVERLAYS: readonly OverlayCase[] = [
       await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
       await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
       await chooseCustomer(page, 'UD Maju Jaya');
-      await page.getByRole('button', { name: /^Bayar/ }).click();
+      await clickPay(page);
       await page.getByRole('radio', { name: 'Piutang' }).click();
       await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
