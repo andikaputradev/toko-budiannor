@@ -188,3 +188,39 @@ describe('sesi: chooseSingle', () => {
     expect(session.state().rows).toEqual([{ method: 'edc', amount: 70000 }]);
   });
 });
+
+describe('sesi: beralih ke Piutang tidak membawa baris terbayar tersembunyi', () => {
+  it('membuang baris tunai yang sudah diketik sebelum memilih Piutang', () => {
+    const { session } = setup();
+    session.setCustomer('C-062');
+    session.setAmount('tunai', 50000);
+    session.chooseReceivable('piutang');
+    expect(session.state().rows.some((row) => row.method === 'tunai')).toBe(false);
+    expect(session.summary()).toMatchObject({ status: 'ready', receivable: 70000 });
+  });
+
+  it('membuang baris QRIS sebesar total sehingga transaksi tercatat sebagai piutang sungguhan', () => {
+    const { session } = setup();
+    session.setCustomer('C-062');
+    session.chooseSingle('qris');
+    session.chooseReceivable('piutang');
+    expect(session.state().rows).toEqual([{ method: 'piutang', amount: 70000 }]);
+    const sale = session.finish();
+    expect(sale?.payment).toBe('piutang');
+    expect(sale?.paid).toBe(0);
+    expect(sale?.terms?.dueDays).toBe(30);
+  });
+
+  it('mempertahankan DP yang sudah diisi saat Piutang dipilih ulang', () => {
+    const { session } = setup();
+    session.setCustomer('C-062');
+    session.chooseReceivable('piutang');
+    session.setDownPayment(20000, 'qris');
+    session.chooseReceivable('piutang');
+    expect(session.state().rows.find((row) => row.method === 'dp')).toEqual({
+      method: 'dp',
+      amount: 20000,
+      via: 'qris',
+    });
+  });
+});

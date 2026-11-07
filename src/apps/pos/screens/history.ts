@@ -252,15 +252,17 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
 
     const actions = el('div', { className: 'pos-history__actions' });
     if (isAllowed(role, 'BO-10', 'Simpan Retur')) {
-      actions.append(
-        createButton({
-          text: label('retur'),
-          variant: 'secondary',
-          onClick: () => {
-            openReturnModal(session, sale, render);
-          },
-        }),
-      );
+      const returButton = createButton({
+        text: label('retur'),
+        variant: 'secondary',
+        onClick: () => {
+          openReturnModal(session, sale, render, () => {
+            detail.querySelector<HTMLElement>('.pos-history__retur')?.focus();
+          });
+        },
+      });
+      returButton.classList.add('pos-history__retur');
+      actions.append(returButton);
     }
     actions.append(
       createButton({

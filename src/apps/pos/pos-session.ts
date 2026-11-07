@@ -703,7 +703,13 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       if (method === 'piutang') {
         commit({
           method,
-          rows: withMethodAmount(state.rows, 'piutang', 0),
+          // Hanya DP yang dibawa ke piutang; baris terbayar lain tersembunyi di panel Piutang
+          // dan akan tetap dihitung sebagai uang diterima.
+          rows: withMethodAmount(
+            state.rows.filter((row) => row.method === 'dp'),
+            'piutang',
+            0,
+          ),
           ownerApproved: false,
           terms: state.terms ?? { dueDays: customer()?.dueDays ?? DEFAULT_DUE_DAYS },
         });

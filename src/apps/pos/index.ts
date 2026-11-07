@@ -7,7 +7,7 @@ import '../../styles/pos-retur.css';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
-import { REVIEW_OPENING_CASH } from './domain/shift';
+import { needsShift, REVIEW_OPENING_CASH } from './domain/shift';
 import { createPosSession, type PosSession } from './pos-session';
 import { applyTheme, loadTheme } from './theme';
 import { renderBills } from './screens/bill';
@@ -83,7 +83,12 @@ export function mount(root: HTMLElement, path: string, context: AppContext): voi
     return;
   }
   const role = context.store.getState().role;
-  if (path === '/pos/bayar' && (!canOpenScreen(role, 'POS-04') || active.total() === 0)) {
+  if (
+    path === '/pos/bayar' &&
+    (!canOpenScreen(role, 'POS-04') ||
+      active.total() === 0 ||
+      needsShift(role, active.state().shift))
+  ) {
     navigate('/pos/jual');
     return;
   }

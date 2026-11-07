@@ -738,6 +738,17 @@ test.describe('retur penjualan', () => {
     await expect(page.getByRole('dialog', { name: /Retur Penjualan/ })).toContainText('sisa 1');
   });
 
+  test('fokus kembali ke tombol Retur setelah Retur Berhasil ditutup', async ({ page }) => {
+    const dialog = await openRetur(page);
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Retur Berhasil' });
+    await done.getByRole('button', { name: 'Selesai' }).click();
+    await expect(
+      page.locator('.pos-history__detail').getByRole('button', { name: 'Retur', exact: true }),
+    ).toBeFocused();
+  });
+
   test('axe dan target 48 px pada modal Retur', async ({ page }) => {
     const dialog = await openRetur(page);
     await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
@@ -755,5 +766,81 @@ test.describe('retur penjualan', () => {
     for (const height of heights) {
       expect(height).toBeGreaterThanOrEqual(47.5);
     }
+  });
+});
+
+test.describe('perbaikan hasil review', () => {
+  async function endShiftFromMenu(page: Page): Promise<void> {
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('button', { name: 'Selesai Shift' }).click();
+    await page
+      .getByRole('dialog', { name: 'Selesai Shift' })
+      .getByRole('button', { name: 'Akhiri Shift' })
+      .click();
+  }
+
+  test('pesanan tertunda tidak bisa dibayar lewat F4 atau alamat setelah shift diakhiri', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await endShiftFromMenu(page);
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    await page.keyboard.press('F4');
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await page.evaluate(() => {
+      window.location.hash = '/pos/bayar';
+    });
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+  });
+
+  test('mengakhiri shift dari layar bayar mengembalikan ke layar jual', async ({ page }) => {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page).toHaveURL(/#\/pos\/bayar$/);
+    await endShiftFromMenu(page);
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+  });
+
+  test('DP bercara QRIS tetap terpilih saat layar bayar dibuka ulang', async ({ page }) => {
+    await loginPos(page);
+    await chooseCustomer(page, 'Bu Sherly');
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByLabel('DP', { exact: true }).fill('20000');
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await page.getByRole('button', { name: 'Kembali' }).click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page.getByRole('radio', { name: 'Piutang' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: 'QRIS', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  test('mode split tetap aktif saat layar bayar dibuka ulang', async ({ page }) => {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('switch', { name: 'Split Payment' }).click();
+    await page.getByLabel('Jumlah diterima').fill('30000');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await page.getByLabel('Jumlah diterima').fill('10000');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await page.getByRole('button', { name: 'Kembali' }).click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page.getByRole('switch', { name: 'Split Payment' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.locator('.pos-pay__rows li')).toHaveCount(2);
   });
 });

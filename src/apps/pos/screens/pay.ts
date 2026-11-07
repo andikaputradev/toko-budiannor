@@ -51,9 +51,12 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const referenceId = nextId('referensi');
   const dpId = nextId('dp');
   const daysId = nextId('hari');
-  let split = false;
+  const stored = session.state().rows;
+  let split =
+    stored.filter((row) => row.method !== 'dp' && row.method !== 'piutang' && row.amount > 0)
+      .length > 1;
   let pending = 0;
-  let dpVia: PaidMethod = 'tunai';
+  let dpVia: PaidMethod = stored.find((row) => row.method === 'dp')?.via ?? 'tunai';
 
   const summaryList = el('ul', { className: 'pos-pay__items' });
   const totalOutput = el('output', { className: 't-total pos-pay__total' });

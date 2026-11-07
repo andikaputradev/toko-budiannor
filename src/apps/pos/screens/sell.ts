@@ -29,6 +29,7 @@ import { createTopbar } from '../topbar';
 import { openCustomerPicker } from './customer-picker';
 import type { ScreenHandle } from './login';
 import { billReceipt, openReceiptPreview } from './receipt-preview';
+import { needsShift } from '../domain/shift';
 import { guardWithShift } from './shift';
 import { openUnitModal } from './unit-modal';
 
@@ -266,6 +267,9 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     refocus();
   };
   const pay = (): void => {
+    if (needsShift(role(), session.state().shift)) {
+      return;
+    }
     if (session.state().lines.length === 0) {
       fail(message('MSG-025'));
       return;

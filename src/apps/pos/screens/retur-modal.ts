@@ -36,7 +36,11 @@ function digitsOf(raw: string): number {
   return digits === '' ? 0 : Number(digits);
 }
 
-export function openReturnDone(session: PosSession, record: ReturnRecord): void {
+export function openReturnDone(
+  session: PosSession,
+  record: ReturnRecord,
+  onClose?: () => void,
+): void {
   const sale = session.state().sales.find((item) => item.number === record.saleNumber);
   const customer = session.store
     .getState()
@@ -96,6 +100,7 @@ export function openReturnDone(session: PosSession, record: ReturnRecord): void 
       ),
     ),
     actions: [],
+    ...(onClose === undefined ? {} : { onClose }),
   });
   handle.dialog.append(
     el(
@@ -111,7 +116,12 @@ export function openReturnDone(session: PosSession, record: ReturnRecord): void 
   );
 }
 
-export function openReturnModal(session: PosSession, sale: Sale, onDone: () => void): void {
+export function openReturnModal(
+  session: PosSession,
+  sale: Sale,
+  onDone: () => void,
+  onDoneClosed?: () => void,
+): void {
   let amountTouched = false;
   let method: RefundMethod = defaultRefundMethod(sale);
   const groupName = nextId('alasan');
@@ -340,7 +350,7 @@ export function openReturnModal(session: PosSession, sale: Sale, onDone: () => v
             handle.close();
             onDone();
             if (record !== undefined) {
-              openReturnDone(session, record);
+              openReturnDone(session, record, onDoneClosed);
             }
           },
         }),
