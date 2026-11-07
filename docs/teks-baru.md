@@ -795,3 +795,12 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-788: "Opsi pesanan". Kunci opsiPesanan.
 - TB-789: "Tambah Pelanggan". Kunci tambahPelanggan.
 - TB-790: "EDC". Kunci metodeEdc.
+- TB-791: "Syarat Bayar". Kunci syaratBayar.
+- TB-792: "Split Payment". Kunci splitPayment.
+- TB-793: "Tambah Pembayaran". Kunci tambahPembayaran.
+- TB-794: "Sisa". Kunci sisaBayar.
+- TB-795: "Tempo". Kunci tempoLabel.
+- TB-796: "{hari} hari". Kunci tempoHari.
+- TB-797: "Hari lainnya". Kunci hariLainnya.
+- TB-798: "DP". Kunci dpLabel.
+- TB-799: "Cara bayar DP". Kunci caraBayarDp.

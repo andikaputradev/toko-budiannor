@@ -165,3 +165,26 @@ describe('sesi: split payment dan EDC', () => {
     expect(session.cashBalance()).toBe(100000);
   });
 });
+
+describe('sesi: chooseSingle', () => {
+  it('mengganti seluruh baris dengan satu cara bayar sebesar total', () => {
+    const { session } = setup();
+    session.setAmount('tunai', 30000);
+    session.chooseSingle('qris');
+    expect(session.state().rows).toEqual([{ method: 'qris', amount: 70000 }]);
+    expect(session.state().method).toBe('qris');
+    session.chooseSingle('tunai');
+    expect(session.state().rows).toEqual([]);
+    expect(session.state().method).toBe('tunai');
+  });
+
+  it('membuang tempo dan DP piutang sebelumnya', () => {
+    const { session } = setup();
+    session.setCustomer('C-062');
+    session.chooseReceivable('piutang');
+    session.setDownPayment(20000, 'qris');
+    session.chooseSingle('edc');
+    expect(session.state().terms).toBeUndefined();
+    expect(session.state().rows).toEqual([{ method: 'edc', amount: 70000 }]);
+  });
+});

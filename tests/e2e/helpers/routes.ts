@@ -82,6 +82,13 @@ export async function openDrawerItem(page: Page, name: string): Promise<void> {
     .click();
 }
 
+// Menunggu transisi CSS selesai agar axe tidak mengukur warna di tengah peralihan.
+export async function settle(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animation) => animation.finished)),
+  );
+}
+
 export async function openOrderMenu(page: Page, item: string): Promise<void> {
   await page.getByRole('button', { name: 'Opsi pesanan' }).click();
   await page.getByRole('menuitem', { name: item }).click();

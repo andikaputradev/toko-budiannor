@@ -168,6 +168,7 @@ export interface PosSession {
   setAmount(method: PaymentMethod, amount: number): void;
   setTerms(days: number): void;
   setDownPayment(amount: number, via: PaidMethod): void;
+  chooseSingle(method: PaidMethod): void;
   exactAmount(): void;
   quickAmount(amount: number): void;
   chooseReceivable(method: 'dp' | 'piutang'): void;
@@ -580,6 +581,14 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         return;
       }
       commit({ terms: { dueDays: Math.min(MAX_DUE_DAYS, Math.max(0, Math.round(days))) } });
+    },
+    chooseSingle: (method) => {
+      commit({
+        method,
+        rows: method === 'tunai' ? [] : [{ method, amount: total() }],
+        ownerApproved: false,
+        terms: undefined,
+      });
     },
     setDownPayment: (amount, via) => {
       if (!Number.isFinite(amount)) {

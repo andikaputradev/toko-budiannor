@@ -112,7 +112,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await expect(page.getByText('Stok kurang')).toBeVisible();
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();
-    await page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
     await expect(page.getByText('Antrean: 4 transaksi.')).toBeVisible();
 
@@ -248,7 +248,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();
-    await page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     await expect(
       page.getByText('Struk belum tercetak. Periksa printer lalu tekan Cetak Ulang.'),
     ).toBeVisible();

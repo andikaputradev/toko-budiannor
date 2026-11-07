@@ -65,7 +65,7 @@ test.describe('POS-01 sampai POS-04', () => {
     });
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();
-    await page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     const taps = await page.evaluate(() => (window as unknown as { taps: number }).taps);
     expect(taps).toBe(3);
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
@@ -94,7 +94,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await expect(page.locator('.pos-pay__message')).toContainText(
       /Transaksi piutang ditolak: jumlah piutang Rp [\d.]+ melebihi sisa limit Rp [\d.]+\./,
     );
-    await expect(page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'Bayar', exact: true })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
@@ -128,7 +128,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await dialog.getByLabel('PIN Owner').fill('482916');
     await dialog.getByRole('button', { name: 'Setujui' }).click();
     await expect(dialog).toBeHidden();
-    const finish = page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' });
+    const finish = page.getByRole('button', { name: 'Bayar', exact: true });
     await expect(finish).toHaveAttribute('aria-disabled', 'false');
     await finish.click();
     await expect(page.getByText(/Transaksi T-000141 tersimpan\./)).toBeVisible();

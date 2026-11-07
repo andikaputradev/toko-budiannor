@@ -1,0 +1,109 @@
+.pos-pay__mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__mode[hidden],
+.pos-pay__quick[hidden],
+.pos-pay__rows[hidden],
+.pos-pay__reference[hidden],
+.pos-pay .btn[hidden] {
+  display: none;
+}
+
+.pos-pay__terms-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 200px));
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 140px));
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__methods {
+  grid-template-columns: repeat(4, minmax(0, 140px));
+}
+
+.pos-pay__method[aria-checked='true'] {
+  border-color: transparent;
+  background: var(--chip-selected-bg);
+  color: var(--chip-selected-text);
+}
+
+.pos-pay__split {
+  align-self: flex-start;
+  min-width: 220px;
+  height: 56px;
+}
+
+.pos-pay__split[aria-checked='true'] {
+  border-color: transparent;
+  background: var(--chip-selected-bg);
+  color: var(--chip-selected-text);
+}
+
+.pos-pay__days {
+  width: 200px;
+  max-width: 100%;
+  height: 54px;
+  text-align: right;
+}
+
+.pos-pay__error {
+  min-height: 24px;
+  margin: 0;
+  color: var(--color-status-danger-fg);
+}
+
+.pos-pay__sisa,
+.pos-pay__due-amount,
+.pos-pay__due,
+.pos-pay__dp {
+  display: block;
+}
+
+.pos-pay__due {
+  font-size: 20px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-pay__inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--primitive-space-3);
+}
+
+.pos-pay__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+}
+
+.pos-pay__figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__figure {
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-page);
+}
+
+.pos-pay__figure p {
+  margin: 0;
+}
+
+.pos-pay__figure .pos-pay__due {
+  font-size: 22px;
+}
+
+.pos-pay__inline .pos-pay__methods {
+  grid-template-columns: repeat(4, minmax(0, 110px));
+}

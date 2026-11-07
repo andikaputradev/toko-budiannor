@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
-import { loginPos, loginPosRaw, startShift } from './helpers/routes';
+import { expect, test, type Page } from '@playwright/test';
+import { chooseCustomer, loginPos, loginPosRaw, settle, startShift } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -298,6 +298,138 @@ test.describe('layar jual', () => {
       );
     for (const box of boxes) {
       expect(box.width, box.name).toBeGreaterThanOrEqual(47.5);
+      expect(box.height, box.name).toBeGreaterThanOrEqual(47.5);
+    }
+  });
+});
+
+test.describe('pembayaran', () => {
+  async function toPay(page: Page, customer?: string): Promise<void> {
+    await loginPos(page);
+    if (customer !== undefined) {
+      await chooseCustomer(page, customer);
+    }
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page).toHaveURL(/#\/pos\/bayar$/);
+  }
+  const finish = (page: Page) => page.getByRole('button', { name: 'Bayar', exact: true });
+
+  test('tunai: Uang Pas lalu Bayar menyimpan transaksi', async ({ page }) => {
+    await toPay(page);
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await finish(page).click();
+    await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+  });
+
+  test('QRIS langsung sebesar total dan Bayar aktif', async ({ page }) => {
+    await toPay(page);
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await expect(page.getByLabel('Jumlah diterima')).toHaveValue('70.000');
+    await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  test('Split Payment: tunai 30.000 lalu QRIS dibatasi sisa 40.000', async ({ page }) => {
+    await toPay(page);
+    await page.getByRole('switch', { name: 'Split Payment' }).click();
+    await page.getByLabel('Jumlah diterima').fill('30000');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 40.000');
+    await expect(finish(page)).toHaveAttribute('aria-disabled', 'true');
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await page.getByLabel('Jumlah diterima').fill('99999');
+    await expect(page.getByLabel('Jumlah diterima')).toHaveValue('40.000');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 0');
+    await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
+    await finish(page).click();
+    await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+  });
+
+  test('Piutang Bu Sherly: tempo 30 hari, jatuh tempo, DP QRIS, dan sisa tagihan', async ({
+    page,
+  }) => {
+    await toPay(page, 'Bu Sherly');
+    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await expect(page.getByRole('button', { name: '30 hari' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(page.locator('.pos-pay__due')).toContainText('18 Nov 2026');
+    await page.getByRole('button', { name: '45 hari' }).click();
+    await expect(page.locator('.pos-pay__due')).toContainText('3 Des 2026');
+    await page.getByLabel('DP', { exact: true }).fill('20000');
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await expect(page.locator('.pos-pay__due-amount')).toContainText('Rp 50.000');
+    await page.getByLabel('Hari lainnya').fill('366');
+    await expect(page.getByText('Jatuh tempo harus bilangan bulat 0 sampai 365.')).toBeVisible();
+    await page.getByLabel('Hari lainnya').fill('14');
+    await expect(page.locator('.pos-pay__due')).toContainText('2 Nov 2026');
+    await finish(page).click();
+    await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+  });
+
+  test('Piutang tanpa pelanggan terdaftar menampilkan MSG-034', async ({ page }) => {
+    await toPay(page);
+    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await expect(
+      page.getByText('Piutang hanya untuk pelanggan terdaftar. Pilih atau daftarkan pelanggan.'),
+    ).toBeVisible();
+  });
+
+  test('Piutang Pak Wahyudi ditolak MSG-036 dan menawarkan otorisasi Owner', async ({ page }) => {
+    await toPay(page, 'Pak Wahyudi');
+    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await expect(
+      page.getByText('Transaksi piutang ditolak: pelanggan memiliki tagihan melewati jatuh tempo.'),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Minta Otorisasi Owner' })).toBeVisible();
+  });
+
+  test('pintasan angka memilih cara bayar dan Esc kembali ke layar jual', async ({ page }) => {
+    await toPay(page);
+    await page.getByRole('heading', { name: 'Pembayaran', exact: true }).click();
+    await page.keyboard.press('2');
+    await expect(page.getByRole('button', { name: 'QRIS', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.keyboard.press('3');
+    await expect(page.getByRole('button', { name: 'EDC', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+  });
+
+  test('axe dan target 48 px pada layar bayar mode tunai, split, dan piutang', async ({ page }) => {
+    await toPay(page, 'Bu Sherly');
+    await page.evaluate(() => document.fonts.ready);
+    await settle(page);
+    const tunai = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(tunai.violations).toEqual([]);
+    await page.getByRole('switch', { name: 'Split Payment' }).click();
+    await settle(page);
+    const split = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(split.violations).toEqual([]);
+    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await settle(page);
+    const piutang = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(piutang.violations).toEqual([]);
+    const boxes = await page.locator('.pos-pay button, .pos-pay input').evaluateAll((nodes) =>
+      nodes
+        .filter((node) => node.getClientRects().length > 0)
+        .map((node) => {
+          const box = node.getBoundingClientRect();
+          return {
+            name: node.getAttribute('class') ?? '',
+            width: box.width,
+            height: box.height,
+          };
+        }),
+    );
+    for (const box of boxes) {
       expect(box.height, box.name).toBeGreaterThanOrEqual(47.5);
     }
   });

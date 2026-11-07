@@ -61,7 +61,7 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
       ),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Minta Otorisasi Owner' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'Bayar', exact: true })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
@@ -105,7 +105,7 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
       page.getByText('Disetujui Owner dari HP: Pelanggan lama, disetujui Owner'),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Minta Otorisasi Owner' })).toHaveCount(0);
-    const finish = page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' });
+    const finish = page.getByRole('button', { name: 'Bayar', exact: true });
     await expect(finish).toHaveAttribute('aria-disabled', 'false');
     await finish.click();
     await expect(page.getByText(/Transaksi T-000141 tersimpan\./)).toBeVisible();
