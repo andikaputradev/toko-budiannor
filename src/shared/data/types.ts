@@ -88,6 +88,14 @@ export interface HeldBill {
 
 export type PaymentMethod = 'tunai' | 'qris' | 'transfer' | 'dp' | 'piutang';
 
+export type RefundMethod = 'tunai' | 'qris' | 'edc' | 'transfer';
+
+export interface SalePayment {
+  readonly method: PaymentMethod;
+  readonly amount: number;
+  readonly via?: PaymentMethod | undefined;
+}
+
 export interface Sale {
   readonly id: string;
   readonly number: string;
@@ -98,6 +106,7 @@ export interface Sale {
   readonly total: number;
   readonly payment: PaymentMethod;
   readonly paid: number;
+  readonly payments?: readonly SalePayment[] | undefined;
 }
 
 export type SyncStatus = 'menunggu' | 'mengirim' | 'gagal' | 'terkirim';

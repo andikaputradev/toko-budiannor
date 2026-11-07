@@ -1,7 +1,8 @@
 import { el } from '../../../shared/dom';
 import { formatDecimal } from '../../../shared/format';
 import type { Sale } from '../../../shared/data/types';
-import { label, message } from '../../../shared/messages';
+import { label } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
@@ -113,7 +114,7 @@ export function openReturnModal(session: PosSession, sale: Sale, onDone: () => v
             onDone();
             return;
           }
-          error.textContent = message(result.messageId, result.values);
+          error.textContent = failureText(result);
         },
       }),
     ),

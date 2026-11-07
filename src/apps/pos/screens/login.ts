@@ -1,5 +1,6 @@
 import { el } from '../../../shared/dom';
-import { label, message, type LabelKey } from '../../../shared/messages';
+import { label, type LabelKey } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { icon } from '../../../shared/icons';
 import type { AppUser, Role } from '../../../shared/data/types';
 import { createButton } from '../../../shared/ui/button';
@@ -86,7 +87,7 @@ export function renderLogin(session: PosSession, go: (path: string) => void): Sc
         go('/pos/jual');
         return;
       }
-      error.textContent = message(result.messageId, result.values);
+      error.textContent = failureText(result);
       pad.reset();
     },
   });

@@ -70,6 +70,7 @@ describe('bill gantung', () => {
 describe('biaya kasir', () => {
   it('memvalidasi jumlah, keterangan Lainnya, dan saldo kas', () => {
     const { session } = setup();
+    session.startShift(1337000);
     expect(session.saveExpense('parkir', '', 0)).toMatchObject({ messageId: 'MSG-029' });
     expect(session.saveExpense('lainnya', ' ', 5000)).toMatchObject({ messageId: 'MSG-042' });
     expect(session.saveExpense('parkir', '', 2000000)).toMatchObject({
@@ -80,6 +81,7 @@ describe('biaya kasir', () => {
 
   it('mengurangi saldo kas dan mencatat biaya', () => {
     const { session } = setup();
+    session.startShift(1337000);
     expect(session.cashBalance()).toBe(1337000);
     expect(session.saveExpense('parkir', '', 5000)).toEqual({ ok: true });
     expect(session.cashBalance()).toBe(1332000);
@@ -90,9 +92,11 @@ describe('biaya kasir', () => {
 
   it('memasukkan biaya ke antrean hanya saat offline', () => {
     const online = setup('U-3', true);
+    online.session.startShift(1337000);
     online.session.saveExpense('parkir', '', 5000);
     expect(online.session.pendingQueue()).toBe(3);
     const offline = setup('U-3', false);
+    offline.session.startShift(1337000);
     offline.session.saveExpense('parkir', '', 5000);
     expect(offline.session.pendingQueue()).toBe(4);
     expect(offline.session.state().queue.at(-1)).toMatchObject({ kind: 'biaya', total: 5000 });

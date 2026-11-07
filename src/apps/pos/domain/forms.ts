@@ -1,7 +1,6 @@
 export const EXPENSE_KINDS = ['bensin', 'parkir', 'ekspedisi', 'lainnya'] as const;
 export type ExpenseKind = (typeof EXPENSE_KINDS)[number];
 
-export const OPENING_CASH = 1337000;
 export const MAX_DUE_DAYS = 365;
 export const DEFAULT_DUE_DAYS = 30;
 export const MAX_NAME_LENGTH = 60;

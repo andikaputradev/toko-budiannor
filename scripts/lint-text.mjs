@@ -8,6 +8,7 @@ const IGNORED_DIRECTORIES = new Set([
   'coverage',
   'playwright-report',
   'test-results',
+  '.superpowers',
   'public',
   'spec',
 ]);

@@ -1,6 +1,7 @@
 import { el, nextId } from '../../../shared/dom';
 import { formatRupiah, formatTime } from '../../../shared/format';
 import { label, message, type LabelKey } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import { EXPENSE_KINDS, parseRupiahInput, type ExpenseKind } from '../domain/forms';
@@ -117,8 +118,8 @@ export function renderExpense(session: PosSession, go: (path: string) => void): 
       paint();
       return;
     }
-    const text = message(result.messageId, result.values);
-    if (result.messageId === 'MSG-042') {
+    const text = failureText(result);
+    if ('messageId' in result && result.messageId === 'MSG-042') {
       noteError.textContent = text;
     } else {
       amountError.textContent = text;

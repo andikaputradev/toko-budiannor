@@ -2,6 +2,7 @@ import { el } from '../../../shared/dom';
 import { formatDecimal, formatDocumentNumber, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { canOpenScreen, isAllowed } from '../../../shared/permissions';
 import { createSearchIndex, type SearchIndex } from '../../../shared/data/search-index';
 import type { Customer, HeldBill, Product, Role } from '../../../shared/data/types';
@@ -478,7 +479,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
           if (result.ok) {
             showToast({ kind: 'success', text: label('strukTercetak') });
           } else {
-            fail(message(result.messageId));
+            fail(failureText(result));
           }
         },
       });

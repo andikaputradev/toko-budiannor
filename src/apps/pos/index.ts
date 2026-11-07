@@ -3,6 +3,7 @@ import '../../styles/pos-lanjut.css';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
+import { REVIEW_OPENING_CASH } from './domain/shift';
 import { createPosSession, type PosSession } from './pos-session';
 import { applyTheme, loadTheme } from './theme';
 import { renderBills } from './screens/bill';
@@ -64,6 +65,14 @@ export function mount(root: HTMLElement, path: string, context: AppContext): voi
   if (path !== '/pos' && !loggedIn && context.store.getState().reviewMode) {
     active.attemptLogin('U-3', '2468');
     loggedIn = active.state().loggedIn;
+  }
+  if (
+    loggedIn &&
+    context.store.getState().reviewMode &&
+    context.store.getState().role !== 'frontliner' &&
+    active.state().shift === undefined
+  ) {
+    active.startShift(REVIEW_OPENING_CASH);
   }
   if (path !== '/pos' && !loggedIn) {
     navigate('/pos');

@@ -2,6 +2,7 @@ import { el } from '../../../shared/dom';
 import { formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import type { HeldBill } from '../../../shared/data/types';
 import { label, message } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { isAllowed } from '../../../shared/permissions';
 import { createButton } from '../../../shared/ui/button';
 import { createEmptyState } from '../../../shared/ui/empty';
@@ -57,7 +58,7 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
     if (result.ok) {
       go('/pos/jual');
     } else {
-      showToast({ kind: 'error', text: message(result.messageId) });
+      showToast({ kind: 'error', text: failureText(result) });
     }
   };
   const remove = (): void => {

@@ -745,3 +745,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-741: "Masuk Back-Office sebagai Supervisor.". Kunci langkahF10e.
 - TB-742: "SO muncul sebagai Draf dari sumber Sales Lapangan.". Kunci langkahF10f.
 - TB-743: "Kirim Salinan SO (PDF) via WA.". Kunci langkahF10g.
+
+## Revisi POS November 2026
+
+- TB-744: "Isi modal awal terlebih dahulu.". Kunci modalWajib.
+- TB-745: "Shift sudah berjalan.". Kunci shiftSudahBerjalan.
+- TB-746: "Mulai shift terlebih dahulu.". Kunci butuhShift.

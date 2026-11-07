@@ -1,6 +1,7 @@
 import { el } from '../../../shared/dom';
 import type { HeldBill, PaymentMethod, Sale } from '../../../shared/data/types';
-import { label, message, type LabelKey } from '../../../shared/messages';
+import { label, type LabelKey } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
@@ -151,8 +152,7 @@ export function openReceiptPreview(options: PreviewOptions): void {
             handle.close();
             return;
           }
-          notice.textContent =
-            kind === 'draft' ? label('strukDrafGagal') : message(result.messageId);
+          notice.textContent = kind === 'draft' ? label('strukDrafGagal') : failureText(result);
         },
       }),
     ),

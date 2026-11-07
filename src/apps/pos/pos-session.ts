@@ -15,7 +15,7 @@ import type {
   Tier,
 } from '../../shared/data/types';
 import { toBase, unitPrice } from '../../shared/data/units';
-import { label, type SystemMessageId } from '../../shared/messages';
+import { label, type LabelKey, type SystemMessageId } from '../../shared/messages';
 import type { Store } from '../../shared/store/store';
 import {
   addLine,
@@ -26,7 +26,9 @@ import {
   replaceLine,
   type AddResult,
 } from './domain/bill';
-import { normalizePhone, OPENING_CASH, type ExpenseKind } from './domain/forms';
+import { normalizePhone, type ExpenseKind } from './domain/forms';
+import type { Failure } from './failure';
+import { summarizeShift, type Shift, type ShiftSummary } from './domain/shift';
 import {
   evaluatePayment,
   remainingDue,
@@ -100,15 +102,16 @@ export interface PosState {
   readonly lastSync: string;
   readonly lastConnected: string;
   readonly printPending: string | undefined;
+  readonly shift: Shift | undefined;
 }
 
-export type FlowResult =
-  | { readonly ok: true }
-  | {
-      readonly ok: false;
-      readonly messageId: SystemMessageId;
-      readonly values: Readonly<Record<string, string | number>>;
-    };
+export type FlowResult = { readonly ok: true } | Failure;
+
+export interface LabelFailure {
+  readonly ok: false;
+  readonly labelKey: LabelKey;
+}
+export type ShiftResult = { readonly ok: true } | LabelFailure;
 
 export type RegisterResult =
   | { readonly ok: true; readonly customer: Customer }
@@ -119,12 +122,7 @@ export type RegisterResult =
     };
 
 export type ReturnResult =
-  | { readonly ok: true; readonly number: string; readonly value: number }
-  | {
-      readonly ok: false;
-      readonly messageId: SystemMessageId;
-      readonly values: Readonly<Record<string, string | number>>;
-    };
+  { readonly ok: true; readonly number: string; readonly value: number } | Failure;
 
 export interface RegisterInput {
   readonly name: string;
@@ -150,6 +148,9 @@ export interface PosSession {
   summary(): PaymentSummary;
   pendingQueue(): number;
   cashBalance(): number;
+  startShift(openingCash: number | undefined): ShiftResult;
+  endShift(): ShiftSummary | undefined;
+  shiftSummary(): ShiftSummary | undefined;
   attemptLogin(userId: string | undefined, pin: string): FlowResult;
   logout(): void;
   addProduct(product: Product, unit?: string, quantity?: number): AddResult;
@@ -230,6 +231,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       lastSync: INITIAL_SYNC_AT,
       lastConnected: data.referenceDate,
       printPending: undefined,
+      shift: undefined,
     };
   };
   let state: PosState = initial(false);
@@ -305,12 +307,19 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     values,
   });
 
+  const failLabel = (labelKey: LabelKey): LabelFailure => ({ ok: false, labelKey });
+
   const entry = (action: string, detail: string): ActivityEntry => ({
     at: stamp(),
     user: currentUser(),
     action,
     detail,
   });
+
+  const currentSummary = (): ShiftSummary | undefined =>
+    state.shift === undefined
+      ? undefined
+      : summarizeShift(state.shift, state.sales, state.deviceSales, state.expenses, state.returns);
 
   const queued = (
     kind: SyncKind,
@@ -406,7 +415,36 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     summary,
     pendingQueue: () =>
       state.queue.filter((item) => item.status === 'menunggu' || item.status === 'mengirim').length,
-    cashBalance: () => OPENING_CASH - state.expenses.reduce((sum, item) => sum + item.amount, 0),
+    cashBalance: () => currentSummary()?.closingCash ?? 0,
+    shiftSummary: currentSummary,
+    startShift: (openingCash) => {
+      if (state.shift !== undefined) {
+        return failLabel('shiftSudahBerjalan');
+      }
+      if (openingCash === undefined || !Number.isFinite(openingCash) || openingCash < 0) {
+        return failLabel('modalWajib');
+      }
+      const cash = Math.round(openingCash);
+      commit({
+        shift: { userId: store.getState().userId, startedAt: stamp(), openingCash: cash },
+        activity: [...state.activity, entry('Mulai shift', `Modal ${formatRupiah(cash)}`)],
+      });
+      return { ok: true };
+    },
+    endShift: () => {
+      const summary = currentSummary();
+      if (summary === undefined) {
+        return undefined;
+      }
+      commit({
+        shift: undefined,
+        activity: [
+          ...state.activity,
+          entry('Selesai shift', `Saldo akhir ${formatRupiah(summary.closingCash)}`),
+        ],
+      });
+      return summary;
+    },
     attemptLogin: (userId, pin) => {
       if (userId === undefined) {
         return fail('MSG-021');
@@ -610,6 +648,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         total: result.total,
         payment: primary?.method ?? 'tunai',
         paid: Math.min(result.paid, result.total),
+        payments: state.rows.map((row) => ({ method: row.method, amount: row.amount })),
       };
       const deductions: Record<string, number> = {};
       for (const line of state.lines) {
@@ -669,13 +708,17 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       return { ok: true };
     },
     saveExpense: (kind, note, amount) => {
+      const summary = currentSummary();
+      if (summary === undefined) {
+        return failLabel('butuhShift');
+      }
       if (!(amount > 0)) {
         return fail('MSG-029');
       }
       if (kind === 'lainnya' && note.trim() === '') {
         return fail('MSG-042');
       }
-      const balance = OPENING_CASH - state.expenses.reduce((sum, item) => sum + item.amount, 0);
+      const balance = summary.closingCash;
       if (amount > balance) {
         return fail('MSG-041', { saldo: formatRupiah(balance) });
       }

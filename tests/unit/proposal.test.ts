@@ -124,9 +124,9 @@ describe('barang proposal', () => {
     for (const row of TABLE) {
       const item = product(row.name);
       expect(item.baseUnit).toBe(row.baseUnit);
-      expect(item.units.map((unit) => [unit.code, unit.factor, item.prices[unit.code]?.eceran])).toEqual(
-        row.units.map(([code, factor, price]) => [code, factor, price]),
-      );
+      expect(
+        item.units.map((unit) => [unit.code, unit.factor, item.prices[unit.code]?.eceran]),
+      ).toEqual(row.units.map(([code, factor, price]) => [code, factor, price]));
       expect(item.stock).toEqual({ display: row.toko, besar: row.gudang });
       expect(item.incoming).toBe(row.po);
     }

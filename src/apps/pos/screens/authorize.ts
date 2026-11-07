@@ -1,7 +1,8 @@
 import { el, nextId } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
-import { label, message } from '../../../shared/messages';
+import { label } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { formatDocumentNumber } from '../../../shared/format';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
@@ -49,10 +50,7 @@ export function openAuthorizeModal(options: AuthorizeOptions): void {
         options.onApproved?.();
         return;
       }
-      error.replaceChildren(
-        icon('circle-x'),
-        el('span', { text: message(result.messageId, result.values) }),
-      );
+      error.replaceChildren(icon('circle-x'), el('span', { text: failureText(result) }));
       pin.value = '';
       refresh();
     },

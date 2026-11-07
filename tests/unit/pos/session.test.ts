@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
-import { message } from '../../../src/shared/messages';
+import { failureText } from '../../../src/apps/pos/failure';
 import { createStore } from '../../../src/shared/store/store';
 import { createPosSession } from '../../../src/apps/pos/pos-session';
 
@@ -32,9 +32,7 @@ describe('login', () => {
     expect(session.attemptLogin('U-3', '12')).toMatchObject({ ok: false, messageId: 'MSG-022' });
     const wrong = session.attemptLogin('U-3', '1111');
     expect(wrong).toMatchObject({ ok: false, messageId: 'MSG-023', values: { sisa: 2 } });
-    expect(wrong.ok ? '' : message(wrong.messageId, wrong.values)).toBe(
-      'PIN salah. Sisa percobaan: 2.',
-    );
+    expect(wrong.ok ? '' : failureText(wrong)).toBe('PIN salah. Sisa percobaan: 2.');
     expect(session.attemptLogin('U-3', '1111')).toMatchObject({ values: { sisa: 1 } });
     expect(session.attemptLogin('U-3', '1111')).toMatchObject({ messageId: 'MSG-024' });
     expect(session.attemptLogin('U-3', '2468')).toMatchObject({ messageId: 'MSG-024' });
