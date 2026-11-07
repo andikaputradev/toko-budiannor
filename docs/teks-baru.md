@@ -812,3 +812,8 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-805: "Selesai". Kunci selesai.
 - TB-806: "Nomor WhatsApp". Kunci nomorWhatsapp.
 - TB-807: "Struk dikirim lewat WhatsApp (simulasi).". Kunci strukTerkirimWa.
+- TB-808: "Jumlah dikembalikan melebihi nilai barang.". Kunci nominalMelebihi.
+- TB-809: "Pengembalian Barang". Kunci alasanBarang.
+- TB-810: "Pembatalan Transaksi". Kunci alasanBatal.
+- TB-811: "Kesalahan Pembayaran". Kunci alasanSalahBayar.
+- TB-812: "Lainnya". Kunci alasanLainnya.

@@ -10,6 +10,7 @@ import type {
   PaidMethod,
   PaymentMethod,
   Product,
+  RefundMethod,
   Sale,
   SyncItem,
   SyncKind,
@@ -29,6 +30,13 @@ import {
 } from './domain/bill';
 import { DEFAULT_DUE_DAYS, MAX_DUE_DAYS, normalizePhone, type ExpenseKind } from './domain/forms';
 import { dueDateOf } from './domain/terms';
+import {
+  itemsValue,
+  reasonText,
+  validateRefundAmount,
+  type ReturnInput,
+  type ReturReason,
+} from './domain/retur';
 import type { Failure } from './failure';
 import { summarizeShift, type Shift, type ShiftSummary } from './domain/shift';
 import {
@@ -83,6 +91,9 @@ export interface ReturnRecord {
   readonly reason: string;
   readonly value: number;
   readonly lines: readonly { readonly index: number; readonly quantity: number }[];
+  readonly reasonKind?: ReturReason | undefined;
+  readonly refund?: { readonly method: RefundMethod; readonly amount: number } | undefined;
+  readonly photoName?: string | undefined;
 }
 
 export interface PosState {
@@ -190,6 +201,7 @@ export interface PosSession {
     items: readonly { readonly index: number; readonly quantity: number }[],
     reason: string,
   ): ReturnResult;
+  returnItems(saleNumber: string, input: ReturnInput): ReturnResult;
   returnedQuantity(saleNumber: string, index: number): number;
   syncNow(): FlowResult;
 }
@@ -407,6 +419,89 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         (sum, record) => sum + (record.lines.find((line) => line.index === index)?.quantity ?? 0),
         0,
       );
+
+  const returnItems = (saleNumber: string, input: ReturnInput): ReturnResult => {
+    if (!isAllowed(store.getState().role, 'BO-10', 'Simpan Retur')) {
+      return fail('MSG-003');
+    }
+    const sale = state.sales.find((item) => item.number === saleNumber);
+    if (sale === undefined || input.items.length === 0) {
+      return fail('MSG-084');
+    }
+    for (const item of input.items) {
+      const line = sale.lines[item.index];
+      if (line === undefined) {
+        return fail('MSG-084');
+      }
+      const room = Math.round((line.quantity - sumReturned(saleNumber, item.index)) * 1000) / 1000;
+      if (!(item.quantity > 0)) {
+        return fail('MSG-029');
+      }
+      if (item.quantity > room) {
+        return fail('MSG-085', { jumlah: `${formatDecimal(room, 3, 1)} ${line.unit}` });
+      }
+    }
+    if (input.reason === 'lainnya' && input.note.trim() === '') {
+      return fail('MSG-086');
+    }
+    const additions: Record<string, number> = {};
+    for (const item of input.items) {
+      const line = sale.lines[item.index];
+      const product = line === undefined ? undefined : products().get(line.productId);
+      if (line !== undefined && product !== undefined) {
+        additions[product.id] =
+          (additions[product.id] ?? 0) + toBase(product, line.unit, item.quantity);
+      }
+    }
+    const value = itemsValue(sale, input.items);
+    const refund = input.refund;
+    if (refund !== undefined) {
+      const check = validateRefundAmount(refund.amount, value);
+      if (check === 'not-positive') {
+        return fail('MSG-029');
+      }
+      if (check === 'too-high') {
+        return failLabel('nominalMelebihi');
+      }
+      if (refund.method === 'tunai') {
+        const summary = currentSummary();
+        if (summary === undefined) {
+          return failLabel('butuhShift');
+        }
+        if (refund.amount > summary.closingCash) {
+          return fail('MSG-041', { saldo: formatRupiah(summary.closingCash) });
+        }
+      }
+    }
+    const number = formatDocumentNumber('R', state.returns.length + 1);
+    store.applyStockChange(additions);
+    commit({
+      returns: [
+        ...state.returns,
+        {
+          number,
+          saleNumber,
+          at: stamp(),
+          reason: reasonText(input.reason, input.note),
+          value,
+          lines: input.items.map((item) => ({ index: item.index, quantity: item.quantity })),
+          reasonKind: input.reason,
+          refund,
+          photoName: input.photoName,
+        },
+      ],
+      activity: [
+        ...state.activity,
+        entry(
+          'Retur penjualan',
+          refund === undefined
+            ? `${number} untuk ${saleNumber}`
+            : `${number} untuk ${saleNumber}, ${refund.method} ${formatRupiah(refund.amount)}`,
+        ),
+      ],
+    });
+    return { ok: true, number, value };
+  };
 
   return {
     store,
@@ -828,60 +923,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       return { ok: true, customer: created };
     },
     returnedQuantity: (saleNumber, index) => sumReturned(saleNumber, index),
-    returnSale: (saleNumber, items, reason) => {
-      if (!isAllowed(store.getState().role, 'BO-10', 'Simpan Retur')) {
-        return fail('MSG-003');
-      }
-      const sale = state.sales.find((item) => item.number === saleNumber);
-      if (sale === undefined || items.length === 0) {
-        return fail('MSG-084');
-      }
-      for (const item of items) {
-        const line = sale.lines[item.index];
-        if (line === undefined) {
-          return fail('MSG-084');
-        }
-        const room =
-          Math.round((line.quantity - sumReturned(saleNumber, item.index)) * 1000) / 1000;
-        if (!(item.quantity > 0)) {
-          return fail('MSG-029');
-        }
-        if (item.quantity > room) {
-          return fail('MSG-085', { jumlah: `${formatDecimal(room, 3, 1)} ${line.unit}` });
-        }
-      }
-      if (reason.trim() === '') {
-        return fail('MSG-086');
-      }
-      const additions: Record<string, number> = {};
-      let value = 0;
-      for (const item of items) {
-        const line = sale.lines[item.index];
-        const product = line === undefined ? undefined : products().get(line.productId);
-        if (line !== undefined && product !== undefined) {
-          additions[product.id] =
-            (additions[product.id] ?? 0) + toBase(product, line.unit, item.quantity);
-          value += Math.round(item.quantity * line.unitPrice);
-        }
-      }
-      const number = formatDocumentNumber('R', state.returns.length + 1);
-      store.applyStockChange(additions);
-      commit({
-        returns: [
-          ...state.returns,
-          {
-            number,
-            saleNumber,
-            at: stamp(),
-            reason: reason.trim(),
-            value,
-            lines: items.map((item) => ({ index: item.index, quantity: item.quantity })),
-          },
-        ],
-        activity: [...state.activity, entry('Retur penjualan', `${number} untuk ${saleNumber}`)],
-      });
-      return { ok: true, number, value };
-    },
+    returnItems,
+    returnSale: (saleNumber, items, reason) =>
+      returnItems(saleNumber, { items, reason: 'lainnya', note: reason, refund: undefined }),
     syncNow: () => {
       if (!store.getState().online) {
         return fail('MSG-047');
