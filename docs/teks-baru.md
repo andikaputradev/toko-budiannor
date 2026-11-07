@@ -751,3 +751,14 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-744: "Isi modal awal terlebih dahulu.". Kunci modalWajib.
 - TB-745: "Shift sudah berjalan.". Kunci shiftSudahBerjalan.
 - TB-746: "Mulai shift terlebih dahulu.". Kunci butuhShift.
+- TB-747: "Belum Mulai Shift". Kunci belumMulaiShift.
+- TB-748: "Tekan tombol "Mulai Shift" untuk memulai pekerjaan Anda". Kunci petunjukMulaiShift.
+- TB-749: "Mulai Shift". Kunci mulaiShift.
+- TB-750: "Masukkan Modal". Kunci masukkanModal.
+- TB-751: "Lanjut". Kunci lanjut.
+- TB-752: "Selesai Shift". Kunci selesaiShift.
+- TB-753: "Akhiri Shift". Kunci akhiriShift.
+- TB-754: "Modal awal". Kunci modalAwal.
+- TB-755: "Penjualan tunai". Kunci penjualanTunai.
+- TB-756: "Retur tunai". Kunci returTunai.
+- TB-757: "Saldo akhir kas". Kunci saldoAkhirKas.

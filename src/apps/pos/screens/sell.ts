@@ -18,6 +18,7 @@ import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
 import type { ScreenHandle } from './login';
 import { billReceipt, openReceiptPreview } from './receipt-preview';
+import { guardWithShift } from './shift';
 import { openUnitModal } from './unit-modal';
 
 const RESULT_LIMIT = 60;
@@ -582,6 +583,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       bill,
     ),
   );
+  const unguard = guardWithShift(session, element);
   renderChips();
   renderGrid();
   renderBill();
@@ -594,6 +596,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       for (const stop of unsubscribers) {
         stop();
       }
+      unguard();
       topbar.destroy();
     },
   };

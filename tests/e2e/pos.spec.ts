@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { loginPos as loginPosShared } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -8,14 +9,8 @@ test.beforeEach(({ page }) => {
   test.skip(size === null || size.width < 1000, 'POS dirancang untuk layar landscape');
 });
 
-async function login(page: Page, name: string, pin: string): Promise<void> {
-  await page.goto('/#/pos');
-  await page.getByRole('radio', { name: new RegExp(name) }).click();
-  for (const digit of pin) {
-    await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
-  }
-  await page.getByRole('button', { name: 'Masuk' }).click();
-  await expect(page).toHaveURL(/#\/pos\/jual$/);
+async function login(page: Page, name: string): Promise<void> {
+  await loginPosShared(page, name);
 }
 
 async function addLargeQuantity(page: Page): Promise<void> {
@@ -53,7 +48,7 @@ test.describe('POS-01 sampai POS-04', () => {
   test('F-01: penjualan tunai selesai dalam 3 ketukan setelah barang terakhir', async ({
     page,
   }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     await page.locator('.pos-card').first().click();
     await page.locator('.pos-card').nth(3).click();
     await page.evaluate(() => {
@@ -80,7 +75,7 @@ test.describe('POS-01 sampai POS-04', () => {
   });
 
   test('P-06: tombol Bayar 72 px selalu terlihat walau bill panjang', async ({ page }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     for (let index = 0; index < 12; index += 1) {
       await page.locator('.pos-card').nth(index).click();
     }
@@ -93,7 +88,7 @@ test.describe('POS-01 sampai POS-04', () => {
   test('F-02: piutang melebihi sisa limit ditolak dan tombol Selesaikan tetap nonaktif', async ({
     page,
   }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     await addLargeQuantity(page);
     await chooseCustomer(page, 'UD Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
@@ -108,7 +103,7 @@ test.describe('POS-01 sampai POS-04', () => {
   });
 
   test('F-02: tagihan lewat jatuh tempo menolak piutang', async ({ page }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     await page.locator('.pos-card').first().click();
     await chooseCustomer(page, 'PT Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
@@ -121,7 +116,7 @@ test.describe('POS-01 sampai POS-04', () => {
   test('F-03: otorisasi Owner dengan PIN salah lalu benar melanjutkan piutang', async ({
     page,
   }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     await addLargeQuantity(page);
     await chooseCustomer(page, 'UD Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
@@ -142,7 +137,7 @@ test.describe('POS-01 sampai POS-04', () => {
   });
 
   test('POS-03: jumlah desimal berkoma dan pesan validasi persis', async ({ page }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     await page.locator('.pos-card').first().click();
     await page.locator('.pos-bill__name').first().click();
     const quantity = page.getByRole('textbox', { name: 'Jumlah' });
@@ -158,7 +153,7 @@ test.describe('POS-01 sampai POS-04', () => {
   });
 
   test('pemindai: kode yang sama dua kali menambah jumlah tanpa baris baru', async ({ page }) => {
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     const search = page.getByRole('searchbox', { name: 'Cari' });
     await search.fill('8990000000001');
     await search.press('Enter');
@@ -173,7 +168,7 @@ test.describe('POS-01 sampai POS-04', () => {
   });
 
   test('Frontliner: tanpa Bayar, dengan Tahan Bill dan Cetak Struk Draf', async ({ page }) => {
-    await login(page, 'Agus', '9024');
+    await login(page, 'Agus');
     await expect(page.getByRole('button', { name: /^Bayar/ })).toHaveCount(0);
     await page.locator('.pos-card').first().click();
     await page.getByRole('button', { name: 'Cetak Struk Draf' }).click();
@@ -184,7 +179,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await page.goto('/#/pos');
     const login01 = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(login01.violations).toEqual([]);
-    await login(page, 'Dewi', '2468');
+    await login(page, 'Dewi');
     await page.locator('.pos-card').first().click();
     const sell = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(sell.violations).toEqual([]);

@@ -680,3 +680,131 @@ a.pos-chip {
 .modal__actions:empty {
   display: none;
 }
+
+.pos-shiftswitch {
+  display: contents;
+}
+
+.pos-gate {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--primitive-space-4);
+  padding: var(--primitive-space-8) var(--space-screen-margin);
+  text-align: center;
+}
+
+.pos-gate .illustration {
+  width: 240px;
+  height: auto;
+}
+
+.pos-gate__title {
+  margin: 0;
+}
+
+.pos-gate__hint {
+  max-width: 380px;
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.pos-gate .btn {
+  min-width: 320px;
+}
+
+.illustration .ill-line {
+  stroke: var(--color-accent-default);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.illustration .ill-soft {
+  fill: var(--color-accent-soft);
+}
+
+.illustration .ill-accent {
+  fill: var(--color-accent-default);
+}
+
+.modal:has(.pos-cash),
+.modal:has(.pos-shiftsum) {
+  width: min(520px, 94vw);
+}
+
+.pos-cash {
+  display: grid;
+  gap: var(--primitive-space-3);
+}
+
+.pos-cash__value {
+  display: block;
+  min-height: 64px;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 40px;
+  text-align: end;
+}
+
+.pos-cash__value:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-text-secondary);
+}
+
+.pos-cash__error {
+  min-height: 28px;
+  margin: 0;
+  color: var(--color-status-danger-fg);
+}
+
+.pos-cash__actions {
+  display: flex;
+  gap: var(--primitive-space-2);
+  justify-content: flex-end;
+  margin-top: var(--primitive-space-4);
+}
+
+.pos-cash__actions .btn {
+  min-width: 140px;
+  height: 56px;
+}
+
+.pos-moneypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--primitive-space-2);
+}
+
+.pos-moneypad .pos-numpad__key {
+  height: 60px;
+}
+
+.pos-moneypad__wide {
+  grid-column: span 2;
+}
+
+.pos-shiftsum {
+  display: grid;
+  gap: var(--primitive-space-2);
+}
+
+.pos-shiftsum__row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--primitive-space-2) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-shiftsum__row--total {
+  border-bottom: 0;
+  font-size: 20px;
+  font-weight: 600;
+}

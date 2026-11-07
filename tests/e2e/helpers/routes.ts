@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { SCREENS } from '../../../src/apps/portal/catalog';
+import { FICTIONAL_USERS } from '../../../src/shared/data/generator';
 
 export type AppName = 'portal' | 'pos' | 'bo' | 'owner' | 'sales';
 
@@ -39,23 +40,46 @@ const CATALOG_ROUTES: readonly RouteCase[] = SCREENS.flatMap((entry) =>
 
 export const ROUTES: readonly RouteCase[] = [...PORTAL_ROUTES, ...CATALOG_ROUTES];
 
-const PIN = {
-  Dewi: '2468',
-} as const;
-
 async function typePin(page: Page, pin: string): Promise<void> {
   for (const digit of pin) {
     await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
   }
 }
 
-async function loginPos(page: Page): Promise<void> {
+function userNamed(name: string): { readonly pin: string; readonly role: string } {
+  const user = FICTIONAL_USERS.find((item) => item.name.includes(name));
+  if (user === undefined) {
+    throw new Error(`Pengguna uji tidak ada: ${name}`);
+  }
+  return user;
+}
+
+export async function loginPosRaw(page: Page, name = 'Dewi'): Promise<void> {
   await page.goto('/#/pos');
-  await page.getByRole('radio', { name: /Dewi/ }).click();
-  await typePin(page, PIN.Dewi);
+  await page.getByRole('radio', { name: new RegExp(name) }).click();
+  await typePin(page, userNamed(name).pin);
   await page.getByRole('button', { name: 'Masuk' }).click();
   await expect(page).toHaveURL(/#\/pos\/jual$/);
 }
+
+export async function startShift(page: Page, amount = 500000): Promise<void> {
+  await page.getByRole('button', { name: 'Mulai Shift' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Masukkan Modal' });
+  for (const digit of String(amount)) {
+    await dialog.getByRole('button', { name: digit, exact: true }).click();
+  }
+  await dialog.getByRole('button', { name: 'Lanjut' }).click();
+  await expect(page.locator('.pos-card').first()).toBeVisible();
+}
+
+async function loginPos(page: Page, name = 'Dewi'): Promise<void> {
+  await loginPosRaw(page, name);
+  if (userNamed(name).role !== 'frontliner') {
+    await startShift(page);
+  }
+}
+
+export { loginPos };
 
 async function loginWithPassword(
   page: Page,

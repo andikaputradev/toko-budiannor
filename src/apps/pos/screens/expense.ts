@@ -7,6 +7,7 @@ import { showToast } from '../../../shared/ui/toast';
 import { EXPENSE_KINDS, parseRupiahInput, type ExpenseKind } from '../domain/forms';
 import { dayOf } from '../domain/history';
 import type { PosSession } from '../pos-session';
+import { guardWithShift } from './shift';
 import { createTopbar } from '../topbar';
 import type { ScreenHandle } from './login';
 
@@ -221,11 +222,13 @@ export function renderExpense(session: PosSession, go: (path: string) => void): 
     }
   };
   save.addEventListener('click', unblock, true);
+  const unguard = guardWithShift(session, element);
   paint();
   amountInput.focus();
   return {
     element,
     destroy: () => {
+      unguard();
       stop();
       document.removeEventListener('keydown', onKey);
       topbar.destroy();

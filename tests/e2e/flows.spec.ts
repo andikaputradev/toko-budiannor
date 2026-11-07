@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginPos as loginPosShared } from './helpers/routes';
 
 test.beforeEach(({ page }) => {
   const size = page.viewportSize();
@@ -8,14 +9,8 @@ test.beforeEach(({ page }) => {
   );
 });
 
-async function loginPos(page: Page, name: string, pin: string): Promise<void> {
-  await page.goto('/#/pos');
-  await page.getByRole('radio', { name: new RegExp(name) }).click();
-  for (const digit of pin) {
-    await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
-  }
-  await page.getByRole('button', { name: 'Masuk' }).click();
-  await expect(page).toHaveURL(/#\/pos\/jual$/);
+async function loginPos(page: Page, name: string): Promise<void> {
+  await loginPosShared(page, name);
 }
 
 async function loginOwner(page: Page): Promise<void> {
@@ -55,7 +50,7 @@ async function recallBill(page: Page, number: string): Promise<void> {
 
 test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
   test('tanpa persetujuan, piutang over-limit bill B-0002 ditolak di POS-04', async ({ page }) => {
-    await loginPos(page, 'Dewi', '2468');
+    await loginPos(page, 'Dewi');
     await recallBill(page, 'B-0002');
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
@@ -100,7 +95,7 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
     await expect(page.getByRole('heading', { name: 'Menunggu persetujuan (1)' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Riwayat persetujuan' })).toBeVisible();
 
-    await loginPos(page, 'Dewi', '2468');
+    await loginPos(page, 'Dewi');
     await recallBill(page, 'B-0002');
     await expect(page.locator('.pos-bill tbody tr')).toHaveCount(3);
     await page.getByRole('button', { name: /^Bayar/ }).click();
