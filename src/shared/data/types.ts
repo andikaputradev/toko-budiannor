@@ -34,6 +34,9 @@ export interface Product {
   readonly defaultUnit?: string | undefined;
   readonly photoName?: string | undefined;
   readonly minByWarehouse?: Readonly<Record<WarehouseId, number>> | undefined;
+  readonly incoming?: number | undefined;
+  readonly photoUrl?: string | undefined;
+  readonly pinned?: boolean | undefined;
 }
 
 export interface ReceivableInvoice {
@@ -54,6 +57,7 @@ export interface Customer {
   readonly invoices: readonly ReceivableInvoice[];
   readonly address?: string | undefined;
   readonly dueDays?: number | undefined;
+  readonly pinned?: boolean | undefined;
 }
 
 export interface AppUser {

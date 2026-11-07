@@ -243,7 +243,7 @@ test.describe('BO-03 Barang', () => {
   test('tabel virtual 3.600 baris dan form seluruh informasi satu barang', async ({ page }) => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
     await page.goto('/#/bo/barang');
-    await expect(page.locator('.bo-count')).toHaveText('3.600 barang');
+    await expect(page.locator('.bo-count')).toHaveText('3.607 barang');
     expect(await page.locator('.vtable__rows .vtable__row').count()).toBeLessThan(60);
     await expect(page.getByLabel('Kode barang')).toHaveValue('B0001');
     await page.locator('.vtable__viewport').evaluate((node) => {

@@ -1,4 +1,5 @@
 import { generateDataset, REFERENCE_DATE } from '../data/generator';
+import { withProposalData } from '../data/proposal';
 import { checkReceivable, type ReceivableDecision } from '../data/receivable';
 import {
   ROLES,
@@ -206,7 +207,7 @@ function toSession(state: AppState, overrides: Readonly<Record<string, Stock>>):
 }
 
 export function createStore(options: StoreOptions = {}): Store {
-  const baseData = options.dataset ?? generateDataset();
+  const baseData = options.dataset ?? withProposalData(generateDataset());
   const persistence = options.persistence;
   const bus = createEventBus<StoreEvents>();
   const saved = persistence?.load();
