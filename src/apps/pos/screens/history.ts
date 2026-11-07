@@ -1,6 +1,6 @@
-import { el } from '../../../shared/dom';
+import { append, el } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
-import type { PaymentMethod, Sale } from '../../../shared/data/types';
+import type { PaymentMethod, Sale, SalePayment } from '../../../shared/data/types';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import { isAllowed } from '../../../shared/permissions';
 import { createButton } from '../../../shared/ui/button';
@@ -10,19 +10,25 @@ import { isRangeValid } from '../domain/forms';
 import {
   dayOf,
   filterSales,
+  groupByDay,
   isPending,
   isUnsynced,
   pageCount,
   pageSlice,
+  paymentKeyOf,
+  paymentRowsOf,
+  receivableInfo,
   saleDate,
   type StatusFilter,
 } from '../domain/history';
+import { changeOf } from '../domain/receipt';
 import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
 import type { ScreenHandle } from './login';
 import { openReceiptPreview, saleReceipt } from './receipt-preview';
 import { openReturnModal } from './retur-modal';
+import { openShareReceipt } from './share-receipt';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
@@ -44,6 +50,12 @@ function isPc(): boolean {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(hover: hover) and (pointer: fine)').matches
   );
+}
+
+function rowLabel(row: SalePayment): string {
+  return row.method === 'dp'
+    ? `${label('metodeDp')} (${label(METHOD_LABELS[row.via ?? 'tunai'])})`
+    : label(METHOD_LABELS[row.method]);
 }
 
 export function renderHistory(session: PosSession, go: (path: string) => void): ScreenHandle {
@@ -123,66 +135,68 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
       return;
     }
     const queue = session.state().queue;
-    const body = el('tbody');
-    for (const sale of pageSlice(rows, page)) {
-      const pick = el('button', {
-        className: 'pos-bills__pick',
-        text: sale.number,
-        attrs: {
-          type: 'button',
-          'aria-pressed': sale.number === current?.number ? 'true' : 'false',
-        },
-      });
-      pick.addEventListener('click', () => {
-        selectedNumber = sale.number;
-        render();
-      });
-      const pending = isPending(sale, queue);
-      body.append(
-        el(
-          'tr',
-          { className: sale.number === current?.number ? 'is-selected' : '' },
-          el('td', {}, pick),
-          el('td', { text: formatTime(new Date(sale.createdAt)) }),
-          el('td', { text: session.customerName(sale.customerId) }),
-          el('td', { className: 'is-end', text: formatRupiah(sale.total) }),
-          el(
-            'td',
-            {},
-            el('span', {
-              className: pending
-                ? 'pos-status pos-status--pending'
-                : 'pos-status pos-status--lunas',
-              text: label(pending ? 'statusPending' : 'statusLunas'),
-            }),
-            isUnsynced(sale, queue)
-              ? el('span', {
-                  className: 't-label pos-history__unsynced',
-                  text: label('belumTersinkron'),
-                })
-              : false,
-          ),
-        ),
-      );
-    }
     listBox.replaceChildren(
-      el(
-        'table',
-        { className: 'pos-table' },
+      ...groupByDay(pageSlice(rows, page)).map((group) =>
         el(
-          'thead',
-          {},
+          'section',
+          { className: 'pos-history__group' },
+          el('h3', {
+            className: 'pos-history__day t-label',
+            text:
+              group.day === today
+                ? label('hariIni')
+                : formatDate(new Date(`${group.day}T12:00:00+07:00`)),
+          }),
           el(
-            'tr',
-            {},
-            el('th', { text: label('kolomNoTransaksi') }),
-            el('th', { text: label('kolomWaktu') }),
-            el('th', { text: label('pelanggan') }),
-            el('th', { className: 'is-end', text: label('kolomTotal') }),
-            el('th', { text: label('kolomStatus') }),
+            'ul',
+            { className: 'pos-history__items' },
+            ...group.sales.map((sale) => {
+              const pending = isPending(sale, queue);
+              const key = paymentKeyOf(sale);
+              const pick = el(
+                'button',
+                {
+                  className: 'pos-history__item',
+                  attrs: {
+                    type: 'button',
+                    'aria-pressed': sale.number === current?.number ? 'true' : 'false',
+                  },
+                },
+                el('strong', { className: 'pos-history__no', text: sale.number }),
+                el('span', {
+                  className: 'pos-history__time t-label',
+                  text: formatTime(new Date(sale.createdAt)),
+                }),
+                el('span', {
+                  className: 'pos-history__who',
+                  text: session.customerName(sale.customerId),
+                }),
+                el('span', { className: 'pos-history__total', text: formatRupiah(sale.total) }),
+                el('span', {
+                  className: pending
+                    ? 'pos-status pos-status--pending'
+                    : 'pos-status pos-status--lunas',
+                  text: label(pending ? 'statusPending' : 'statusLunas'),
+                }),
+                el('span', {
+                  className: 'pos-history__meta t-label',
+                  text: `${key === 'split' ? label('caraBayarSplit') : label(METHOD_LABELS[key])} · ${session.userName(sale.cashierId)}`,
+                }),
+                isUnsynced(sale, queue)
+                  ? el('span', {
+                      className: 't-label pos-history__unsynced',
+                      text: label('belumTersinkron'),
+                    })
+                  : false,
+              );
+              pick.addEventListener('click', () => {
+                selectedNumber = sale.number;
+                render();
+              });
+              return el('li', {}, pick);
+            }),
           ),
         ),
-        body,
       ),
     );
     const total = pageCount(rows.length);
@@ -218,6 +232,9 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     }
     const role = session.store.getState().role;
     const at = new Date(sale.createdAt);
+    const customer = session.store
+      .getState()
+      .data.customers.find((item) => item.id === sale.customerId);
     const row = (name: string, value: string): HTMLElement =>
       el(
         'p',
@@ -225,11 +242,44 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         el('span', { className: 't-label', text: name }),
         el('span', { text: value }),
       );
-    const actions = el(
-      'div',
-      { className: 'pos-history__actions' },
+    const figure = (name: string, value: number): HTMLElement =>
+      el(
+        'div',
+        { className: 'pos-history__figure' },
+        el('span', { className: 't-label', text: name }),
+        el('output', { className: 't-value', text: formatRupiah(value) }),
+      );
+
+    const actions = el('div', { className: 'pos-history__actions' });
+    if (isAllowed(role, 'BO-10', 'Simpan Retur')) {
+      actions.append(
+        createButton({
+          text: label('retur'),
+          variant: 'secondary',
+          onClick: () => {
+            openReturnModal(session, sale, render);
+          },
+        }),
+      );
+    }
+    actions.append(
       createButton({
-        text: label('cetakUlangStruk'),
+        text: label('shareStruk'),
+        variant: 'secondary',
+        icon: 'send',
+        onClick: () => {
+          openShareReceipt({
+            title: label('kirimStruk'),
+            reference: sale.number,
+            amountText: formatRupiah(sale.total),
+            customerName: session.customerName(sale.customerId),
+            phone: customer?.phone ?? '',
+            sentLabel: 'strukTerkirimWa',
+          });
+        },
+      }),
+      createButton({
+        text: label('cetakStruk'),
         icon: 'printer',
         onClick: () => {
           openReceiptPreview({
@@ -259,44 +309,83 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         }),
       );
     }
-    if (isAllowed(role, 'BO-10', 'Simpan Retur')) {
-      actions.append(
-        createButton({
-          text: label('returPenjualan'),
-          variant: 'secondary',
-          onClick: () => {
-            openReturnModal(session, sale, render);
-          },
-        }),
-      );
-    }
-    detail.replaceChildren(
-      el('h2', { className: 't-section-title', text: sale.number }),
-      row(label('detailTanggal'), `${formatDate(at)} ${formatTime(at)}`),
-      row(label('detailKasir'), session.userName(sale.cashierId)),
-      row(label('pelanggan'), session.customerName(sale.customerId)),
+
+    const payRows = paymentRowsOf(sale);
+    const received = payRows
+      .filter((item) => item.method !== 'piutang')
+      .reduce((sum, item) => sum + item.amount, 0);
+    const owed = receivableInfo(sale);
+    detail.replaceChildren();
+    append(detail, [
+      actions,
+      el('h2', { className: 't-section-title', text: label('infoPenjualan') }),
+      row(label('nomorPenjualan'), sale.number),
+      row(label('tanggalPenjualan'), `${formatDate(at)} ${formatTime(at)}`),
+      row(label('namaPelanggan'), session.customerName(sale.customerId)),
+      row(label('dibuatOleh'), session.userName(sale.cashierId)),
+      el('h2', { className: 't-section-title', text: label('infoPenerimaan') }),
+      el(
+        'div',
+        { className: 'pos-history__figures' },
+        figure(label('totalPenerimaan'), received),
+        figure(label('totalBayar'), sale.paid),
+        figure(label('kembalian'), changeOf(sale)),
+      ),
+      el('h3', { className: 'pos-history__sub t-label', text: label('riwayatPenerimaan') }),
+      el(
+        'ul',
+        { className: 'pos-history__pay' },
+        ...payRows.map((item) =>
+          el(
+            'li',
+            {},
+            el('span', { text: rowLabel(item) }),
+            el('span', { className: 'is-end', text: formatRupiah(item.amount) }),
+          ),
+        ),
+      ),
+      owed === undefined
+        ? false
+        : el(
+            'div',
+            { className: 'pos-history__owed' },
+            sale.terms === undefined
+              ? false
+              : row(label('tempoLabel'), label('tempoHari', { hari: sale.terms.dueDays })),
+            owed.dueDate === undefined
+              ? false
+              : row(label('jatuhTempo'), formatDate(new Date(owed.dueDate))),
+            row(label('sisaTagihan'), formatRupiah(owed.sisa)),
+          ),
+      el('h2', { className: 't-section-title', text: label('barangJasa') }),
       el(
         'ul',
         {
-          className: 'pos-bills__lines',
+          className: 'pos-bills__lines pos-history__lines',
           attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
         },
         ...sale.lines.map((line) =>
           el(
             'li',
             {},
-            el('span', { text: session.product(line.productId)?.name ?? line.productId }),
+            el('strong', { text: session.product(line.productId)?.name ?? line.productId }),
             el('span', {
               className: 't-label',
-              text: `${formatDecimal(line.quantity)} ${line.unit}`,
+              text: `${formatDecimal(line.quantity)} ${line.unit} x ${formatRupiah(line.unitPrice)}`,
+            }),
+            el('span', {
+              className: 't-label',
+              text: label('diinputOleh', { nama: session.userName(sale.cashierId) }),
+            }),
+            el('output', {
+              className: 'is-end',
+              text: formatRupiah(Math.round(line.quantity * line.unitPrice)),
             }),
           ),
         ),
       ),
-      row(label('detailCaraBayar'), label(METHOD_LABELS[sale.payment])),
       row(label('kolomTotal'), formatRupiah(sale.total)),
-      actions,
-    );
+    ]);
   };
 
   const render = (): void => {

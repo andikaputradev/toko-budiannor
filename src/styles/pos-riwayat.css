@@ -1,0 +1,128 @@
+.pos-history {
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+}
+
+.pos-history__filters {
+  flex-wrap: wrap;
+}
+
+.pos-history__date {
+  width: 160px;
+}
+
+.pos-history__search {
+  min-width: 140px;
+}
+
+.pos-history__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+}
+
+.pos-history__day {
+  margin: var(--primitive-space-2) 0 0;
+  padding: var(--primitive-space-1) var(--primitive-space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-page);
+}
+
+.pos-history__items {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-history__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--primitive-space-2);
+  align-items: center;
+  width: 100%;
+  min-height: 84px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-history__item[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 4px 0 0 var(--color-accent-default);
+}
+
+.pos-history__total {
+  font-weight: var(--primitive-font-weight-semibold);
+  text-align: right;
+}
+
+.pos-history__meta {
+  grid-column: 1 / -1;
+}
+
+.pos-history__detail {
+  gap: var(--primitive-space-2);
+}
+
+.pos-history__actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.pos-history__actions .btn {
+  flex: 1;
+  height: 56px;
+}
+
+.pos-history__figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.pos-history__figure {
+  display: flex;
+  flex-direction: column;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-page);
+}
+
+.pos-history__sub {
+  margin: var(--primitive-space-2) 0 0;
+}
+
+.pos-history__pay {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-history__pay li {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--primitive-space-1) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-history__owed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+}
+
+.pos-history__lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--primitive-space-2);
+}
+
+.pos-history__lines li strong {
+  grid-column: 1 / -1;
+}

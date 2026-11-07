@@ -1,6 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { chooseCustomer, loginPos, loginPosRaw, settle, startShift } from './helpers/routes';
+import {
+  chooseCustomer,
+  finishPaymentDialog,
+  loginPos,
+  loginPosRaw,
+  openDrawerItem,
+  settle,
+  startShift,
+} from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -545,6 +553,105 @@ test.describe('pembayaran berhasil', () => {
       .locator('button, input')
       .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
     for (const height of boxes) {
+      expect(height).toBeGreaterThanOrEqual(47.5);
+    }
+  });
+});
+
+test.describe('riwayat penjualan', () => {
+  async function saleSplit(page: Page): Promise<void> {
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('switch', { name: 'Split Payment' }).click();
+    await page.getByLabel('Jumlah diterima').fill('30000');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await page.getByLabel('Jumlah diterima').fill('40000');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
+  }
+
+  async function saleCredit(page: Page): Promise<void> {
+    await chooseCustomer(page, 'Bu Sherly');
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByLabel('DP', { exact: true }).fill('20000');
+    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
+  }
+
+  test('transaksi split: daftar bertulis Split dan detail memuat dua baris penerimaan', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await saleSplit(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const first = page.locator('.pos-history__item').first();
+    await expect(first).toContainText('T-000141');
+    await expect(first).toContainText('Split');
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail).toContainText('Informasi Penjualan');
+    await expect(detail).toContainText('Riwayat Penerimaan');
+    await expect(detail).toContainText('Tunai');
+    await expect(detail).toContainText('Rp 30.000');
+    await expect(detail).toContainText('QRIS');
+    await expect(detail).toContainText('Rp 40.000');
+    await expect(detail).toContainText('Barang & Jasa');
+  });
+
+  test('transaksi piutang menampilkan jatuh tempo dan sisa tagihan', async ({ page }) => {
+    await loginPos(page);
+    await saleCredit(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail).toContainText(/Jatuh tempo/i);
+    await expect(detail).toContainText('18 Nov 2026');
+    await expect(detail).toContainText(/Sisa tagihan/i);
+    await expect(detail).toContainText('Rp 50.000');
+  });
+
+  test('transaksi bawaan lama tetap tampil lengkap dan Cetak Struk bertanda SALINAN', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const search = page.getByRole('searchbox', { name: 'Cari transaksi' });
+    await search.fill('T-000101');
+    await search.press('Enter');
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail).toContainText('T-000101');
+    await expect(detail).toContainText('Barang & Jasa');
+    await detail.getByRole('button', { name: 'Cetak Struk' }).click();
+    await expect(page.locator('.pos-receipt')).toContainText('SALINAN');
+  });
+
+  test('Share Struk membuka dialog Kirim Struk dengan kolom Nomor WhatsApp', async ({ page }) => {
+    await loginPos(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page.getByRole('button', { name: 'Share Struk' }).click();
+    const share = page.getByRole('dialog', { name: 'Kirim Struk' });
+    await expect(share.getByLabel('Nomor WhatsApp')).toBeVisible();
+  });
+
+  test('axe dan target 48 px pada riwayat dua panel', async ({ page }) => {
+    await loginPos(page);
+    await saleSplit(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page.evaluate(() => document.fonts.ready);
+    await settle(page);
+    const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(result.violations).toEqual([]);
+    const heights = await page
+      .locator('.pos-history button, .pos-history input')
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((node) => node.getClientRects().length > 0)
+          .map((node) => node.getBoundingClientRect().height),
+      );
+    for (const height of heights) {
       expect(height).toBeGreaterThanOrEqual(47.5);
     }
   });

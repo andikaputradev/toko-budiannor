@@ -817,3 +817,17 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-810: "Pembatalan Transaksi". Kunci alasanBatal.
 - TB-811: "Kesalahan Pembayaran". Kunci alasanSalahBayar.
 - TB-812: "Lainnya". Kunci alasanLainnya.
+- TB-813: "Informasi Penjualan". Kunci infoPenjualan.
+- TB-814: "Nomor Penjualan". Kunci nomorPenjualan.
+- TB-815: "Tanggal Penjualan". Kunci tanggalPenjualan.
+- TB-816: "Dibuat Oleh". Kunci dibuatOleh.
+- TB-817: "Informasi Penerimaan". Kunci infoPenerimaan.
+- TB-818: "Total Penerimaan". Kunci totalPenerimaan.
+- TB-819: "Total Bayar". Kunci totalBayar.
+- TB-820: "Riwayat Penerimaan". Kunci riwayatPenerimaan.
+- TB-821: "Barang & Jasa". Kunci barangJasa.
+- TB-822: "Diinput oleh: {nama}". Kunci diinputOleh.
+- TB-823: "Retur". Kunci retur.
+- TB-824: "Share Struk". Kunci shareStruk.
+- TB-825: "Hari Ini". Kunci hariIni.
+- TB-826: "Split". Kunci caraBayarSplit.

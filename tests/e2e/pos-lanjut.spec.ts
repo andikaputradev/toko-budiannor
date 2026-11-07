@@ -152,14 +152,14 @@ test.describe('POS-05 sampai POS-10', () => {
     await openDrawerItem(page, 'Riwayat Penjualan');
     await page.locator('.pos-history__date').first().fill('2026-10-01');
     await page.locator('.pos-history__chips').getByRole('button', { name: 'Pending' }).click();
-    const rows = page.locator('.pos-history__list tbody tr');
+    const rows = page.locator('.pos-history__item');
     expect(await rows.count()).toBeGreaterThan(0);
     for (const text of await rows.allTextContents()) {
       expect(text).toContain('Pending');
     }
     await page.locator('.pos-history__chips').getByRole('button', { name: 'Semua' }).click();
 
-    await page.getByRole('button', { name: 'Cetak Ulang Struk' }).click();
+    await page.getByRole('button', { name: 'Cetak Struk' }).click();
     await expect(page.locator('.pos-receipt')).toContainText('SALINAN');
     await page.getByRole('dialog').getByRole('button', { name: 'Cetak', exact: true }).click();
     await expect(page.getByText('Salinan struk tercetak.')).toBeVisible();
@@ -173,7 +173,7 @@ test.describe('POS-05 sampai POS-10', () => {
       page.getByText('Pengajuan koreksi disetujui. Ubah transaksi di Back-Office.'),
     ).toBeVisible();
 
-    await page.getByRole('button', { name: 'Retur Penjualan' }).click();
+    await page.getByRole('button', { name: 'Retur', exact: true }).click();
     const retur = page.getByRole('dialog');
     await retur.getByRole('button', { name: 'Simpan Retur' }).click();
     await expect(retur.getByText('Pilih minimal satu barang untuk diretur.')).toBeVisible();
@@ -192,9 +192,9 @@ test.describe('POS-05 sampai POS-10', () => {
   test('POS-06: Kasir tidak melihat Ajukan Koreksi dan Retur Penjualan', async ({ page }) => {
     await login(page, 'Dewi');
     await openDrawerItem(page, 'Riwayat Penjualan');
-    await expect(page.getByRole('button', { name: 'Cetak Ulang Struk' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cetak Struk' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Ajukan Koreksi' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Retur Penjualan' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Retur', exact: true })).toHaveCount(0);
   });
 
   test('POS-07: biaya kasir dengan validasi persis dan saldo kas', async ({ page }) => {

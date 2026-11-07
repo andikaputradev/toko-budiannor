@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { Sale, SyncItem } from '../../../src/shared/data/types';
 import {
   filterSales,
+  groupByDay,
   isPending,
   isUnsynced,
   pageCount,
   pageSlice,
   PAGE_SIZE,
+  paymentKeyOf,
+  paymentRowsOf,
+  receivableInfo,
   type HistoryFilter,
 } from '../../../src/apps/pos/domain/history';
 
@@ -93,5 +97,76 @@ describe('riwayat penjualan', () => {
     expect(pageCount(0)).toBe(1);
     expect(pageSlice(rows, 1)).toHaveLength(50);
     expect(pageSlice(rows, 3)).toHaveLength(20);
+  });
+});
+
+describe('riwayat dua panel: domain', () => {
+  it('groupByDay mengelompokkan per hari WIB, hari terbaru dulu, terbaru dulu dalam hari', () => {
+    const a = sale('T-1', '2026-10-19T01:00:00Z', 'tunai', 100000);
+    const b = sale('T-2', '2026-10-19T09:00:00Z', 'tunai', 100000);
+    const c = sale('T-3', '2026-10-18T05:00:00Z', 'tunai', 100000);
+    const d = sale('T-4', '2026-10-18T18:30:00Z', 'tunai', 100000);
+    const groups = groupByDay([a, c, d, b]);
+    expect(groups.map((group) => group.day)).toEqual(['2026-10-19', '2026-10-18']);
+    expect(groups[0]?.sales.map((item) => item.number)).toEqual(['T-2', 'T-1', 'T-4']);
+    expect(groups[1]?.sales.map((item) => item.number)).toEqual(['T-3']);
+    expect(groupByDay([])).toEqual([]);
+  });
+
+  it('paymentKeyOf menulis split bila lebih dari satu baris terbayar', () => {
+    const split: Sale = {
+      ...sale('T-5', '2026-10-19T01:00:00Z', 'tunai', 100000),
+      payments: [
+        { method: 'tunai', amount: 60000 },
+        { method: 'qris', amount: 40000 },
+      ],
+    };
+    expect(paymentKeyOf(split)).toBe('split');
+    expect(paymentKeyOf({ ...split, payments: [{ method: 'tunai', amount: 100000 }] })).toBe(
+      'tunai',
+    );
+    const credit: Sale = {
+      ...sale('T-6', '2026-10-19T01:00:00Z', 'piutang', 20000),
+      payments: [
+        { method: 'dp', amount: 20000, via: 'qris' },
+        { method: 'piutang', amount: 80000 },
+      ],
+    };
+    expect(paymentKeyOf(credit)).toBe('piutang');
+  });
+
+  it('paymentKeyOf memakai payment untuk transaksi bawaan lama tanpa payments', () => {
+    expect(paymentKeyOf(sale('T-7', '2026-10-19T01:00:00Z', 'qris', 100000))).toBe('qris');
+  });
+
+  it('paymentRowsOf membuang baris bernilai 0 dan menyusun baris untuk transaksi lama', () => {
+    expect(paymentRowsOf(sale('T-8', '2026-10-19T01:00:00Z', 'qris', 100000))).toEqual([
+      { method: 'qris', amount: 100000 },
+    ]);
+    expect(paymentRowsOf(sale('T-9', '2026-10-19T01:00:00Z', 'dp', 30000))).toEqual([
+      { method: 'dp', amount: 30000 },
+      { method: 'piutang', amount: 70000 },
+    ]);
+    const withZero: Sale = {
+      ...sale('T-10', '2026-10-19T01:00:00Z', 'tunai', 100000),
+      payments: [
+        { method: 'tunai', amount: 100000 },
+        { method: 'piutang', amount: 0 },
+      ],
+    };
+    expect(paymentRowsOf(withZero)).toEqual([{ method: 'tunai', amount: 100000 }]);
+  });
+
+  it('receivableInfo ada hanya bila masih ada sisa tagihan', () => {
+    const owing: Sale = {
+      ...sale('T-11', '2026-10-19T01:00:00Z', 'piutang', 30000),
+      terms: { dueDays: 30, dueDate: '2026-11-18T03:00:00.000Z' },
+    };
+    expect(receivableInfo(owing)).toEqual({ sisa: 70000, dueDate: '2026-11-18T03:00:00.000Z' });
+    expect(receivableInfo({ ...owing, terms: undefined })).toEqual({
+      sisa: 70000,
+      dueDate: undefined,
+    });
+    expect(receivableInfo(sale('T-12', '2026-10-19T01:00:00Z', 'tunai', 100000))).toBeUndefined();
   });
 });

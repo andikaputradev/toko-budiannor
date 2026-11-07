@@ -1,5 +1,5 @@
 import { wibDate } from '../../../shared/data/receivable';
-import type { Sale, SyncItem } from '../../../shared/data/types';
+import type { PaymentMethod, Sale, SalePayment, SyncItem } from '../../../shared/data/types';
 
 export type StatusFilter = 'semua' | 'lunas' | 'pending';
 
@@ -74,4 +74,48 @@ export function pageCount(total: number): number {
 
 export function pageSlice<T>(items: readonly T[], page: number): T[] {
   return items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+}
+
+export interface DayGroup {
+  readonly day: string;
+  readonly sales: readonly Sale[];
+}
+
+// Kelompok per hari WIB: hari terbaru dulu, dan terbaru dulu di dalam hari.
+export function groupByDay(sales: readonly Sale[]): DayGroup[] {
+  const sorted = [...sales].sort((first, second) =>
+    second.createdAt.localeCompare(first.createdAt),
+  );
+  const groups = new Map<string, Sale[]>();
+  for (const sale of sorted) {
+    const day = saleDate(sale);
+    const list = groups.get(day) ?? [];
+    list.push(sale);
+    groups.set(day, list);
+  }
+  return [...groups].map(([day, items]) => ({ day, sales: items }));
+}
+
+// Baris penerimaan transaksi. Data bawaan lama tanpa rincian disusun dari payment dan paid.
+export function paymentRowsOf(sale: Sale): readonly SalePayment[] {
+  if (sale.payments === undefined) {
+    const owed = sale.total - sale.paid;
+    return [
+      ...(sale.paid > 0 ? [{ method: sale.payment, amount: sale.paid }] : []),
+      ...(owed > 0 ? [{ method: 'piutang' as const, amount: owed }] : []),
+    ];
+  }
+  return sale.payments.filter((row) => row.amount > 0);
+}
+
+export function paymentKeyOf(sale: Sale): 'split' | PaymentMethod {
+  const paid = paymentRowsOf(sale).filter((row) => row.method !== 'piutang');
+  return paid.length > 1 ? 'split' : sale.payment;
+}
+
+export function receivableInfo(
+  sale: Sale,
+): { readonly sisa: number; readonly dueDate: string | undefined } | undefined {
+  const sisa = sale.total - sale.paid;
+  return sisa > 0 ? { sisa, dueDate: sale.terms?.dueDate } : undefined;
 }
