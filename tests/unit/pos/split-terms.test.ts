@@ -224,3 +224,41 @@ describe('sesi: beralih ke Piutang tidak membawa baris terbayar tersembunyi', ()
     });
   });
 });
+
+describe('kanal pembayaran pada sesi', () => {
+  it('maxAmount untuk Transfer BRI menghitung sisa dengan baris Transfer BCA tetap terhitung', () => {
+    const rows: readonly PaymentRow[] = [{ method: 'transfer', amount: 30000, channel: 'BCA' }];
+    expect(maxAmount('transfer', 100000, rows, 'BRI')).toBe(70000);
+    expect(maxAmount('transfer', 100000, rows, 'BCA')).toBe(100000);
+  });
+
+  it('chooseSingle(transfer, BCA) menyimpan kanal pada baris dan pada Sale.payments setelah finish', () => {
+    const { session } = setup();
+    session.chooseSingle('transfer', 'BCA');
+    expect(session.state().channel).toBe('BCA');
+    expect(session.state().rows).toEqual([{ method: 'transfer', amount: 70000, channel: 'BCA' }]);
+    const sale = session.finish();
+    expect(sale?.payments).toMatchObject([{ method: 'transfer', amount: 70000, channel: 'BCA' }]);
+    expect(session.state().channel).toBeUndefined();
+  });
+
+  it('exactAmount memakai kanal terpilih dan tidak menimpa baris kanal lain', () => {
+    const { session } = setup();
+    session.setMethod('transfer', 'BCA');
+    session.setAmount('transfer', 30000, 'BCA');
+    session.setMethod('transfer', 'BRI');
+    session.exactAmount();
+    expect(session.state().rows).toEqual([
+      { method: 'transfer', amount: 30000, channel: 'BCA' },
+      { method: 'transfer', amount: 40000, channel: 'BRI' },
+    ]);
+    expect(session.summary().status).toBe('ready');
+  });
+
+  it('chooseSingle tanpa kanal tetap menyimpan baris tanpa kanal (perilaku lama)', () => {
+    const { session } = setup();
+    session.chooseSingle('qris');
+    expect(session.state().rows).toEqual([{ method: 'qris', amount: 70000 }]);
+    expect(session.state().channel).toBeUndefined();
+  });
+});

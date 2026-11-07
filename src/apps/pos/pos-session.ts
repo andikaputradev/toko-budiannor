@@ -118,6 +118,7 @@ export interface PosState {
   readonly lastConnected: string;
   readonly printPending: string | undefined;
   readonly shift: Shift | undefined;
+  readonly channel: string | undefined;
 }
 
 export type FlowResult = { readonly ok: true } | Failure;
@@ -175,11 +176,11 @@ export interface PosSession {
   holdBill(): HeldBill | undefined;
   recallBill(id: string): FlowResult;
   deleteHeldBill(id: string): FlowResult;
-  setMethod(method: PaymentMethod): void;
-  setAmount(method: PaymentMethod, amount: number): void;
+  setMethod(method: PaymentMethod, channel?: string): void;
+  setAmount(method: PaymentMethod, amount: number, channel?: string): void;
   setTerms(days: number): void;
   setDownPayment(amount: number, via: PaidMethod): void;
-  chooseSingle(method: PaidMethod): void;
+  chooseSingle(method: PaidMethod, channel?: string): void;
   exactAmount(): void;
   quickAmount(amount: number): void;
   chooseReceivable(method: 'dp' | 'piutang'): void;
@@ -214,6 +215,7 @@ export interface PosSessionOptions {
 const EMPTY_PAYMENT = {
   rows: [] as readonly PaymentRow[],
   method: 'tunai' as PaymentMethod,
+  channel: undefined as string | undefined,
   ownerApproved: false,
   billRef: undefined as string | undefined,
   terms: undefined as { readonly dueDays: number } | undefined,
@@ -665,11 +667,14 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       });
       return { ok: true };
     },
-    setMethod: (method) => {
-      commit({ method });
+    setMethod: (method, channel) => {
+      commit({ method, channel });
     },
-    setAmount: (method, amount) => {
-      commit({ rows: withMethodAmount(state.rows, method, amount), ownerApproved: false });
+    setAmount: (method, amount, channel) => {
+      commit({
+        rows: withMethodAmount(state.rows, method, amount, channel),
+        ownerApproved: false,
+      });
     },
     setTerms: (days) => {
       if (!Number.isFinite(days)) {
@@ -677,10 +682,11 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       }
       commit({ terms: { dueDays: Math.min(MAX_DUE_DAYS, Math.max(0, Math.round(days))) } });
     },
-    chooseSingle: (method) => {
+    chooseSingle: (method, channel) => {
       commit({
         method,
-        rows: method === 'tunai' ? [] : [{ method, amount: total() }],
+        channel,
+        rows: method === 'tunai' ? [] : withMethodAmount([], method, total(), channel),
         ownerApproved: false,
         terms: undefined,
       });
@@ -693,11 +699,14 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       commit({ rows: withDownPayment(state.rows, capped, via), ownerApproved: false });
     },
     exactAmount: () => {
-      const amount = remainingDue(total(), state.rows, state.method);
-      commit({ rows: withMethodAmount(state.rows, state.method, amount) });
+      const amount = remainingDue(total(), state.rows, {
+        method: state.method,
+        channel: state.channel,
+      });
+      commit({ rows: withMethodAmount(state.rows, state.method, amount, state.channel) });
     },
     quickAmount: (amount) => {
-      commit({ rows: withMethodAmount(state.rows, state.method, amount) });
+      commit({ rows: withMethodAmount(state.rows, state.method, amount, state.channel) });
     },
     chooseReceivable: (method) => {
       if (method === 'piutang') {
@@ -790,6 +799,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
           method: row.method,
           amount: row.amount,
           via: row.via,
+          ...(row.channel === undefined ? {} : { channel: row.channel }),
         })),
         dp: downPayment > 0 ? downPayment : undefined,
         terms:

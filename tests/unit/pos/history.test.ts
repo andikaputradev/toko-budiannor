@@ -170,3 +170,19 @@ describe('riwayat dua panel: domain', () => {
     expect(receivableInfo(sale('T-12', '2026-10-19T01:00:00Z', 'tunai', 100000))).toBeUndefined();
   });
 });
+
+describe('kanal pada riwayat', () => {
+  it('paymentRowsOf membawa kanal ke riwayat', () => {
+    const withChannel: Sale = {
+      ...sale('T-9', '2026-10-19T03:00:00Z', 'transfer', 100000),
+      payments: [
+        { method: 'transfer', amount: 60000, channel: 'BCA' },
+        { method: 'qris', amount: 40000, channel: 'Gopay' },
+      ],
+    };
+    expect(paymentRowsOf(withChannel)).toEqual([
+      { method: 'transfer', amount: 60000, channel: 'BCA' },
+      { method: 'qris', amount: 40000, channel: 'Gopay' },
+    ]);
+  });
+});

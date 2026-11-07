@@ -267,7 +267,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
 
   const setPending = (value: number): void => {
     const method = asPaid(session.state().method);
-    const cap = maxAmount(method, session.total(), session.state().rows);
+    const cap = maxAmount(method, session.total(), session.state().rows, session.state().channel);
     pending = cap === undefined ? value : Math.min(value, cap);
     paint();
   };

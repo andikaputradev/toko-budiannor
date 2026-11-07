@@ -95,6 +95,7 @@ export interface SalePayment {
   readonly method: PaymentMethod;
   readonly amount: number;
   readonly via?: PaymentMethod | undefined;
+  readonly channel?: string | undefined;
 }
 
 export interface SaleTerms {

@@ -2,11 +2,13 @@ import { checkReceivable, type ReceivableDecision } from '../../../shared/data/r
 import type { Customer, PaidMethod, PaymentMethod } from '../../../shared/data/types';
 import { formatRupiah } from '../../../shared/format';
 import type { SystemMessageId } from '../../../shared/messages';
+import { rowKey } from './channels';
 
 export interface PaymentRow {
   readonly method: PaymentMethod;
   readonly amount: number;
   readonly via?: PaidMethod | undefined;
+  readonly channel?: string | undefined;
 }
 
 export type PaymentStatus = 'empty' | 'short' | 'blocked' | 'ready';
@@ -54,20 +56,28 @@ export function usesReceivable(rows: readonly PaymentRow[]): boolean {
   return rows.some((row) => row.method === 'dp' || row.method === 'piutang');
 }
 
+function rowOf(method: PaymentMethod, amount: number, channel?: string): PaymentRow {
+  return channel === undefined ? { method, amount } : { method, amount, channel };
+}
+
 export function withMethodAmount(
   rows: readonly PaymentRow[],
   method: PaymentMethod,
   amount: number,
+  channel?: string,
 ): readonly PaymentRow[] {
-  const others = rows.filter((row) => row.method !== method);
-  return amount > 0 || method === 'piutang' ? [...others, { method, amount }] : others;
+  const key = rowKey({ method, channel });
+  const others = rows.filter((row) => rowKey(row) !== key);
+  return amount > 0 || method === 'piutang' ? [...others, rowOf(method, amount, channel)] : others;
 }
 
 export function withoutMethod(
   rows: readonly PaymentRow[],
   method: PaymentMethod,
+  channel?: string,
 ): readonly PaymentRow[] {
-  return rows.filter((row) => row.method !== method);
+  const key = rowKey({ method, channel });
+  return rows.filter((row) => rowKey(row) !== key);
 }
 
 export function withDownPayment(
@@ -82,9 +92,10 @@ export function withDownPayment(
 export function remainingDue(
   total: number,
   rows: readonly PaymentRow[],
-  skip?: PaymentMethod,
+  skip?: { readonly method: PaymentMethod; readonly channel?: string | undefined },
 ): number {
-  const counted = rows.filter((row) => row.method !== skip && row.method !== 'piutang');
+  const skipKey = skip === undefined ? undefined : rowKey(skip);
+  const counted = rows.filter((row) => rowKey(row) !== skipKey && row.method !== 'piutang');
   return Math.max(0, total - paidAmount(counted));
 }
 
@@ -94,8 +105,9 @@ export function maxAmount(
   method: PaidMethod,
   total: number,
   rows: readonly PaymentRow[],
+  channel?: string,
 ): number | undefined {
-  return method === 'tunai' ? undefined : remainingDue(total, rows, method);
+  return method === 'tunai' ? undefined : remainingDue(total, rows, { method, channel });
 }
 
 export function syncReceivableRow(
