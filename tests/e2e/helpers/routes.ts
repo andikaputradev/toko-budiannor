@@ -177,7 +177,7 @@ export const OVERLAYS: readonly OverlayCase[] = [
       await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
       await chooseCustomer(page, 'UD Maju Jaya');
       await page.getByRole('button', { name: /^Bayar/ }).click();
-      await page.getByRole('button', { name: 'Piutang' }).click();
+      await page.getByRole('radio', { name: 'Piutang' }).click();
       await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
     },
