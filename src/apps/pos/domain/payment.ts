@@ -1,11 +1,12 @@
 import { checkReceivable, type ReceivableDecision } from '../../../shared/data/receivable';
-import type { Customer, PaymentMethod } from '../../../shared/data/types';
+import type { Customer, PaidMethod, PaymentMethod } from '../../../shared/data/types';
 import { formatRupiah } from '../../../shared/format';
 import type { SystemMessageId } from '../../../shared/messages';
 
 export interface PaymentRow {
   readonly method: PaymentMethod;
   readonly amount: number;
+  readonly via?: PaidMethod | undefined;
 }
 
 export type PaymentStatus = 'empty' | 'short' | 'blocked' | 'ready';
@@ -30,10 +31,18 @@ export interface PaymentInput {
   readonly ownerApproved: boolean;
 }
 
-export const METHODS: readonly PaymentMethod[] = ['tunai', 'qris', 'transfer', 'dp', 'piutang'];
+export const METHODS: readonly PaymentMethod[] = [
+  'tunai',
+  'qris',
+  'edc',
+  'transfer',
+  'dp',
+  'piutang',
+];
+export const CASH_METHODS: readonly PaidMethod[] = ['tunai', 'qris', 'edc', 'transfer'];
 export const QUICK_AMOUNTS: readonly number[] = [50000, 100000, 200000];
 
-const PAID_METHODS = new Set<PaymentMethod>(['tunai', 'qris', 'transfer', 'dp']);
+const PAID_METHODS = new Set<PaymentMethod>(['tunai', 'qris', 'edc', 'transfer', 'dp']);
 
 export function paidAmount(rows: readonly PaymentRow[]): number {
   return rows
@@ -61,6 +70,15 @@ export function withoutMethod(
   return rows.filter((row) => row.method !== method);
 }
 
+export function withDownPayment(
+  rows: readonly PaymentRow[],
+  amount: number,
+  via: PaidMethod,
+): readonly PaymentRow[] {
+  const others = rows.filter((row) => row.method !== 'dp');
+  return amount > 0 ? [...others, { method: 'dp', amount, via }] : others;
+}
+
 export function remainingDue(
   total: number,
   rows: readonly PaymentRow[],
@@ -68,6 +86,16 @@ export function remainingDue(
 ): number {
   const counted = rows.filter((row) => row.method !== skip && row.method !== 'piutang');
   return Math.max(0, total - paidAmount(counted));
+}
+
+// Batas nominal satu baris pada mode split: tunai tanpa batas (kembalian), selain tunai
+// paling banyak sisa tagihan.
+export function maxAmount(
+  method: PaidMethod,
+  total: number,
+  rows: readonly PaymentRow[],
+): number | undefined {
+  return method === 'tunai' ? undefined : remainingDue(total, rows, method);
 }
 
 export function syncReceivableRow(

@@ -86,7 +86,8 @@ export interface HeldBill {
   readonly lines: readonly BillLine[];
 }
 
-export type PaymentMethod = 'tunai' | 'qris' | 'transfer' | 'dp' | 'piutang';
+export type PaymentMethod = 'tunai' | 'qris' | 'edc' | 'transfer' | 'dp' | 'piutang';
+export type PaidMethod = Exclude<PaymentMethod, 'dp' | 'piutang'>;
 
 export type RefundMethod = 'tunai' | 'qris' | 'edc' | 'transfer';
 
@@ -94,6 +95,11 @@ export interface SalePayment {
   readonly method: PaymentMethod;
   readonly amount: number;
   readonly via?: PaymentMethod | undefined;
+}
+
+export interface SaleTerms {
+  readonly dueDays: number;
+  readonly dueDate: string;
 }
 
 export interface Sale {
@@ -107,6 +113,8 @@ export interface Sale {
   readonly payment: PaymentMethod;
   readonly paid: number;
   readonly payments?: readonly SalePayment[] | undefined;
+  readonly terms?: SaleTerms | undefined;
+  readonly dp?: number | undefined;
 }
 
 export type SyncStatus = 'menunggu' | 'mengirim' | 'gagal' | 'terkirim';

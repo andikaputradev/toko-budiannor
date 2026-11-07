@@ -547,6 +547,7 @@ export const labels = {
   tombolKoma: ',',
   metodeTunai: 'Tunai',
   metodeQris: 'QRIS',
+  metodeEdc: 'EDC',
   metodeTransfer: 'Transfer',
   metodeDp: 'DP',
   metodePiutang: 'Piutang',

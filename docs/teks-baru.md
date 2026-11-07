@@ -794,3 +794,4 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-787: "Bayar {jumlah}". Kunci bayarJumlah.
 - TB-788: "Opsi pesanan". Kunci opsiPesanan.
 - TB-789: "Tambah Pelanggan". Kunci tambahPelanggan.
+- TB-790: "EDC". Kunci metodeEdc.

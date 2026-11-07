@@ -7,6 +7,7 @@ import type {
   BillLine,
   Customer,
   HeldBill,
+  PaidMethod,
   PaymentMethod,
   Product,
   Sale,
@@ -26,13 +27,15 @@ import {
   replaceLine,
   type AddResult,
 } from './domain/bill';
-import { normalizePhone, type ExpenseKind } from './domain/forms';
+import { DEFAULT_DUE_DAYS, MAX_DUE_DAYS, normalizePhone, type ExpenseKind } from './domain/forms';
+import { dueDateOf } from './domain/terms';
 import type { Failure } from './failure';
 import { summarizeShift, type Shift, type ShiftSummary } from './domain/shift';
 import {
   evaluatePayment,
   remainingDue,
   syncReceivableRow,
+  withDownPayment,
   withMethodAmount,
   type PaymentRow,
   type PaymentSummary,
@@ -90,6 +93,7 @@ export interface PosState {
   readonly method: PaymentMethod;
   readonly ownerApproved: boolean;
   readonly billRef: string | undefined;
+  readonly terms: { readonly dueDays: number } | undefined;
   readonly heldBills: readonly HeldBill[];
   readonly sales: readonly Sale[];
   readonly deviceSales: readonly string[];
@@ -162,6 +166,8 @@ export interface PosSession {
   deleteHeldBill(id: string): FlowResult;
   setMethod(method: PaymentMethod): void;
   setAmount(method: PaymentMethod, amount: number): void;
+  setTerms(days: number): void;
+  setDownPayment(amount: number, via: PaidMethod): void;
   exactAmount(): void;
   quickAmount(amount: number): void;
   chooseReceivable(method: 'dp' | 'piutang'): void;
@@ -197,6 +203,7 @@ const EMPTY_PAYMENT = {
   method: 'tunai' as PaymentMethod,
   ownerApproved: false,
   billRef: undefined as string | undefined,
+  terms: undefined as { readonly dueDays: number } | undefined,
 };
 
 export function createPosSession(store: Store, options: PosSessionOptions = {}): PosSession {
@@ -506,6 +513,8 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         customerId,
         lines: repriceLines(state.lines, products(), target?.tier ?? 'eceran'),
         ownerApproved: false,
+        terms:
+          state.terms === undefined ? undefined : { dueDays: target?.dueDays ?? DEFAULT_DUE_DAYS },
       });
     },
     holdBill: () => {
@@ -566,6 +575,19 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     setAmount: (method, amount) => {
       commit({ rows: withMethodAmount(state.rows, method, amount), ownerApproved: false });
     },
+    setTerms: (days) => {
+      if (!Number.isFinite(days)) {
+        return;
+      }
+      commit({ terms: { dueDays: Math.min(MAX_DUE_DAYS, Math.max(0, Math.round(days))) } });
+    },
+    setDownPayment: (amount, via) => {
+      if (!Number.isFinite(amount)) {
+        return;
+      }
+      const capped = Math.min(Math.max(0, Math.round(amount)), total());
+      commit({ rows: withDownPayment(state.rows, capped, via), ownerApproved: false });
+    },
     exactAmount: () => {
       const amount = remainingDue(total(), state.rows, state.method);
       commit({ rows: withMethodAmount(state.rows, state.method, amount) });
@@ -579,6 +601,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
           method,
           rows: withMethodAmount(state.rows, 'piutang', 0),
           ownerApproved: false,
+          terms: state.terms ?? { dueDays: customer()?.dueDays ?? DEFAULT_DUE_DAYS },
         });
         return;
       }
@@ -638,6 +661,11 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         state.rows.find((row) => row.method === 'dp') ??
         [...state.rows].sort((first, second) => second.amount - first.amount)[0];
       const at = stamp();
+      const downPayment = state.rows
+        .filter((row) => row.method === 'dp')
+        .reduce((sum, row) => sum + row.amount, 0);
+      const owed = state.rows.find((row) => row.method === 'piutang');
+      const days = state.terms?.dueDays ?? customer()?.dueDays ?? DEFAULT_DUE_DAYS;
       const sale: Sale = {
         id: `S-${String(state.sales.length + 1)}`,
         number: formatDocumentNumber('T', 101 + state.sales.length),
@@ -648,7 +676,16 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         total: result.total,
         payment: primary?.method ?? 'tunai',
         paid: Math.min(result.paid, result.total),
-        payments: state.rows.map((row) => ({ method: row.method, amount: row.amount })),
+        payments: state.rows.map((row) => ({
+          method: row.method,
+          amount: row.amount,
+          via: row.via,
+        })),
+        dp: downPayment > 0 ? downPayment : undefined,
+        terms:
+          owed !== undefined && owed.amount > 0
+            ? { dueDays: days, dueDate: dueDateOf(now(), days) }
+            : undefined,
       };
       const deductions: Record<string, number> = {};
       for (const line of state.lines) {

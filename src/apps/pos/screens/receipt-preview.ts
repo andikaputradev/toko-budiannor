@@ -18,6 +18,7 @@ import type { PosSession } from '../pos-session';
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
   qris: 'metodeQris',
+  edc: 'metodeEdc',
   transfer: 'metodeTransfer',
   dp: 'metodeDp',
   piutang: 'metodePiutang',
