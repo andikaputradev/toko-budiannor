@@ -112,7 +112,9 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
 
     await page.goto('/#/pos/riwayat');
     await expect(page.getByText('T-000141').first()).toBeVisible();
-    await expect(page.locator('tr', { hasText: 'T-000141' }).first()).toContainText('Pending');
+    await expect(page.locator('.pos-history__item', { hasText: 'T-000141' }).first()).toContainText(
+      'Pending',
+    );
   });
 });
 
