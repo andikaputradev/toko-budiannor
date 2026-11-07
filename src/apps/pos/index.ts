@@ -4,6 +4,7 @@ import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
 import { createPosSession, type PosSession } from './pos-session';
+import { applyTheme, loadTheme } from './theme';
 import { renderBills } from './screens/bill';
 import { renderCustomerForm } from './screens/customer-form';
 import { renderExpense } from './screens/expense';
@@ -47,6 +48,7 @@ function sessionFor(store: Store): PosSession {
 export function mount(root: HTMLElement, path: string, context: AppContext): void {
   const active = sessionFor(context.store);
   document.documentElement.dataset['app'] = 'pos';
+  applyTheme(document.documentElement, loadTheme());
   currentPath = path;
   if (watched !== context.store) {
     watched = context.store;

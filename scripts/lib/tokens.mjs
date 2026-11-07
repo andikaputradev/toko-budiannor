@@ -108,6 +108,26 @@ export function resolveColor(tokens, path, context) {
   return { hex: hex.toUpperCase(), alpha: alphaOf(tokens, path, context) };
 }
 
+// Salinan peta token dengan nilai terang ($value) dan gelap ($dark) token yang ditimpa tema.
+export function withThemeOverrides(tokens, overrides) {
+  const themed = new Map(tokens);
+  for (const [path, override] of Object.entries(overrides)) {
+    if (path.startsWith('$')) {
+      continue;
+    }
+    const token = tokens.get(path);
+    if (token === undefined) {
+      throw new Error(`Token tema tidak dikenal: ${path}`);
+    }
+    themed.set(path, {
+      ...token,
+      value: override.$value ?? token.value,
+      dark: override.$dark ?? token.dark,
+    });
+  }
+  return themed;
+}
+
 export function hexToRgb(hex) {
   const value = Number.parseInt(hex.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];

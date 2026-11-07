@@ -7,6 +7,7 @@ abstract final class AppPalette {
   static const Color primitiveColorCream200 = Color(0xFFE2DDD4);
   static const Color primitiveColorInk600 = Color(0xFF5F6670);
   static const Color primitiveColorInk900 = Color(0xFF1C2024);
+  static const Color primitiveColorTerracotta100 = Color(0xFFF5E3DD);
   static const Color primitiveColorTerracotta300 = Color(0xFFE8836A);
   static const Color primitiveColorTerracotta600 = Color(0xFFB4472B);
   static const Color primitiveColorTerracotta700 = Color(0xFF963A22);
@@ -37,6 +38,7 @@ abstract final class AppColorsLight {
   static const Color colorBorderDefault = Color(0xFFE2DDD4);
   static const Color colorAccentDefault = Color(0xFFB4472B);
   static const Color colorAccentPressed = Color(0xFF963A22);
+  static const Color colorAccentSoft = Color(0xFFF5E3DD);
   static const Color colorFocusRing = Color(0xFF1C2024);
   static const Color colorStatusSuccessFg = Color(0xFF1F7A4D);
   static const Color colorStatusSuccessBg = Color(0xFFE4F2EA);
@@ -86,6 +88,7 @@ abstract final class AppColorsDark {
   static const Color colorBorderDefault = Color(0xFF2B2E33);
   static const Color colorAccentDefault = Color(0xFFE8836A);
   static const Color colorAccentPressed = Color(0xFFE8836A);
+  static const Color colorAccentSoft = Color(0xFF2B2E33);
   static const Color colorFocusRing = Color(0xFFECE8E1);
   static const Color colorStatusSuccessFg = Color(0xFF1F7A4D);
   static const Color colorStatusSuccessBg = Color(0xFFE4F2EA);

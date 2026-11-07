@@ -1,25 +1,11 @@
-import { flatten, hexToRgb, loadTokenDocument, resolveColor } from './lib/tokens.mjs';
+import { contrast, luminance, themedRows } from './lib/contrast.mjs';
+import { flatten, loadTokenDocument, resolveColor } from './lib/tokens.mjs';
 
 const document = await loadTokenDocument(new URL('../tokens/tokens.json', import.meta.url));
 const tokens = flatten(document);
 const { limits, pairs } = document.contrast;
 const TEXT_CLASSES = new Set(['normal', 'primary-pos']);
 const LABELS = { light: 'terang', dark: 'gelap' };
-
-function channel(value) {
-  const unit = value / 255;
-  return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
-}
-
-function luminance(hex) {
-  const [red, green, blue] = hexToRgb(hex);
-  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
-}
-
-function contrast(first, second) {
-  const [lighter, darker] = first >= second ? [first, second] : [second, first];
-  return (lighter + 0.05) / (darker + 0.05);
-}
 
 function decimal(value, digits) {
   return value.toFixed(digits).replace('.', ',');
@@ -95,6 +81,10 @@ function renderTable(rows) {
     row.specMatch,
     row.result,
   ]);
+  return renderGrid(header, body);
+}
+
+function renderGrid(header, body) {
   const widths = header.map((title, column) =>
     Math.max(title.length, ...body.map((line) => line[column].length)),
   );
@@ -120,7 +110,29 @@ console.log('B. Pasangan tambahan [Usulan]');
 console.log(renderTable(additional));
 console.log('');
 
-const failed = evaluated.filter((row) => row.result === 'GAGAL').length;
+const themeRows = themedRows(document, tokens);
+console.log('C. Tema POS [Usulan]');
+console.log(
+  renderGrid(
+    ['No', 'Tema', 'Mode', 'Pasangan', 'Teks', 'Latar', 'Rasio', 'Batas', 'Hasil'],
+    themeRows.map((row, index) => [
+      String(index + 1),
+      row.theme,
+      LABELS[row.mode],
+      row.name,
+      row.foreground,
+      row.background,
+      `${decimal(row.ratio, 2)} : 1`,
+      `${decimal(row.limit, 1).replace(',0', '')} : 1`,
+      row.passed ? 'LOLOS' : 'GAGAL',
+    ]),
+  ),
+);
+console.log('');
+
+const failed =
+  evaluated.filter((row) => row.result === 'GAGAL').length +
+  themeRows.filter((row) => !row.passed).length;
 const exempted = evaluated.filter((row) => row.result === 'DIKECUALIKAN').length;
 const mismatched = evaluated.filter((row) => row.specMatch === 'TIDAK').length;
 const passed = evaluated.length - failed - exempted;

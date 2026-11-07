@@ -8,6 +8,7 @@ import {
   referencePath,
   resolveColor,
   resolveToken,
+  withThemeOverrides,
 } from './lib/tokens.mjs';
 
 const CSS_OUTPUT = new URL('../src/styles/tokens.css', import.meta.url);
@@ -98,6 +99,42 @@ function selectorList(apps) {
 
 const ROOT_AND_APPS = ':root,\n[data-app]';
 
+// Tema POS: permukaan gelap login (selalu), lalu satu rangkaian blok per tema.
+// Tema kosong (terakota) adalah palet bawaan dan tidak mengeluarkan blok.
+// Urutan dan kekhususan penting: blok gelap tema (3 atribut) mengalahkan blok terang
+// tema (2 atribut) pada akar login yang bertanda data-pos-surface.
+function posThemeBlocks(forcedDarkLines) {
+  const blocks = [
+    `[data-app='pos'][data-pos-surface='dark'] {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
+  ];
+  for (const [name, overrides] of Object.entries(document.$themes ?? {})) {
+    const paths = Object.keys(overrides).filter((key) => !key.startsWith('$'));
+    if (name.startsWith('$') || paths.length === 0) {
+      continue;
+    }
+    const themedTokens = withThemeOverrides(tokens, overrides);
+    const lines = (theme) =>
+      paths.map((path) => {
+        const token = themedTokens.get(path);
+        const raw = theme === 'dark' ? (token.dark ?? token.value) : token.value;
+        return declaration(cssName(path), cssValue(token, raw, { theme, profile: undefined }));
+      });
+    const scope = `[data-pos-theme='${name}']`;
+    const roots = `${scope}[data-app='pos'],\n${scope} [data-app='pos']`;
+    if (name === 'gelap') {
+      blocks.push(
+        `${roots} {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n${lines('dark').join('\n')}\n}`,
+      );
+    } else {
+      blocks.push(`${roots} {\n${lines('light').join('\n')}\n}`);
+      blocks.push(
+        `${scope} [data-app='pos'][data-pos-surface='dark'] {\n${lines('dark').join('\n')}\n}`,
+      );
+    }
+  }
+  return blocks;
+}
+
 function buildCss() {
   const primitiveLines = [];
   const derivedLines = [];
@@ -153,6 +190,7 @@ function buildCss() {
     `${themed("[data-theme='dark']").join(',\n')} {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
   );
   blocks.push(`${themed("[data-theme='light']").join(',\n')} {\n  color-scheme: light;\n}`);
+  blocks.push(...posThemeBlocks(forcedDarkLines));
   blocks.push(
     `@media (prefers-reduced-motion: reduce) {\n  ${ROOT_AND_APPS.replaceAll('\n', '\n  ')} {\n${reducedMotionLines.join('\n')}\n  }\n}`,
   );
