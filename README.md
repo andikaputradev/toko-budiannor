@@ -14,6 +14,10 @@ Lima modul dalam satu bundel, dipilih lewat hash alamat:
 
 BO-08 dan BO-10 sampai BO-22 belum dibangun pada mockup ini; Mode Tinjau menandainya "belum dibangun".
 
+### Revisi POS (November 2026)
+
+POS memakai menu samping, shift dengan modal awal, layar jual bergaya referensi (dropdown kategori, kartu harga per satuan dengan stok Toko, Gudang, dan PO), pembayaran Tunai atau Piutang dengan Split Payment, EDC, tempo, dan DP, dialog Pembayaran Berhasil (Cetak Struk atau Kirim WA), riwayat dua panel, retur (barang, jumlah, nominal, cara pengembalian), dan empat tema warna (Oranye, Terakota, Teal, Gelap) yang dipilih dari menu samping. Tujuh barang dan tujuh pelanggan dari proposal tampil paling depan; asumsi dan konfliknya ada di `docs/asumsi.md` bagian 13. Rancangan: `docs/superpowers/specs/2026-11-07-revisi-pos-design.md`.
+
 ## Prasyarat
 
 - Node.js 22.12 atau lebih baru (diuji pada 22.13.0) dan npm 10.
@@ -71,6 +75,7 @@ Buka `http://127.0.0.1:4173`. Perintah ini memakai `vite preview` dan menerapkan
 
 Uji e2e yang bersifat verifikasi rilis (folder `tests/e2e`):
 
+- `pos-revisi.spec.ts`: shift, menu samping, tema (axe pada tiap tema), layar jual, pembayaran, riwayat, dan retur POS.
 - `audit.spec.ts`: seluruh rute dipindai axe (WCAG 2.0, 2.1, 2.2 level A dan AA) pada empat viewport, ditambah lembar dan modal POS-03, POS-10, SALES-04 pada kerangka rancangannya. Tangkapan layar tiap rute ke `verifikasi/screenshots/<viewport>/` dan hasil axe ke `verifikasi/axe/`.
 - `target-sentuh.spec.ts`: setiap kontrol interaktif pada POS dan aplikasi mobile berukuran minimal 48 x 48 px.
 - `urutan-tab.spec.ts`: urutan Tab sama dengan urutan DOM, tanpa `tabindex` positif, tanpa jebakan fokus, penanda fokus tampak, fokus tidak melompat ke kiri atas.

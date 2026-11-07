@@ -206,3 +206,37 @@ Label: [Dari dokumen klien], [Asumsi], [Usulan], [Belum diketahui]. Bila spesifi
 - L-14 [Asumsi] Wilayah yang dapat menggulir pada layar sempit (daftar barang bill dan riwayat POS, tabel antrean POS-09, panel biaya POS-07, panel harga BO-04) diberi tabindex 0 dan aria-label agar dapat digulir dengan papan ketik (aturan axe scrollable-region-focusable).
 - L-15 [Temuan] Mode Tinjau gagal membuka layar BO secara langsung: masuk otomatis memanggil store.setUser sebelum pengguna dicatat, setUser memicu mount ulang, dan mount masuk lagi tanpa henti. Urutan diperbaiki dan dijaga oleh tests/e2e/tinjau-bo.spec.ts.
 - L-16 [Temuan] npm ci pada Vercel menolak lockfile karena Lighthouse 12 (lewat @sentry/node) mensyaratkan @opentelemetry/api di bawah 1.10.0 sedangkan lockfile memilih 1.10.0. npm lokal (10.9, 11, 12) tidak menolaknya, jadi kegagalan ini tidak dapat direproduksi di mesin pengembang. Perbaikan: @opentelemetry/api 1.9.1 sebagai devDependency tetap; lockfile hanya berubah pada versi itu. Percobaan awal memakai overrides (termasuk untuk ajv) justru menimbulkan galat baru di Vercel dan dibuang. Konflik ajv untuk SBOM tetap ada (lihat L-09).
+
+## 13. Revisi POS November 2026
+
+Sumber: `PROPOSAL-KEBUTUHAN-SYSTEM.pdf` (sketsa POS di halaman 3 PDF, Form Data Barang halaman 5, Form Penjualan halaman 6, Daftar Saldo Piutang halaman 7), catatan revisi WhatsApp 6 sampai 7 November 2026, dan 16 gambar referensi dari aplikasi kasir lain (dipakai untuk gaya dan alur saja; barang dagangannya tidak dipakai). Rancangan dan rencana ada di `docs/superpowers/specs/2026-11-07-revisi-pos-design.md` dan `docs/superpowers/plans/2026-11-07-revisi-pos.md`.
+
+### Data
+
+- R-01 [Dari dokumen klien] Tujuh barang proposal: Semen Gresik 40KG, Lem Fox 70 Gram, Cat Spray Pylox 109 Black, Knee PVC 3/4", Kabel NYM 2x1,5MM, Gembok Kodai 30MM (sketsa POS, halaman 3) dan Engsel Bellucci SN 5 (Form Data Barang, halaman 5). Harga per satuan, isi satuan, dan stok Toko, Gudang, PO mengikuti proposal. Barang di Form Data Barang yang tidak punya harga atau stok di proposal tidak dimasukkan.
+- R-02 [Dari dokumen klien] Tujuh pelanggan proposal: Kevin Wahyudi (PL387, tier RETAIL), Bu Sherly Tjoandra, CV Laut Mas, Pak Wahyudi, Toko ABC, Udin, dan Zaki. Saldo piutang mengikuti tabel halaman 7 dan berjumlah Rp 52.270.000 (diuji). Pak Wahyudi memiliki empat faktur sesuai proposal; faktur pertama sudah lewat jatuh tempo pada tanggal demo sehingga piutang barunya ditolak MSG-036.
+- R-03 [Konflik proposal] Toko Arif, Pak Samsul, dan Haji Sulam tidak dimasukkan karena datanya bertentangan di dalam proposal (nomor FJ26104444 dipakai untuk dua transaksi berbeda pada halaman 5 dan 7). Total piutang Bu Sherly berbeda antara halaman 6 (Rp 17.000.000) dan halaman 7 (Rp 8.500.000); dipakai tabel halaman 7.
+- R-04 [Asumsi, perlu konfirmasi] Limit piutang tidak ada di proposal. Dipakai Rp 50.000.000 untuk ketujuh pelanggan proposal.
+- R-05 [Asumsi] Harga Grosir hanya ada untuk Engsel; barang lain Grosir mengikuti Eceran. Kontraktor mengikuti Grosir. HPP dan minimal stok enam barang sketsa diisi 0. Barcode kosong untuk barang yang tidak punya barcode di proposal. Kategori Semen, Lem, Cat, Pipa dan Fitting, Listrik, dan Aksesoris Pintu dipetakan ke kategori barang bangkitan terdekat; Engsel memakai "Door & Window" dari proposal. Merek yang tidak disebut diisi "-". Semua pelanggan proposal bertier Eceran dengan tempo 30 hari.
+- R-06 [Asumsi] Data proposal ditambahkan di akhir `Dataset.products` dan `Dataset.customers` oleh `withProposalData` (hanya store bawaan aplikasi; `generateDataset()` tetap murni bangkitan). POS menampilkannya lebih dulu lewat penanda `pinned`. Total di aplikasi: 3.607 barang dan 67 pelanggan. Uji lama yang memakai dataset eksplisit tidak berubah.
+- R-07 [Asumsi] Foto tujuh barang dipotong dari gambar halaman 3 dan 5 proposal (resolusi sekitar 150 piksel) dan disimpan di `public/produk/`. Barang bangkitan tetap memakai kotak placeholder.
+- R-08 [Asumsi] Tanggal faktur Pak Wahyudi mengikuti proposal apa adanya. Tiga fakturnya bertanggal setelah tanggal demo 19 Oktober 2026; pemeriksaan jatuh tempo hanya memakai `dueAt`.
+
+### Shift dan kas
+
+- R-09 [Asumsi] Satu shift per perangkat (satu laci kas). Pengguna lain yang masuk saat shift berjalan melanjutkannya; chip menampilkan nama pembuka. Frontliner tidak memegang kas sehingga tidak ada gerbang shift baginya. Saldo laci = modal awal + tunai bersih penjualan (tunai dan DP bercara tunai, dikurangi kembalian) dikurangi biaya kasir dan retur tunai, dihitung sejak shift dimulai. Konstanta Rp 1.337.000 (E-13) dihapus. Selesai Shift menampilkan ringkasan tanpa pencocokan uang fisik. Mode Tinjau memulai shift otomatis dengan modal Rp 500.000.
+
+### Tampilan dan tema
+
+- R-10 [Asumsi] Empat tema (Oranye bawaan, Terakota, Teal, Gelap) lewat atribut `data-pos-theme` dan blok token yang dibangkitkan `build-tokens` dari `$themes` pada `tokens.json`; setiap tema lolos `npm run kontras` (bagian C). Oranye memakai `#B94F00` (putih di atasnya 5,02 : 1) karena oranye referensi asli sekitar 2,8 : 1. Layar login selalu gelap (`data-pos-surface`). Aturan `color: inherit` pada `.pos-chip` di `pos-lanjut.css` dihapus karena menimpa warna status chip Online dan Offline.
+- R-11 [Asumsi] Karyawan, "Konsultasi Gratis", nomor versi, dan pengiriman struk lewat email dari gambar referensi tidak dibuat. Ilustrasi dan avatar digambar sendiri.
+
+### Pembayaran dan retur
+
+- R-12 [Dari dokumen klien] Cara bayar bertambah EDC (proposal: Tunai, QRIS, EDC, Transfer). Split Payment memakai satu baris per cara bayar dengan nominal paling banyak sebesar sisa untuk selain tunai. Piutang memakai tempo 7, 30, atau 45 hari atau isian 0 sampai 365 hari, DP dengan cara bayarnya, sisa tagihan, dan tanggal jatuh tempo (jam demo ditambah tempo). `Sale.terms` hanya ada bila sisa tagihan lebih dari 0.
+- R-13 [Asumsi] Setelah bayar muncul dialog Pembayaran Berhasil dengan Cetak Struk, Kirim WA, dan Selesai. Kirim WA dan Share Struk hanya simulasi: tidak ada permintaan jaringan dan tidak ada tautan keluar.
+- R-14 [Asumsi] Retur: nominal boleh lebih kecil dari nilai barang dan tidak boleh melebihinya; cara pengembalian Tunai, QRIS, EDC, atau Transfer (bawaan mengikuti cara bayar utama); alasan Pengembalian Barang, Pembatalan Transaksi, Kesalahan Pembayaran, atau Lainnya (wajib keterangan, MSG-086); foto bukti opsional hanya mencatat nama berkas. Retur tunai memerlukan shift berjalan dan saldo laci cukup (MSG-041). Hak akses retur tidak berubah (Owner dan Supervisor). Bukti retur memuat kasir yang sedang masuk karena catatan retur tidak menyimpan kasir.
+
+### Perkakas dan pengujian
+
+- R-15 [Asumsi] `.superpowers` (ruang kerja pelaksana rencana) dikecualikan dari ESLint, Prettier, dan `lint:teks`. Semua login POS di e2e memakai `loginPos` yang juga memulai shift. Uji axe pada layar yang baru berubah menunggu transisi CSS selesai (`settle`) agar warna di tengah transisi tidak terukur.
