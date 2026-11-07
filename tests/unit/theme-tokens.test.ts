@@ -53,9 +53,7 @@ describe('token CSS tema POS', () => {
       expect(css).toContain(
         `:where([data-pos-theme='${theme}']) [data-app='pos'][data-pos-surface='dark']`,
       );
-      expect(css).toContain(
-        `[data-pos-theme='${theme}'][data-app='pos'][data-pos-scheme='gelap']`,
-      );
+      expect(css).toContain(`[data-pos-theme='${theme}'][data-app='pos'][data-pos-scheme='gelap']`);
     }
   });
 

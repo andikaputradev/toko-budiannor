@@ -109,3 +109,40 @@ test.describe('tampilan', () => {
     expect(result.violations).toEqual([]);
   });
 });
+
+test.describe('foto kartu barang', () => {
+  async function search(page: Page, text: string): Promise<void> {
+    await page.locator('#pos-search').fill(text);
+    await page.locator('#pos-search').press('Enter');
+  }
+
+  test('barang bangkitan memakai foto kategori yang ada dan memuat gambarnya', async ({ page }) => {
+    await loginPos(page);
+    await search(page, 'Cat Tembok');
+    const card = page.locator('.pos-card', { hasText: /CAT TEMBOK/i }).first();
+    const photo = card.locator('img.pos-photo--img');
+    await expect(photo).toHaveAttribute('src', /kategori\/cat\.webp$/);
+    await expect
+      .poll(() =>
+        photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
+      )
+      .toBe(true);
+  });
+
+  test('barang bangkitan tanpa foto kategori tetap memakai kotak placeholder', async ({ page }) => {
+    await loginPos(page);
+    await search(page, 'Stop Kontak');
+    const card = page.locator('.pos-card', { hasText: /STOP KONTAK/i }).first();
+    await expect(card.locator('span.pos-photo')).toBeVisible();
+    await expect(card.locator('img.pos-photo--img')).toHaveCount(0);
+  });
+
+  test('barang proposal tetap memakai fotonya sendiri, bukan foto kategori', async ({ page }) => {
+    await loginPos(page);
+    const semen = page.locator('.pos-card', { hasText: /SEMEN GRESIK/i }).first();
+    await expect(semen.locator('img.pos-photo--img')).toHaveAttribute(
+      'src',
+      /produk\/semen-gresik-40kg\.webp$/,
+    );
+  });
+});

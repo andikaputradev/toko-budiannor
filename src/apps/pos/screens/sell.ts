@@ -25,6 +25,7 @@ import {
 import { isShort } from '../domain/stock';
 import { failureText } from '../failure';
 import type { PosSession } from '../pos-session';
+import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
 import { openCustomerPicker } from './customer-picker';
 import type { ScreenHandle } from './login';
@@ -60,21 +61,6 @@ function isPc(): boolean {
 
 function unitText(unit: UnitDef): string {
   return unit.factor === 1 ? unit.code : `${unit.code} (${formatDecimal(unit.factor, 3, 0)})`;
-}
-
-function photoOf(product: Product): HTMLElement {
-  if (product.photoUrl === undefined) {
-    return el('span', { className: 'pos-photo', text: label('fotoProduk') });
-  }
-  return el('img', {
-    className: 'pos-photo pos-photo--img',
-    attrs: {
-      src: `${import.meta.env.BASE_URL}${product.photoUrl}`,
-      alt: '',
-      width: '160',
-      height: '96',
-    },
-  });
 }
 
 export function renderSell(session: PosSession, go: (path: string) => void): ScreenHandle {
@@ -166,7 +152,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     const main = el(
       'button',
       { className: 'pos-card__main', attrs: { type: 'button' } },
-      photoOf(product),
+      createProductThumb(product, 'md'),
       el('span', { className: 'pos-card__name', text: product.name }),
     );
     let timer: number | undefined;

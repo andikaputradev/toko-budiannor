@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
 import {
@@ -9,6 +10,8 @@ import type { Product } from '../../../src/shared/data/types';
 import { label } from '../../../src/shared/messages';
 import {
   categoriesOf,
+  categoryPhoto,
+  categorySlug,
   customerLabel,
   initialsOf,
   proposalFirst,
@@ -94,5 +97,34 @@ describe('customerLabel dan initialsOf', () => {
     expect(initialsOf('CV Laut Mas')).toBe('CL');
     expect(initialsOf('Udin')).toBe('U');
     expect(initialsOf('')).toBe('');
+  });
+});
+
+describe('foto kategori', () => {
+  it('categorySlug mengubah nama kategori menjadi nama berkas', () => {
+    expect(categorySlug('Pipa dan Fitting')).toBe('pipa-dan-fitting');
+    expect(categorySlug('Besi dan Baja')).toBe('besi-dan-baja');
+    expect(categorySlug('Cat')).toBe('cat');
+  });
+
+  it('categoryPhoto mengembalikan undefined untuk kategori tanpa foto', () => {
+    expect(categoryPhoto('Kategori Fiktif')).toBeUndefined();
+    expect(categoryPhoto('')).toBeUndefined();
+  });
+
+  it('setiap foto kategori yang terdaftar ada sebagai berkas di public', () => {
+    const categories = categoriesOf(generateDataset().products);
+    const withPhoto = categories.filter((category) => categoryPhoto(category) !== undefined);
+    for (const category of withPhoto) {
+      expect(existsSync(`public/${categoryPhoto(category) ?? ''}`), category).toBe(true);
+    }
+  });
+
+  it('sedikitnya delapan dari dua belas kategori barang punya foto', () => {
+    const categories = categoriesOf(generateDataset().products);
+    expect(categories).toHaveLength(12);
+    expect(
+      categories.filter((category) => categoryPhoto(category) !== undefined).length,
+    ).toBeGreaterThanOrEqual(8);
   });
 });

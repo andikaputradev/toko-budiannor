@@ -15,6 +15,34 @@ export function categoriesOf(products: readonly Product[]): string[] {
   return [...new Set(proposalFirst(products).map((product) => product.category))];
 }
 
+// Foto kategori hanya untuk barang bangkitan tanpa foto sendiri. Daftar ini eksplisit dan sesuai
+// berkas di public/kategori; tiga kategori (Bahan Dasar, Listrik, Atap) tidak punya foto layak.
+const CATEGORY_PHOTOS: ReadonlySet<string> = new Set([
+  'besi-dan-baja',
+  'pengikat',
+  'pipa-dan-fitting',
+  'cat',
+  'perekat',
+  'lantai-dan-dinding',
+  'kayu',
+  'aksesoris-pintu',
+  'alat-tangan',
+]);
+
+export function categorySlug(category: string): string {
+  return category
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function categoryPhoto(category: string): string | undefined {
+  const slug = categorySlug(category);
+  return CATEGORY_PHOTOS.has(slug) ? `kategori/${slug}.webp` : undefined;
+}
+
 export type StockKey = 'toko' | 'gudang' | 'po';
 
 export interface StockLine {
