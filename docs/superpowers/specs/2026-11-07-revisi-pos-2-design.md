@@ -179,7 +179,7 @@ Rute baru `/pos/pelanggan` (daftar), sementara `/pos/pelanggan-baru` tetap sebag
 
 Menu kiri: Profil Pengguna, Printer, Mesin EDC, Perangkat, Backup Data, Pengaturan Lainnya.
 
-- **Profil Pengguna**: avatar, nama, peran, dan **Ubah PIN** (PIN lama, PIN baru, ulangi). PIN baru empat digit dan tidak boleh sama dengan PIN lama. Disimpan di sesi (`PosState.pins`), memengaruhi login berikutnya selama aplikasi belum dimuat ulang.
+- **Profil Pengguna**: avatar, nama, peran, dan **Ubah PIN** (PIN lama, PIN baru, ulangi). PIN baru empat sampai enam digit (pola `PIN_PATTERN` yang sudah ada) dan tidak boleh sama dengan PIN lama. Disimpan di sesi (`PosState.pins`), memengaruhi login berikutnya selama aplikasi belum dimuat ulang.
 - **Printer**: status terhubung atau terputus mengikuti Panel Simulasi, tombol Uji Cetak membuka pratinjau struk contoh.
 - **Mesin EDC**: status simulasi dan tombol Uji Koneksi (toast).
 - **Perangkat**: nama perangkat, outlet terhubung "Toko Budiannor", dan versi mockup.
