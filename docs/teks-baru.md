@@ -955,3 +955,6 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-945: "Bill {baru} dibuat dari {asal}.". Kunci billSplitDibuat.
 - TB-946: "Bill {sumber} digabung ke {tujuan}.". Kunci billDigabung.
 - TB-947: "Tidak ada bill lain untuk digabung.". Kunci tidakAdaBillLain.
+- TB-948: "Karyawan". Kunci layarPos11.
+- TB-949: "Shift tidak ditemukan.". Kunci shiftTidakAda.
+- TB-950: "Laporan shift ini sudah diperiksa.". Kunci shiftSudahDiperiksa.

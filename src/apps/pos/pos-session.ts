@@ -45,6 +45,7 @@ import {
 } from './domain/retur';
 import type { Failure } from './failure';
 import { summarizeShift, type Shift, type ShiftSummary } from './domain/shift';
+import { buildShiftReport, type ClosedShift, type ShiftReport } from './domain/shift-report';
 import {
   evaluatePayment,
   remainingDue,
@@ -126,6 +127,7 @@ export interface PosState {
   readonly lastConnected: string;
   readonly printPending: string | undefined;
   readonly shift: Shift | undefined;
+  readonly closedShifts: readonly ClosedShift[];
   readonly channel: string | undefined;
 }
 
@@ -184,7 +186,10 @@ export interface PosSession {
   pendingQueue(): number;
   cashBalance(): number;
   startShift(openingCash: number | undefined): ShiftResult;
-  endShift(): ShiftSummary | undefined;
+  endShift(countedCash?: number): ShiftSummary | undefined;
+  shiftReport(): ShiftReport | undefined;
+  reviewShift(id: string): FlowResult;
+  employees(): readonly AppUser[];
   shiftSummary(): ShiftSummary | undefined;
   attemptLogin(userId: string | undefined, pin: string): FlowResult;
   logout(): void;
@@ -278,6 +283,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       lastConnected: data.referenceDate,
       printPending: undefined,
       shift: undefined,
+      closedShifts: [],
     };
   };
   let state: PosState = initial(false);
@@ -679,20 +685,81 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       });
       return { ok: true };
     },
-    endShift: () => {
+    endShift: (countedCash) => {
       const summary = currentSummary();
-      if (summary === undefined) {
+      const shift = state.shift;
+      if (summary === undefined || shift === undefined) {
         return undefined;
       }
+      // Tanpa angka hitungan (atau angka tidak sah) hitungan memakai saldo harapan: selisih nol.
+      const counted =
+        countedCash !== undefined && Number.isFinite(countedCash) && countedCash >= 0
+          ? Math.round(countedCash)
+          : summary.closingCash;
+      const closed: ClosedShift = {
+        id: `SH-${String(state.closedShifts.length + 1)}`,
+        userId: shift.userId,
+        startedAt: shift.startedAt,
+        endedAt: stamp(),
+        openingCash: shift.openingCash,
+        expectedCash: summary.closingCash,
+        countedCash: counted,
+        difference: counted - summary.closingCash,
+        report: buildShiftReport(
+          shift,
+          state.sales,
+          state.deviceSales,
+          state.expenses,
+          state.returns,
+        ),
+        review: { status: 'belum' },
+      };
       commit({
         shift: undefined,
+        closedShifts: [...state.closedShifts, closed],
         activity: [
           ...state.activity,
-          entry('Selesai shift', `Saldo akhir ${formatRupiah(summary.closingCash)}`),
+          entry(
+            'Selesai shift',
+            `Saldo akhir ${formatRupiah(summary.closingCash)}, hitungan ${formatRupiah(counted)}`,
+          ),
         ],
       });
       return summary;
     },
+    shiftReport: () =>
+      state.shift === undefined
+        ? undefined
+        : buildShiftReport(
+            state.shift,
+            state.sales,
+            state.deviceSales,
+            state.expenses,
+            state.returns,
+          ),
+    reviewShift: (id) => {
+      if (!isAllowed(store.getState().role, 'POS-11', 'Terima Laporan')) {
+        return fail('MSG-003');
+      }
+      const target = state.closedShifts.find((item) => item.id === id);
+      if (target === undefined) {
+        return failLabel('shiftTidakAda');
+      }
+      if (target.review.status === 'sudah') {
+        return failLabel('shiftSudahDiperiksa');
+      }
+      commit({
+        closedShifts: state.closedShifts.map((item) =>
+          item.id === id
+            ? { ...item, review: { status: 'sudah', by: currentUser(), at: stamp() } }
+            : item,
+        ),
+        activity: [...state.activity, entry('Terima laporan shift', id)],
+      });
+      return { ok: true };
+    },
+    employees: () =>
+      store.getState().data.users.filter((user) => user.active && user.role !== 'sales'),
     attemptLogin: (userId, pin) => {
       if (userId === undefined) {
         return fail('MSG-021');

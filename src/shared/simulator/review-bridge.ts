@@ -17,7 +17,7 @@ export function detectOverlay(root: ParentNode = document): string | undefined {
   if (modal === null) {
     return undefined;
   }
-  if (modal.querySelector('.pos-unit') !== null) {
+  if (modal.querySelector('.pos-unit, .pos-line') !== null) {
     return 'POS-03';
   }
   if (modal.querySelector('.pos-auth') !== null) {

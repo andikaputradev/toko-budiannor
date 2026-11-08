@@ -13,15 +13,15 @@ import {
 import { SCREEN_IDS } from '../../../src/shared/permissions';
 import { label } from '../../../src/shared/messages';
 
-describe('katalog 43 layar', () => {
-  it('memuat tepat 43 layar yang sama dengan matriks izin dengan ID unik', () => {
-    expect(SCREENS).toHaveLength(43);
-    expect(new Set(SCREENS.map((entry) => entry.id)).size).toBe(43);
+describe('katalog 44 layar', () => {
+  it('memuat tepat 44 layar yang sama dengan matriks izin dengan ID unik', () => {
+    expect(SCREENS).toHaveLength(44);
+    expect(new Set(SCREENS.map((entry) => entry.id)).size).toBe(44);
     expect([...SCREENS.map((entry) => entry.id)].sort()).toEqual([...SCREEN_IDS].sort());
   });
 
-  it('membagi layar ke tiga ekosistem: 10 POS, 22 Back-Office, 11 mobile', () => {
-    expect(screensIn('pos')).toHaveLength(10);
+  it('membagi layar ke tiga ekosistem: 11 POS, 22 Back-Office, 11 mobile', () => {
+    expect(screensIn('pos')).toHaveLength(11);
     expect(screensIn('bo')).toHaveLength(22);
     expect(screensIn('mobile')).toHaveLength(11);
     expect(builtIn('pos')).toBe(10);
@@ -29,12 +29,13 @@ describe('katalog 43 layar', () => {
     expect(builtIn('mobile')).toBe(11);
   });
 
-  it('memberi judul dari katalog pesan dan menandai 14 layar belum dibangun', () => {
+  it('memberi judul dari katalog pesan dan menandai 15 layar belum dibangun', () => {
     for (const entry of SCREENS) {
       expect(label(entry.title).length).toBeGreaterThan(2);
     }
     const missing = SCREENS.filter((entry) => !entry.built).map((entry) => entry.id);
     expect(missing).toEqual([
+      'POS-11',
       'BO-08',
       'BO-10',
       'BO-11',
