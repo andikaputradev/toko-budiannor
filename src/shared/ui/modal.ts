@@ -13,6 +13,7 @@ export interface ModalOptions {
   readonly body: string | Node;
   readonly actions: readonly ModalAction[];
   readonly scopeFrom?: Element;
+  readonly variant?: 'center' | 'drawer';
   readonly onClose?: () => void;
 }
 
@@ -27,8 +28,9 @@ export function openModal(options: ModalOptions): ModalHandle {
   const opener = document.activeElement;
   const titleId = nextId('modal-title');
   const scope = options.scopeFrom?.closest('[data-app]');
+  const drawer = options.variant === 'drawer';
   const overlay = el('div', {
-    className: 'modal-overlay',
+    className: drawer ? 'modal-overlay modal-overlay--drawer' : 'modal-overlay',
     attrs: {
       'data-app': scope?.getAttribute('data-app') ?? undefined,
       'data-theme': scope?.getAttribute('data-theme') ?? undefined,
@@ -37,7 +39,7 @@ export function openModal(options: ModalOptions): ModalHandle {
   const dialog = el(
     'div',
     {
-      className: 'modal',
+      className: drawer ? 'modal modal--drawer' : 'modal',
       attrs: {
         role: 'dialog',
         'aria-modal': 'true',

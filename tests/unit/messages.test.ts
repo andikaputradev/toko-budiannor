@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import teksBaru from '../../docs/teks-baru.md?raw';
 import copyAssets from '../../scripts/copy-assets.mjs?raw';
@@ -95,6 +96,43 @@ describe('sprite ikon', () => {
   it('memuat setiap ikon yang dipakai komponen pada skrip salin aset', () => {
     for (const name of ICON_NAMES) {
       expect(copyAssets).toContain(`'${name}'`);
+    }
+  });
+});
+
+describe('sprite ikon putaran kedua', () => {
+  const NEW_ICONS = [
+    'funnel',
+    'users',
+    'settings',
+    'qr-code',
+    'mail',
+    'calendar',
+    'image-plus',
+    'paperclip',
+    'lock',
+    'smartphone',
+    'database',
+    'layout-grid',
+    'list',
+    'sun',
+    'moon',
+    'monitor',
+    'arrow-left',
+    'chevron-right',
+    'credit-card',
+  ];
+
+  it('ICON_NAMES memuat ikon baru yang dipakai putaran kedua', () => {
+    for (const name of NEW_ICONS) {
+      expect(ICON_NAMES, name).toContain(name);
+    }
+  });
+
+  it('sprite.svg memuat simbol untuk setiap ikon di ICON_NAMES', () => {
+    const sprite = readFileSync('public/icons/sprite.svg', 'utf8');
+    for (const name of ICON_NAMES) {
+      expect(sprite, name).toContain(`<symbol id="${name}"`);
     }
   });
 });

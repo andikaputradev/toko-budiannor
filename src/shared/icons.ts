@@ -35,11 +35,39 @@ export const ICON_NAMES = [
   'plus',
   'check',
   'chevron-left',
+  'menu',
+  'ellipsis-vertical',
+  'scan-barcode',
+  'user-round',
+  'receipt',
+  'log-out',
+  'minus',
+  'delete',
+  'shopping-cart',
+  'funnel',
+  'users',
+  'settings',
+  'qr-code',
+  'mail',
+  'calendar',
+  'image-plus',
+  'paperclip',
+  'lock',
+  'smartphone',
+  'database',
+  'layout-grid',
+  'list',
+  'sun',
+  'moon',
+  'monitor',
+  'arrow-left',
+  'chevron-right',
+  'credit-card',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
 
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 export function icon(name: IconName, size: 'default' | 'table' = 'default'): SVGSVGElement {
   const svg = document.createElementNS(SVG_NAMESPACE, 'svg');

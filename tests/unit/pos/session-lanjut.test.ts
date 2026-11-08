@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
 import { totalStock } from '../../../src/shared/data/units';
 import { createStore } from '../../../src/shared/store/store';
+import { expenseNumber } from '../../../src/apps/pos/domain/forms';
 import { createPosSession } from '../../../src/apps/pos/pos-session';
+import { formatDocumentNumber } from '../../../src/shared/format';
 
 const dataset = generateDataset();
 
@@ -70,6 +72,7 @@ describe('bill gantung', () => {
 describe('biaya kasir', () => {
   it('memvalidasi jumlah, keterangan Lainnya, dan saldo kas', () => {
     const { session } = setup();
+    session.startShift(1337000);
     expect(session.saveExpense('parkir', '', 0)).toMatchObject({ messageId: 'MSG-029' });
     expect(session.saveExpense('lainnya', ' ', 5000)).toMatchObject({ messageId: 'MSG-042' });
     expect(session.saveExpense('parkir', '', 2000000)).toMatchObject({
@@ -80,6 +83,7 @@ describe('biaya kasir', () => {
 
   it('mengurangi saldo kas dan mencatat biaya', () => {
     const { session } = setup();
+    session.startShift(1337000);
     expect(session.cashBalance()).toBe(1337000);
     expect(session.saveExpense('parkir', '', 5000)).toEqual({ ok: true });
     expect(session.cashBalance()).toBe(1332000);
@@ -88,11 +92,45 @@ describe('biaya kasir', () => {
     expect(session.saveExpense('bensin', '', 1)).toMatchObject({ messageId: 'MSG-041' });
   });
 
+  it('saveExpense menyimpan lampiran dan mengurangi saldo laci', () => {
+    const { session } = setup();
+    session.startShift(1337000);
+    const attachment = { name: 'nota.png', size: 2048 };
+    expect(session.saveExpense('parkir', 'Parkir gudang', 5000, attachment)).toEqual({ ok: true });
+    expect(session.state().expenses[0]).toMatchObject({
+      kind: 'parkir',
+      note: 'Parkir gudang',
+      amount: 5000,
+      attachment,
+    });
+    expect(session.cashBalance()).toBe(1332000);
+    expect(session.shiftSummary()).toMatchObject({ expenses: 5000, closingCash: 1332000 });
+    expect(session.saveExpense('bensin', '', 1000)).toEqual({ ok: true });
+    expect(session.state().expenses[1]?.attachment).toBeUndefined();
+  });
+
+  it('menolak catatan lebih dari 144 karakter dan menomori biaya berurutan', () => {
+    const { session } = setup();
+    session.startShift(1337000);
+    expect(session.saveExpense('parkir', 'x'.repeat(145), 5000)).toMatchObject({
+      ok: false,
+      labelKey: 'catatanBiayaTerlaluPanjang',
+    });
+    expect(session.state().expenses).toHaveLength(0);
+    expect(session.saveExpense('parkir', 'x'.repeat(144), 5000)).toEqual({ ok: true });
+    expect(session.saveExpense('bensin', '', 1000)).toEqual({ ok: true });
+    const [one, two] = session.state().expenses;
+    expect(expenseNumber(one?.id ?? '')).toBe(formatDocumentNumber('BY', 1));
+    expect(expenseNumber(two?.id ?? '')).toBe(formatDocumentNumber('BY', 2));
+  });
+
   it('memasukkan biaya ke antrean hanya saat offline', () => {
     const online = setup('U-3', true);
+    online.session.startShift(1337000);
     online.session.saveExpense('parkir', '', 5000);
     expect(online.session.pendingQueue()).toBe(3);
     const offline = setup('U-3', false);
+    offline.session.startShift(1337000);
     offline.session.saveExpense('parkir', '', 5000);
     expect(offline.session.pendingQueue()).toBe(4);
     expect(offline.session.state().queue.at(-1)).toMatchObject({ kind: 'biaya', total: 5000 });
@@ -240,8 +278,8 @@ describe('retur penjualan', () => {
     return { session, store, sale, index };
   }
 
-  it('melarang Kasir meretur', () => {
-    const { session } = setup('U-3');
+  it('melarang Frontliner meretur', () => {
+    const { session } = setup('U-5');
     expect(session.returnSale('T-000101', [{ index: 0, quantity: 1 }], 'rusak')).toMatchObject({
       messageId: 'MSG-003',
     });
@@ -283,5 +321,422 @@ describe('retur penjualan', () => {
     expect(session.returnSale(number, [{ index, quantity: room + 0.1 }], 'rusak')).toMatchObject({
       messageId: 'MSG-085',
     });
+  });
+});
+
+describe('detail baris pesanan', () => {
+  function withLine(userId: string) {
+    const harness = setup(userId);
+    harness.session.addProduct(first(), undefined, 2);
+    const line = harness.session.state().lines[0];
+    if (line === undefined) {
+      throw new Error('baris tidak ada');
+    }
+    return { ...harness, original: line.unitPrice };
+  }
+
+  it('Supervisor mengubah harga dan listPrice asli tersimpan, price null memulihkannya', () => {
+    const { session, original } = withLine('U-2');
+    expect(session.setLineDetail(0, { price: original - 5000 })).toEqual({ ok: true });
+    expect(session.state().lines[0]).toMatchObject({
+      unitPrice: original - 5000,
+      listPrice: original,
+    });
+    expect(session.setLineDetail(0, { price: original - 7000 })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.listPrice).toBe(original);
+    expect(session.setLineDetail(0, { price: null })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.unitPrice).toBe(original);
+    expect(session.state().lines[0]?.listPrice).toBeUndefined();
+    expect(session.setLineDetail(0, { price: original })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.listPrice).toBeUndefined();
+  });
+
+  it('harga nol, negatif, atau pecahan ditolak dan baris tidak berubah', () => {
+    const { session, original } = withLine('U-2');
+    for (const price of [0, -1, 100.5, Number.NaN]) {
+      expect(session.setLineDetail(0, { price })).toEqual({ ok: false, labelKey: 'hargaTidakSah' });
+    }
+    expect(session.state().lines[0]?.unitPrice).toBe(original);
+  });
+
+  it('diskon disimpan, dihapus lewat null, dan nilai yang tidak sah ditolak', () => {
+    const { session } = withLine('U-2');
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 10 } })).toEqual({
+      ok: true,
+    });
+    expect(session.state().lines[0]?.discount).toEqual({ kind: 'persen', value: 10 });
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 101 } })).toEqual({
+      ok: false,
+      labelKey: 'diskonMelebihi',
+    });
+    expect(session.setLineDetail(0, { discount: { kind: 'nominal', value: -1 } })).toEqual({
+      ok: false,
+      labelKey: 'diskonNegatif',
+    });
+    expect(session.state().lines[0]?.discount).toEqual({ kind: 'persen', value: 10 });
+    expect(session.setLineDetail(0, { discount: null })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.discount).toBeUndefined();
+    expect(session.setLineDetail(0, { discount: { kind: 'nominal', value: 0 } })).toEqual({
+      ok: true,
+    });
+    expect(session.state().lines[0]?.discount).toBeUndefined();
+  });
+
+  it('Kasir tanpa otorisasi ditolak mengubah harga atau diskon, Supervisor dan Owner langsung boleh', () => {
+    const { session, original } = withLine('U-3');
+    expect(session.setLineDetail(0, { price: original - 1000 })).toEqual({
+      ok: false,
+      labelKey: 'butuhOtorisasiHarga',
+    });
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 5 } })).toEqual({
+      ok: false,
+      labelKey: 'butuhOtorisasiHarga',
+    });
+    expect(session.state().lines[0]).toMatchObject({ unitPrice: original });
+    expect(session.setLineDetail(0, { price: original - 1000 }, true)).toEqual({ ok: true });
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 5 } }, true)).toEqual({
+      ok: true,
+    });
+    for (const user of ['U-2', 'U-1']) {
+      const supervisor = withLine(user);
+      expect(supervisor.session.setLineDetail(0, { price: supervisor.original - 1000 })).toEqual({
+        ok: true,
+      });
+    }
+  });
+
+  it('Frontliner tidak boleh mengubah harga atau diskon walau diberi otorisasi', () => {
+    const { session, original } = withLine('U-5');
+    expect(session.setLineDetail(0, { price: original - 1000 }, true)).toMatchObject({
+      ok: false,
+      messageId: 'MSG-003',
+    });
+    expect(
+      session.setLineDetail(0, { discount: { kind: 'persen', value: 5 } }, true),
+    ).toMatchObject({ ok: false, messageId: 'MSG-003' });
+    expect(session.setLineDetail(0, { note: 'Antar sore' })).toEqual({ ok: true });
+  });
+
+  it('otorisasi dengan tujuan harga menyimpan entri audit dan menerima PIN Supervisor atau Owner', () => {
+    const owner = withLine('U-3');
+    expect(owner.session.authorizeOwner('Pelanggan langganan', '482916', 'harga', 'B-1')).toEqual({
+      ok: true,
+    });
+    expect(owner.session.state().audit.at(-1)).toMatchObject({
+      ownerName: 'Bapak Haris',
+      reason: 'Pelanggan langganan',
+    });
+    expect(owner.session.state().activity.at(-1)).toMatchObject({ action: 'Otorisasi harga' });
+    expect(owner.session.state().ownerApproved).toBe(false);
+    const supervisor = withLine('U-3');
+    expect(supervisor.session.authorizeOwner('Diskon proyek', '3571', 'harga', 'B-1')).toEqual({
+      ok: true,
+    });
+    expect(supervisor.session.state().audit.at(-1)).toMatchObject({ ownerName: 'Ibu Sinta' });
+    const other = withLine('U-3');
+    expect(other.session.authorizeOwner('Diskon proyek', '3571', 'koreksi', 'B-1')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-050',
+    });
+    expect(other.session.authorizeOwner('Diskon proyek', '1357', 'harga', 'B-1')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-050',
+    });
+  });
+
+  it('catatan dan tenaga penjual tersimpan, divalidasi, dan ikut ke Sale', () => {
+    const { session } = withLine('U-3');
+    expect(session.setLineDetail(0, { note: '  Antar sore  ', sellerId: 'U-5' })).toEqual({
+      ok: true,
+    });
+    expect(session.state().lines[0]).toMatchObject({ note: 'Antar sore', sellerId: 'U-5' });
+    expect(session.setLineDetail(0, { sellerId: 'U-3' })).toEqual({
+      ok: false,
+      labelKey: 'tenagaPenjualTidakSah',
+    });
+    expect(session.setLineDetail(0, { sellerId: 'U-404' })).toEqual({
+      ok: false,
+      labelKey: 'tenagaPenjualTidakSah',
+    });
+    expect(session.setLineDetail(0, { note: 'x'.repeat(201) })).toEqual({
+      ok: false,
+      labelKey: 'catatanTerlaluPanjang',
+    });
+    expect(session.setLineDetail(0, { note: '', sellerId: null })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.note).toBeUndefined();
+    expect(session.state().lines[0]?.sellerId).toBeUndefined();
+    expect(session.setLineDetail(0, { note: 'Antar sore', sellerId: 'U-5' })).toEqual({ ok: true });
+    session.startShift(100000);
+    session.exactAmount();
+    const sale = session.finish();
+    expect(sale?.lines[0]).toMatchObject({ note: 'Antar sore', sellerId: 'U-5' });
+  });
+
+  it('mengganti satuan atau jumlah menghitung ulang harga dan membuang harga yang diubah', () => {
+    const { session, original } = withLine('U-2');
+    expect(session.setLineDetail(0, { price: original - 5000, quantity: 3 })).toEqual({ ok: true });
+    expect(session.state().lines[0]).toMatchObject({ quantity: 3, listPrice: original });
+    const product = first();
+    const other = product.units.find((unit) => unit.code !== session.state().lines[0]?.unit);
+    if (other === undefined) {
+      throw new Error('barang tanpa satuan kedua');
+    }
+    expect(session.setLineDetail(0, { unit: other.code })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.unit).toBe(other.code);
+    expect(session.state().lines[0]?.listPrice).toBeUndefined();
+    expect(session.setLineDetail(0, { quantity: 0 })).toMatchObject({ ok: false });
+    expect(session.setLineDetail(7, { quantity: 1 })).toEqual({
+      ok: false,
+      labelKey: 'barisTidakAda',
+    });
+  });
+
+  it('finish menghitung total dari subtotal setelah diskon', () => {
+    const { session, original } = withLine('U-2');
+    session.startShift(100000);
+    session.setLineDetail(0, { discount: { kind: 'persen', value: 10 } });
+    const expected = Math.round(2 * original) - Math.round(2 * original * 0.1);
+    expect(session.total()).toBe(expected);
+    session.exactAmount();
+    const sale = session.finish();
+    expect(sale?.total).toBe(expected);
+    expect(sale?.paid).toBe(expected);
+  });
+});
+
+describe('split dan merge bill gantung', () => {
+  function holdTwo(userId = 'U-3') {
+    const harness = setup(userId);
+    const [semen, lem] = [dataset.products[0], dataset.products[1]];
+    if (semen === undefined || lem === undefined) {
+      throw new Error('data kosong');
+    }
+    harness.session.addProduct(semen, undefined, 4);
+    harness.session.addProduct(lem, undefined, 2);
+    const held = harness.session.holdBill();
+    if (held === undefined) {
+      throw new Error('bill tidak tertahan');
+    }
+    return { ...harness, held };
+  }
+
+  it('splitHeldBill menyimpan dua bill dan memberi nomor berikutnya', () => {
+    const { session, held } = holdTwo();
+    const before = session.state().heldBills.length;
+    expect(session.splitHeldBill(held.id, [{ index: 0, quantity: 1 }])).toEqual({ ok: true });
+    const bills = session.state().heldBills;
+    expect(bills).toHaveLength(before + 1);
+    const original = bills.find((bill) => bill.id === held.id);
+    const created = bills.at(-1);
+    expect(original?.lines[0]?.quantity).toBe(3);
+    expect(created?.lines).toHaveLength(1);
+    expect(created?.lines[0]?.quantity).toBe(1);
+    expect(created?.id).not.toBe(held.id);
+    expect(created?.number).toBe(`B-${String(before + 1).padStart(4, '0')}`);
+    expect(created?.customerId).toBe(held.customerId);
+    expect(session.state().activity.at(-1)?.action).toBe('Split bill');
+  });
+
+  it('splitHeldBill menolak pilihan tidak sah dengan labelKey dan bill tidak berubah', () => {
+    const { session, held } = holdTwo();
+    const before = JSON.stringify(session.state().heldBills);
+    expect(session.splitHeldBill(held.id, [])).toEqual({ ok: false, labelKey: 'splitKosong' });
+    expect(session.splitHeldBill(held.id, [{ index: 0, quantity: 9 }])).toEqual({
+      ok: false,
+      labelKey: 'splitMelebihi',
+    });
+    expect(
+      session.splitHeldBill(held.id, [
+        { index: 0, quantity: 4 },
+        { index: 1, quantity: 2 },
+      ]),
+    ).toEqual({ ok: false, labelKey: 'splitSemua' });
+    expect(session.splitHeldBill('H-404', [{ index: 0, quantity: 1 }])).toMatchObject({
+      ok: false,
+      messageId: 'MSG-038',
+    });
+    expect(JSON.stringify(session.state().heldBills)).toBe(before);
+  });
+
+  it('mergeHeldBills menjumlahkan ke bill target dan menghapus bill sumber', () => {
+    const { session, held } = holdTwo();
+    session.splitHeldBill(held.id, [{ index: 0, quantity: 1 }]);
+    const source = session.state().heldBills.at(-1);
+    if (source === undefined) {
+      throw new Error('bill hasil split tidak ada');
+    }
+    const count = session.state().heldBills.length;
+    expect(session.mergeHeldBills(held.id, source.id)).toEqual({ ok: true });
+    const bills = session.state().heldBills;
+    expect(bills).toHaveLength(count - 1);
+    expect(bills.some((bill) => bill.id === source.id)).toBe(false);
+    expect(bills.find((bill) => bill.id === held.id)?.lines[0]?.quantity).toBe(4);
+    expect(session.state().activity.at(-1)?.action).toBe('Merge bill');
+  });
+
+  it('mergeHeldBills menolak sumber sama dengan target dan bill yang tidak ada', () => {
+    const { session, held } = holdTwo();
+    const before = JSON.stringify(session.state().heldBills);
+    expect(session.mergeHeldBills(held.id, held.id)).toEqual({ ok: false, labelKey: 'mergeSama' });
+    expect(session.mergeHeldBills(held.id, 'H-404')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-038',
+    });
+    expect(session.mergeHeldBills('H-404', held.id)).toMatchObject({
+      ok: false,
+      messageId: 'MSG-038',
+    });
+    expect(JSON.stringify(session.state().heldBills)).toBe(before);
+  });
+
+  it('split dan merge menjaga diskon, catatan, dan harga yang diubah pada baris', () => {
+    const harness = setup('U-2');
+    const semen = dataset.products[0];
+    if (semen === undefined) {
+      throw new Error('data kosong');
+    }
+    harness.session.addProduct(semen, undefined, 4);
+    const original = harness.session.state().lines[0]?.unitPrice ?? 0;
+    harness.session.setLineDetail(0, {
+      price: original - 1000,
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+    });
+    const held = harness.session.holdBill();
+    if (held === undefined) {
+      throw new Error('bill tidak tertahan');
+    }
+    harness.session.splitHeldBill(held.id, [{ index: 0, quantity: 1 }]);
+    const created = harness.session.state().heldBills.at(-1);
+    expect(created?.lines[0]).toMatchObject({
+      unitPrice: original - 1000,
+      listPrice: original,
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+    });
+    expect(harness.session.mergeHeldBills(held.id, created?.id ?? '')).toEqual({ ok: true });
+    const merged = harness.session.state().heldBills.find((bill) => bill.id === held.id);
+    expect(merged?.lines).toHaveLength(1);
+    expect(merged?.lines[0]).toMatchObject({
+      quantity: 4,
+      unitPrice: original - 1000,
+      discount: { kind: 'persen', value: 10 },
+    });
+  });
+
+  it('mergeHeldBills menolak gabungan lebih dari 200 baris dan kedua bill tetap utuh', () => {
+    const { session } = setup('U-2');
+    const hold = (items: typeof dataset.products) => {
+      for (const product of items) {
+        session.addProduct(product, undefined, 1);
+      }
+      const held = session.holdBill();
+      if (held === undefined) {
+        throw new Error('bill tidak tertahan');
+      }
+      return held;
+    };
+    expect(dataset.products.length).toBeGreaterThanOrEqual(240);
+    const first = hold(dataset.products.slice(0, 120));
+    const second = hold(dataset.products.slice(120, 240));
+    expect(session.mergeHeldBills(first.id, second.id)).toEqual({
+      ok: false,
+      labelKey: 'mergeTerlaluBanyak',
+    });
+    const bills = session.state().heldBills;
+    expect(bills.find((bill) => bill.id === first.id)?.lines).toHaveLength(120);
+    expect(bills.find((bill) => bill.id === second.id)?.lines).toHaveLength(120);
+  });
+
+  it('menahan bill setelah bill lain dihapus tidak menggandakan id atau nomor', () => {
+    const { session } = setup('U-2');
+    const product = dataset.products[0];
+    if (product === undefined) {
+      throw new Error('data kosong');
+    }
+    expect(session.deleteHeldBill('H-1')).toEqual({ ok: true });
+    session.addProduct(product, undefined, 1);
+    const held = session.holdBill();
+    const bills = session.state().heldBills;
+    expect(new Set(bills.map((bill) => bill.id)).size).toBe(bills.length);
+    expect(new Set(bills.map((bill) => bill.number)).size).toBe(bills.length);
+    expect(held?.id).toBe('H-4');
+    expect(held?.number).toBe('B-0004');
+  });
+});
+
+describe('ubah PIN', () => {
+  it('changePin menolak PIN lama salah, pola tidak sah, dan PIN sama dengan lama', () => {
+    const { session } = setup();
+    expect(session.changePin('U-3', '0000', '1357')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-023',
+    });
+    expect(session.changePin('U-3', '2468', '12')).toMatchObject({
+      ok: false,
+      labelKey: 'pinBaruTidakSah',
+    });
+    expect(session.changePin('U-3', '2468', '1234567')).toMatchObject({
+      labelKey: 'pinBaruTidakSah',
+    });
+    expect(session.changePin('U-3', '2468', 'abcd')).toMatchObject({ labelKey: 'pinBaruTidakSah' });
+    expect(session.changePin('U-3', '2468', '2468')).toMatchObject({
+      labelKey: 'pinBaruSamaDenganLama',
+    });
+    expect(session.changePin('U-404', '2468', '1357')).toMatchObject({ ok: false });
+    expect(session.state().pins).toEqual({});
+  });
+
+  it('changePin memakai penjaga percobaan yang sama dengan login', () => {
+    const { session } = setup();
+    expect(session.changePin('U-3', '0001', '1357')).toMatchObject({ messageId: 'MSG-023' });
+    expect(session.changePin('U-3', '0002', '1357')).toMatchObject({ messageId: 'MSG-023' });
+    expect(session.changePin('U-3', '0003', '1357')).toMatchObject({ messageId: 'MSG-024' });
+    expect(session.changePin('U-3', '2468', '1357')).toMatchObject({ messageId: 'MSG-024' });
+    expect(session.attemptLogin('U-3', '2468')).toMatchObject({ messageId: 'MSG-024' });
+  });
+
+  it('login memakai PIN baru dan menolak PIN lama sampai muat ulang', () => {
+    const first = setup();
+    expect(first.session.changePin('U-3', '2468', '1357')).toEqual({ ok: true });
+    expect(first.session.state().pins).toEqual({ 'U-3': '1357' });
+    first.session.logout();
+    expect(first.session.attemptLogin('U-3', '2468')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-023',
+    });
+    expect(first.session.attemptLogin('U-3', '1357')).toEqual({ ok: true });
+    expect(first.session.changePin('U-3', '1357', '2468')).toEqual({ ok: true });
+    const reloaded = setup();
+    expect(reloaded.session.attemptLogin('U-3', '2468')).toEqual({ ok: true });
+  });
+
+  it('PIN Owner yang diganti dipakai untuk otorisasi dan PIN lamanya ditolak', () => {
+    const { session } = setup();
+    expect(session.changePin('U-1', '482916', '135790')).toEqual({ ok: true });
+    expect(session.authorizeOwner('Pelanggan lama', '482916').ok).toBe(false);
+    expect(session.authorizeOwner('Pelanggan lama', '135790')).toEqual({ ok: true });
+  });
+});
+
+describe('diskon nominal yang terbawa', () => {
+  it('setLineDetail menolak jumlah baru yang membuat diskon nominal terbawa melebihi jumlah barang', () => {
+    const { session } = setup('U-2');
+    session.addProduct(first(), undefined, 3);
+    const line = session.state().lines[0];
+    if (line === undefined) {
+      throw new Error('baris tidak ada');
+    }
+    const gross = Math.round(line.quantity * line.unitPrice);
+    const value = Math.round(gross * 0.75);
+    expect(session.setLineDetail(0, { discount: { kind: 'nominal', value } }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { quantity: 1 }, true)).toEqual({
+      ok: false,
+      labelKey: 'diskonMelebihi',
+    });
+    expect(session.state().lines[0]?.quantity).toBe(3);
+    expect(session.setLineDetail(0, { quantity: 3 }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { discount: null }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { quantity: 1 }, true).ok).toBe(true);
   });
 });

@@ -1,8 +1,9 @@
+import type { Sale } from '../../../shared/data/types';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 
 export type PaperWidth = 58 | 80;
-export type ReceiptKind = 'draft' | 'sale' | 'copy';
+export type ReceiptKind = 'draft' | 'sale' | 'copy' | 'retur';
 
 export const PAPER_CHARS: Readonly<Record<PaperWidth, number>> = { 58: 32, 80: 48 };
 
@@ -11,7 +12,10 @@ export interface ReceiptItem {
   readonly quantity: number;
   readonly unit: string;
   readonly unitPrice: number;
+  // Jumlah kotor baris, sebelum diskon.
   readonly subtotal: number;
+  readonly discount?: number | undefined;
+  readonly listPrice?: number | undefined;
 }
 
 export interface ReceiptPayment {
@@ -30,6 +34,14 @@ export interface ReceiptInput {
   readonly total: number;
   readonly payments: readonly ReceiptPayment[];
   readonly change: number;
+}
+
+// Kembalian = jumlah baris terbayar dikurangi total; 0 untuk penjualan lama tanpa rincian.
+export function changeOf(sale: Sale): number {
+  const paid = (sale.payments ?? [])
+    .filter((row) => row.method !== 'piutang')
+    .reduce((sum, row) => sum + row.amount, 0);
+  return Math.max(0, paid - sale.total);
 }
 
 function center(text: string, width: number): string {
@@ -75,6 +87,8 @@ export function buildReceipt(input: ReceiptInput): string[] {
     }
   } else if (input.kind === 'copy') {
     lines.push(center(label('strukSalinan'), width));
+  } else if (input.kind === 'retur') {
+    lines.push(center(label('judulBuktiRetur'), width));
   }
   lines.push(
     rule('-'),
@@ -96,6 +110,16 @@ export function buildReceipt(input: ReceiptInput): string[] {
             width,
           )),
     );
+    if (input.kind !== 'draft') {
+      if (item.listPrice !== undefined) {
+        lines.push(
+          `  ${label('hargaAsli', { harga: formatRupiah(item.listPrice) })}`.slice(0, width),
+        );
+      }
+      if (item.discount !== undefined && item.discount > 0) {
+        lines.push(...pair(`  ${label('diskon')}`, `-${formatRupiah(item.discount)}`, width));
+      }
+    }
   }
   lines.push(rule('-'));
   if (input.kind === 'draft') {

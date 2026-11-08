@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { SCREENS } from '../../../src/apps/portal/catalog';
+import { FICTIONAL_USERS } from '../../../src/shared/data/generator';
 
 export type AppName = 'portal' | 'pos' | 'bo' | 'owner' | 'sales';
 
@@ -37,11 +38,11 @@ const CATALOG_ROUTES: readonly RouteCase[] = SCREENS.flatMap((entry) =>
     : [],
 );
 
-export const ROUTES: readonly RouteCase[] = [...PORTAL_ROUTES, ...CATALOG_ROUTES];
+// Katalog hanya memuat satu rute per layar, sedangkan POS-08 punya dua: formulir (di katalog) dan
+// daftar Pelanggan, yang ikut dipindai audit, jaringan, urutan Tab, dan target sentuh.
+const EXTRA_ROUTES: readonly RouteCase[] = [{ id: 'POS-08', app: 'pos', path: '/pos/pelanggan' }];
 
-const PIN = {
-  Dewi: '2468',
-} as const;
+export const ROUTES: readonly RouteCase[] = [...PORTAL_ROUTES, ...CATALOG_ROUTES, ...EXTRA_ROUTES];
 
 async function typePin(page: Page, pin: string): Promise<void> {
   for (const digit of pin) {
@@ -49,13 +50,86 @@ async function typePin(page: Page, pin: string): Promise<void> {
   }
 }
 
-async function loginPos(page: Page): Promise<void> {
-  await page.goto('/#/pos');
-  await page.getByRole('radio', { name: /Dewi/ }).click();
-  await typePin(page, PIN.Dewi);
+function userNamed(name: string): { readonly pin: string; readonly role: string } {
+  const user = FICTIONAL_USERS.find((item) => item.name.includes(name));
+  if (user === undefined) {
+    throw new Error(`Pengguna uji tidak ada: ${name}`);
+  }
+  return user;
+}
+
+export async function loginPosRaw(page: Page, name = 'Dewi'): Promise<void> {
+  if (!page.url().endsWith('#/pos')) {
+    await page.goto('/#/pos');
+  }
+  await page.getByRole('radio', { name: new RegExp(name) }).click();
+  await typePin(page, userNamed(name).pin);
   await page.getByRole('button', { name: 'Masuk' }).click();
   await expect(page).toHaveURL(/#\/pos\/jual$/);
 }
+
+export async function startShift(page: Page, amount = 500000): Promise<void> {
+  await page.getByRole('button', { name: 'Mulai Shift' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Masukkan Modal' });
+  for (const digit of String(amount)) {
+    await dialog.getByRole('button', { name: digit, exact: true }).click();
+  }
+  await dialog.getByRole('button', { name: 'Lanjut' }).click();
+  await expect(page.locator('.pos-card__main').first()).toBeVisible();
+}
+
+export async function openDrawerItem(page: Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page
+    .getByRole('dialog', { name: 'Toko Budiannor' })
+    .getByRole('link', { name, exact: true })
+    .click();
+}
+
+// Menunggu transisi CSS selesai agar axe tidak mengukur warna di tengah peralihan.
+export async function settle(page: Page): Promise<void> {
+  // Dua bingkai dulu: peralihan dari perubahan skema warna baru dimulai setelah gaya dihitung ulang,
+  // jadi membaca getAnimations() seketika bisa kosong dan axe mengukur warna di tengah peralihan.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            resolve();
+          }),
+        ),
+      ),
+  );
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animation) => animation.finished)),
+  );
+}
+
+export async function finishPaymentDialog(page: Page): Promise<void> {
+  await page
+    .getByRole('dialog', { name: 'Pembayaran Berhasil' })
+    .getByRole('button', { name: 'Selesai' })
+    .click();
+}
+
+export async function openOrderMenu(page: Page, item: string): Promise<void> {
+  await page.getByRole('button', { name: 'Opsi pesanan' }).click();
+  await page.getByRole('menuitem', { name: item }).click();
+}
+
+export async function chooseCustomer(page: Page, name: string): Promise<void> {
+  await page.locator('.pos-customer-btn').click();
+  await page.locator('.pos-customers__row', { hasText: name }).click();
+}
+
+async function loginPos(page: Page, name = 'Dewi'): Promise<void> {
+  await loginPosRaw(page, name);
+  if (userNamed(name).role !== 'frontliner') {
+    await startShift(page);
+  }
+}
+
+export { loginPos };
 
 async function loginWithPassword(
   page: Page,
@@ -71,9 +145,9 @@ async function loginWithPassword(
   await expect(page).toHaveURL(landing);
 }
 
-export async function loginFor(page: Page, app: AppName): Promise<void> {
+export async function loginFor(page: Page, app: AppName, posUser = 'Dewi'): Promise<void> {
   if (app === 'pos') {
-    await loginPos(page);
+    await loginPos(page, posUser);
   } else if (app === 'bo') {
     await loginWithPassword(page, 'bo', 'sinta.spv', 'Kunci2026B', /#\/bo\/dashboard$/);
   } else if (app === 'owner') {
@@ -87,14 +161,95 @@ function isLoginPath(path: string): boolean {
   return path === '/pos' || path === '/bo' || path === '/owner' || path === '/sales';
 }
 
+// Di bawah 900 px panel pesanan (dan tombol Bayar) ada di lembar yang dibuka lewat bilah Pesanan.
+export async function clickPay(page: Page): Promise<void> {
+  const bar = page.locator('.pos-order-bar');
+  if (await bar.isVisible()) {
+    await bar.click();
+  }
+  await page.getByRole('button', { name: /^Bayar/ }).click();
+}
+
+// Penjualan satu barang pertama. Seluruh langkah bayar ada di sini supaya perubahan layar bayar
+// cukup memperbarui satu tempat.
+export async function sellFirstProduct(
+  page: Page,
+  method: 'tunai' | 'qris' = 'tunai',
+): Promise<void> {
+  await page.locator('.pos-card__main').first().click();
+  await clickPay(page);
+  if (method === 'qris') {
+    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await page
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'QRIS', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await dialog.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(dialog).toBeHidden();
+  } else {
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+  }
+  await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+  await finishPaymentDialog(page);
+}
+
+// Penjualan satu barang pertama (Rp 70.000) dengan tiga baris pembayaran: Tunai, QRIS, EDC.
+export async function sellSplitThree(page: Page): Promise<void> {
+  await page.locator('.pos-card__main').first().click();
+  await clickPay(page);
+  await page.getByRole('tab', { name: 'Split', exact: true }).click();
+  await savePart(page, 1, { digits: '30000' });
+  await savePart(page, 2, { channel: 'QRIS', digits: '20000' });
+  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+  await savePart(page, 3, { channel: 'EDC', digits: '20000' });
+  await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+  await finishPaymentDialog(page);
+}
+
+// Mengisi satu Pembayaran N pada tab Split lewat modalnya. Kanal QR langsung dikonfirmasi.
+export async function savePart(
+  page: Page,
+  number: number,
+  options: { channel?: string; digits: string },
+): Promise<void> {
+  await page.getByRole('button', { name: new RegExp(`^Pembayaran ${String(number)}`) }).click();
+  const dialog = page.getByRole('dialog', { name: `Pembayaran ${String(number)}` });
+  if (options.channel !== undefined) {
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await dialog
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: options.channel, exact: true })
+      .click();
+  }
+  for (const digit of options.digits) {
+    await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+  }
+  await dialog.getByRole('button', { name: 'Simpan' }).click();
+  await expect(dialog).toBeHidden();
+  if (['QRIS', 'Gopay', 'OVO', 'Shopee Pay'].includes(options.channel ?? '')) {
+    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(qr).toBeHidden();
+  }
+}
+
+// Mengetik nominal lewat papan angka di halaman (tab Tunai).
+export async function typeAmount(page: Page, digits: string): Promise<void> {
+  for (const digit of digits) {
+    await page.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+  }
+}
+
 export async function openRoute(page: Page, route: RouteCase): Promise<void> {
   if (route.app === 'portal' || isLoginPath(route.path)) {
     await page.goto(`/#${route.path}`);
   } else {
-    await loginFor(page, route.app);
+    // Layar Karyawan (POS-11) hanya untuk Owner dan Supervisor.
+    await loginFor(page, route.app, route.id === 'POS-11' ? 'Ibu Sinta' : 'Dewi');
     if (route.path === '/pos/bayar') {
-      await page.locator('.pos-card').first().click();
-      await page.getByRole('button', { name: /^Bayar/ }).click();
+      await page.locator('.pos-card__main').first().click();
+      await clickPay(page);
     } else if (route.path !== page.url().split('#')[1]) {
       await page.evaluate((hash) => {
         window.location.hash = hash;
@@ -111,7 +266,7 @@ export const OVERLAYS: readonly OverlayCase[] = [
     id: 'POS-03',
     app: 'pos',
     open: async (page) => {
-      await page.locator('.pos-card').first().click();
+      await page.locator('.pos-card__main').first().click();
       await page.locator('.pos-bill__name').first().click();
       await expect(page.getByRole('dialog')).toBeVisible();
     },
@@ -120,14 +275,13 @@ export const OVERLAYS: readonly OverlayCase[] = [
     id: 'POS-10',
     app: 'pos',
     open: async (page) => {
-      await page.locator('.pos-card').first().click();
+      await page.locator('.pos-card__main').first().click();
       await page.locator('.pos-bill__name').first().click();
       await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
-      await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
-      await page.locator('.pos-actions').getByRole('button', { name: 'Pelanggan' }).click();
-      await page.locator('.pos-customers__row', { hasText: 'UD Maju Jaya' }).click();
-      await page.getByRole('button', { name: /^Bayar/ }).click();
-      await page.getByRole('button', { name: 'Piutang' }).click();
+      await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+      await chooseCustomer(page, 'UD Maju Jaya');
+      await clickPay(page);
+      await page.getByRole('tab', { name: 'Piutang' }).click();
       await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
     },

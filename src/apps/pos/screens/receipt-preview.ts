@@ -1,22 +1,28 @@
 import { el } from '../../../shared/dom';
+import { formatDocumentNumber } from '../../../shared/format';
 import type { HeldBill, PaymentMethod, Sale } from '../../../shared/data/types';
-import { label, message, type LabelKey } from '../../../shared/messages';
+import { label, type LabelKey } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
-import { lineSubtotal } from '../domain/bill';
+import { discountAmount, lineGross } from '../domain/bill';
 import {
   buildReceipt,
+  changeOf,
   type PaperWidth,
   type ReceiptInput,
   type ReceiptItem,
   type ReceiptKind,
+  type ReceiptPayment,
 } from '../domain/receipt';
-import type { PosSession } from '../pos-session';
+import { itemsValue } from '../domain/retur';
+import type { PosSession, ReturnRecord } from '../pos-session';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
   qris: 'metodeQris',
+  edc: 'metodeEdc',
   transfer: 'metodeTransfer',
   dp: 'metodeDp',
   piutang: 'metodePiutang',
@@ -26,16 +32,46 @@ const SUCCESS_LABELS: Readonly<Record<ReceiptKind, LabelKey>> = {
   draft: 'strukDrafTercetak',
   copy: 'salinanTercetak',
   sale: 'strukTercetak',
+  retur: 'buktiReturTercetak',
 };
 
 function itemsOf(session: PosSession, lines: Sale['lines']): ReceiptItem[] {
-  return lines.map((line) => ({
-    name: session.product(line.productId)?.name ?? line.productId,
-    quantity: line.quantity,
-    unit: line.unit,
-    unitPrice: line.unitPrice,
-    subtotal: lineSubtotal(line),
-  }));
+  return lines.map((line) => {
+    const discount = discountAmount(line);
+    return {
+      name: session.product(line.productId)?.name ?? line.productId,
+      quantity: line.quantity,
+      unit: line.unit,
+      unitPrice: line.unitPrice,
+      subtotal: lineGross(line),
+      ...(discount > 0 ? { discount } : {}),
+      ...(line.listPrice === undefined ? {} : { listPrice: line.listPrice }),
+    };
+  });
+}
+
+function methodText(method: PaymentMethod, channel: string | undefined): string {
+  const base = label(METHOD_LABELS[method]);
+  return channel === undefined ? base : `${base} ${channel}`;
+}
+
+function paymentsOf(sale: Sale): ReceiptPayment[] {
+  if (sale.payments === undefined) {
+    const owed = sale.total - sale.paid;
+    return [
+      ...(sale.paid > 0 ? [{ method: label(METHOD_LABELS[sale.payment]), amount: sale.paid }] : []),
+      ...(owed > 0 ? [{ method: label('metodePiutang'), amount: owed }] : []),
+    ];
+  }
+  return sale.payments
+    .filter((row) => row.amount > 0)
+    .map((row) => ({
+      method:
+        row.method === 'dp'
+          ? `${label('metodeDp')} (${label(METHOD_LABELS[row.via ?? 'tunai'])})`
+          : methodText(row.method, row.channel),
+      amount: row.amount,
+    }));
 }
 
 export function saleReceipt(
@@ -44,7 +80,6 @@ export function saleReceipt(
   kind: ReceiptKind,
   width: PaperWidth,
 ): ReceiptInput {
-  const owed = sale.total - sale.paid;
   return {
     kind,
     width,
@@ -54,10 +89,45 @@ export function saleReceipt(
     customer: session.customerName(sale.customerId),
     items: itemsOf(session, sale.lines),
     total: sale.total,
-    payments: [
-      ...(sale.paid > 0 ? [{ method: label(METHOD_LABELS[sale.payment]), amount: sale.paid }] : []),
-      ...(owed > 0 ? [{ method: label('metodePiutang'), amount: owed }] : []),
-    ],
+    payments: paymentsOf(sale),
+    change: changeOf(sale),
+  };
+}
+
+export function returnReceipt(
+  session: PosSession,
+  record: ReturnRecord,
+  width: PaperWidth,
+): ReceiptInput {
+  const sale = session.state().sales.find((item) => item.number === record.saleNumber);
+  const items = record.lines.flatMap((entry): ReceiptItem[] => {
+    const line = sale?.lines[entry.index];
+    return line === undefined
+      ? []
+      : [
+          {
+            name: session.product(line.productId)?.name ?? line.productId,
+            quantity: entry.quantity,
+            unit: line.unit,
+            unitPrice: line.unitPrice,
+            subtotal: sale === undefined ? 0 : itemsValue(sale, [entry]),
+          },
+        ];
+  });
+  const refund = record.refund;
+  return {
+    kind: 'retur',
+    width,
+    number: record.number,
+    at: new Date(record.at),
+    cashier: session.userName(session.store.getState().userId),
+    customer: session.customerName(sale?.customerId),
+    items,
+    total: refund?.amount ?? record.value,
+    payments:
+      refund === undefined
+        ? []
+        : [{ method: methodText(refund.method, refund.channel), amount: refund.amount }],
     change: 0,
   };
 }
@@ -151,12 +221,30 @@ export function openReceiptPreview(options: PreviewOptions): void {
             handle.close();
             return;
           }
-          notice.textContent =
-            kind === 'draft' ? label('strukDrafGagal') : message(result.messageId);
+          notice.textContent = kind === 'draft' ? label('strukDrafGagal') : failureText(result);
         },
       }),
     ),
   );
   paint();
   group.querySelector<HTMLElement>('button')?.focus();
+}
+
+// Pratinjau struk draf untuk pesanan yang sedang berjalan (menu Cetak Struk Draf dan Cetak Kode QR).
+export function openDraftPreview(session: PosSession): void {
+  const state = session.state();
+  const draft: HeldBill = {
+    id: 'draft',
+    number: formatDocumentNumber('B', state.heldBills.length + 1),
+    createdAt: session.now().toISOString(),
+    userId: session.store.getState().userId,
+    customerId: state.customerId,
+    lines: state.lines,
+  };
+  openReceiptPreview({
+    session,
+    kind: 'draft',
+    reference: draft.number,
+    build: (width) => billReceipt(session, draft, width),
+  });
 }

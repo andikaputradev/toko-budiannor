@@ -1,7 +1,8 @@
 import { el, nextId } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
-import { label, message } from '../../../shared/messages';
+import { label } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { formatDocumentNumber } from '../../../shared/format';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
@@ -11,6 +12,8 @@ export interface AuthorizeOptions {
   readonly session: PosSession;
   readonly purpose?: AuthorizePurpose | undefined;
   readonly reference?: { readonly number: string; readonly total: number } | undefined;
+  // Nama barang yang harganya diubah (tujuan harga).
+  readonly subject?: string | undefined;
   readonly onApproved?: (() => void) | undefined;
 }
 
@@ -36,7 +39,9 @@ export function openAuthorizeModal(options: AuthorizeOptions): void {
   });
   const error = el('p', { className: 'pos-auth__error', attrs: { role: 'alert' } });
   const billNumber =
-    options.reference?.number ?? formatDocumentNumber('B', session.state().heldBills.length + 1);
+    options.reference?.number ??
+    options.subject ??
+    formatDocumentNumber('B', session.state().heldBills.length + 1);
   const totalText = formatRupiah(options.reference?.total ?? session.total());
   const overdue = summary.decision?.ok === false && summary.decision.reason === 'overdue';
 
@@ -49,10 +54,7 @@ export function openAuthorizeModal(options: AuthorizeOptions): void {
         options.onApproved?.();
         return;
       }
-      error.replaceChildren(
-        icon('circle-x'),
-        el('span', { text: message(result.messageId, result.values) }),
-      );
+      error.replaceChildren(icon('circle-x'), el('span', { text: failureText(result) }));
       pin.value = '';
       refresh();
     },
@@ -63,31 +65,39 @@ export function openAuthorizeModal(options: AuthorizeOptions): void {
     approve.setAttribute('aria-disabled', ready ? 'false' : 'true');
   };
   const handle = openModal({
-    title: label('otorisasiJudul'),
+    title: label(purpose === 'harga' ? 'otorisasiJudulHarga' : 'otorisasiJudul'),
     body: el(
       'div',
       { className: 'pos-auth' },
       el('p', {
         text: label(
-          purpose === 'koreksi'
-            ? 'otorisasiTindakanKoreksi'
-            : overdue
-              ? 'otorisasiTindakanTerlambat'
-              : 'otorisasiTindakan',
+          purpose === 'harga'
+            ? 'otorisasiTindakanHarga'
+            : purpose === 'koreksi'
+              ? 'otorisasiTindakanKoreksi'
+              : overdue
+                ? 'otorisasiTindakanTerlambat'
+                : 'otorisasiTindakan',
         ),
       }),
       el('p', {
         text:
-          purpose === 'koreksi'
-            ? label('otorisasiTransaksiNomor', { nomor: billNumber, jumlah: totalText })
-            : label('otorisasiTransaksi', { nomor: billNumber, jumlah: totalText }),
+          purpose === 'harga'
+            ? label('otorisasiBarangNama', { nama: billNumber })
+            : purpose === 'koreksi'
+              ? label('otorisasiTransaksiNomor', { nomor: billNumber, jumlah: totalText })
+              : label('otorisasiTransaksi', { nomor: billNumber, jumlah: totalText }),
       }),
       ...(session.store.getState().online
         ? []
         : [el('p', { className: 't-label', text: label('otorisasiOffline') })]),
       el('label', { className: 'field__label', text: label('alasan'), attrs: { for: reasonId } }),
       reason,
-      el('label', { className: 'field__label', text: label('pinOwner'), attrs: { for: pinId } }),
+      el('label', {
+        className: 'field__label',
+        text: label(purpose === 'harga' ? 'pinPenyetuju' : 'pinOwner'),
+        attrs: { for: pinId },
+      }),
       el('div', { className: 'pos-auth__row' }, pin, error),
     ),
     actions: [{ text: label('batal'), variant: 'secondary' }],

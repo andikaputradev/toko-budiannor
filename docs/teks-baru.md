@@ -745,3 +745,301 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-741: "Masuk Back-Office sebagai Supervisor.". Kunci langkahF10e.
 - TB-742: "SO muncul sebagai Draf dari sumber Sales Lapangan.". Kunci langkahF10f.
 - TB-743: "Kirim Salinan SO (PDF) via WA.". Kunci langkahF10g.
+
+## Revisi POS November 2026
+
+- TB-744: "Isi modal awal terlebih dahulu.". Kunci modalWajib.
+- TB-745: "Shift sudah berjalan.". Kunci shiftSudahBerjalan.
+- TB-746: "Mulai shift terlebih dahulu.". Kunci butuhShift.
+- TB-747: "Belum Mulai Shift". Kunci belumMulaiShift.
+- TB-748: "Tekan tombol "Mulai Shift" untuk memulai pekerjaan Anda". Kunci petunjukMulaiShift.
+- TB-749: "Mulai Shift". Kunci mulaiShift.
+- TB-750: "Masukkan Modal". Kunci masukkanModal.
+- TB-751: "Lanjut". Kunci lanjut.
+- TB-752: "Selesai Shift". Kunci selesaiShift.
+- TB-753: "Akhiri Shift". Kunci akhiriShift.
+- TB-754: "Modal awal". Kunci modalAwal.
+- TB-755: "Penjualan tunai". Kunci penjualanTunai.
+- TB-756: "Retur tunai". Kunci returTunai.
+- TB-757: "Saldo akhir kas". Kunci saldoAkhirKas.
+- TB-758: "Menu". Kunci menu.
+- TB-759: "Menu utama". Kunci menuUtama.
+- TB-760: "Pesanan Baru". Kunci pesananBaru.
+- TB-761: "Open Bill". Kunci openBill.
+- TB-762: "Riwayat Penjualan". Kunci riwayatPenjualan.
+- TB-763: "Status Sinkronisasi". Kunci statusSinkronisasi.
+- TB-764: "Tema". Kunci tema.
+- TB-765: "Oranye". Kunci temaOranye.
+- TB-766: "Terakota". Kunci temaTerakota.
+- TB-767: "Teal". Kunci temaTeal.
+- TB-768: "Gelap". Kunci temaGelap.
+- TB-769: "Shift Dimulai". Kunci shiftDimulai.
+- TB-770: "Shift Dimulai ({nama})". Kunci shiftDimulaiOleh.
+- TB-771: "Open Bill, {jumlah} bill". Kunci openBillJumlah.
+- TB-772: "Pilih Pengguna". Kunci judulPilihKasir (sebelumnya "Pilih Kasir").
+- TB-773: "Pesanan Baru". Kunci judulPesananBaru.
+- TB-774: "Masukkan kode / nama barang". Kunci cariBarangPlaceholder.
+- TB-775: "Semua Kategori". Kunci semuaKategori.
+- TB-776: "Kategori barang". Kunci kategoriBarang.
+- TB-777: "Pindai". Kunci pindai.
+- TB-778: "Arahkan pemindai ke barcode, lalu tekan Enter.". Kunci petunjukPindai.
+- TB-779: "Harga". Kunci blokHarga.
+- TB-780: "Stok". Kunci blokStok.
+- TB-781: "Toko". Kunci stokToko.
+- TB-782: "Gudang". Kunci stokGudang.
+- TB-783: "PO". Kunci stokPo.
+- TB-784: "Pesanan ({jumlah})". Kunci pesananJumlah.
+- TB-785: "Belum ada barang yang dipilih". Kunci belumAdaBarangDipilih.
+- TB-786: "QTY : {jumlah} X {harga}". Kunci qtyBaris.
+- TB-787: "Bayar {jumlah}". Kunci bayarJumlah.
+- TB-788: "Opsi pesanan". Kunci opsiPesanan.
+- TB-789: "Tambah Pelanggan". Kunci tambahPelanggan.
+- TB-790: "EDC". Kunci metodeEdc.
+- TB-791: "Syarat Bayar". Kunci syaratBayar.
+- TB-792: "Split Payment". Kunci splitPayment.
+- TB-793: "Tambah Pembayaran". Kunci tambahPembayaran.
+- TB-794: "Sisa". Kunci sisaBayar.
+- TB-795: "Tempo". Kunci tempoLabel.
+- TB-796: "{hari} hari". Kunci tempoHari.
+- TB-797: "Hari lainnya". Kunci hariLainnya.
+- TB-798: "DP". Kunci dpLabel.
+- TB-799: "Cara bayar DP". Kunci caraBayarDp.
+- TB-800: "Pembayaran Berhasil". Kunci pembayaranBerhasil.
+- TB-801: "Cetak Struk". Kunci cetakStruk.
+- TB-802: "Kirim WA". Kunci kirimWa.
+- TB-803: "Kirim Struk". Kunci kirimStruk.
+- TB-804: "Kirim". Kunci kirim.
+- TB-805: "Selesai". Kunci selesai.
+- TB-806: "Nomor WhatsApp". Kunci nomorWhatsapp.
+- TB-807: "Struk dikirim lewat WhatsApp (simulasi).". Kunci strukTerkirimWa.
+- TB-808: "Jumlah dikembalikan melebihi nilai barang.". Kunci nominalMelebihi.
+- TB-809: "Pengembalian Barang". Kunci alasanBarang.
+- TB-810: "Pembatalan Transaksi". Kunci alasanBatal.
+- TB-811: "Kesalahan Pembayaran". Kunci alasanSalahBayar.
+- TB-812: "Lainnya". Kunci alasanLainnya.
+- TB-813: "Informasi Penjualan". Kunci infoPenjualan.
+- TB-814: "Nomor Penjualan". Kunci nomorPenjualan.
+- TB-815: "Tanggal Penjualan". Kunci tanggalPenjualan.
+- TB-816: "Dibuat Oleh". Kunci dibuatOleh.
+- TB-817: "Informasi Penerimaan". Kunci infoPenerimaan.
+- TB-818: "Total Penerimaan". Kunci totalPenerimaan.
+- TB-819: "Total Bayar". Kunci totalBayar.
+- TB-820: "Riwayat Penerimaan". Kunci riwayatPenerimaan.
+- TB-821: "Barang & Jasa". Kunci barangJasa.
+- TB-822: "Diinput oleh: {nama}". Kunci diinputOleh.
+- TB-823: "Retur". Kunci retur.
+- TB-824: "Share Struk". Kunci shareStruk.
+- TB-825: "Hari Ini". Kunci hariIni.
+- TB-826: "Split". Kunci caraBayarSplit.
+- TB-827: "Pilih Semua". Kunci pilihSemua.
+- TB-828: "Pembayaran Dikembalikan". Kunci pembayaranDikembalikan.
+- TB-829: "Jumlah Dikembalikan". Kunci jumlahDikembalikan.
+- TB-830: "Metode Pengembalian". Kunci metodePengembalian.
+- TB-831: "Foto Bukti Retur (Opsional)". Kunci fotoBuktiRetur.
+- TB-832: "Pilih Foto". Kunci pilihFoto.
+- TB-833: "Total Retur". Kunci totalRetur.
+- TB-834: "Dari {jumlah} Kuantitas". Kunci dariKuantitas.
+- TB-835: "Retur Berhasil". Kunci returBerhasil.
+- TB-836: "Dikembalikan {jumlah}". Kunci dikembalikanNominal.
+- TB-837: "Cetak Bukti Retur". Kunci cetakBuktiRetur.
+- TB-838: "Kirim Bukti Retur". Kunci kirimBuktiRetur.
+- TB-839: "BUKTI RETUR". Kunci judulBuktiRetur.
+- TB-840: "Bukti retur tercetak.". Kunci buktiReturTercetak.
+- TB-841: "Bukti retur dikirim lewat WhatsApp (simulasi).". Kunci buktiReturTerkirimWa.
+- TB-842: "Kurangi jumlah". Kunci kurangiJumlah.
+- TB-843: "Tambah jumlah". Kunci tambahJumlah.
+- TB-844: "Dibeli {dibeli} {satuan}, sisa {sisa}". Kunci dibeliSisa.
+
+## Revisi POS putaran kedua
+
+- TB-845: "Biru". Kunci temaBiru.
+- TB-846: "Hijau". Kunci temaHijau.
+- TB-847: "Ungu". Kunci temaUngu.
+- TB-848: "Mode Tampilan". Kunci modeTampilan.
+- TB-849: "Otomatis". Kunci modeOtomatis.
+- TB-850: "Terang". Kunci modeTerang.
+- TB-851: "Gelap". Kunci modeGelap.
+- TB-852: "Tutup Pesanan". Kunci tutupPesanan.
+- TB-853: "Kanal tidak sah untuk metode ini.". Kunci kanalTidakSah.
+- TB-854: "Struk dikirim lewat email (simulasi).". Kunci strukTerkirimEmail.
+- TB-855: "Bukti retur dikirim lewat email (simulasi).". Kunci buktiReturTerkirimEmail.
+- TB-856: "Alamat Email". Kunci alamatEmail.
+- TB-857: "Alamat email tidak sah.". Kunci emailSalah.
+- TB-858: "Kirim lewat WhatsApp". Kunci kirimLewatWhatsapp.
+- TB-859: "Kirim lewat email". Kunci kirimLewatEmail.
+- TB-860: "Cari Penjualan". Kunci cariPenjualan.
+- TB-861: "Filter". Kunci filter.
+- TB-862: "Metode". Kunci kolomMetode.
+- TB-863: "Diskon". Kunci diskon.
+- TB-864: "Grand Total". Kunci grandTotal.
+- TB-865: "+ {jumlah} Penerimaan Lainnya". Kunci penerimaanLainnya.
+- TB-866: "Sembunyikan". Kunci sembunyikanPenerimaan.
+- TB-867: "Diinput Oleh: {nama} - {peran}". Kunci diinputOlehPeran.
+- TB-868: "Retur Barang & Jasa". Kunci returBarangJasa.
+- TB-869: "Pilih barang dan jumlah yang dikembalikan pelanggan.". Kunci infoReturBarang.
+- TB-870: "Kanal". Kunci pilihKanal.
+- TB-871: "Umum". Kunci kanalUmum.
+- TB-872: "Tambah foto bukti". Kunci tambahFotoBukti.
+- TB-873: "Total {jumlah}". Kunci totalBarisRetur.
+- TB-874: "OK". Kunci tombolOk.
+- TB-875: "Tunai". Kunci tabTunai.
+- TB-876: "Non-Tunai". Kunci tabNonTunai.
+- TB-877: "Split". Kunci tabSplit.
+- TB-878: "Piutang". Kunci tabPiutang.
+- TB-879: "Total Pembayaran". Kunci totalPembayaran.
+- TB-880: "Kanal pembayaran". Kunci kanalPembayaran.
+- TB-881: "Scan QR Code". Kunci scanQrCode.
+- TB-882: "Reference ID". Kunci referenceId.
+- TB-883: "Tagihan". Kunci tagihan.
+- TB-884: "Cek Status Pembayaran". Kunci cekStatusPembayaran.
+- TB-885: "Cetak Kode QR". Kunci cetakKodeQr.
+- TB-886: "Ubah Metode Pembayaran". Kunci ubahMetodePembayaran.
+- TB-887: "Pembayaran diterima". Kunci pembayaranDiterima.
+- TB-888: "Menunggu pembayaran". Kunci menungguPembayaran.
+- TB-889: "Memeriksa status pembayaran". Kunci memeriksaPembayaran.
+- TB-890: "Kode QR simulasi {kanal}". Kunci kodeQrSimulasi.
+- TB-891: "Pembayaran {n}". Kunci pembayaranKe.
+- TB-892: "Pilih pembayaran". Kunci pilihPembayaran.
+- TB-893: "Isi nominal pembayaran lebih dari nol.". Kunci isiNominalPembayaran.
+- TB-894: "Pilih kanal pembayaran terlebih dahulu.". Kunci pilihKanalDulu.
+- TB-895: "Cara bayar dan kanal ini sudah dipakai pada pembayaran lain.". Kunci pembayaranSudahAda.
+- TB-896: "Harga harus bilangan bulat lebih dari nol.". Kunci hargaTidakSah.
+- TB-897: "Diskon tidak boleh negatif.". Kunci diskonNegatif.
+- TB-898: "Diskon tidak boleh melebihi jumlah barang.". Kunci diskonMelebihi.
+- TB-899: "Ubah harga atau diskon memerlukan otorisasi Supervisor atau Owner.". Kunci butuhOtorisasiHarga.
+- TB-900: "Tenaga penjual harus Frontliner atau Sales yang aktif.". Kunci tenagaPenjualTidakSah.
+- TB-901: "Catatan paling banyak 200 karakter.". Kunci catatanTerlaluPanjang.
+- TB-902: "Barang pada pesanan tidak ditemukan.". Kunci barisTidakAda.
+- TB-903: "Detail Barang". Kunci detailBarang.
+- TB-904: "Kode Barang". Kunci kodeBarangJudul.
+- TB-905: "Tenaga Penjual". Kunci tenagaPenjual.
+- TB-906: "Pilih tenaga penjual". Kunci pilihTenagaPenjual.
+- TB-907: "Berikan Diskon". Kunci berikanDiskon.
+- TB-908: "Ubah Harga". Kunci ubahHarga.
+- TB-909: "Cek Stok Barang". Kunci cekStokBarang.
+- TB-910: "Persen". Kunci diskonPersen.
+- TB-911: "Nominal". Kunci diskonNominal.
+- TB-912: "Harga asli {harga}". Kunci hargaAsli.
+- TB-913: "Pulihkan harga asli". Kunci pulihkanHarga.
+- TB-914: "Nilai diskon". Kunci nilaiDiskon.
+- TB-915: "Harga baru". Kunci hargaBaru.
+- TB-916: "Lokasi". Kunci lokasiStok.
+- TB-917: "Otorisasi Supervisor atau Owner". Kunci otorisasiJudulHarga.
+- TB-918: "Ubah harga dan diskon memerlukan persetujuan Supervisor atau Owner.". Kunci otorisasiTindakanHarga.
+- TB-919: "Barang: {nama}". Kunci otorisasiBarangNama.
+- TB-920: "PIN Supervisor atau Owner". Kunci pinPenyetuju.
+- TB-921: "QTY : {jumlah} X". Kunci qtyBarisAwal.
+- TB-922: "-{nilai}%". Kunci diskonTandaPersen.
+- TB-923: "-{nilai}". Kunci diskonTandaNominal.
+- TB-924: "Tenaga Penjual: {nama}". Kunci tenagaPenjualNama.
+- TB-925: "Pilih barang yang akan dipindahkan ke bill baru.". Kunci splitKosong.
+- TB-926: "Jumlah yang dipindahkan melebihi isi bill.". Kunci splitMelebihi.
+- TB-927: "Tidak bisa memindahkan semua barang. Sisakan minimal satu barang pada bill ini.". Kunci splitSemua.
+- TB-928: "Pilih bill sumber yang berbeda dari bill tujuan.". Kunci mergeSama.
+- TB-929: "Gabungan bill melebihi 200 baris.". Kunci mergeTerlaluBanyak.
+- TB-930: "Ubah". Kunci ubah.
+- TB-931: "Split Bill". Kunci splitBill.
+- TB-932: "Merge Bill". Kunci mergeBill.
+- TB-933: "Batalkan". Kunci batalkan.
+- TB-934: "+ {n} Barang Lainnya". Kunci barangLainnya.
+- TB-935: "Pilih bill yang digabung". Kunci pilihBillGabung.
+- TB-936: "Opsi bill {nomor}". Kunci opsiBill.
+- TB-937: "Dibuat oleh {nama}". Kunci dibuatOlehNama.
+- TB-938: "Daftar bill". Kunci daftarBill.
+- TB-939: "Pindahkan". Kunci pindahkan.
+- TB-940: "Gabungkan". Kunci gabungkan.
+- TB-941: "Pilih bill yang akan digabung.". Kunci mergePilih.
+- TB-942: "Split Bill {nomor}". Kunci splitJudul.
+- TB-943: "Merge Bill {nomor}". Kunci mergeJudul.
+- TB-944: "Atur jumlah barang yang dipindahkan ke bill baru.". Kunci splitPetunjuk.
+- TB-945: "Bill {baru} dibuat dari {asal}.". Kunci billSplitDibuat.
+- TB-946: "Bill {sumber} digabung ke {tujuan}.". Kunci billDigabung.
+- TB-947: "Tidak ada bill lain untuk digabung.". Kunci tidakAdaBillLain.
+- TB-948: "Karyawan". Kunci layarPos11.
+- TB-949: "Shift tidak ditemukan.". Kunci shiftTidakAda.
+- TB-950: "Laporan shift ini sudah diperiksa.". Kunci shiftSudahDiperiksa.
+- TB-951: "Karyawan". Kunci karyawan.
+- TB-952: "Shift Berjalan". Kunci shiftBerjalan.
+- TB-953: "Belum Diperiksa". Kunci belumDiperiksa.
+- TB-954: "Sudah Diperiksa". Kunci sudahDiperiksa.
+- TB-955: "Tidak ada data". Kunci tidakAdaData.
+- TB-956: "Belum ada shift dimulai". Kunci belumAdaShift.
+- TB-957: "Informasi Tunai". Kunci informasiTunai.
+- TB-958: "Laporan Tunai". Kunci laporanTunai.
+- TB-959: "Selisih Tunai". Kunci selisihTunai.
+- TB-960: "Riwayat Penerimaan Akhir & Pengeluaran". Kunci penerimaanAkhirPengeluaran.
+- TB-961: "Total Penerimaan Akhir". Kunci totalPenerimaanAkhir.
+- TB-962: "Total Biaya". Kunci totalBiaya.
+- TB-963: "Terima Laporan". Kunci terimaLaporan.
+- TB-964: "Terima & Cetak Laporan". Kunci terimaCetakLaporan.
+- TB-965: "Uang tunai di laci". Kunci uangTunaiDiLaci.
+- TB-966: "Total Diterima". Kunci totalDiterima.
+- TB-967: "Laporan Shift". Kunci laporanShift.
+- TB-968: "oleh {nama}". Kunci diperiksaOleh.
+- TB-969: "Laporan shift tercetak.". Kunci laporanTercetak.
+- TB-970: "Laporan shift diterima.". Kunci laporanDiterima.
+- TB-971: "Retur tanpa pengembalian". Kunci returTanpaPengembalian.
+- TB-972: "Status". Kunci statusShift.
+- TB-973: "Penerimaan". Kunci penerimaanRetur.
+- TB-974: "Retur". Kunci returRiwayat.
+- TB-975: "shift belum diperiksa". Kunci shiftBelumDiperiksa.
+- TB-976: "Catat Biaya". Kunci catatBiaya.
+- TB-977: "Nominal Pembayaran". Kunci nominalPembayaran.
+- TB-978: "Catatan (opsional)". Kunci catatanOpsional.
+- TB-979: "Lampiran (opsional)". Kunci lampiranOpsional.
+- TB-980: "JPG, JPEG, PNG maksimal 3 MB. PDF maksimal 1 MB.". Kunci petunjukLampiran.
+- TB-981: "Transaksi Berhasil". Kunci transaksiBerhasil.
+- TB-982: "Informasi Biaya". Kunci informasiBiaya.
+- TB-983: "Nomor Pembayaran". Kunci nomorPembayaran.
+- TB-984: "Tanggal Pembayaran". Kunci tanggalPembayaran.
+- TB-985: "Format lampiran harus JPG, JPEG, PNG, atau PDF.". Kunci lampiranFormatSalah.
+- TB-986: "Lampiran terlalu besar. JPG, JPEG, PNG maksimal 3 MB dan PDF maksimal 1 MB.". Kunci lampiranTerlaluBesar.
+- TB-987: "Lampiran". Kunci lampiran.
+- TB-988: "Belum ada biaya tercatat.". Kunci belumAdaBiaya.
+- TB-989: "Catatan maksimal 144 karakter.". Kunci catatanBiayaTerlaluPanjang.
+- TB-990: "Pilih Berkas". Kunci pilihBerkas.
+- TB-991: "Informasi Pelanggan". Kunci informasiPelanggan.
+- TB-992: "Limit piutang". Kunci limitPiutang.
+- TB-993: "Sisa limit". Kunci sisaLimit.
+- TB-994: "Total piutang". Kunci totalPiutang.
+- TB-995: "Faktur belum lunas". Kunci fakturBelumLunas.
+- TB-996: "Tidak ada faktur belum lunas.". Kunci tidakAdaFakturBelumLunas.
+- TB-997: "Pengaturan". Kunci layarPos12.
+- TB-998: "Pengaturan". Kunci pengaturan.
+- TB-999: "Profil Pengguna". Kunci profilPengguna.
+- TB-1000: "Printer". Kunci menuPrinter.
+- TB-1001: "Mesin EDC". Kunci mesinEdc.
+- TB-1002: "Perangkat". Kunci perangkat.
+- TB-1003: "Backup Data". Kunci backupData.
+- TB-1004: "Pengaturan Lainnya". Kunci pengaturanLainnya.
+- TB-1005: "Ubah PIN". Kunci ubahPin.
+- TB-1006: "PIN lama". Kunci pinLama.
+- TB-1007: "PIN baru". Kunci pinBaru.
+- TB-1008: "Ulangi PIN baru". Kunci ulangiPinBaru.
+- TB-1009: "PIN baru harus 4 sampai 6 digit angka.". Kunci pinBaruTidakSah.
+- TB-1010: "PIN baru tidak boleh sama dengan PIN lama.". Kunci pinBaruSamaDenganLama.
+- TB-1011: "Ulangi PIN baru tidak sama dengan PIN baru.". Kunci pinBaruTidakCocok.
+- TB-1012: "PIN berhasil diubah. Berlaku untuk masuk berikutnya selama aplikasi belum dimuat ulang.". Kunci pinDiubah.
+- TB-1013: "Terhubung". Kunci terhubung.
+- TB-1014: "Terputus". Kunci terputus.
+- TB-1015: "Status". Kunci statusKoneksi.
+- TB-1016: "Uji Cetak". Kunci ujiCetak.
+- TB-1017: "Barang contoh". Kunci barangContoh.
+- TB-1018: "Uji Koneksi". Kunci ujiKoneksi.
+- TB-1019: "Koneksi mesin EDC berhasil (simulasi).". Kunci koneksiEdcBerhasil.
+- TB-1020: "Mesin EDC hanya simulasi pada mockup ini.". Kunci catatanEdcSimulasi.
+- TB-1021: "Nama perangkat". Kunci namaPerangkat.
+- TB-1022: "Tablet Kasir (simulasi)". Kunci namaPerangkatNilai.
+- TB-1023: "Outlet terhubung". Kunci outletTerhubung.
+- TB-1024: "Versi mockup". Kunci versiMockup.
+- TB-1025: "Revisi POS 2". Kunci versiMockupNilai.
+- TB-1026: "Unduh Cadangan". Kunci unduhCadangan.
+- TB-1027: "Berkas JSON berisi penjualan, biaya, retur, bill tertahan, dan shift sesi ini. PIN tidak ikut dicadangkan.". Kunci petunjukCadangan.
+- TB-1028: "Cadangan diunduh.". Kunci cadanganDiunduh.
+- TB-1029: "Tampilan katalog". Kunci tampilanKatalog.
+- TB-1030: "Kartu". Kunci katalogKartu.
+- TB-1031: "Daftar". Kunci katalogDaftar.
+- TB-1032: "Peran". Kunci peranPengguna.
+- TB-1033: "Jumlah dikembalikan melebihi uang yang sudah dibayar.". Kunci nominalMelebihiDibayar.
+- TB-1034: "Belum ada uang yang dibayar, retur dicatat tanpa pengembalian.". Kunci belumAdaUangDibayar.
+- TB-1035: "Belum dihitung". Kunci belumDihitung.

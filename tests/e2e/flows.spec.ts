@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginPos as loginPosShared, openOrderMenu } from './helpers/routes';
 
 test.beforeEach(({ page }) => {
   const size = page.viewportSize();
@@ -8,14 +9,8 @@ test.beforeEach(({ page }) => {
   );
 });
 
-async function loginPos(page: Page, name: string, pin: string): Promise<void> {
-  await page.goto('/#/pos');
-  await page.getByRole('radio', { name: new RegExp(name) }).click();
-  for (const digit of pin) {
-    await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
-  }
-  await page.getByRole('button', { name: 'Masuk' }).click();
-  await expect(page).toHaveURL(/#\/pos\/jual$/);
+async function loginPos(page: Page, name: string): Promise<void> {
+  await loginPosShared(page, name);
 }
 
 async function loginOwner(page: Page): Promise<void> {
@@ -42,31 +37,27 @@ async function simulate(page: Page, action: string): Promise<void> {
 }
 
 async function recallBill(page: Page, number: string): Promise<void> {
-  await page.getByRole('button', { name: 'Panggil Bill' }).click();
+  await openOrderMenu(page, 'Panggil Bill');
   await expect(page).toHaveURL(/#\/pos\/bill$/);
-  await page
-    .locator('.pos-bills__list tbody tr', { hasText: number })
-    .getByRole('button')
-    .first()
-    .click();
-  await page.getByRole('button', { name: 'Panggil Bill' }).click();
+  await page.getByRole('button', { name: `Opsi bill ${number}` }).click();
+  await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();
   await expect(page).toHaveURL(/#\/pos\/jual$/);
 }
 
 test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
   test('tanpa persetujuan, piutang over-limit bill B-0002 ditolak di POS-04', async ({ page }) => {
-    await loginPos(page, 'Dewi', '2468');
+    await loginPos(page, 'Dewi');
     await recallBill(page, 'B-0002');
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
-    await page.getByRole('button', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(
       page.getByText(
         'Transaksi piutang ditolak: jumlah piutang Rp 3.031.200 melebihi sisa limit Rp 435.000.',
       ),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Minta Otorisasi Owner' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'Bayar', exact: true })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
@@ -100,24 +91,26 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
     await expect(page.getByRole('heading', { name: 'Menunggu persetujuan (1)' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Riwayat persetujuan' })).toBeVisible();
 
-    await loginPos(page, 'Dewi', '2468');
+    await loginPos(page, 'Dewi');
     await recallBill(page, 'B-0002');
-    await expect(page.locator('.pos-bill tbody tr')).toHaveCount(3);
+    await expect(page.locator('.pos-order__item')).toHaveCount(3);
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
-    await page.getByRole('button', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(
       page.getByText('Disetujui Owner dari HP: Pelanggan lama, disetujui Owner'),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Minta Otorisasi Owner' })).toHaveCount(0);
-    const finish = page.getByRole('button', { name: 'Selesaikan dan Cetak Struk' });
+    const finish = page.getByRole('button', { name: 'Bayar', exact: true });
     await expect(finish).toHaveAttribute('aria-disabled', 'false');
     await finish.click();
     await expect(page.getByText(/Transaksi T-000141 tersimpan\./)).toBeVisible();
 
     await page.goto('/#/pos/riwayat');
     await expect(page.getByText('T-000141').first()).toBeVisible();
-    await expect(page.locator('tr', { hasText: 'T-000141' }).first()).toContainText('Pending');
+    await expect(page.locator('.pos-history__item', { hasText: 'T-000141' }).first()).toContainText(
+      'Pending',
+    );
   });
 });
 

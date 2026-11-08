@@ -29,6 +29,11 @@ export const PERMISSION_ROWS: readonly (readonly [string, string, string])[] = [
   ['POS-03', 'Batal', 'YYY'],
   ['POS-03', 'Tambahkan ke Bill (mode ubah: Simpan Perubahan)', 'YYY'],
   ['POS-03', 'Hapus Item (mode ubah)', 'YYY'],
+  ['POS-03', 'Diskon', 'YYA'],
+  ['POS-03', 'Ubah Harga', 'YYA'],
+  ['POS-03', 'Catatan', 'YYY'],
+  ['POS-03', 'Tenaga Penjual', 'YYY'],
+  ['POS-03', 'Cek Stok', 'YYY'],
   ['POS-04', 'Tunai, QRIS, Transfer, DP, Piutang', 'YYY'],
   ['POS-04', 'Uang Pas dan nominal cepat', 'YYY'],
   ['POS-04', 'Kembali', 'YYY'],
@@ -37,6 +42,9 @@ export const PERMISSION_ROWS: readonly (readonly [string, string, string])[] = [
   ['POS-05', 'Cetak Struk Draf', 'YYY'],
   ['POS-05', 'Panggil Bill', 'YYY'],
   ['POS-05', 'Hapus Bill', 'YYT'],
+  ['POS-05', 'Ubah', 'YYY'],
+  ['POS-05', 'Split Bill', 'YYY'],
+  ['POS-05', 'Merge Bill', 'YYY'],
   ['POS-05', 'Kembali ke Jual', 'YYY'],
   ['POS-06', 'Cetak Ulang Struk', 'YYY'],
   ['POS-06', 'Ajukan Koreksi', 'TYT'],
@@ -51,6 +59,11 @@ export const PERMISSION_ROWS: readonly (readonly [string, string, string])[] = [
   ['POS-09', 'Kembali ke Jual', 'YYY'],
   ['POS-10', 'Setujui', 'YYY'],
   ['POS-10', 'Batal', 'YYY'],
+  ['POS-11', 'Lihat Laporan Shift', 'YYT'],
+  ['POS-11', 'Terima Laporan', 'YYT'],
+  ['POS-12', 'Ubah PIN', 'YYY'],
+  ['POS-12', 'Unduh Cadangan', 'YYY'],
+  ['POS-12', 'Uji Cetak', 'YYY'],
   ['BO-01', 'Tampilkan', 'YYY'],
   ['BO-01', 'Masuk', 'YYT'],
   ['BO-02', 'Lihat Semua Stok', 'YYT'],
@@ -84,7 +97,7 @@ export const PERMISSION_ROWS: readonly (readonly [string, string, string])[] = [
   ['BO-09', 'Koreksi Transaksi (Otorisasi Owner)', 'YAT'],
   ['BO-09', 'Hapus Transaksi', 'TTT'],
   ['BO-10', 'Cari', 'YYT'],
-  ['BO-10', 'Simpan Retur', 'YYT'],
+  ['BO-10', 'Simpan Retur', 'YYY'],
   ['BO-10', 'Batal', 'YYT'],
   ['BO-11', 'Tambah Pelanggan', 'YYT'],
   ['BO-11', 'Catat Pembayaran Piutang', 'YYT'],
@@ -190,6 +203,8 @@ const SCREEN_ROLES: readonly (readonly [string, string])[] = [
   ['POS-08', 'OSK'],
   ['POS-09', 'OSK'],
   ['POS-10', 'OSK'],
+  ['POS-11', 'OS'],
+  ['POS-12', 'OSK'],
   ['BO-01', 'OS'],
   ['BO-02', 'OS'],
   ['BO-03', 'OS'],
@@ -234,7 +249,12 @@ const ROLE_LETTER: Readonly<Record<Role, string>> = {
 };
 
 const FRONTLINER_SCREENS = new Set(['POS-01', 'POS-02', 'POS-03', 'POS-05']);
-const FRONTLINER_DENIED = new Set(['POS-02|Bayar', 'POS-05|Hapus Bill']);
+const FRONTLINER_DENIED = new Set([
+  'POS-02|Bayar',
+  'POS-05|Hapus Bill',
+  'POS-03|Diskon',
+  'POS-03|Ubah Harga',
+]);
 
 export const SCREEN_IDS: readonly string[] = SCREEN_ROLES.map(([screen]) => screen);
 

@@ -1,0 +1,83 @@
+import type { Customer, Product, Tier } from '../../../shared/data/types';
+import { label } from '../../../shared/messages';
+
+// Barang dan pelanggan dari proposal (pinned) tampil lebih dulu; urutan relatif dijaga.
+export function proposalFirst<T extends { readonly pinned?: boolean | undefined }>(
+  items: readonly T[],
+): T[] {
+  return [
+    ...items.filter((item) => item.pinned === true),
+    ...items.filter((item) => item.pinned !== true),
+  ];
+}
+
+export function categoriesOf(products: readonly Product[]): string[] {
+  return [...new Set(proposalFirst(products).map((product) => product.category))];
+}
+
+// Foto kategori hanya untuk barang bangkitan tanpa foto sendiri. Daftar ini eksplisit dan sesuai
+// berkas di public/kategori; tiga kategori (Bahan Dasar, Listrik, Atap) tidak punya foto layak.
+const CATEGORY_PHOTOS: ReadonlySet<string> = new Set([
+  'besi-dan-baja',
+  'pengikat',
+  'pipa-dan-fitting',
+  'cat',
+  'perekat',
+  'lantai-dan-dinding',
+  'kayu',
+  'aksesoris-pintu',
+  'alat-tangan',
+]);
+
+export function categorySlug(category: string): string {
+  return category
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function categoryPhoto(category: string): string | undefined {
+  const slug = categorySlug(category);
+  return CATEGORY_PHOTOS.has(slug) ? `kategori/${slug}.webp` : undefined;
+}
+
+export type StockKey = 'toko' | 'gudang' | 'po';
+
+export interface StockLine {
+  readonly key: StockKey;
+  readonly quantity: number | undefined;
+  readonly unit: string;
+}
+
+// Stok pada kartu mengikuti proposal: dalam satuan dasar, bukan dikonversi ke satuan jual.
+export function stockLines(product: Product): readonly [StockLine, StockLine, StockLine] {
+  const unit = product.baseUnit;
+  return [
+    { key: 'toko', quantity: product.stock.display, unit },
+    { key: 'gudang', quantity: product.stock.besar, unit },
+    { key: 'po', quantity: product.incoming, unit },
+  ];
+}
+
+const TIER_TEXT: Readonly<Record<Tier, string>> = {
+  eceran: 'RETAIL',
+  grosir: 'GROSIR',
+  kontraktor: 'KONTRAKTOR',
+};
+
+export function customerLabel(customer: Customer | undefined): string {
+  return customer === undefined
+    ? label('pelangganUmum')
+    : `${customer.code} - ${customer.name.toUpperCase()} (${TIER_TEXT[customer.tier]})`;
+}
+
+export function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter((word) => word !== '')
+    .slice(0, 2)
+    .map((word) => word.slice(0, 1).toUpperCase())
+    .join('');
+}

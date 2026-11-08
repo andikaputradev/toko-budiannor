@@ -1,0 +1,254 @@
+/* Titik henti POS: 900 px (mode ringkas) dan 600 px (mode ponsel). Dimuat paling akhir. */
+
+.pos-order-bar,
+.pos-order__close {
+  display: none;
+}
+
+.pos-split {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--primitive-space-4);
+  min-height: 0;
+  padding: var(--primitive-space-3) var(--space-screen-margin);
+}
+
+.pos-split__back {
+  display: none;
+  justify-self: start;
+}
+
+/* Laci menu memberi lorong yang sama pada semua lebar. */
+.modal--drawer {
+  padding-left: calc(var(--primitive-space-6) + 28px);
+}
+
+/* Lorong kiri selebar tab Panel Simulasi supaya kontrol di tepi kiri tetap dapat diketuk. */
+@media (min-width: 600px) {
+  .pos main:not(.pos-login) {
+    padding-left: calc(var(--space-screen-margin) + 32px);
+  }
+}
+
+@media (max-width: 899px) {
+  .pos-sell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-catalog {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pos-bill-panel {
+    display: none;
+  }
+
+  .pos-order-bar {
+    display: flex;
+    flex: none;
+    gap: var(--primitive-space-2);
+    align-items: center;
+    min-height: 56px;
+    padding: 0 var(--primitive-space-4);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-weight: var(--primitive-font-weight-semibold);
+    cursor: pointer;
+  }
+
+  .pos-order-bar span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .pos-order-bar__total {
+    color: var(--color-accent-default);
+  }
+
+  .pos-sell[data-sheet='open']::after {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: var(--modal-overlay-bg);
+    content: '';
+  }
+
+  .pos-sell[data-sheet='open'] > .pos-bill-panel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    display: flex;
+    max-height: 85dvh;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+  }
+
+  .pos-order__close {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    align-self: flex-end;
+    width: var(--size-touch-target-min);
+    height: var(--size-touch-target-min);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  .pos-split {
+    display: flex;
+    flex-direction: column;
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-split__list,
+  .pos-split__detail {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pos-split[data-pane='daftar'] > .pos-split__detail,
+  .pos-split[data-pane='detail'] > .pos-split__list {
+    display: none;
+  }
+
+  .pos-split[data-pane='detail'] > .pos-split__back {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .pos-login {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: calc(var(--space-screen-margin) + 56px);
+  }
+
+  .pos-login__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .pos-login__card {
+    height: 168px;
+  }
+
+  .pos-login__panel,
+  .pos-login__submit {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 599px) {
+  .pos-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-topbar__center,
+  .pos-topbar__cashier,
+  .pos-topbar .pos-chip span {
+    display: none;
+  }
+
+  .pos-topbar__lead {
+    min-width: 0;
+  }
+
+  .pos-topbar__title {
+    overflow: hidden;
+    font-size: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pos-topbar__status {
+    gap: var(--primitive-space-2);
+  }
+
+  .pos-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .pos-toolbar .dropdown {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .pos-toolbar .pos-search {
+    flex: 1 1 160px;
+  }
+
+  .pos-login__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-login__card {
+    height: 148px;
+  }
+
+  .pos-login__avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .modal-overlay:not(.modal-overlay--drawer) {
+    padding: 0;
+  }
+
+  .modal-overlay .modal:not(.modal--drawer) {
+    width: 100vw;
+    min-width: 0;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    padding: var(--primitive-space-4);
+    padding-left: calc(var(--primitive-space-4) + 32px);
+    border-radius: 0;
+  }
+
+  .pos main:not(.pos-login) {
+    padding-left: calc(var(--space-screen-margin) + 32px);
+  }
+}
+
+/* Layar bayar: satu kolom, ringkasan terlipat, dan tombol Bayar menempel di bawah panel. */
+@media (max-width: 899px) {
+  .pos-pay {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pos-pay__summary {
+    flex: none;
+  }
+
+  .pos-pay__items {
+    flex: none;
+    max-height: 30dvh;
+  }
+
+  .pos-pay__summary[data-open='false'] .pos-pay__items {
+    display: none;
+  }
+
+  .pos-pay__grand {
+    font-size: 30px;
+    line-height: 38px;
+  }
+}
+
+@media (max-width: 599px) {
+  .pos-pay__tab {
+    font-size: 14px;
+  }
+}

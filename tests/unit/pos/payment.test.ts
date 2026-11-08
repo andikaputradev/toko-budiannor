@@ -6,6 +6,7 @@ import {
   remainingDue,
   syncReceivableRow,
   withMethodAmount,
+  withoutMethod,
   type PaymentRow,
 } from '../../../src/apps/pos/domain/payment';
 
@@ -158,6 +159,46 @@ describe('baris pembayaran', () => {
       { method: 'qris', amount: 100000 },
     ];
     expect(remainingDue(1000000, rows)).toBe(500000);
-    expect(remainingDue(1000000, rows, 'tunai')).toBe(900000);
+    expect(remainingDue(1000000, rows, { method: 'tunai' })).toBe(900000);
+  });
+});
+
+describe('baris pembayaran berkanal', () => {
+  it('withMethodAmount menyimpan dua baris Transfer beda kanal dan mengganti baris kanal yang sama', () => {
+    let rows: readonly PaymentRow[] = [];
+    rows = withMethodAmount(rows, 'transfer', 30000, 'BCA');
+    rows = withMethodAmount(rows, 'transfer', 20000, 'BRI');
+    expect(rows).toEqual([
+      { method: 'transfer', amount: 30000, channel: 'BCA' },
+      { method: 'transfer', amount: 20000, channel: 'BRI' },
+    ]);
+    rows = withMethodAmount(rows, 'transfer', 45000, 'BCA');
+    expect(rows).toEqual([
+      { method: 'transfer', amount: 20000, channel: 'BRI' },
+      { method: 'transfer', amount: 45000, channel: 'BCA' },
+    ]);
+    expect(withMethodAmount(rows, 'transfer', 0, 'BRI')).toEqual([
+      { method: 'transfer', amount: 45000, channel: 'BCA' },
+    ]);
+  });
+
+  it('withoutMethod dengan kanal hanya membuang baris itu', () => {
+    const rows: readonly PaymentRow[] = [
+      { method: 'transfer', amount: 30000, channel: 'BCA' },
+      { method: 'transfer', amount: 20000, channel: 'BRI' },
+    ];
+    expect(withoutMethod(rows, 'transfer', 'BCA')).toEqual([
+      { method: 'transfer', amount: 20000, channel: 'BRI' },
+    ]);
+  });
+
+  it('remainingDue menghitung semua baris terbayar kecuali baris yang dilewati menurut rowKey', () => {
+    const rows: readonly PaymentRow[] = [
+      { method: 'transfer', amount: 30000, channel: 'BCA' },
+      { method: 'transfer', amount: 20000, channel: 'BRI' },
+    ];
+    expect(remainingDue(100000, rows)).toBe(50000);
+    expect(remainingDue(100000, rows, { method: 'transfer', channel: 'BRI' })).toBe(70000);
+    expect(remainingDue(100000, rows, { method: 'transfer', channel: 'BCA' })).toBe(80000);
   });
 });

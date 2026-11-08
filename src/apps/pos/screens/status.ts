@@ -3,6 +3,7 @@ import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../sh
 import { icon } from '../../../shared/icons';
 import type { SyncItem, SyncKind, SyncStatus } from '../../../shared/data/types';
 import { label, message, type LabelKey } from '../../../shared/messages';
+import { failureText } from '../failure';
 import { totalStock } from '../../../shared/data/units';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
@@ -45,9 +46,7 @@ export function renderStatus(session: PosSession, go: (path: string) => void): S
     text: label('sinkronSekarang'),
     onClick: () => {
       const result = session.syncNow();
-      notice.replaceChildren(
-        ...(result.ok ? [] : [createBanner('warning', message(result.messageId))]),
-      );
+      notice.replaceChildren(...(result.ok ? [] : [createBanner('warning', failureText(result))]));
     },
   });
   syncButton.classList.add('pos-status__sync');

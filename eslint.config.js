@@ -28,6 +28,7 @@ export default defineConfig([
     'dist',
     'coverage',
     'node_modules',
+    '.superpowers',
     'public',
     'export',
     'playwright-report',

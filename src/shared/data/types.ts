@@ -34,6 +34,9 @@ export interface Product {
   readonly defaultUnit?: string | undefined;
   readonly photoName?: string | undefined;
   readonly minByWarehouse?: Readonly<Record<WarehouseId, number>> | undefined;
+  readonly incoming?: number | undefined;
+  readonly photoUrl?: string | undefined;
+  readonly pinned?: boolean | undefined;
 }
 
 export interface ReceivableInvoice {
@@ -54,6 +57,7 @@ export interface Customer {
   readonly invoices: readonly ReceivableInvoice[];
   readonly address?: string | undefined;
   readonly dueDays?: number | undefined;
+  readonly pinned?: boolean | undefined;
 }
 
 export interface AppUser {
@@ -66,11 +70,21 @@ export interface AppUser {
   readonly active: boolean;
 }
 
+export interface LineDiscount {
+  readonly kind: 'persen' | 'nominal';
+  readonly value: number;
+}
+
+// unitPrice adalah harga efektif; listPrice menyimpan harga asli saat kasir mengubah harga.
 export interface BillLine {
   readonly productId: string;
   readonly unit: string;
   readonly quantity: number;
   readonly unitPrice: number;
+  readonly discount?: LineDiscount | undefined;
+  readonly listPrice?: number | undefined;
+  readonly note?: string | undefined;
+  readonly sellerId?: string | undefined;
 }
 
 export interface HeldBill {
@@ -82,7 +96,22 @@ export interface HeldBill {
   readonly lines: readonly BillLine[];
 }
 
-export type PaymentMethod = 'tunai' | 'qris' | 'transfer' | 'dp' | 'piutang';
+export type PaymentMethod = 'tunai' | 'qris' | 'edc' | 'transfer' | 'dp' | 'piutang';
+export type PaidMethod = Exclude<PaymentMethod, 'dp' | 'piutang'>;
+
+export type RefundMethod = 'tunai' | 'qris' | 'edc' | 'transfer';
+
+export interface SalePayment {
+  readonly method: PaymentMethod;
+  readonly amount: number;
+  readonly via?: PaymentMethod | undefined;
+  readonly channel?: string | undefined;
+}
+
+export interface SaleTerms {
+  readonly dueDays: number;
+  readonly dueDate: string;
+}
 
 export interface Sale {
   readonly id: string;
@@ -94,6 +123,9 @@ export interface Sale {
   readonly total: number;
   readonly payment: PaymentMethod;
   readonly paid: number;
+  readonly payments?: readonly SalePayment[] | undefined;
+  readonly terms?: SaleTerms | undefined;
+  readonly dp?: number | undefined;
 }
 
 export type SyncStatus = 'menunggu' | 'mengirim' | 'gagal' | 'terkirim';

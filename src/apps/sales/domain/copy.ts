@@ -12,6 +12,7 @@ export interface CopyContext {
 const METHOD_LABELS: Readonly<Record<SalesOrder['payment'], LabelKey>> = {
   tunai: 'metodeTunai',
   qris: 'metodeQris',
+  edc: 'metodeEdc',
   transfer: 'metodeTransfer',
   dp: 'metodeDp',
   piutang: 'metodePiutang',

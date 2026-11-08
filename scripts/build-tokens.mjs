@@ -8,6 +8,7 @@ import {
   referencePath,
   resolveColor,
   resolveToken,
+  withThemeOverrides,
 } from './lib/tokens.mjs';
 
 const CSS_OUTPUT = new URL('../src/styles/tokens.css', import.meta.url);
@@ -98,6 +99,43 @@ function selectorList(apps) {
 
 const ROOT_AND_APPS = ':root,\n[data-app]';
 
+// Tema POS: permukaan gelap login (selalu) dan skema gelap seluruh aplikasi (data-pos-scheme
+// pada elemen akar), lalu satu rangkaian blok per palet. Palet kosong (terakota) memulihkan
+// nilai bawaan. Urutan dan kekhususan penting: blok gelap palet mengalahkan blok terang palet
+// (2 atribut) pada akar login lewat urutan, dan pada akar yang sama lewat 3 atribut.
+function posThemeBlocks(forcedDarkLines) {
+  const blocks = [
+    `[data-app='pos'][data-pos-surface='dark'],\n[data-app='pos'][data-pos-scheme='gelap'] {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
+  ];
+  const themes = Object.entries(document.$themes ?? {}).filter(([name]) => !name.startsWith('$'));
+  // Setiap palet mengeluarkan seluruh token yang ditimpa palet mana pun (terakota memulihkan
+  // nilai bawaan), supaya contoh warna di pemilih tema tidak ikut tema yang sedang aktif.
+  const paths = [
+    ...new Set(
+      themes.flatMap(([, overrides]) =>
+        Object.keys(overrides).filter((key) => !key.startsWith('$')),
+      ),
+    ),
+  ];
+  for (const [name, overrides] of themes) {
+    const themedTokens = withThemeOverrides(tokens, overrides);
+    const lines = (theme) =>
+      paths.map((path) => {
+        const token = themedTokens.get(path);
+        const raw = theme === 'dark' ? (token.dark ?? token.value) : token.value;
+        return declaration(cssName(path), cssValue(token, raw, { theme, profile: undefined }));
+      });
+    const scope = `[data-pos-theme='${name}']`;
+    // :where() menjaga kekhususan turunan tetap rendah agar blok akar palet itu sendiri menang.
+    const roots = `${scope}[data-app='pos'],\n:where(${scope}) [data-app='pos']`;
+    blocks.push(`${roots} {\n${lines('light').join('\n')}\n}`);
+    blocks.push(
+      `:where(${scope}) [data-app='pos'][data-pos-surface='dark'],\n${scope}[data-app='pos'][data-pos-scheme='gelap'] {\n${lines('dark').join('\n')}\n}`,
+    );
+  }
+  return blocks;
+}
+
 function buildCss() {
   const primitiveLines = [];
   const derivedLines = [];
@@ -153,6 +191,7 @@ function buildCss() {
     `${themed("[data-theme='dark']").join(',\n')} {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
   );
   blocks.push(`${themed("[data-theme='light']").join(',\n')} {\n  color-scheme: light;\n}`);
+  blocks.push(...posThemeBlocks(forcedDarkLines));
   blocks.push(
     `@media (prefers-reduced-motion: reduce) {\n  ${ROOT_AND_APPS.replaceAll('\n', '\n  ')} {\n${reducedMotionLines.join('\n')}\n  }\n}`,
   );

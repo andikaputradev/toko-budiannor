@@ -14,6 +14,14 @@ Lima modul dalam satu bundel, dipilih lewat hash alamat:
 
 BO-08 dan BO-10 sampai BO-22 belum dibangun pada mockup ini; Mode Tinjau menandainya "belum dibangun".
 
+### Revisi POS (November 2026)
+
+POS memakai menu samping, shift dengan modal awal, layar jual bergaya referensi (dropdown kategori, kartu harga per satuan dengan stok Toko, Gudang, dan PO), pembayaran Tunai atau Piutang dengan Split Payment, EDC, tempo, dan DP, dialog Pembayaran Berhasil (Cetak Struk atau Kirim WA), riwayat dua panel, retur (barang, jumlah, nominal, cara pengembalian), dan tema warna yang dipilih dari Pengaturan (putaran kedua mengganti empat tema dengan enam palet dan mode terang, gelap, atau otomatis). Tujuh barang dan tujuh pelanggan dari proposal tampil paling depan; asumsi dan konfliknya ada di `docs/asumsi.md` bagian 13. Rancangan: `docs/superpowers/specs/2026-11-07-revisi-pos-design.md`.
+
+### Revisi POS putaran kedua (November 2026)
+
+Permintaan klien tanggal 7 November 2026 (PDF acuan dipakai untuk gaya dan alur saja): enam palet warna dengan mode terang, gelap, dan otomatis; tata letak responsif dengan titik henti 900 px dan 600 px; layar bayar dengan papan angka, kanal non-tunai, QR simulasi, dan Split Payment; Detail Barang (diskon, ubah harga, catatan, Tenaga Penjual, Cek Stok); Open Bill berupa kartu dengan Ubah, Split Bill, dan Merge Bill; Riwayat dengan Retur langsung oleh Kasir; Selesai Shift dengan hitungan tunai, layar Karyawan, dan laporan shift; Biaya dua panel dengan lampiran; daftar Pelanggan; dan Pengaturan (Ubah PIN, printer, EDC, perangkat, backup, tampilan). Layar sekunder dimuat malas sehingga JS awal POS tetap di bawah anggaran. Rancangan dan rencana: `docs/superpowers/specs/2026-11-07-revisi-pos-2-design.md` dan `docs/superpowers/plans/2026-11-07-revisi-pos-2.md`; asumsi di `docs/asumsi.md` bagian 14; aset baru dan lisensinya di `docs/aset-pihak-ketiga.md`.
+
 ## Prasyarat
 
 - Node.js 22.12 atau lebih baru (diuji pada 22.13.0) dan npm 10.
@@ -71,6 +79,9 @@ Buka `http://127.0.0.1:4173`. Perintah ini memakai `vite preview` dan menerapkan
 
 Uji e2e yang bersifat verifikasi rilis (folder `tests/e2e`):
 
+- `pos-revisi.spec.ts`: shift, menu samping, tema (axe pada tiap tema), layar jual, pembayaran, riwayat, dan retur POS.
+- `pos-revisi2.spec.ts`: putaran kedua per bagian: mode otomatis dan palet, riwayat dan retur, penerimaan (bayar, QR, Split), Detail Barang, Open Bill, Selesai Shift, Karyawan, Biaya, Pelanggan, Pengaturan, susunan kartu barang, dan pemuatan malas; axe pada mode terang dan gelap untuk setiap layar baru.
+- `responsif.spec.ts`: ponsel 360 x 800 dan tablet potret 768 x 1024: tanpa scroll horizontal, kontrol tidak tertutup Panel Simulasi, modal layar penuh, dan satu panel dengan tombol Kembali untuk layar dua panel.
 - `audit.spec.ts`: seluruh rute dipindai axe (WCAG 2.0, 2.1, 2.2 level A dan AA) pada empat viewport, ditambah lembar dan modal POS-03, POS-10, SALES-04 pada kerangka rancangannya. Tangkapan layar tiap rute ke `verifikasi/screenshots/<viewport>/` dan hasil axe ke `verifikasi/axe/`.
 - `target-sentuh.spec.ts`: setiap kontrol interaktif pada POS dan aplikasi mobile berukuran minimal 48 x 48 px.
 - `urutan-tab.spec.ts`: urutan Tab sama dengan urutan DOM, tanpa `tabindex` positif, tanpa jebakan fokus, penanda fokus tampak, fokus tidak melompat ke kiri atas.

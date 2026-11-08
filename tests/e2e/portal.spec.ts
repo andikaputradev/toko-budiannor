@@ -30,16 +30,16 @@ async function lastBlobText(page: Page): Promise<string> {
 }
 
 test.describe('Portal beranda', () => {
-  test('menampilkan tiga ekosistem, 43 layar, dan 10 alur serta lolos axe', async ({ page }) => {
+  test('menampilkan tiga ekosistem, 45 layar, dan 10 alur serta lolos axe', async ({ page }) => {
     await page.goto('/#/');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Portal Tinjau Sistem POS Toko Budiannor' }),
     ).toBeVisible();
     await expect(page.locator('.portal-card[data-ecosystem]')).toHaveCount(3);
-    await expect(page.getByRole('heading', { name: 'Daftar layar (43)' })).toBeVisible();
-    await expect(page.locator('.portal-screen')).toHaveCount(43);
+    await expect(page.getByRole('heading', { name: 'Daftar layar (45)' })).toBeVisible();
+    await expect(page.locator('.portal-screen')).toHaveCount(45);
     await expect(page.locator('.portal-screen .own-status--warn')).toHaveCount(14);
-    await expect(page.locator('.portal-screen .own-status--ok')).toHaveCount(29);
+    await expect(page.locator('.portal-screen .own-status--ok')).toHaveCount(31);
     await expect(page.getByRole('heading', { name: 'Alur ujung ke ujung (10)' })).toBeVisible();
     await expect(page.locator('.portal-card[data-flow]')).toHaveCount(10);
     await expect(page.getByText('POS Kasir').first()).toBeVisible();
@@ -51,7 +51,7 @@ test.describe('Portal beranda', () => {
   test('reflow pada lebar 320 px tanpa gulir horizontal', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto('/#/');
-    await expect(page.locator('.portal-screen')).toHaveCount(43);
+    await expect(page.locator('.portal-screen')).toHaveCount(45);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
@@ -68,7 +68,7 @@ test.describe('Portal beranda', () => {
     await page.getByLabel('Cari ID atau nama layar').fill('BO-09');
     await expect(page.locator('.portal-screen')).toHaveCount(1);
     await expect(page.locator('.portal-screen')).toContainText('Penjualan dan Riwayat Invoice');
-    await expect(page.getByText('Menampilkan 1 dari 43 layar')).toBeVisible();
+    await expect(page.getByText('Menampilkan 1 dari 45 layar')).toBeVisible();
     await page.getByLabel('Cari ID atau nama layar').fill('');
     await expect(page.locator('.portal-card[data-flow="F-02"]')).toContainText(
       'Sebagian: BO-11 belum dibangun',
