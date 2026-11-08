@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   chooseCustomer,
   finishPaymentDialog,
@@ -729,6 +729,245 @@ test.describe('Non-Tunai dan QR', () => {
       }
       await page.keyboard.press('Escape');
       await expect(qrDialog(page)).toBeHidden();
+    }
+  });
+});
+
+test.describe('Split', () => {
+  async function toSplit(page: Page): Promise<void> {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page).toHaveURL(/#\/pos\/bayar$/);
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
+  }
+  const pay = (page: Page) => page.getByRole('button', { name: 'Bayar', exact: true });
+  const slot = (page: Page, number: number) =>
+    page.getByRole('button', { name: new RegExp(`^Pembayaran ${String(number)}`) });
+  const partDialog = (page: Page, number: number) =>
+    page.getByRole('dialog', { name: `Pembayaran ${String(number)}` });
+  async function padIn(dialog: Locator, digits: string): Promise<void> {
+    for (const digit of digits) {
+      await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+  }
+  async function savePart(
+    page: Page,
+    number: number,
+    options: { channel?: string; digits: string },
+  ): Promise<void> {
+    await slot(page, number).click();
+    const dialog = partDialog(page, number);
+    if (options.channel !== undefined) {
+      await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+      await dialog
+        .getByRole('group', { name: 'Kanal pembayaran' })
+        .getByRole('button', { name: options.channel, exact: true })
+        .click();
+    }
+    await padIn(dialog, options.digits);
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    await expect(dialog).toBeHidden();
+  }
+
+  test('Split menampilkan Pembayaran 1 dan Pembayaran 2 dan tombol + Tambah Pembayaran', async ({
+    page,
+  }) => {
+    await toSplit(page);
+    await expect(slot(page, 1)).toBeVisible();
+    await expect(slot(page, 2)).toBeVisible();
+    await expect(slot(page, 3)).toHaveCount(0);
+    await expect(slot(page, 1)).toContainText('Pilih pembayaran');
+    await expect(page.getByRole('button', { name: 'Tambah Pembayaran' })).toBeVisible();
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 70.000');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('dua pembayaran Tunai dan Transfer BCA menjumlah sampai total lalu Bayar aktif', async ({
+    page,
+  }) => {
+    await toSplit(page);
+    await savePart(page, 1, { digits: '30000' });
+    await expect(slot(page, 1)).toContainText('Tunai');
+    await expect(slot(page, 1)).toContainText('Rp 30.000');
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 40.000');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+    await savePart(page, 2, { channel: 'Transfer BCA', digits: '40000' });
+    await expect(slot(page, 2)).toContainText('Transfer BCA');
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await pay(page).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail).toContainText('Transfer BCA');
+    await expect(detail).toContainText('Rp 40.000');
+    await expect(detail).toContainText('Rp 30.000');
+  });
+
+  test('Tambah Pembayaran menambah baris ketiga', async ({ page }) => {
+    await toSplit(page);
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await expect(slot(page, 3)).toBeVisible();
+    await expect(slot(page, 3)).toContainText('Pilih pembayaran');
+    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await expect(slot(page, 4)).toBeVisible();
+  });
+
+  test('Simpan menolak nominal nol dan modal tetap terbuka', async ({ page }) => {
+    await toSplit(page);
+    await slot(page, 1).click();
+    const dialog = partDialog(page, 1);
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText('Isi nominal pembayaran lebih dari nol.');
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Batal' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(slot(page, 1)).toContainText('Pilih pembayaran');
+  });
+
+  test('Non-Tunai tanpa memilih kanal ditolak dengan petunjuk', async ({ page }) => {
+    await toSplit(page);
+    await slot(page, 1).click();
+    const dialog = partDialog(page, 1);
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await padIn(dialog, '1000');
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText('Pilih kanal pembayaran terlebih dahulu.');
+  });
+
+  test('dua baris Transfer beda kanal tersimpan terpisah dan tampil di riwayat', async ({
+    page,
+  }) => {
+    await toSplit(page);
+    await savePart(page, 1, { channel: 'Transfer BCA', digits: '30000' });
+    await savePart(page, 2, { channel: 'Transfer BRI', digits: '40000' });
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await pay(page).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail.locator('.pos-history__pay li')).toHaveCount(2);
+    await expect(detail).toContainText('Transfer BCA');
+    await expect(detail).toContainText('Transfer BRI');
+  });
+
+  test('pasangan metode dan kanal yang sama ditolak pada pembayaran lain', async ({ page }) => {
+    await toSplit(page);
+    await savePart(page, 1, { channel: 'Transfer BCA', digits: '30000' });
+    await slot(page, 2).click();
+    const dialog = partDialog(page, 2);
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await dialog
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'Transfer BCA', exact: true })
+      .click();
+    await padIn(dialog, '1000');
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Cara bayar dan kanal ini sudah dipakai pada pembayaran lain.',
+    );
+  });
+
+  test('tunai boleh melebihi sisa dan menghasilkan kembalian, non-tunai dibatasi sisa', async ({
+    page,
+  }) => {
+    await toSplit(page);
+    await savePart(page, 1, { channel: 'Transfer BCA', digits: '30000' });
+    await slot(page, 2).click();
+    const dialog = partDialog(page, 2);
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await dialog
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'EDC', exact: true })
+      .click();
+    await expect(dialog.locator('.pos-part__sisa')).toHaveText('Rp 40.000');
+    await padIn(dialog, '99999');
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 40.000');
+    await dialog.getByRole('tab', { name: 'Tunai', exact: true }).click();
+    await padIn(dialog, '9');
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 400.009');
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
+    await expect(page.locator('.pos-pay__change')).toHaveText('Rp 360.009');
+    await expect(slot(page, 2)).toContainText('Tunai');
+  });
+
+  test('mengubah Pembayaran 1 tidak menukar urutan dengan Pembayaran 2', async ({ page }) => {
+    await toSplit(page);
+    await savePart(page, 1, { digits: '30000' });
+    await savePart(page, 2, { channel: 'EDC', digits: '20000' });
+    await slot(page, 1).click();
+    const dialog = partDialog(page, 1);
+    await dialog.getByRole('button', { name: 'C', exact: true }).click();
+    await padIn(dialog, '10000');
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    await expect(slot(page, 1)).toContainText('Tunai');
+    await expect(slot(page, 1)).toContainText('Rp 10.000');
+    await expect(slot(page, 2)).toContainText('EDC');
+    await expect(slot(page, 2)).toContainText('Rp 20.000');
+  });
+
+  test('kanal QR pada Split meminta Cek Status sebelum Bayar aktif', async ({ page }) => {
+    await toSplit(page);
+    await savePart(page, 1, { digits: '30000' });
+    await slot(page, 2).click();
+    const dialog = partDialog(page, 2);
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await dialog
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'Gopay', exact: true })
+      .click();
+    await padIn(dialog, '40000');
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await expect(qr).toBeVisible();
+    await expect(qr.locator('.pos-qr__amount')).toHaveText('Rp 40.000');
+    await page.keyboard.press('Escape');
+    await expect(qr).toBeHidden();
+    await expect(slot(page, 2)).toContainText('Menunggu pembayaran');
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+    await slot(page, 2).click();
+    await partDialog(page, 2).getByRole('button', { name: 'Simpan' }).click();
+    await expect(qr).toBeVisible();
+    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(qr).toBeHidden({ timeout: 5000 });
+    await expect(slot(page, 2)).toContainText('Pembayaran diterima');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  test('Split dan modal Pembayaran lolos axe dan target 48 px pada mode terang dan gelap', async ({
+    page,
+  }) => {
+    await toSplit(page);
+    await savePart(page, 1, { digits: '30000' });
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const tab = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(tab.violations, `${scheme} tab`).toEqual([]);
+      await slot(page, 2).click();
+      const dialog = partDialog(page, 2);
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+      await settle(page);
+      const modal = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(modal.violations, `${scheme} modal`).toEqual([]);
+      const heights = await dialog
+        .locator('button')
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.getBoundingClientRect().height),
+        );
+      for (const height of heights) {
+        expect(height, scheme).toBeGreaterThanOrEqual(47.5);
+      }
+      await dialog.getByRole('button', { name: 'Batal' }).click();
+      await expect(dialog).toBeHidden();
     }
   });
 });

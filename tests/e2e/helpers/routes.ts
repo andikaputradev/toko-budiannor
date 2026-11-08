@@ -183,16 +183,39 @@ export async function sellSplitThree(page: Page): Promise<void> {
   await page.locator('.pos-card__main').first().click();
   await clickPay(page);
   await page.getByRole('tab', { name: 'Split', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
+  await savePart(page, 1, { digits: '30000' });
+  await savePart(page, 2, { channel: 'QRIS', digits: '20000' });
   await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
-  await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('20000');
-  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
-  await page.getByRole('button', { name: 'EDC', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('20000');
-  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+  await savePart(page, 3, { channel: 'EDC', digits: '20000' });
   await page.getByRole('button', { name: 'Bayar', exact: true }).click();
   await finishPaymentDialog(page);
+}
+
+// Mengisi satu Pembayaran N pada tab Split lewat modalnya. Kanal QR langsung dikonfirmasi.
+export async function savePart(
+  page: Page,
+  number: number,
+  options: { channel?: string; digits: string },
+): Promise<void> {
+  await page.getByRole('button', { name: new RegExp(`^Pembayaran ${String(number)}`) }).click();
+  const dialog = page.getByRole('dialog', { name: `Pembayaran ${String(number)}` });
+  if (options.channel !== undefined) {
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await dialog
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: options.channel, exact: true })
+      .click();
+  }
+  for (const digit of options.digits) {
+    await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+  }
+  await dialog.getByRole('button', { name: 'Simpan' }).click();
+  await expect(dialog).toBeHidden();
+  if (['QRIS', 'Gopay', 'OVO', 'Shopee Pay'].includes(options.channel ?? '')) {
+    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(qr).toBeHidden();
+  }
 }
 
 // Mengetik nominal lewat papan angka di halaman (tab Tunai).

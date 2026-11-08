@@ -291,10 +291,6 @@
   font-weight: var(--primitive-font-weight-semibold);
 }
 
-.pos-pay__panel > p {
-  margin: 0;
-}
-
 .pos-pay__grand {
   display: block;
   color: var(--color-accent-default);
@@ -331,11 +327,32 @@
   color: var(--button-primary-text);
 }
 
-.pos-pay__result {
-  display: grid;
+.pos-pay__headline {
+  display: flex;
   flex: none;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2) var(--primitive-space-4);
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.pos-pay__headline p {
+  margin: 0;
+}
+
+.pos-pay__result {
+  display: flex;
   gap: var(--primitive-space-2);
+}
+
+.pos-pay__result .pos-pay__figure {
+  min-width: 132px;
+}
+
+.pos-pay__result output {
+  display: block;
+  font-size: 20px;
+  line-height: 28px;
 }
 
 .pos-pay__cards {
@@ -426,4 +443,144 @@
 .pos-qr__actions .btn {
   width: 100%;
   height: 56px;
+}
+
+.pos-pay__parts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-pay__part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'title amount chevron'
+    'meta amount chevron'
+    'status status chevron';
+  gap: 0 var(--primitive-space-3);
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-pay__part:hover {
+  border-color: var(--color-accent-default);
+}
+
+.pos-pay__part-title {
+  grid-area: title;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-pay__part-meta {
+  grid-area: meta;
+  color: var(--color-text-secondary);
+}
+
+.pos-pay__part-amount {
+  grid-area: amount;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-pay__part-status {
+  grid-area: status;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.pos-pay__part .icon {
+  grid-area: chevron;
+}
+
+.modal:has(.pos-part) {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 94vw);
+  overflow: hidden;
+}
+
+.modal:has(.pos-part) .modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.pos-part {
+  display: grid;
+  gap: var(--primitive-space-3);
+}
+
+.pos-part__tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pos-part__remain {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--primitive-space-3);
+}
+
+.pos-part__remain p {
+  margin: 0;
+}
+
+.pos-part__sisa {
+  display: block;
+}
+
+.pos-part__actions {
+  display: flex;
+  flex: none;
+  gap: var(--primitive-space-2);
+  justify-content: flex-end;
+  margin-top: var(--primitive-space-3);
+  padding-top: var(--primitive-space-3);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.pos-part__actions .btn {
+  min-width: 120px;
+  height: 56px;
+}
+
+.pos-part .pos-pay__cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pos-part .pos-pay__card {
+  height: 52px;
+  padding-inline: var(--primitive-space-1);
+  font-size: 14px;
+}
+
+@media (max-width: 599px) {
+  .pos-part .pos-pay__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pos-qr__facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-pay__result {
+    flex: 1 1 100%;
+  }
+
+  .pos-pay__result .pos-pay__figure {
+    flex: 1;
+    min-width: 0;
+  }
 }

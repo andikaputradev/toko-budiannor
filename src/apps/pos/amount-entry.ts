@@ -17,8 +17,8 @@ export interface AmountEntry {
 
 export interface AmountEntryOptions {
   labelText: string;
-  value?: number;
-  max?: number;
+  value?: number | undefined;
+  max?: number | undefined;
   enterText?: string;
   onChange: (value: number) => void;
   onEnter?: () => void;

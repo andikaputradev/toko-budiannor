@@ -1,5 +1,6 @@
 import { el, nextId } from '../../../shared/dom';
 import { formatDate, formatRupiah } from '../../../shared/format';
+import { icon } from '../../../shared/icons';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import { remainingLimit } from '../../../shared/data/receivable';
 import type { PaidMethod, PaymentMethod } from '../../../shared/data/types';
@@ -7,25 +8,21 @@ import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import { createAmountEntry } from '../amount-entry';
-import { channelsOf, rowKey } from '../domain/channels';
+import { rowKey } from '../domain/channels';
 import { DEFAULT_DUE_DAYS } from '../domain/forms';
-import { CASH_METHODS, maxAmount, QUICK_AMOUNTS } from '../domain/payment';
+import { CASH_METHODS, QUICK_AMOUNTS } from '../domain/payment';
 import { qrReference } from '../domain/qr';
+import { partOf, type SavedPart } from '../domain/split';
 import { dueDateOf, parseTermDays, TERM_CHOICES } from '../domain/terms';
 import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
+import { createChannelCards, type ChannelCard } from './channel-cards';
 import { openPaymentDone } from './payment-done';
 import { createPaySummary } from './pay-summary';
 import type { ScreenHandle } from './login';
 
 type PayTab = 'tunai' | 'nontunai' | 'split' | 'piutang';
-
-interface ChannelCard {
-  readonly method: PaidMethod;
-  readonly channel: string | undefined;
-  readonly text: string;
-}
 
 const TABS: readonly { readonly id: PayTab; readonly text: LabelKey }[] = [
   { id: 'tunai', text: 'tabTunai' },
@@ -72,13 +69,13 @@ function initialTab(session: PosSession): PayTab {
 export function renderPay(session: PosSession, go: (path: string) => void): ScreenHandle {
   const topbar = createTopbar(session, 'judulPembayaran');
   const summaryPane = createPaySummary(session);
-  const amountId = nextId('diterima');
   const dpId = nextId('dp');
   const daysId = nextId('hari');
   let tab: PayTab = initialTab(session);
-  let pending = 0;
-  // Status QR diterima hanya disimulasikan di layar ini (A-3), per pasangan metode dan kanal.
-  let qrPaidKey: string | undefined;
+  let requestedSlots = 2;
+  // Status QR diterima hanya disimulasikan di layar ini (A-3): pasangan metode dan kanal ke
+  // nominal yang sudah dikonfirmasi, sehingga mengubah nominal membuat statusnya batal.
+  const qrPaid = new Map<string, number>();
   let destroyed = false;
   let dpVia: PaidMethod = session.state().rows.find((row) => row.method === 'dp')?.via ?? 'tunai';
 
@@ -181,35 +178,26 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
 
   // Tab Non-Tunai: kartu kanal. QRIS dan dompet digital membuka layar Scan QR Code; EDC dan
   // Transfer meminta nomor referensi.
-  const cards: readonly ChannelCard[] = [
-    { method: 'qris', channel: undefined, text: label('metodeQris') },
-    ...channelsOf('qris').map((channel) => ({ method: 'qris' as const, channel, text: channel })),
-    { method: 'edc', channel: undefined, text: label('metodeEdc') },
-    ...channelsOf('transfer').map((channel) => ({
-      method: 'transfer' as const,
-      channel,
-      text: `${label('metodeTransfer')} ${channel}`,
-    })),
-  ];
-  const openQr = (card: ChannelCard): void => {
+  const openQr = (choice: { channel: string | undefined; amount: number }): void => {
+    const key = rowKey({ method: 'qris', channel: choice.channel });
     void import('./qr-modal').then(({ openQrModal }) => {
       if (destroyed) {
         return;
       }
       openQrModal({
         session,
-        channel: card.channel,
-        amount: session.total(),
-        reference: qrReference(
-          `${session.nextSaleNumber()}|${rowKey(card)}|${String(session.total())}`,
-        ),
+        channel: choice.channel,
+        amount: choice.amount,
+        reference: qrReference(`${session.nextSaleNumber()}|${key}|${String(choice.amount)}`),
         onPaid: () => {
-          qrPaidKey = rowKey(card);
+          qrPaid.set(key, choice.amount);
           paint();
         },
         onChangeMethod: () => {
-          qrPaidKey = undefined;
-          session.resetPayment();
+          qrPaid.delete(key);
+          if (tab === 'nontunai') {
+            session.resetPayment();
+          }
         },
       });
     });
@@ -217,83 +205,37 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const chooseCard = (card: ChannelCard): void => {
     session.chooseSingle(card.method, card.channel);
     if (card.method !== 'qris') {
-      qrPaidKey = undefined;
       return;
     }
-    if (qrPaidKey !== rowKey(card)) {
-      qrPaidKey = undefined;
-      openQr(card);
+    const key = rowKey(card);
+    if (qrPaid.get(key) !== session.total()) {
+      qrPaid.delete(key);
+      openQr({ channel: card.channel, amount: session.total() });
     }
   };
-  const cardGroup = el('div', {
-    className: 'pos-pay__cards',
-    attrs: { role: 'group', 'aria-label': label('kanalPembayaran') },
-  });
-  const cardButtons = new Map<ChannelCard, HTMLButtonElement>();
-  for (const card of cards) {
-    const button = createButton({
-      text: card.text,
-      variant: 'secondary',
-      onClick: () => {
-        chooseCard(card);
-      },
-    });
-    button.classList.add('pos-pay__method', 'pos-pay__card');
-    cardButtons.set(card, button);
-    cardGroup.append(button);
-  }
+  const cards = createChannelCards(chooseCard);
   const nonCashReference = referenceField();
-  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, cardGroup, nonCashReference);
+  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, cards.element, nonCashReference);
 
-  // Tab Split: kontrol sementara yang digantikan modal Pembayaran N (Task 15).
-  const splitMethods = methodGroup(
-    (method) => {
-      pending = 0;
-      session.setMethod(method);
-    },
-    'caraBayar',
-    CASH_METHODS,
-  );
-  const amountInput = el('input', {
-    className: 'input pos-pay__amount',
-    attrs: { id: amountId, inputmode: 'numeric', autocomplete: 'off' },
-  });
-  const splitQuick = quickRow(
-    () => {
-      setPending(session.summary().shortfall);
-    },
-    (amount) => {
-      setPending(amount);
-    },
-  );
-  const splitReference = referenceField();
-  const addRow = createButton({
+  // Tab Split: daftar Pembayaran 1, 2, dan seterusnya; masing-masing membuka modal Pembayaran N.
+  const afterPartSaved = (saved: SavedPart): void => {
+    const key = rowKey(saved);
+    qrPaid.delete(key);
+    if (saved.method === 'qris' && saved.amount > 0) {
+      openQr({ channel: saved.channel, amount: saved.amount });
+    }
+  };
+  const parts = el('ul', { className: 'pos-pay__parts' });
+  const addPart = createButton({
     text: label('tambahPembayaran'),
     variant: 'secondary',
+    icon: 'plus',
     onClick: () => {
-      if (pending > 0) {
-        session.setAmount(session.state().method, pending);
-        pending = 0;
-      }
+      requestedSlots = Math.max(requestedSlots, session.state().rows.length) + 1;
+      paint();
     },
   });
-  const rows = el('ul', { className: 'pos-pay__rows' });
-  const splitPanel = el(
-    'div',
-    { className: 'pos-pay__mode' },
-    splitMethods,
-    el('label', {
-      className: 'field__label',
-      text: label('jumlahDiterima'),
-      attrs: { for: amountId },
-    }),
-    amountInput,
-    splitReference,
-    splitQuick,
-    addRow,
-    el('h2', { className: 't-section-title', text: label('rincianPembayaran') }),
-    rows,
-  );
+  const splitPanel = el('div', { className: 'pos-pay__mode' }, parts, addPart);
 
   const sisa = el('output', { className: 't-total pos-pay__sisa' });
   const change = el('output', { className: 't-total pos-pay__change' });
@@ -446,8 +388,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       return;
     }
     tab = next;
-    pending = 0;
-    qrPaidKey = undefined;
+    qrPaid.clear();
     daysError.textContent = '';
     if (next === 'tunai') {
       session.chooseSingle('tunai');
@@ -459,11 +400,45 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     paint();
   };
 
-  const setPending = (value: number): void => {
-    const method = asPaid(session.state().method);
-    const cap = maxAmount(method, session.total(), session.state().rows, session.state().channel);
-    pending = cap === undefined ? value : Math.min(value, cap);
-    paint();
+  const partItem = (position: number): HTMLElement => {
+    const saved = partOf(session.state().rows[position]);
+    const summaryText =
+      saved === undefined
+        ? label('pilihPembayaran')
+        : `${label(METHOD_LABELS[saved.method])}${saved.channel === undefined ? '' : ` ${saved.channel}`}`;
+    const waiting = saved?.method === 'qris';
+    const received = saved !== undefined && qrPaid.get(rowKey(saved)) === saved.amount;
+    const button = el(
+      'button',
+      {
+        className: 'pos-pay__part',
+        attrs: { type: 'button' },
+      },
+      el('span', {
+        className: 'pos-pay__part-title',
+        text: label('pembayaranKe', { n: position + 1 }),
+      }),
+      el('span', { className: 'pos-pay__part-meta', text: summaryText }),
+      el('span', {
+        className: 'pos-pay__part-amount',
+        text: saved === undefined ? '' : formatRupiah(saved.amount),
+      }),
+      waiting
+        ? el('span', {
+            className: 'pos-pay__part-status',
+            text: label(received ? 'pembayaranDiterima' : 'menungguPembayaran'),
+          })
+        : false,
+      icon('chevron-right'),
+    );
+    button.addEventListener('click', () => {
+      void import('./payment-part').then(({ openPaymentPart }) => {
+        if (!destroyed) {
+          openPaymentPart({ session, index: position, onSaved: afterPartSaved });
+        }
+      });
+    });
+    return el('li', {}, button);
   };
 
   const paintMethods = (group: HTMLElement, method: PaidMethod): void => {
@@ -513,38 +488,12 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     } else if (tab === 'tunai') {
       entry.setValue(state.rows.find((row) => row.method === 'tunai')?.amount ?? 0);
     } else if (tab === 'nontunai') {
-      for (const [card, button] of cardButtons) {
-        const chosen = method === card.method && state.channel === card.channel;
-        button.setAttribute('aria-pressed', chosen ? 'true' : 'false');
-      }
+      cards.select(method, state.channel);
       nonCashReference.hidden = method !== 'edc' && method !== 'transfer';
     } else {
-      paintMethods(splitMethods, method);
-      amountInput.value = pending === 0 ? '' : plain(pending);
-      splitReference.hidden = method === 'tunai';
-      splitQuick.hidden = method !== 'tunai';
-      rows.replaceChildren(
-        ...state.rows.map((item) => {
-          const remove = createButton({
-            text: label('hapus'),
-            variant: 'secondary',
-            onClick: () => {
-              session.setAmount(item.method, 0);
-            },
-          });
-          remove.setAttribute(
-            'aria-label',
-            label('hapusPembayaran', { cara: label(METHOD_LABELS[item.method]) }),
-          );
-          return el(
-            'li',
-            { className: 'pos-pay__row' },
-            el('span', { text: label(METHOD_LABELS[item.method]) }),
-            el('span', { className: 'is-end', text: formatRupiah(item.amount) }),
-            remove,
-          );
-        }),
-      );
+      const count = Math.max(2, requestedSlots, state.rows.length);
+      requestedSlots = count;
+      parts.replaceChildren(...Array.from({ length: count }, (_, position) => partItem(position)));
     }
     sisa.textContent = formatRupiah(summary.shortfall);
     change.textContent = formatRupiah(summary.change);
@@ -590,16 +539,16 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
           : [createBanner('info', label('disetujuiDariHp', { alasan: approved.note ?? '' }))]),
       );
     }
-    const needsQr = tab === 'nontunai' && state.method === 'qris';
-    const qrOk = !needsQr || qrPaidKey === rowKey({ method: state.method, channel: state.channel });
+    const qrRows =
+      tab === 'nontunai' || tab === 'split'
+        ? state.rows.filter((row) => row.method === 'qris')
+        : [];
+    const qrOk = qrRows.every((row) => qrPaid.get(rowKey(row)) === row.amount);
     const ready = summary.status === 'ready' && qrOk;
     finish.toggleAttribute('data-inactive', !ready);
     finish.setAttribute('aria-disabled', ready ? 'false' : 'true');
   };
 
-  amountInput.addEventListener('input', () => {
-    setPending(digitsOf(amountInput.value));
-  });
   dpInput.addEventListener('input', () => {
     session.setDownPayment(digitsOf(dpInput.value), dpVia);
     dpInput.value = plain(session.state().rows.find((row) => row.method === 'dp')?.amount ?? 0);
@@ -654,11 +603,19 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       el(
         'section',
         { className: 'pos-pay__panel' },
-        el('p', { className: 't-label', text: label('totalPembayaran') }),
-        grand,
+        el(
+          'div',
+          { className: 'pos-pay__headline' },
+          el(
+            'div',
+            { className: 'pos-pay__headline-total' },
+            el('p', { className: 't-label', text: label('totalPembayaran') }),
+            grand,
+          ),
+          result,
+        ),
         tablist,
         ...TABS.map((item) => panels[item.id]),
-        result,
         messageBox,
         el(
           'div',

@@ -898,3 +898,8 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-888: "Menunggu pembayaran". Kunci menungguPembayaran.
 - TB-889: "Memeriksa status pembayaran". Kunci memeriksaPembayaran.
 - TB-890: "Kode QR simulasi {kanal}". Kunci kodeQrSimulasi.
+- TB-891: "Pembayaran {n}". Kunci pembayaranKe.
+- TB-892: "Pilih pembayaran". Kunci pilihPembayaran.
+- TB-893: "Isi nominal pembayaran lebih dari nol.". Kunci isiNominalPembayaran.
+- TB-894: "Pilih kanal pembayaran terlebih dahulu.". Kunci pilihKanalDulu.
+- TB-895: "Cara bayar dan kanal ini sudah dipakai pada pembayaran lain.". Kunci pembayaranSudahAda.

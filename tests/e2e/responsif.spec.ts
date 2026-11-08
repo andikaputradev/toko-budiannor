@@ -464,3 +464,48 @@ test.describe('Non-Tunai pada ponsel 360 x 800', () => {
     }
   });
 });
+
+test.describe('Split pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: modal Pembayaran layar penuh dengan papan angka dan Simpan terjangkau', async ({
+    page,
+  }) => {
+    await openPayScreen(page);
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.getByRole('button', { name: /^Pembayaran 1/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Pembayaran 1' });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    expect(box?.x).toBeCloseTo(0, 0);
+    expect(box?.width).toBeCloseTo(360, 0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await expect(dialog.locator('.pos-amount__value')).toBeVisible();
+    for (const key of ['1', '5', '0', '000', 'C']) {
+      const keyBox = await dialog
+        .locator('.pos-amount')
+        .getByRole('button', { name: key, exact: true })
+        .boundingBox();
+      expect(keyBox?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+      expect(keyBox?.width ?? 0).toBeGreaterThanOrEqual(47.5);
+    }
+    const save = dialog.getByRole('button', { name: 'Simpan' });
+    await expect(save).toBeInViewport();
+    const saveBox = await save.boundingBox();
+    expect((saveBox?.y ?? 0) + (saveBox?.height ?? 0)).toBeGreaterThan(700);
+    expect(await controlsUnderLauncher(page, '.modal')).toEqual([]);
+  });
+
+  test('HP 360: tab Split dan baris Pembayaran tidak meluap', async ({ page }) => {
+    await openPayScreen(page);
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
+    await expect(page.getByRole('button', { name: /^Pembayaran \d/ })).toHaveCount(2);
+    for (const part of await page.getByRole('button', { name: /^Pembayaran \d/ }).all()) {
+      const partBox = await part.boundingBox();
+      expect(partBox?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+      expect((partBox?.x ?? 0) + (partBox?.width ?? 0)).toBeLessThanOrEqual(360);
+    }
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+  });
+});

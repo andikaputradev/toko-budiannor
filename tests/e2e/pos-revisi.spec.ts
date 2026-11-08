@@ -6,6 +6,7 @@ import {
   loginPos,
   loginPosRaw,
   openDrawerItem,
+  savePart,
   settle,
   startShift,
   typeAmount,
@@ -355,14 +356,24 @@ test.describe('pembayaran', () => {
   test('Split Payment: tunai 30.000 lalu QRIS dibatasi sisa 40.000', async ({ page }) => {
     await toPay(page);
     await page.getByRole('tab', { name: 'Split', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await savePart(page, 1, { digits: '30000' });
     await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 40.000');
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'true');
-    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('99999');
-    await expect(page.getByRole('textbox', { name: 'Jumlah diterima' })).toHaveValue('40.000');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await page.getByRole('button', { name: /^Pembayaran 2/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Pembayaran 2' });
+    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await dialog
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'QRIS', exact: true })
+      .click();
+    for (const digit of '99999') {
+      await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 40.000');
+    await dialog.getByRole('button', { name: 'Simpan' }).click();
+    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(qr).toBeHidden();
     await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 0');
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
     await finish(page).click();
@@ -572,11 +583,8 @@ test.describe('riwayat penjualan', () => {
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
     await page.getByRole('tab', { name: 'Split', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
-    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('40000');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await savePart(page, 1, { digits: '30000' });
+    await savePart(page, 2, { channel: 'QRIS', digits: '40000' });
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     await finishPaymentDialog(page);
   }
@@ -851,17 +859,15 @@ test.describe('perbaikan hasil review', () => {
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
     await page.getByRole('tab', { name: 'Split', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
-    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('10000');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
+    await savePart(page, 1, { digits: '30000' });
+    await savePart(page, 2, { channel: 'QRIS', digits: '10000' });
     await page.getByRole('button', { name: 'Kembali' }).click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
     await expect(page.getByRole('tab', { name: 'Split', exact: true })).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    await expect(page.locator('.pos-pay__rows li')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: /^Pembayaran 1/ })).toContainText('Tunai');
+    await expect(page.getByRole('button', { name: /^Pembayaran 2/ })).toContainText('QRIS');
   });
 });

@@ -49,6 +49,7 @@ import {
   type PaymentSummary,
 } from './domain/payment';
 import { isValidChannel } from './domain/channels';
+import { applyPart, checkPart, partLimit, type PaymentPart } from './domain/split';
 import {
   checkPin,
   INITIAL_GUARD,
@@ -185,6 +186,7 @@ export interface PosSession {
   deleteHeldBill(id: string): FlowResult;
   setMethod(method: PaymentMethod, channel?: string): void;
   setAmount(method: PaymentMethod, amount: number, channel?: string): void;
+  setPart(index: number, part: PaymentPart | undefined): void;
   setTerms(days: number): void;
   setDownPayment(amount: number, via: PaidMethod): void;
   chooseSingle(method: PaidMethod, channel?: string): void;
@@ -688,6 +690,20 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         rows: withMethodAmount(state.rows, method, amount, channel),
         ownerApproved: false,
       });
+    },
+    setPart: (index, part) => {
+      if (part === undefined) {
+        commit({ rows: applyPart(state.rows, index, undefined), ownerApproved: false });
+        return;
+      }
+      if (!checkPart(state.rows, index, part).ok) {
+        return;
+      }
+      const limit = partLimit(state.rows, index, part.method, total());
+      const amount = limit === undefined ? part.amount : Math.min(part.amount, limit);
+      if (amount > 0) {
+        commit({ rows: applyPart(state.rows, index, { ...part, amount }), ownerApproved: false });
+      }
     },
     setTerms: (days) => {
       if (!Number.isFinite(days)) {
