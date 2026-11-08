@@ -6,6 +6,7 @@ import { createButton } from '../../../shared/ui/button';
 import { createTextField } from '../../../shared/ui/field';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
+import { takeCustomerFormReturn } from '../customer-return';
 import { isValidPhone, MAX_NAME_LENGTH, parseDueDays, parseRupiahInput } from '../domain/forms';
 import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
@@ -25,6 +26,8 @@ function isPc(): boolean {
 }
 
 export function renderCustomerForm(session: PosSession, go: (path: string) => void): ScreenHandle {
+  // Tujuan setelah simpan atau batal: layar jual, atau daftar Pelanggan bila dibuka dari sana.
+  const back = takeCustomerFormReturn();
   const topbar = createTopbar(session, 'judulPelangganBaru');
   let tier: Tier = 'eceran';
   let limit = 0;
@@ -67,7 +70,7 @@ export function renderCustomerForm(session: PosSession, go: (path: string) => vo
 
   const cancel = (): void => {
     if (!dirty()) {
-      go('/pos/jual');
+      go(back);
       return;
     }
     openModal({
@@ -79,7 +82,7 @@ export function renderCustomerForm(session: PosSession, go: (path: string) => vo
           text: label('tutupTanpaSimpan'),
           variant: 'danger',
           onClick: () => {
-            go('/pos/jual');
+            go(back);
           },
         },
       ],
@@ -116,7 +119,7 @@ export function renderCustomerForm(session: PosSession, go: (path: string) => vo
     });
     if (result.ok) {
       showToast({ kind: 'success', text: message('MSG-010') });
-      go('/pos/jual');
+      go(back);
       return;
     }
     const target = result.field === 'limit' ? limitField : result.field === 'name' ? name : phone;

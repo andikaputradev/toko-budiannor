@@ -661,3 +661,28 @@ test.describe('Biaya pada ponsel 360 x 800', () => {
     await expect(page.locator('.pos-split__detail')).toBeHidden();
   });
 });
+
+test.describe('Pelanggan pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: daftar pelanggan lalu detail dengan tombol Kembali', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/pelanggan';
+    });
+    await expect(page.locator('.pos-cust-row').first()).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+    const add = page.getByRole('button', { name: 'Tambah Pelanggan' });
+    await expect(add).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+    await page.locator('.pos-cust-row', { hasText: 'Pak Wahyudi' }).first().click();
+    await expect(page.locator('.pos-split__detail')).toBeVisible();
+    await expect(page.locator('.pos-split__list')).toBeHidden();
+    await expect(page.locator('.pos-cust-invoice')).toHaveCount(4);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.getByRole('button', { name: 'Kembali', exact: true }).click();
+    await expect(page.locator('.pos-split__list')).toBeVisible();
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+  });
+});

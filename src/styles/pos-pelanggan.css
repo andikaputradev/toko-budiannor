@@ -1,0 +1,163 @@
+/* POS-08 Pelanggan: daftar per huruf awal dengan avatar inisial, informasi pelanggan, dan faktur belum lunas. */
+
+.pos-cust__main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-height: 0;
+}
+
+.pos-cust__main .pos-search {
+  flex: none;
+}
+
+.pos-cust-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 88px;
+  overflow: auto;
+}
+
+.pos-cust-group__letter {
+  margin: var(--primitive-space-2) 0 0;
+  padding: var(--primitive-space-1) var(--primitive-space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-page);
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-cust-group__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-cust-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--primitive-space-3);
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-cust-row[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 4px 0 0 var(--color-accent-default);
+}
+
+.pos-cust-row__avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-cust-row__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-cust-row__who strong {
+  overflow-wrap: anywhere;
+}
+
+.pos-cust-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-width: 0;
+  padding: var(--primitive-space-3);
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.pos-cust-detail h2,
+.pos-cust-detail h3 {
+  margin: 0;
+}
+
+.pos-cust-detail h3 {
+  margin-top: var(--primitive-space-3);
+}
+
+.pos-cust-detail > p {
+  margin: 0;
+}
+
+.pos-cust-detail__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-1) var(--primitive-space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--primitive-space-2) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-cust-detail__row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.pos-cust-invoices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-cust-invoice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--primitive-space-2) var(--primitive-space-3);
+  align-items: center;
+  min-height: 56px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+.pos-cust-invoice__who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+  min-width: 0;
+}
+
+.pos-cust-invoice__late {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0 var(--primitive-space-2);
+  border-radius: var(--radius-chip);
+  font-size: 12px;
+}
+
+.pos-cust-invoice__amount {
+  font-weight: var(--primitive-font-weight-semibold);
+  white-space: nowrap;
+}

@@ -1967,3 +1967,144 @@ test.describe('Biaya sesuai PDF', () => {
     }
   });
 });
+
+test.describe('Pelanggan', () => {
+  async function toCustomers(page: Page): Promise<void> {
+    await openDrawerItem(page, 'Pelanggan');
+    await expect(page).toHaveURL(/#\/pos\/pelanggan$/);
+    await expect(page.locator('.pos-cust-row').first()).toBeVisible();
+  }
+  const customerRow = (page: Page, name: string) =>
+    page.locator('.pos-cust-row', { hasText: name }).first();
+
+  test('daftar pelanggan dikelompokkan per huruf dengan avatar inisial', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toCustomers(page);
+    const letters = await page.locator('.pos-cust-group__letter').allTextContents();
+    expect(letters.length).toBeGreaterThan(3);
+    const alphabet = letters.filter((letter) => letter !== '#');
+    expect(alphabet).toEqual([...alphabet].sort());
+    if (letters.includes('#')) {
+      expect(letters.at(-1)).toBe('#');
+    }
+    const wahyudi = customerRow(page, 'Pak Wahyudi');
+    await expect(wahyudi.locator('.pos-cust-row__avatar')).toHaveText('PW');
+    await expect(
+      page.locator('.pos-cust-group', { has: wahyudi }).locator('.pos-cust-group__letter'),
+    ).toHaveText('P');
+    await expect(customerRow(page, 'CV Laut Mas').locator('.pos-cust-row__avatar')).toHaveText(
+      'CL',
+    );
+  });
+
+  test('pencarian menyaring daftar', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toCustomers(page);
+    const search = page.getByRole('searchbox', { name: 'Cari pelanggan' });
+    await search.fill('wahyudi');
+    await expect(customerRow(page, 'Kevin Wahyudi')).toBeVisible();
+    await expect(customerRow(page, 'Pak Wahyudi')).toBeVisible();
+    for (const text of await page.locator('.pos-cust-row').allTextContents()) {
+      expect(text.toLowerCase()).toContain('wahyudi');
+    }
+    await search.fill('PL387');
+    await expect(page.locator('.pos-cust-row')).toHaveCount(1);
+    await expect(page.locator('.pos-cust-row')).toContainText('Kevin Wahyudi');
+    await search.fill('zzzzzz');
+    await expect(page.locator('.pos-cust-row')).toHaveCount(0);
+    await expect(page.locator('.pos-cust-list').getByText('Tidak ada data').first()).toBeVisible();
+  });
+
+  test('detail menampilkan telepon, alamat, kategori harga, limit, sisa limit, total piutang, dan tempo', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    await toCustomers(page);
+    await customerRow(page, 'Bu Sherly Tjoandra').click();
+    const detail = page.locator('.pos-split__detail');
+    await expect(detail.getByRole('heading', { name: 'Informasi Pelanggan' })).toBeVisible();
+    await expect(detail.locator('[data-row="nama"]')).toContainText('Bu Sherly Tjoandra');
+    await expect(detail.locator('[data-row="telepon"]')).toContainText('0811230988');
+    await expect(detail.locator('[data-row="alamat"]')).toContainText('Jl. Rajawali No 17');
+    await expect(detail.locator('[data-row="kategori"]')).toContainText('Eceran');
+    await expect(detail.locator('[data-row="limit"]')).toContainText('Rp 50.000.000');
+    await expect(detail.locator('[data-row="sisa-limit"]')).toContainText('Rp 41.500.000');
+    await expect(detail.locator('[data-row="total-piutang"]')).toContainText('Rp 8.500.000');
+    await expect(detail.locator('[data-row="tempo"]')).toContainText('30 hari');
+  });
+
+  test('pelanggan proposal Pak Wahyudi menampilkan faktur belum lunas dari data', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    await toCustomers(page);
+    await customerRow(page, 'Pak Wahyudi').click();
+    const detail = page.locator('.pos-split__detail');
+    await expect(detail.locator('[data-row="total-piutang"]')).toContainText('Rp 10.000.000');
+    await expect(detail.locator('[data-row="sisa-limit"]')).toContainText('Rp 40.000.000');
+    await expect(detail.getByRole('heading', { name: 'Faktur belum lunas' })).toBeVisible();
+    const invoices = detail.locator('.pos-cust-invoice');
+    await expect(invoices).toHaveCount(4);
+    await expect(invoices.first()).toContainText('FJ26091234');
+    await expect(invoices.first()).toContainText('Rp 1.000.000');
+    await expect(invoices.first()).toContainText('Terlambat');
+    await expect(invoices.nth(1)).toContainText('FJ26108899');
+    await expect(invoices.nth(1)).toContainText('Rp 5.000.000');
+    await expect(invoices.nth(1)).not.toContainText('Terlambat');
+    await expect(invoices.last()).toContainText('FJ26105678');
+    await customerRow(page, 'Kevin Wahyudi').click();
+    await expect(detail.locator('.pos-cust-invoice')).toHaveCount(0);
+    await expect(detail.getByText('Tidak ada faktur belum lunas.')).toBeVisible();
+  });
+
+  test('tombol tambah membuka formulir pelanggan baru dan kembali ke daftar setelah simpan', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    await toCustomers(page);
+    await page.getByRole('button', { name: 'Tambah Pelanggan' }).click();
+    await expect(page).toHaveURL(/#\/pos\/pelanggan-baru$/);
+    await page.getByRole('button', { name: 'Batal' }).click();
+    await expect(page).toHaveURL(/#\/pos\/pelanggan$/);
+    await page.getByRole('button', { name: 'Tambah Pelanggan' }).click();
+    await page.getByLabel('Nama pelanggan').fill('Toko Baru Sentosa');
+    await page.getByLabel('Nomor telepon').fill('081234567890');
+    await page.getByRole('button', { name: 'Simpan Pelanggan' }).click();
+    await expect(page).toHaveURL(/#\/pos\/pelanggan$/);
+    const added = customerRow(page, 'Toko Baru Sentosa');
+    await expect(added).toBeVisible();
+    await expect(
+      page.locator('.pos-cust-group', { has: added }).locator('.pos-cust-group__letter'),
+    ).toHaveText('T');
+  });
+
+  test('menu Pelanggan menuju daftar', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    const link = page
+      .getByRole('dialog', { name: 'Toko Budiannor' })
+      .getByRole('link', { name: 'Pelanggan', exact: true });
+    await expect(link).toHaveAttribute('href', '#/pos/pelanggan');
+    await link.click();
+    await expect(page).toHaveURL(/#\/pos\/pelanggan$/);
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await expect(
+      page
+        .getByRole('dialog', { name: 'Toko Budiannor' })
+        .getByRole('link', { name: 'Pelanggan', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('Pelanggan lolos axe mode terang dan gelap', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toCustomers(page);
+    await customerRow(page, 'Pak Wahyudi').click();
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(result.violations, scheme).toEqual([]);
+    }
+  });
+});

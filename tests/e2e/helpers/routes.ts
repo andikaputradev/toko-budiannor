@@ -38,7 +38,11 @@ const CATALOG_ROUTES: readonly RouteCase[] = SCREENS.flatMap((entry) =>
     : [],
 );
 
-export const ROUTES: readonly RouteCase[] = [...PORTAL_ROUTES, ...CATALOG_ROUTES];
+// Katalog hanya memuat satu rute per layar, sedangkan POS-08 punya dua: formulir (di katalog) dan
+// daftar Pelanggan, yang ikut dipindai audit, jaringan, urutan Tab, dan target sentuh.
+const EXTRA_ROUTES: readonly RouteCase[] = [{ id: 'POS-08', app: 'pos', path: '/pos/pelanggan' }];
+
+export const ROUTES: readonly RouteCase[] = [...PORTAL_ROUTES, ...CATALOG_ROUTES, ...EXTRA_ROUTES];
 
 async function typePin(page: Page, pin: string): Promise<void> {
   for (const digit of pin) {

@@ -998,3 +998,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-988: "Belum ada biaya tercatat.". Kunci belumAdaBiaya.
 - TB-989: "Catatan maksimal 144 karakter.". Kunci catatanBiayaTerlaluPanjang.
 - TB-990: "Pilih Berkas". Kunci pilihBerkas.
+- TB-991: "Informasi Pelanggan". Kunci informasiPelanggan.
+- TB-992: "Limit piutang". Kunci limitPiutang.
+- TB-993: "Sisa limit". Kunci sisaLimit.
+- TB-994: "Total piutang". Kunci totalPiutang.
+- TB-995: "Faktur belum lunas". Kunci fakturBelumLunas.
+- TB-996: "Tidak ada faktur belum lunas.". Kunci tidakAdaFakturBelumLunas.
