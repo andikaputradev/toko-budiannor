@@ -2361,3 +2361,86 @@ test.describe('Pengaturan', () => {
     }
   });
 });
+
+test.describe('susunan kartu barang seperti referensi', () => {
+  const rgbOf = (hex: string): string => {
+    const value = hex.replace('#', '');
+    const parts = [0, 2, 4].map((start) => Number.parseInt(value.slice(start, start + 2), 16));
+    return `rgb(${parts.join(', ')})`;
+  };
+
+  test('tiga kolom: foto besar di atas, nama rata kiri, lalu harga beraksen', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await loginPos(page, 'Dewi');
+    const cards = page.locator('.pos-card');
+    await expect(cards.nth(3)).toBeVisible();
+    const boxes = await Promise.all([0, 1, 2, 3].map((index) => cards.nth(index).boundingBox()));
+    const [one, two, three, four] = boxes;
+    expect(Math.abs((one?.y ?? 0) - (two?.y ?? 99))).toBeLessThan(1);
+    expect(Math.abs((one?.y ?? 0) - (three?.y ?? 99))).toBeLessThan(1);
+    expect((four?.y ?? 0) - (one?.y ?? 0)).toBeGreaterThan(150);
+    expect(Math.abs((one?.height ?? 0) - (two?.height ?? 99))).toBeLessThan(1.5);
+    expect(Math.abs((one?.height ?? 0) - (three?.height ?? 99))).toBeLessThan(1.5);
+
+    const first = cards.first();
+    const card = await first.boundingBox();
+    const photo = await first.locator('.pos-photo').boundingBox();
+    const name = await first.locator('.pos-card__name').boundingBox();
+    const price = await first.locator('.pos-card__price').first().boundingBox();
+    const stock = await first.locator('.pos-card__stock').boundingBox();
+    expect((photo?.y ?? 0) + (photo?.height ?? 0)).toBeLessThanOrEqual((name?.y ?? 0) + 1);
+    expect((name?.y ?? 0) + (name?.height ?? 0)).toBeLessThanOrEqual((price?.y ?? 0) + 1);
+    expect(photo?.width ?? 0).toBeGreaterThan((card?.width ?? 0) * 0.75);
+    expect(photo?.height ?? 0).toBeGreaterThanOrEqual(120);
+    // Foto berada di dalam kartu dengan jarak, bukan menempel ke tepi.
+    expect((photo?.x ?? 0) - (card?.x ?? 0)).toBeGreaterThanOrEqual(8);
+    // Blok stok menempel di dasar kartu pada ketiga kartu satu baris.
+    for (const index of [0, 1, 2]) {
+      const item = cards.nth(index);
+      const itemBox = await item.boundingBox();
+      const itemStock = await item.locator('.pos-card__stock').boundingBox();
+      expect(
+        (itemBox?.y ?? 0) +
+          (itemBox?.height ?? 0) -
+          ((itemStock?.y ?? 0) + (itemStock?.height ?? 0)),
+        `kartu ${String(index)}`,
+      ).toBeLessThan(2);
+    }
+    expect((stock?.y ?? 0) + (stock?.height ?? 0)).toBeLessThanOrEqual(
+      (card?.y ?? 0) + (card?.height ?? 0) + 1,
+    );
+
+    const style = await first.locator('.pos-card__name').evaluate((node) => {
+      const computed = getComputedStyle(node);
+      return { align: computed.textAlign, transform: computed.textTransform };
+    });
+    expect(style).toEqual({ align: 'left', transform: 'none' });
+    const accent = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--color-accent-default').trim(),
+    );
+    const amountColor = await first
+      .locator('.pos-card__amount')
+      .first()
+      .evaluate((node) => getComputedStyle(node).color);
+    expect(amountColor).toBe(rgbOf(accent));
+  });
+
+  test('semua tombol pada kartu tetap berukuran sentuh dan harga satuan dapat diketuk', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    const heights = await page.locator('.pos-card button').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = node.getBoundingClientRect();
+        return { width: box.width, height: box.height };
+      }),
+    );
+    expect(heights.length).toBeGreaterThan(8);
+    for (const box of heights) {
+      expect(box.height).toBeGreaterThanOrEqual(47.5);
+      expect(box.width).toBeGreaterThanOrEqual(47.5);
+    }
+    await page.locator('.pos-card .pos-card__price').first().click();
+    await expect(page.locator('.pos-bill-panel')).toContainText('Pesanan (1)');
+  });
+});

@@ -712,3 +712,25 @@ test.describe('Pengaturan pada ponsel 360 x 800', () => {
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe('Kartu barang pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: kartu satu kolom dengan foto di atas tanpa meluap', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    const cards = page.locator('.pos-card');
+    await expect(cards.nth(1)).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const one = await cards.nth(0).boundingBox();
+    const two = await cards.nth(1).boundingBox();
+    expect(Math.abs((one?.x ?? 0) - (two?.x ?? 99))).toBeLessThan(1);
+    expect(two?.y ?? 0).toBeGreaterThan((one?.y ?? 0) + (one?.height ?? 0) - 1);
+    const photo = await cards.nth(0).locator('.pos-photo').boundingBox();
+    const name = await cards.nth(0).locator('.pos-card__name').boundingBox();
+    expect((photo?.y ?? 0) + (photo?.height ?? 0)).toBeLessThanOrEqual((name?.y ?? 0) + 1);
+    expect(photo?.width ?? 0).toBeGreaterThan((one?.width ?? 0) * 0.7);
+    expect(photo?.height ?? 0).toBeGreaterThanOrEqual(120);
+    expect(photo?.height ?? 0).toBeLessThanOrEqual(150);
+    expect(one?.height ?? 999).toBeLessThan(420);
+  });
+});
