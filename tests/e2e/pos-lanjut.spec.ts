@@ -203,22 +203,37 @@ test.describe('POS-05 sampai POS-10', () => {
   test('POS-07: biaya kasir dengan validasi persis dan saldo kas', async ({ page }) => {
     await login(page, 'Dewi');
     await openDrawerItem(page, 'Biaya');
-    const save = page.getByRole('button', { name: 'Simpan Biaya' });
+    await page.getByRole('button', { name: 'Catat Biaya' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Catat Biaya' });
+    const save = dialog.getByRole('button', { name: 'Simpan', exact: true });
+    const pad = async (digits: string): Promise<void> => {
+      for (const digit of digits) {
+        await dialog
+          .locator('.pos-amount')
+          .getByRole('button', { name: digit, exact: true })
+          .click();
+      }
+    };
     await save.click();
-    await expect(page.getByText('Jumlah harus lebih dari 0.')).toBeVisible();
-    await page.getByRole('button', { name: 'Lainnya' }).click();
-    await page.getByLabel('Jumlah', { exact: true }).fill('5000');
+    await expect(dialog.getByText('Jumlah harus lebih dari 0.')).toBeVisible();
+    await dialog.locator('.dropdown__button').click();
+    await dialog.getByRole('option', { name: 'Lainnya', exact: true }).click();
+    await pad('5000');
     await save.click();
-    await expect(page.getByText('Keterangan wajib diisi untuk jenis Lainnya.')).toBeVisible();
-    await page.getByRole('button', { name: 'Parkir' }).click();
-    await page.getByLabel('Jumlah', { exact: true }).fill('9999999');
+    await expect(dialog.getByText('Keterangan wajib diisi untuk jenis Lainnya.')).toBeVisible();
+    await dialog.locator('.dropdown__button').click();
+    await dialog.getByRole('option', { name: 'Parkir', exact: true }).click();
+    await dialog.locator('.pos-amount').getByRole('button', { name: 'C', exact: true }).click();
+    await pad('9999999');
     await save.click();
-    await expect(page.getByText('Jumlah melebihi saldo kas Rp 500.000.')).toBeVisible();
-    await page.getByLabel('Jumlah', { exact: true }).fill('5000');
-    await expect(page.locator('.pos-expense__balance')).toContainText('Rp 495.000');
+    await expect(dialog.getByText('Jumlah melebihi saldo kas Rp 500.000.')).toBeVisible();
+    await dialog.locator('.pos-amount').getByRole('button', { name: 'C', exact: true }).click();
+    await pad('5000');
     await save.click();
-    await expect(page.getByText('Biaya tersimpan.')).toBeVisible();
-    await expect(page.locator('.pos-expense__side tbody tr')).toHaveCount(1);
+    const done = page.getByRole('dialog', { name: 'Transaksi Berhasil' });
+    await expect(done).toBeVisible();
+    await done.getByRole('button', { name: 'Selesai' }).click();
+    await expect(page.locator('.pos-expense-row')).toHaveCount(1);
   });
 
   test('POS-08: pelanggan baru, validasi, dan limit hanya Supervisor atau Owner', async ({

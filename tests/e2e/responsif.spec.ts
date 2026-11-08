@@ -7,6 +7,7 @@ import {
   loginPosRaw,
   sellFirstProduct,
   settle,
+  typeAmount,
 } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -619,5 +620,44 @@ test.describe('Karyawan pada ponsel 360 x 800', () => {
     expect(box?.width).toBeCloseTo(360, 0);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     await expect(report.getByRole('button', { name: 'Tutup' })).toBeInViewport();
+  });
+});
+
+test.describe('Biaya pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: daftar biaya lalu detail dengan tombol Kembali dan formulir layar penuh', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/biaya';
+    });
+    await expect(page.getByRole('button', { name: 'Catat Biaya' })).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+    await page.getByRole('button', { name: 'Catat Biaya' }).click();
+    const form = page.getByRole('dialog', { name: 'Catat Biaya' });
+    await expect(form).toBeVisible();
+    const box = await form.boundingBox();
+    expect(box?.width).toBeCloseTo(360, 0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await form.locator('.dropdown__button').click();
+    await form.getByRole('option', { name: 'Parkir', exact: true }).click();
+    await typeAmount(page, '5000');
+    await expect(form.getByRole('button', { name: 'Simpan', exact: true })).toBeInViewport();
+    await form.getByRole('button', { name: 'Simpan', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Transaksi Berhasil' });
+    await expect(done).toBeVisible();
+    await expect(done.getByRole('button', { name: 'Selesai' })).toBeInViewport();
+    await done.getByRole('button', { name: 'Selesai' }).click();
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+    await page.locator('.pos-expense-row').first().click();
+    await expect(page.locator('.pos-split__detail')).toBeVisible();
+    await expect(page.locator('.pos-split__list')).toBeHidden();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.getByRole('button', { name: 'Kembali', exact: true }).click();
+    await expect(page.locator('.pos-split__list')).toBeVisible();
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
   });
 });

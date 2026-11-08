@@ -34,7 +34,13 @@ import {
   type AddResult,
   type SplitPick,
 } from './domain/bill';
-import { DEFAULT_DUE_DAYS, MAX_DUE_DAYS, normalizePhone, type ExpenseKind } from './domain/forms';
+import {
+  DEFAULT_DUE_DAYS,
+  EXPENSE_NOTE_MAX,
+  MAX_DUE_DAYS,
+  normalizePhone,
+  type ExpenseKind,
+} from './domain/forms';
 import { dueDateOf } from './domain/terms';
 import {
   itemsValue,
@@ -85,6 +91,8 @@ export interface Expense {
   readonly kind: ExpenseKind;
   readonly note: string;
   readonly amount: number;
+  // Lampiran Catat Biaya: hanya nama dan ukuran yang dicatat (mockup tanpa unggah sungguhan).
+  readonly attachment?: { readonly name: string; readonly size: number } | undefined;
 }
 
 export interface ReturnRecord {
@@ -224,7 +232,12 @@ export interface PosSession {
   mobileApproval(): ApprovalRequest | undefined;
   printReceipt(kind: ReceiptKind, reference: string): FlowResult;
   retryPrint(): FlowResult;
-  saveExpense(kind: ExpenseKind, note: string, amount: number): FlowResult;
+  saveExpense(
+    kind: ExpenseKind,
+    note: string,
+    amount: number,
+    attachment?: { readonly name: string; readonly size: number },
+  ): FlowResult;
   registerCustomer(input: RegisterInput): RegisterResult;
   returnSale(
     saleNumber: string,
@@ -1153,7 +1166,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       commit({ printPending: undefined });
       return { ok: true };
     },
-    saveExpense: (kind, note, amount) => {
+    saveExpense: (kind, note, amount, attachment) => {
       const summary = currentSummary();
       if (summary === undefined) {
         return failLabel('butuhShift');
@@ -1163,6 +1176,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       }
       if (kind === 'lainnya' && note.trim() === '') {
         return fail('MSG-042');
+      }
+      if (note.trim().length > EXPENSE_NOTE_MAX) {
+        return failLabel('catatanBiayaTerlaluPanjang');
       }
       const balance = summary.closingCash;
       if (amount > balance) {
@@ -1180,6 +1196,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
             kind,
             note: note.trim(),
             amount,
+            ...(attachment === undefined
+              ? {}
+              : { attachment: { name: attachment.name, size: attachment.size } }),
           },
         ],
         queue: queued('biaya', formatDocumentNumber('BY', index), amount, at),

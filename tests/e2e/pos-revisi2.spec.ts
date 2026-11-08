@@ -10,6 +10,7 @@ import {
   sellFirstProduct,
   sellSplitThree,
   settle,
+  typeAmount,
 } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -1743,6 +1744,226 @@ test.describe('Selesai Shift, Karyawan, dan laporan shift', () => {
       }
       await report.getByRole('button', { name: 'Tutup' }).click();
       await expect(report).toBeHidden();
+    }
+  });
+});
+
+test.describe('Biaya sesuai PDF', () => {
+  async function toExpenses(page: Page): Promise<void> {
+    await openDrawerItem(page, 'Biaya');
+    await expect(page).toHaveURL(/#\/pos\/biaya$/);
+  }
+  async function openForm(page: Page): Promise<Locator> {
+    await page.getByRole('button', { name: 'Catat Biaya' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Catat Biaya' });
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+  async function pickKind(dialog: Locator, name: string): Promise<void> {
+    await dialog.locator('.dropdown__button').click();
+    await dialog.getByRole('option', { name, exact: true }).click();
+  }
+  // Mencatat satu biaya lewat modal dan menutup dialog Transaksi Berhasil.
+  async function addExpense(
+    page: Page,
+    input: { kind: string; digits: string; note?: string },
+  ): Promise<void> {
+    const dialog = await openForm(page);
+    await pickKind(dialog, input.kind);
+    await typeAmount(page, input.digits);
+    if (input.note !== undefined) {
+      await dialog.getByLabel('Catatan (opsional)').fill(input.note);
+    }
+    await dialog.getByRole('button', { name: 'Simpan', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Transaksi Berhasil' });
+    await expect(done).toBeVisible();
+    await done.getByRole('button', { name: 'Selesai' }).click();
+    await expect(done).toBeHidden();
+  }
+
+  test('daftar biaya dan detail dua panel menampilkan Informasi Biaya', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toExpenses(page);
+    await expect(page.locator('.pos-expense-row')).toHaveCount(0);
+    await expect(page.getByText('Belum ada biaya tercatat.')).toBeVisible();
+    await addExpense(page, { kind: 'Parkir', digits: '5000', note: 'Parkir gudang' });
+    await addExpense(page, { kind: 'Bensin armada', digits: '120000' });
+    const rows = page.locator('.pos-expense-row');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.first()).toContainText('Bensin armada');
+    await expect(rows.first()).toContainText('Rp 120.000');
+    await rows.nth(1).click();
+    const detail = page.locator('.pos-split__detail');
+    await expect(detail.getByRole('heading', { name: 'Informasi Biaya' })).toBeVisible();
+    for (const text of [
+      'Nomor Pembayaran',
+      'Dibuat Oleh',
+      'Jenis biaya',
+      'Nominal Pembayaran',
+      'Tanggal Pembayaran',
+      'Catatan',
+    ]) {
+      await expect(detail.getByText(text, { exact: true })).toBeVisible();
+    }
+    await expect(detail.locator('[data-row="nomor"]')).toContainText('BY-');
+    await expect(detail.locator('[data-row="dibuat-oleh"]')).toContainText('Dewi');
+    await expect(detail.locator('[data-row="jenis"]')).toContainText('Parkir');
+    await expect(detail.locator('[data-row="nominal"]')).toContainText('Rp 5.000');
+    await expect(detail.locator('[data-row="catatan"]')).toContainText('Parkir gudang');
+    await expect(detail.getByRole('button', { name: 'Cetak Struk' })).toBeVisible();
+    const search = page.getByRole('searchbox', { name: 'Cari transaksi' });
+    await search.fill('zzz');
+    await expect(rows).toHaveCount(0);
+    await search.fill('bensin');
+    await expect(rows).toHaveCount(1);
+    await search.fill('gudang');
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText('Parkir');
+  });
+
+  test('Catat Biaya: dropdown jenis dari proposal, nominal lewat papan angka, penghitung 0/144', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    await toExpenses(page);
+    const dialog = await openForm(page);
+    await dialog.locator('.dropdown__button').click();
+    await expect(dialog.getByRole('option')).toHaveText([
+      'Bensin armada',
+      'Parkir',
+      'Bayar ekspedisi',
+      'Lainnya',
+    ]);
+    await dialog.getByRole('option', { name: 'Parkir', exact: true }).click();
+    await expect(dialog.locator('.dropdown__button')).toContainText('Parkir');
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('');
+    await typeAmount(page, '25000');
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 25.000');
+    // Pada layar lebar semua isian dan tombol Simpan terlihat tanpa menggulir modal.
+    await expect(dialog.getByRole('button', { name: 'Pilih Berkas' })).toBeInViewport({ ratio: 1 });
+    await expect(dialog.getByRole('button', { name: 'Simpan', exact: true })).toBeInViewport({
+      ratio: 1,
+    });
+    const note = dialog.getByLabel('Catatan (opsional)');
+    const counter = dialog.locator('.pos-expense-form__counter');
+    await expect(counter).toHaveText('0/144');
+    await note.fill('Parkir');
+    await expect(counter).toHaveText('6/144');
+    await note.fill('x'.repeat(200));
+    await expect(counter).toHaveText('144/144');
+    expect((await note.inputValue()).length).toBe(144);
+  });
+
+  test('lampiran PNG diterima dan PDF besar ditolak dengan galat', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toExpenses(page);
+    const dialog = await openForm(page);
+    await expect(
+      dialog.getByText('JPG, JPEG, PNG maksimal 3 MB. PDF maksimal 1 MB.'),
+    ).toBeVisible();
+    const file = dialog.getByLabel('Lampiran (opsional)');
+    await file.setInputFiles({
+      name: 'nota.png',
+      mimeType: 'image/png',
+      buffer: Buffer.alloc(2048),
+    });
+    await expect(dialog.locator('.pos-expense-form__file')).toContainText('nota.png');
+    await expect(dialog.locator('.pos-expense-form__file-error')).toHaveText('');
+    await file.setInputFiles({
+      name: 'besar.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.alloc(1024 * 1024 + 1),
+    });
+    await expect(dialog.locator('.pos-expense-form__file-error')).toHaveText(
+      'Lampiran terlalu besar. JPG, JPEG, PNG maksimal 3 MB dan PDF maksimal 1 MB.',
+    );
+    await expect(dialog.locator('.pos-expense-form__file')).not.toContainText('besar.pdf');
+    await file.setInputFiles({ name: 'nota.gif', mimeType: 'image/gif', buffer: Buffer.alloc(10) });
+    await expect(dialog.locator('.pos-expense-form__file-error')).toHaveText(
+      'Format lampiran harus JPG, JPEG, PNG, atau PDF.',
+    );
+    await file.setInputFiles({
+      name: 'faktur.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.alloc(900_000),
+    });
+    await expect(dialog.locator('.pos-expense-form__file-error')).toHaveText('');
+    await expect(dialog.locator('.pos-expense-form__file')).toContainText('faktur.pdf');
+    await pickKind(dialog, 'Parkir');
+    await typeAmount(page, '5000');
+    await dialog.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await page
+      .getByRole('dialog', { name: 'Transaksi Berhasil' })
+      .getByRole('button', { name: 'Selesai' })
+      .click();
+    await page.locator('.pos-expense-row').first().click();
+    await expect(page.locator('.pos-split__detail [data-row="lampiran"]')).toContainText(
+      'faktur.pdf',
+    );
+  });
+
+  test('Simpan menampilkan Transaksi Berhasil dengan Cetak Struk dan Selesai', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toExpenses(page);
+    const dialog = await openForm(page);
+    await pickKind(dialog, 'Parkir');
+    await typeAmount(page, '5000');
+    await dialog.getByRole('button', { name: 'Simpan', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Transaksi Berhasil' });
+    await expect(done).toBeVisible();
+    await expect(done).toContainText('Parkir');
+    await expect(done).toContainText('Rp 5.000');
+    await expect(dialog).toBeHidden();
+    await done.getByRole('button', { name: 'Cetak Struk' }).click();
+    await expect(page.getByText('Struk tercetak.')).toBeVisible();
+    await done.getByRole('button', { name: 'Selesai' }).click();
+    await expect(done).toBeHidden();
+    await expect(page.locator('.pos-expense-row')).toHaveCount(1);
+  });
+
+  test('biaya mengurangi saldo laci pada ringkasan shift', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toExpenses(page);
+    await addExpense(page, { kind: 'Parkir', digits: '5000' });
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page
+      .getByRole('dialog', { name: 'Toko Budiannor' })
+      .getByRole('button', { name: 'Selesai Shift' })
+      .click();
+    const summary = page.getByRole('dialog', { name: 'Selesai Shift' });
+    await expect(summary.locator('.pos-shiftsum__row--total output')).toHaveText('Rp 495.000');
+    await expect(summary.getByText('Biaya', { exact: true })).toBeVisible();
+    await expect(summary.locator('.pos-shiftsum__row', { hasText: 'Biaya' }).first()).toContainText(
+      'Rp 5.000',
+    );
+  });
+
+  test('Biaya lolos axe mode terang dan gelap', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toExpenses(page);
+    await addExpense(page, { kind: 'Parkir', digits: '5000', note: 'Parkir gudang' });
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const list = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(list.violations, `${scheme} daftar`).toEqual([]);
+      const dialog = await openForm(page);
+      await settle(page);
+      const form = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(form.violations, `${scheme} formulir`).toEqual([]);
+      const heights = await dialog
+        .locator('button')
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.getBoundingClientRect().height),
+        );
+      for (const height of heights) {
+        expect(height, scheme).toBeGreaterThanOrEqual(47.5);
+      }
+      await dialog.getByRole('button', { name: 'Batal' }).click();
+      await expect(dialog).toBeHidden();
     }
   });
 });

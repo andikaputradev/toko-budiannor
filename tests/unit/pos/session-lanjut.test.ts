@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
 import { totalStock } from '../../../src/shared/data/units';
 import { createStore } from '../../../src/shared/store/store';
+import { expenseNumber } from '../../../src/apps/pos/domain/forms';
 import { createPosSession } from '../../../src/apps/pos/pos-session';
+import { formatDocumentNumber } from '../../../src/shared/format';
 
 const dataset = generateDataset();
 
@@ -88,6 +90,38 @@ describe('biaya kasir', () => {
     expect(session.state().expenses).toHaveLength(1);
     expect(session.saveExpense('bensin', '', 1332000)).toEqual({ ok: true });
     expect(session.saveExpense('bensin', '', 1)).toMatchObject({ messageId: 'MSG-041' });
+  });
+
+  it('saveExpense menyimpan lampiran dan mengurangi saldo laci', () => {
+    const { session } = setup();
+    session.startShift(1337000);
+    const attachment = { name: 'nota.png', size: 2048 };
+    expect(session.saveExpense('parkir', 'Parkir gudang', 5000, attachment)).toEqual({ ok: true });
+    expect(session.state().expenses[0]).toMatchObject({
+      kind: 'parkir',
+      note: 'Parkir gudang',
+      amount: 5000,
+      attachment,
+    });
+    expect(session.cashBalance()).toBe(1332000);
+    expect(session.shiftSummary()).toMatchObject({ expenses: 5000, closingCash: 1332000 });
+    expect(session.saveExpense('bensin', '', 1000)).toEqual({ ok: true });
+    expect(session.state().expenses[1]?.attachment).toBeUndefined();
+  });
+
+  it('menolak catatan lebih dari 144 karakter dan menomori biaya berurutan', () => {
+    const { session } = setup();
+    session.startShift(1337000);
+    expect(session.saveExpense('parkir', 'x'.repeat(145), 5000)).toMatchObject({
+      ok: false,
+      labelKey: 'catatanBiayaTerlaluPanjang',
+    });
+    expect(session.state().expenses).toHaveLength(0);
+    expect(session.saveExpense('parkir', 'x'.repeat(144), 5000)).toEqual({ ok: true });
+    expect(session.saveExpense('bensin', '', 1000)).toEqual({ ok: true });
+    const [one, two] = session.state().expenses;
+    expect(expenseNumber(one?.id ?? '')).toBe(formatDocumentNumber('BY', 1));
+    expect(expenseNumber(two?.id ?? '')).toBe(formatDocumentNumber('BY', 2));
   });
 
   it('memasukkan biaya ke antrean hanya saat offline', () => {

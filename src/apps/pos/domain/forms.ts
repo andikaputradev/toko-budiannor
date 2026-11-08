@@ -1,5 +1,16 @@
+import { formatDocumentNumber } from '../../../shared/format';
+
 export const EXPENSE_KINDS = ['bensin', 'parkir', 'ekspedisi', 'lainnya'] as const;
 export type ExpenseKind = (typeof EXPENSE_KINDS)[number];
+
+// Catatan biaya opsional dibatasi 144 karakter (penghitung 0/144 pada Catat Biaya).
+export const EXPENSE_NOTE_MAX = 144;
+
+// Nomor pembayaran biaya, mis. BY-000003, diturunkan dari id biaya "E-3".
+export function expenseNumber(id: string): string {
+  const sequence = Number(id.replace(/^E-/, ''));
+  return formatDocumentNumber('BY', Number.isInteger(sequence) && sequence >= 0 ? sequence : 0);
+}
 
 export const MAX_DUE_DAYS = 365;
 export const DEFAULT_DUE_DAYS = 30;

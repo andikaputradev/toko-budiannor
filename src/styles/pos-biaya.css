@@ -1,0 +1,216 @@
+/* POS-07 Biaya: daftar dengan kolom cari, tombol bulat tambah, Informasi Biaya, dan modal Catat Biaya. */
+
+.pos-expense__main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-height: 0;
+}
+
+.pos-expense__main .pos-search {
+  flex: none;
+}
+
+.pos-expense__rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 88px;
+  overflow: auto;
+}
+
+.pos-expense-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-expense-row[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 4px 0 0 var(--color-accent-default);
+}
+
+.pos-expense-row__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-expense-row__amount {
+  font-weight: var(--primitive-font-weight-semibold);
+  white-space: nowrap;
+}
+
+/* Tombol bulat tambah, dipakai bersama daftar lain (Pelanggan). */
+.pos-fab {
+  position: absolute;
+  right: var(--primitive-space-4);
+  bottom: var(--primitive-space-4);
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-accent-default);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+  color: var(--color-text-on-accent);
+  cursor: pointer;
+}
+
+.pos-fab .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.pos-expense-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-width: 0;
+  padding: var(--primitive-space-3);
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.pos-expense-detail h2 {
+  margin: 0;
+}
+
+.pos-expense-detail__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-1) var(--primitive-space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--primitive-space-2) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-expense-detail__row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.pos-expense-detail .btn {
+  align-self: flex-start;
+  margin-top: var(--primitive-space-2);
+}
+
+/* Modal Catat Biaya: judul tetap, isi bergulir, galat dan tombol menempel di bawah. */
+.modal:has(.pos-expense-form) {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 94vw);
+  overflow: hidden;
+}
+
+.modal:has(.pos-expense-form) .modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.pos-expense-form {
+  display: grid;
+  gap: var(--primitive-space-4);
+}
+
+.pos-expense-form__col {
+  display: grid;
+  align-content: start;
+  gap: var(--primitive-space-4);
+  min-width: 0;
+}
+
+.pos-expense-form__field {
+  display: grid;
+  gap: var(--primitive-space-2);
+}
+
+.pos-expense-form__field .field__label,
+.pos-expense-form__field p {
+  margin: 0;
+}
+
+.pos-expense-form__note {
+  height: 96px;
+  resize: none;
+}
+
+.pos-expense-form__counter {
+  justify-self: end;
+}
+
+.pos-expense-form__pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: center;
+}
+
+.pos-expense-form__file {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pos-expense-form__error,
+.pos-expense-form__file-error {
+  min-height: 0;
+  margin: 0;
+  color: var(--color-status-danger-fg);
+}
+
+.pos-expense-form__error:empty,
+.pos-expense-form__file-error:empty {
+  display: none;
+}
+
+.pos-expense-form__error {
+  flex: none;
+  margin-top: var(--primitive-space-2);
+}
+
+.pos-expense-form__actions {
+  display: flex;
+  flex: none;
+  gap: var(--primitive-space-2);
+  justify-content: flex-end;
+  margin-top: var(--primitive-space-4);
+}
+
+.pos-expense-form__actions .btn {
+  min-width: 140px;
+  height: 56px;
+}
+
+/* Layar lebar: jenis dan nominal di kiri, catatan dan lampiran di kanan, tanpa menggulir. */
+@media (min-width: 900px) {
+  .modal:has(.pos-expense-form) {
+    width: min(860px, 94vw);
+  }
+
+  .pos-expense-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--primitive-space-6);
+    align-items: start;
+  }
+}

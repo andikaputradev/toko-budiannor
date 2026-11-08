@@ -983,3 +983,18 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-973: "Penerimaan". Kunci penerimaanRetur.
 - TB-974: "Retur". Kunci returRiwayat.
 - TB-975: "shift belum diperiksa". Kunci shiftBelumDiperiksa.
+- TB-976: "Catat Biaya". Kunci catatBiaya.
+- TB-977: "Nominal Pembayaran". Kunci nominalPembayaran.
+- TB-978: "Catatan (opsional)". Kunci catatanOpsional.
+- TB-979: "Lampiran (opsional)". Kunci lampiranOpsional.
+- TB-980: "JPG, JPEG, PNG maksimal 3 MB. PDF maksimal 1 MB.". Kunci petunjukLampiran.
+- TB-981: "Transaksi Berhasil". Kunci transaksiBerhasil.
+- TB-982: "Informasi Biaya". Kunci informasiBiaya.
+- TB-983: "Nomor Pembayaran". Kunci nomorPembayaran.
+- TB-984: "Tanggal Pembayaran". Kunci tanggalPembayaran.
+- TB-985: "Format lampiran harus JPG, JPEG, PNG, atau PDF.". Kunci lampiranFormatSalah.
+- TB-986: "Lampiran terlalu besar. JPG, JPEG, PNG maksimal 3 MB dan PDF maksimal 1 MB.". Kunci lampiranTerlaluBesar.
+- TB-987: "Lampiran". Kunci lampiran.
+- TB-988: "Belum ada biaya tercatat.". Kunci belumAdaBiaya.
+- TB-989: "Catatan maksimal 144 karakter.". Kunci catatanBiayaTerlaluPanjang.
+- TB-990: "Pilih Berkas". Kunci pilihBerkas.
