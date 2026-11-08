@@ -12,8 +12,8 @@ import {
 import { ROLES } from '../../src/shared/data/types';
 
 describe('matriks hak akses Lampiran B', () => {
-  it('memuat 148 aturan untuk 43 layar', () => {
-    expect(PERMISSION_RULES).toHaveLength(148);
+  it('memuat 153 aturan untuk 43 layar', () => {
+    expect(PERMISSION_RULES).toHaveLength(153);
     expect(SCREEN_IDS).toHaveLength(43);
     const screens = new Set(PERMISSION_RULES.map((rule) => rule.screen));
     expect(screens.size).toBe(43);
@@ -98,8 +98,8 @@ describe('hak Retur (perubahan atas proposal, keputusan pemilik proyek 7 Novembe
     expect(accessFor('sales', 'BO-10', 'Simpan Retur')).toBe('tidak');
   });
 
-  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur', () => {
-    expect(PERMISSION_RULES).toHaveLength(148);
+  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur (153 setelah baris Detail Barang)', () => {
+    expect(PERMISSION_RULES).toHaveLength(153);
   });
 });
 
@@ -128,5 +128,27 @@ describe('peran Frontliner', () => {
       expect(canOpenScreen('frontliner', screen)).toBe(false);
     }
     expect(screensFor('frontliner')).toEqual(['POS-01', 'POS-02', 'POS-03', 'POS-05']);
+  });
+});
+
+describe('hak Detail Barang POS-03 (revisi POS putaran kedua)', () => {
+  it('Diskon dan Ubah Harga: Owner dan Supervisor ya, Kasir otorisasi, Frontliner dan Sales tidak', () => {
+    for (const action of ['Diskon', 'Ubah Harga']) {
+      expect(accessFor('owner', 'POS-03', action)).toBe('ya');
+      expect(accessFor('supervisor', 'POS-03', action)).toBe('ya');
+      expect(accessFor('kasir', 'POS-03', action)).toBe('otorisasi');
+      expect(needsOwnerAuthorization('kasir', 'POS-03', action)).toBe(true);
+      expect(accessFor('frontliner', 'POS-03', action)).toBe('tidak');
+      expect(accessFor('sales', 'POS-03', action)).toBe('tidak');
+    }
+  });
+
+  it('Catatan, Tenaga Penjual, dan Cek Stok terbuka bagi semua peran POS termasuk Frontliner', () => {
+    for (const action of ['Catatan', 'Tenaga Penjual', 'Cek Stok']) {
+      for (const role of ['owner', 'supervisor', 'kasir', 'frontliner'] as const) {
+        expect(accessFor(role, 'POS-03', action)).toBe('ya');
+      }
+      expect(accessFor('sales', 'POS-03', action)).toBe('tidak');
+    }
   });
 });

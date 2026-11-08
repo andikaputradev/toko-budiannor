@@ -70,11 +70,21 @@ export interface AppUser {
   readonly active: boolean;
 }
 
+export interface LineDiscount {
+  readonly kind: 'persen' | 'nominal';
+  readonly value: number;
+}
+
+// unitPrice adalah harga efektif; listPrice menyimpan harga asli saat kasir mengubah harga.
 export interface BillLine {
   readonly productId: string;
   readonly unit: string;
   readonly quantity: number;
   readonly unitPrice: number;
+  readonly discount?: LineDiscount | undefined;
+  readonly listPrice?: number | undefined;
+  readonly note?: string | undefined;
+  readonly sellerId?: string | undefined;
 }
 
 export interface HeldBill {

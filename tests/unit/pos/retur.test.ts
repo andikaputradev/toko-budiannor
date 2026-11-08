@@ -363,3 +363,73 @@ describe('sesi: returnItems', () => {
     expect(session.state().returns.at(-1)?.refund).toBeUndefined();
   });
 });
+
+describe('nilai retur atas baris berdiskon', () => {
+  const discounted: Sale = {
+    ...baseSale,
+    lines: [{ ...lineOf(3), discount: { kind: 'persen', value: 10 } }],
+    total: 189000,
+    paid: 189000,
+  };
+
+  it('proporsional dengan jumlah yang diretur dan tidak melebihi yang dibayar', () => {
+    expect(itemsValue(discounted, [{ index: 0, quantity: 1 }])).toBe(63000);
+    expect(itemsValue(discounted, [{ index: 0, quantity: 2 }])).toBe(126000);
+    expect(itemsValue(discounted, [{ index: 0, quantity: 3 }])).toBe(189000);
+    expect(itemsValue(discounted, [{ index: 0, quantity: 3 }])).toBeLessThanOrEqual(
+      discounted.paid,
+    );
+  });
+
+  it('nilai gabungan seluruh jumlah sama dengan subtotal baris walau pembagiannya tidak bulat', () => {
+    const oddLine = { productId: 'P-01', unit: 'SAK', quantity: 3, unitPrice: 33334 };
+    const odd: Sale = {
+      ...baseSale,
+      lines: [oddLine],
+      total: 100002,
+      paid: 100002,
+    };
+    const value = itemsValue(odd, [{ index: 0, quantity: 3 }]);
+    expect(value).toBe(100002);
+    expect(itemsValue(odd, [{ index: 0, quantity: 1 }])).toBe(33334);
+    const withNominal: Sale = {
+      ...odd,
+      lines: [{ ...oddLine, discount: { kind: 'nominal', value: 1 } }],
+      total: 100001,
+      paid: 100001,
+    };
+    expect(itemsValue(withNominal, [{ index: 0, quantity: 3 }])).toBe(100001);
+    expect(itemsValue(withNominal, [{ index: 0, quantity: 1 }])).toBe(33334);
+  });
+
+  it('baris tanpa diskon tetap jumlah kali harga dan baris yang tidak ada dilewati', () => {
+    expect(itemsValue(baseSale, [{ index: 0, quantity: 2 }])).toBe(140000);
+    expect(itemsValue(baseSale, [{ index: 9, quantity: 2 }])).toBe(0);
+  });
+
+  it('sesi: retur sebagian atas baris berdiskon bernilai proporsional dan dapat disimpan', () => {
+    const { session } = setup('U-2');
+    session.addProduct(semen(), 'SAK', 3);
+    session.setLineDetail(0, { discount: { kind: 'persen', value: 10 } });
+    session.exactAmount();
+    const sale = session.finish();
+    if (sale === undefined) {
+      throw new Error('penjualan gagal');
+    }
+    expect(sale.total).toBe(189000);
+    const result = session.returnItems(sale.number, {
+      items: [{ index: 0, quantity: 1 }],
+      reason: 'barang',
+      note: '',
+      refund: { method: 'tunai', amount: 63000 },
+    });
+    expect(result).toMatchObject({ ok: true, value: 63000 });
+    const tooHigh = session.returnItems(sale.number, {
+      items: [{ index: 0, quantity: 1 }],
+      reason: 'barang',
+      note: '',
+      refund: { method: 'tunai', amount: 70000 },
+    });
+    expect(tooHigh).toMatchObject({ ok: false, labelKey: 'nominalMelebihi' });
+  });
+});

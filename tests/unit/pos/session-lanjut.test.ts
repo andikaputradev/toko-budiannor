@@ -289,3 +289,183 @@ describe('retur penjualan', () => {
     });
   });
 });
+
+describe('detail baris pesanan', () => {
+  function withLine(userId: string) {
+    const harness = setup(userId);
+    harness.session.addProduct(first(), undefined, 2);
+    const line = harness.session.state().lines[0];
+    if (line === undefined) {
+      throw new Error('baris tidak ada');
+    }
+    return { ...harness, original: line.unitPrice };
+  }
+
+  it('Supervisor mengubah harga dan listPrice asli tersimpan, price null memulihkannya', () => {
+    const { session, original } = withLine('U-2');
+    expect(session.setLineDetail(0, { price: original - 5000 })).toEqual({ ok: true });
+    expect(session.state().lines[0]).toMatchObject({
+      unitPrice: original - 5000,
+      listPrice: original,
+    });
+    expect(session.setLineDetail(0, { price: original - 7000 })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.listPrice).toBe(original);
+    expect(session.setLineDetail(0, { price: null })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.unitPrice).toBe(original);
+    expect(session.state().lines[0]?.listPrice).toBeUndefined();
+    expect(session.setLineDetail(0, { price: original })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.listPrice).toBeUndefined();
+  });
+
+  it('harga nol, negatif, atau pecahan ditolak dan baris tidak berubah', () => {
+    const { session, original } = withLine('U-2');
+    for (const price of [0, -1, 100.5, Number.NaN]) {
+      expect(session.setLineDetail(0, { price })).toEqual({ ok: false, labelKey: 'hargaTidakSah' });
+    }
+    expect(session.state().lines[0]?.unitPrice).toBe(original);
+  });
+
+  it('diskon disimpan, dihapus lewat null, dan nilai yang tidak sah ditolak', () => {
+    const { session } = withLine('U-2');
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 10 } })).toEqual({
+      ok: true,
+    });
+    expect(session.state().lines[0]?.discount).toEqual({ kind: 'persen', value: 10 });
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 101 } })).toEqual({
+      ok: false,
+      labelKey: 'diskonMelebihi',
+    });
+    expect(session.setLineDetail(0, { discount: { kind: 'nominal', value: -1 } })).toEqual({
+      ok: false,
+      labelKey: 'diskonNegatif',
+    });
+    expect(session.state().lines[0]?.discount).toEqual({ kind: 'persen', value: 10 });
+    expect(session.setLineDetail(0, { discount: null })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.discount).toBeUndefined();
+    expect(session.setLineDetail(0, { discount: { kind: 'nominal', value: 0 } })).toEqual({
+      ok: true,
+    });
+    expect(session.state().lines[0]?.discount).toBeUndefined();
+  });
+
+  it('Kasir tanpa otorisasi ditolak mengubah harga atau diskon, Supervisor dan Owner langsung boleh', () => {
+    const { session, original } = withLine('U-3');
+    expect(session.setLineDetail(0, { price: original - 1000 })).toEqual({
+      ok: false,
+      labelKey: 'butuhOtorisasiHarga',
+    });
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 5 } })).toEqual({
+      ok: false,
+      labelKey: 'butuhOtorisasiHarga',
+    });
+    expect(session.state().lines[0]).toMatchObject({ unitPrice: original });
+    expect(session.setLineDetail(0, { price: original - 1000 }, true)).toEqual({ ok: true });
+    expect(session.setLineDetail(0, { discount: { kind: 'persen', value: 5 } }, true)).toEqual({
+      ok: true,
+    });
+    for (const user of ['U-2', 'U-1']) {
+      const supervisor = withLine(user);
+      expect(supervisor.session.setLineDetail(0, { price: supervisor.original - 1000 })).toEqual({
+        ok: true,
+      });
+    }
+  });
+
+  it('Frontliner tidak boleh mengubah harga atau diskon walau diberi otorisasi', () => {
+    const { session, original } = withLine('U-5');
+    expect(session.setLineDetail(0, { price: original - 1000 }, true)).toMatchObject({
+      ok: false,
+      messageId: 'MSG-003',
+    });
+    expect(
+      session.setLineDetail(0, { discount: { kind: 'persen', value: 5 } }, true),
+    ).toMatchObject({ ok: false, messageId: 'MSG-003' });
+    expect(session.setLineDetail(0, { note: 'Antar sore' })).toEqual({ ok: true });
+  });
+
+  it('otorisasi dengan tujuan harga menyimpan entri audit dan menerima PIN Supervisor atau Owner', () => {
+    const owner = withLine('U-3');
+    expect(owner.session.authorizeOwner('Pelanggan langganan', '482916', 'harga', 'B-1')).toEqual({
+      ok: true,
+    });
+    expect(owner.session.state().audit.at(-1)).toMatchObject({
+      ownerName: 'Bapak Haris',
+      reason: 'Pelanggan langganan',
+    });
+    expect(owner.session.state().activity.at(-1)).toMatchObject({ action: 'Otorisasi harga' });
+    expect(owner.session.state().ownerApproved).toBe(false);
+    const supervisor = withLine('U-3');
+    expect(supervisor.session.authorizeOwner('Diskon proyek', '3571', 'harga', 'B-1')).toEqual({
+      ok: true,
+    });
+    expect(supervisor.session.state().audit.at(-1)).toMatchObject({ ownerName: 'Ibu Sinta' });
+    const other = withLine('U-3');
+    expect(other.session.authorizeOwner('Diskon proyek', '3571', 'koreksi', 'B-1')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-050',
+    });
+    expect(other.session.authorizeOwner('Diskon proyek', '1357', 'harga', 'B-1')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-050',
+    });
+  });
+
+  it('catatan dan tenaga penjual tersimpan, divalidasi, dan ikut ke Sale', () => {
+    const { session } = withLine('U-3');
+    expect(session.setLineDetail(0, { note: '  Antar sore  ', sellerId: 'U-5' })).toEqual({
+      ok: true,
+    });
+    expect(session.state().lines[0]).toMatchObject({ note: 'Antar sore', sellerId: 'U-5' });
+    expect(session.setLineDetail(0, { sellerId: 'U-3' })).toEqual({
+      ok: false,
+      labelKey: 'tenagaPenjualTidakSah',
+    });
+    expect(session.setLineDetail(0, { sellerId: 'U-404' })).toEqual({
+      ok: false,
+      labelKey: 'tenagaPenjualTidakSah',
+    });
+    expect(session.setLineDetail(0, { note: 'x'.repeat(201) })).toEqual({
+      ok: false,
+      labelKey: 'catatanTerlaluPanjang',
+    });
+    expect(session.setLineDetail(0, { note: '', sellerId: null })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.note).toBeUndefined();
+    expect(session.state().lines[0]?.sellerId).toBeUndefined();
+    expect(session.setLineDetail(0, { note: 'Antar sore', sellerId: 'U-5' })).toEqual({ ok: true });
+    session.startShift(100000);
+    session.exactAmount();
+    const sale = session.finish();
+    expect(sale?.lines[0]).toMatchObject({ note: 'Antar sore', sellerId: 'U-5' });
+  });
+
+  it('mengganti satuan atau jumlah menghitung ulang harga dan membuang harga yang diubah', () => {
+    const { session, original } = withLine('U-2');
+    expect(session.setLineDetail(0, { price: original - 5000, quantity: 3 })).toEqual({ ok: true });
+    expect(session.state().lines[0]).toMatchObject({ quantity: 3, listPrice: original });
+    const product = first();
+    const other = product.units.find((unit) => unit.code !== session.state().lines[0]?.unit);
+    if (other === undefined) {
+      throw new Error('barang tanpa satuan kedua');
+    }
+    expect(session.setLineDetail(0, { unit: other.code })).toEqual({ ok: true });
+    expect(session.state().lines[0]?.unit).toBe(other.code);
+    expect(session.state().lines[0]?.listPrice).toBeUndefined();
+    expect(session.setLineDetail(0, { quantity: 0 })).toMatchObject({ ok: false });
+    expect(session.setLineDetail(7, { quantity: 1 })).toEqual({
+      ok: false,
+      labelKey: 'barisTidakAda',
+    });
+  });
+
+  it('finish menghitung total dari subtotal setelah diskon', () => {
+    const { session, original } = withLine('U-2');
+    session.startShift(100000);
+    session.setLineDetail(0, { discount: { kind: 'persen', value: 10 } });
+    const expected = Math.round(2 * original) - Math.round(2 * original * 0.1);
+    expect(session.total()).toBe(expected);
+    session.exactAmount();
+    const sale = session.finish();
+    expect(sale?.total).toBe(expected);
+    expect(sale?.paid).toBe(expected);
+  });
+});

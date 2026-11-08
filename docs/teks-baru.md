@@ -903,3 +903,10 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-893: "Isi nominal pembayaran lebih dari nol.". Kunci isiNominalPembayaran.
 - TB-894: "Pilih kanal pembayaran terlebih dahulu.". Kunci pilihKanalDulu.
 - TB-895: "Cara bayar dan kanal ini sudah dipakai pada pembayaran lain.". Kunci pembayaranSudahAda.
+- TB-896: "Harga harus bilangan bulat lebih dari nol.". Kunci hargaTidakSah.
+- TB-897: "Diskon tidak boleh negatif.". Kunci diskonNegatif.
+- TB-898: "Diskon tidak boleh melebihi jumlah barang.". Kunci diskonMelebihi.
+- TB-899: "Ubah harga atau diskon memerlukan otorisasi Supervisor atau Owner.". Kunci butuhOtorisasiHarga.
+- TB-900: "Tenaga penjual harus Frontliner atau Sales yang aktif.". Kunci tenagaPenjualTidakSah.
+- TB-901: "Catatan paling banyak 200 karakter.". Kunci catatanTerlaluPanjang.
+- TB-902: "Barang pada pesanan tidak ditemukan.". Kunci barisTidakAda.

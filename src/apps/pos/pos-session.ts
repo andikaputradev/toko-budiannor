@@ -1,12 +1,13 @@
 import { createEventBus } from '../../shared/store/event-bus';
 import { formatDecimal, formatDocumentNumber, formatRupiah } from '../../shared/format';
-import { isAllowed } from '../../shared/permissions';
+import { accessFor, isAllowed } from '../../shared/permissions';
 import type {
   AppUser,
   ApprovalRequest,
   BillLine,
   Customer,
   HeldBill,
+  LineDiscount,
   PaidMethod,
   PaymentMethod,
   Product,
@@ -26,6 +27,7 @@ import {
   removeLine,
   repriceLines,
   replaceLine,
+  validateDiscount,
   type AddResult,
 } from './domain/bill';
 import { DEFAULT_DUE_DAYS, MAX_DUE_DAYS, normalizePhone, type ExpenseKind } from './domain/forms';
@@ -50,13 +52,7 @@ import {
 } from './domain/payment';
 import { isValidChannel } from './domain/channels';
 import { applyPart, checkPart, partLimit, type PaymentPart } from './domain/split';
-import {
-  checkPin,
-  INITIAL_GUARD,
-  ownerPinOwner,
-  pinBelongsToNonOwner,
-  type PinGuard,
-} from './domain/pin';
+import { checkPin, INITIAL_GUARD, type PinGuard } from './domain/pin';
 import type { ReceiptKind } from './domain/receipt';
 
 export const SYNC_STEP_MS = 400;
@@ -157,7 +153,18 @@ export interface RegisterInput {
   readonly dueDays: number;
 }
 
-export type AuthorizePurpose = 'limit' | 'koreksi';
+export type AuthorizePurpose = 'limit' | 'koreksi' | 'harga';
+
+// Perubahan pada satu baris pesanan dari Detail Barang. null menghapus diskon atau memulihkan
+// harga asli; kunci yang tidak ada dibiarkan seperti semula.
+export interface LineDetailPatch {
+  unit?: string;
+  quantity?: number;
+  discount?: LineDiscount | null;
+  price?: number | null;
+  note?: string;
+  sellerId?: string | null;
+}
 
 export interface PosSession {
   readonly store: Store;
@@ -179,6 +186,7 @@ export interface PosSession {
   logout(): void;
   addProduct(product: Product, unit?: string, quantity?: number): AddResult;
   setLine(index: number, unit: string, quantity: number): void;
+  setLineDetail(index: number, patch: LineDetailPatch, authorized?: boolean): FlowResult;
   deleteLine(index: number): void;
   setCustomer(customerId: string | undefined): void;
   holdBill(): HeldBill | undefined;
@@ -300,6 +308,111 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       state.queue.filter((item) => item.status === 'menunggu' || item.status === 'mengirim').length,
     );
     bus.emit('change', state);
+  };
+
+  const MAX_NOTE = 200;
+
+  const applyLineDetail = (
+    index: number,
+    patch: LineDetailPatch,
+    authorized: boolean,
+  ): FlowResult => {
+    const line = state.lines[index];
+    const product = line === undefined ? undefined : products().get(line.productId);
+    if (line === undefined || product === undefined) {
+      return failLabel('barisTidakAda');
+    }
+    const role = store.getState().role;
+    const touched: readonly (readonly [string, boolean])[] = [
+      ['Ubah Harga', patch.price !== undefined && patch.price !== null],
+      ['Diskon', patch.discount !== undefined && patch.discount !== null],
+    ];
+    for (const [action, setting] of touched) {
+      const removing = action === 'Ubah Harga' ? patch.price === null : patch.discount === null;
+      if (!setting && !removing) {
+        continue;
+      }
+      const access = accessFor(role, 'POS-03', action);
+      if (access === 'tidak') {
+        return fail('MSG-003');
+      }
+      if (access === 'otorisasi' && setting && !authorized) {
+        return failLabel('butuhOtorisasiHarga');
+      }
+    }
+    const unit = patch.unit ?? line.unit;
+    const quantity = patch.quantity ?? line.quantity;
+    if (product.prices[unit] === undefined) {
+      return failLabel('barisTidakAda');
+    }
+    if (!Number.isFinite(quantity) || !(quantity > 0)) {
+      return fail('MSG-029');
+    }
+    const unitChanged = unit !== line.unit;
+    const tierPrice = unitPrice(product, unit, tier());
+    let price = unitChanged ? tierPrice : line.unitPrice;
+    let listPrice = unitChanged ? undefined : line.listPrice;
+    if (patch.price === null) {
+      price = tierPrice;
+      listPrice = undefined;
+    } else if (patch.price !== undefined) {
+      if (!Number.isInteger(patch.price) || patch.price <= 0) {
+        return failLabel('hargaTidakSah');
+      }
+      listPrice = patch.price === tierPrice ? undefined : (listPrice ?? tierPrice);
+      price = patch.price;
+    }
+    let discount = line.discount;
+    if (patch.discount === null) {
+      discount = undefined;
+    } else if (patch.discount !== undefined) {
+      const check = validateDiscount(
+        patch.discount.kind,
+        patch.discount.value,
+        Math.round(quantity * price),
+      );
+      if (check === 'negatif') {
+        return failLabel('diskonNegatif');
+      }
+      if (check === 'melebihi') {
+        return failLabel('diskonMelebihi');
+      }
+      discount = patch.discount.value > 0 ? patch.discount : undefined;
+    }
+    let note = line.note;
+    if (patch.note !== undefined) {
+      const trimmed = patch.note.trim();
+      if (trimmed.length > MAX_NOTE) {
+        return failLabel('catatanTerlaluPanjang');
+      }
+      note = trimmed === '' ? undefined : trimmed;
+    }
+    let sellerId = line.sellerId;
+    if (patch.sellerId === null) {
+      sellerId = undefined;
+    } else if (patch.sellerId !== undefined) {
+      const seller = store
+        .getState()
+        .data.users.find((user) => user.id === patch.sellerId && user.active);
+      if (seller === undefined || (seller.role !== 'frontliner' && seller.role !== 'sales')) {
+        return failLabel('tenagaPenjualTidakSah');
+      }
+      sellerId = seller.id;
+    }
+    commit({
+      lines: replaceLine(state.lines, index, {
+        productId: line.productId,
+        unit,
+        quantity,
+        unitPrice: price,
+        ...(discount === undefined ? {} : { discount }),
+        ...(listPrice === undefined ? {} : { listPrice }),
+        ...(note === undefined ? {} : { note }),
+        ...(sellerId === undefined ? {} : { sellerId }),
+      }),
+      ownerApproved: false,
+    });
+    return { ok: true };
   };
 
   const nextSaleNumber = (): string => formatDocumentNumber('T', 101 + state.sales.length);
@@ -602,21 +715,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       return result;
     },
     setLine: (index, unit, quantity) => {
-      const line = state.lines[index];
-      const product = line === undefined ? undefined : products().get(line.productId);
-      if (line === undefined || product === undefined) {
-        return;
-      }
-      commit({
-        lines: replaceLine(state.lines, index, {
-          ...line,
-          unit,
-          quantity,
-          unitPrice: unitPrice(product, unit, tier()),
-        }),
-        ownerApproved: false,
-      });
+      applyLineDetail(index, { unit, quantity }, true);
     },
+    setLineDetail: (index, patch, authorized = false) => applyLineDetail(index, patch, authorized),
     deleteLine: (index) => {
       commit({ lines: removeLine(state.lines, index), ownerApproved: false });
     },
@@ -763,31 +864,39 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         return fail('MSG-048');
       }
       const users = store.getState().data.users;
-      if (pinBelongsToNonOwner(users, pin)) {
+      // Perubahan harga boleh disetujui Supervisor atau Owner; tujuan lain hanya Owner.
+      const mayApprove = (user: AppUser): boolean =>
+        user.role === 'owner' || (purpose === 'harga' && user.role === 'supervisor');
+      if (users.some((user) => user.pin === pin && !mayApprove(user))) {
         return fail('MSG-050');
       }
-      const owner = users.find((user) => user.role === 'owner' && user.active);
-      if (owner === undefined) {
+      const approver =
+        users.find((user) => user.active && mayApprove(user) && user.pin === pin) ??
+        users.find((user) => user.role === 'owner' && user.active);
+      if (approver === undefined) {
         return fail('MSG-050');
       }
-      const outcome = checkPin(owner.pin, pin, ownerGuard, clock());
+      const outcome = checkPin(approver.pin, pin, ownerGuard, clock());
       ownerGuard = outcome.guard;
-      if (outcome.kind === 'success' && ownerPinOwner(users, pin) !== undefined) {
+      if (outcome.kind === 'success' && approver.pin === pin && mayApprove(approver)) {
         const at = stamp();
         const offline = !store.getState().online;
         const sequence = state.audit.length + 1;
+        const action =
+          purpose === 'limit'
+            ? 'Otorisasi piutang'
+            : purpose === 'harga'
+              ? 'Otorisasi harga'
+              : 'Otorisasi koreksi';
         commit({
           ownerApproved: purpose === 'limit' ? true : state.ownerApproved,
           audit: [
             ...state.audit,
-            { at, ownerName: owner.name, reason: reason.trim(), device: 'POS', offline },
+            { at, ownerName: approver.name, reason: reason.trim(), device: 'POS', offline },
           ],
           activity: [
             ...state.activity,
-            entry(
-              purpose === 'limit' ? 'Otorisasi piutang' : 'Otorisasi koreksi',
-              `${reference} oleh ${owner.name}: ${reason.trim()}`,
-            ),
+            entry(action, `${reference} oleh ${approver.name}: ${reason.trim()}`),
           ],
           queue: queued('otorisasi', formatDocumentNumber('OT', sequence), 0, at),
         });

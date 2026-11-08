@@ -1,4 +1,5 @@
 import type { RefundMethod, Sale } from '../../../shared/data/types';
+import { discountAmount, lineSubtotal } from './bill';
 import { label, type LabelKey } from '../../../shared/messages';
 
 export const REFUND_METHODS: readonly RefundMethod[] = ['tunai', 'qris', 'edc', 'transfer'];
@@ -30,11 +31,20 @@ function isRefundMethod(method: string): method is RefundMethod {
   return (REFUND_METHODS as readonly string[]).includes(method);
 }
 
-// Nilai barang yang diretur: jumlah kali harga transaksi asal, dibulatkan per baris.
+// Nilai barang yang diretur: jumlah kali harga transaksi asal, dibulatkan per baris. Baris
+// berdiskon dihitung proporsional dari subtotal setelah diskon dan tidak melebihi subtotal itu.
 export function itemsValue(sale: Sale, items: ReturnInput['items']): number {
   return items.reduce((sum, item) => {
     const line = sale.lines[item.index];
-    return line === undefined ? sum : sum + Math.round(item.quantity * line.unitPrice);
+    if (line === undefined) {
+      return sum;
+    }
+    if (discountAmount(line) === 0) {
+      return sum + Math.round(item.quantity * line.unitPrice);
+    }
+    const subtotal = lineSubtotal(line);
+    const share = line.quantity > 0 ? Math.round((subtotal * item.quantity) / line.quantity) : 0;
+    return sum + Math.min(subtotal, share);
   }, 0);
 }
 
