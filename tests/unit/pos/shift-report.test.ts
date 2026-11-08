@@ -317,6 +317,23 @@ describe('shift tertutup pada sesi', () => {
     expect(negative.session.state().closedShifts[0]?.difference).toBe(0);
   });
 
+  it('ClosedShift.counted membedakan hitungan yang dimasukkan dari hitungan yang dilewati', () => {
+    const entered = setup();
+    entered.session.startShift(50000);
+    entered.session.endShift(40000);
+    expect(entered.session.state().closedShifts[0]?.counted).toBe(true);
+    const zero = setup();
+    zero.session.startShift(50000);
+    zero.session.endShift(0);
+    expect(zero.session.state().closedShifts[0]?.counted).toBe(true);
+    for (const skipped of [undefined, Number.NaN, -5]) {
+      const { session } = setup();
+      session.startShift(50000);
+      session.endShift(skipped);
+      expect(session.state().closedShifts[0]).toMatchObject({ counted: false, difference: 0 });
+    }
+  });
+
   it('endShift tanpa shift berjalan tidak menyimpan apa pun', () => {
     const { session } = setup();
     expect(session.endShift(1000)).toBeUndefined();

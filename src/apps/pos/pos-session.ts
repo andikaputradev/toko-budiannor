@@ -45,6 +45,7 @@ import { dueDateOf } from './domain/terms';
 import {
   itemsValue,
   reasonText,
+  refundableCash,
   validateRefundAmount,
   type ReturnInput,
   type ReturReason,
@@ -407,6 +408,12 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         return failLabel('diskonMelebihi');
       }
       discount = patch.discount.value > 0 ? patch.discount : undefined;
+    } else if (
+      discount !== undefined &&
+      validateDiscount(discount.kind, discount.value, Math.round(quantity * price)) === 'melebihi'
+    ) {
+      // Diskon lama tidak boleh melebihi jumlah barang yang baru (jumlah, satuan, atau harga berubah).
+      return failLabel('diskonMelebihi');
     }
     let note = line.note;
     if (patch.note !== undefined) {
@@ -634,6 +641,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       if (check === 'too-high') {
         return failLabel('nominalMelebihi');
       }
+      if (refund.amount > refundableCash(sale, state.returns)) {
+        return failLabel('nominalMelebihiDibayar');
+      }
       if (refund.method === 'tunai') {
         const summary = currentSummary();
         if (summary === undefined) {
@@ -711,11 +721,10 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       if (summary === undefined || shift === undefined) {
         return undefined;
       }
-      // Tanpa angka hitungan (atau angka tidak sah) hitungan memakai saldo harapan: selisih nol.
-      const counted =
-        countedCash !== undefined && Number.isFinite(countedCash) && countedCash >= 0
-          ? Math.round(countedCash)
-          : summary.closingCash;
+      // Tanpa angka hitungan (atau angka tidak sah) hitungan memakai saldo harapan: selisih nol, dan
+      // ClosedShift.counted bernilai false supaya laporan tidak menampilkannya sebagai hasil hitung.
+      const entered = countedCash !== undefined && Number.isFinite(countedCash) && countedCash >= 0;
+      const counted = entered ? Math.round(countedCash) : summary.closingCash;
       const closed: ClosedShift = {
         id: `SH-${String(state.closedShifts.length + 1)}`,
         userId: shift.userId,
@@ -724,6 +733,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         openingCash: shift.openingCash,
         expectedCash: summary.closingCash,
         countedCash: counted,
+        counted: entered,
         difference: counted - summary.closingCash,
         report: buildShiftReport(
           shift,

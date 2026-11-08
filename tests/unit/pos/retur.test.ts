@@ -7,6 +7,7 @@ import {
   defaultRefundMethod,
   itemsValue,
   reasonText,
+  refundableCash,
   REFUND_METHODS,
   RETUR_REASONS,
   validateRefundAmount,
@@ -431,5 +432,44 @@ describe('nilai retur atas baris berdiskon', () => {
       refund: { method: 'tunai', amount: 70000 },
     });
     expect(tooHigh).toMatchObject({ ok: false, labelKey: 'nominalMelebihi' });
+  });
+});
+
+describe('refundableCash', () => {
+  it('sebesar uang yang sudah dibayar dikurangi pengembalian tercatat penjualan itu dan tidak negatif', () => {
+    expect(refundableCash(baseSale, [])).toBe(210000);
+    const returns = [
+      { saleNumber: 'T-x', refund: { amount: 50000 } },
+      { saleNumber: 'T-lain', refund: { amount: 99999 } },
+      { saleNumber: 'T-x', refund: undefined },
+    ];
+    expect(refundableCash(baseSale, returns)).toBe(160000);
+    expect(refundableCash({ ...baseSale, paid: 0, payment: 'piutang' }, [])).toBe(0);
+    expect(refundableCash(baseSale, [{ saleNumber: 'T-x', refund: { amount: 300000 } }])).toBe(0);
+  });
+});
+
+describe('sesi: retur atas penjualan yang belum dibayar penuh', () => {
+  it('menolak pengembalian melebihi uang yang sudah dibayar pada penjualan DP dan menerima sebesar yang dibayar', () => {
+    const { session } = setup();
+    const sale = session
+      .state()
+      .sales.find((item) => item.payment === 'dp' && item.paid > 0 && item.paid < item.total);
+    if (sale === undefined) {
+      throw new Error('penjualan DP bawaan tidak ada');
+    }
+    const items = sale.lines.map((line, index) => ({ index, quantity: line.quantity }));
+    expect(itemsValue(sale, items)).toBeGreaterThan(sale.paid);
+    const attempt = (amount: number) =>
+      session.returnItems(sale.number, {
+        items,
+        reason: 'barang',
+        note: '',
+        refund: { method: 'qris', amount },
+      });
+    expect(attempt(sale.paid + 1)).toEqual({ ok: false, labelKey: 'nominalMelebihiDibayar' });
+    expect(session.state().returns).toHaveLength(0);
+    expect(attempt(sale.paid)).toMatchObject({ ok: true });
+    expect(session.state().returns.at(-1)?.refund?.amount).toBe(sale.paid);
   });
 });

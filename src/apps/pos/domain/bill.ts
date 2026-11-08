@@ -101,9 +101,15 @@ export function repriceLines(
       return line;
     }
     const tierPrice = unitPrice(product, line.unit, tier);
-    return line.listPrice === undefined
-      ? { ...line, unitPrice: tierPrice }
-      : { ...line, listPrice: tierPrice };
+    const repriced =
+      line.listPrice === undefined
+        ? { ...line, unitPrice: tierPrice }
+        : { ...line, listPrice: tierPrice };
+    // Harga tier yang lebih rendah bisa membuat diskon nominal lama melebihi jumlah baris: diskon dibuang.
+    return repriced.discount?.kind === 'nominal' &&
+      repriced.discount.value > Math.round(repriced.quantity * repriced.unitPrice)
+      ? { ...repriced, discount: undefined }
+      : repriced;
   });
 }
 
@@ -190,22 +196,56 @@ export function splitLines(
   return { kept, moved };
 }
 
-// Gabungan dua bill: barang dan satuan sama dijumlahkan dengan harga, diskon, dan catatan bill
-// target; baris lain dari bill sumber ditambahkan apa adanya.
+// Dua baris barang dan satuan sama hanya boleh disatukan bila tidak ada syarat yang hilang: catatan
+// dan tenaga penjual sama, harga ubahan sama (atau keduanya memakai harga tier), dan diskon sama
+// jenisnya (nominal dijumlahkan, persen harus sama nilainya). Selain itu barisnya tetap terpisah.
+function mergedDiscount(
+  first: LineDiscount | undefined,
+  second: LineDiscount | undefined,
+): { readonly ok: boolean; readonly discount: LineDiscount | undefined } {
+  if (first === undefined && second === undefined) {
+    return { ok: true, discount: undefined };
+  }
+  if (first?.kind === 'nominal' && second?.kind === 'nominal') {
+    return { ok: true, discount: { kind: 'nominal', value: first.value + second.value } };
+  }
+  if (first?.kind === 'persen' && second?.kind === 'persen' && first.value === second.value) {
+    return { ok: true, discount: first };
+  }
+  return { ok: false, discount: undefined };
+}
+
+function sameTerms(first: BillLine, second: BillLine): boolean {
+  const samePrice =
+    first.listPrice === second.listPrice &&
+    (first.listPrice === undefined || first.unitPrice === second.unitPrice);
+  return first.note === second.note && first.sellerId === second.sellerId && samePrice;
+}
+
+// Gabungan dua bill: barang dan satuan sama dijumlahkan (harga tier bill target dipakai) bila syaratnya
+// sama; baris dengan diskon, harga ubahan, catatan, atau tenaga penjual berbeda tetap terpisah.
 export function mergeLines(
   target: readonly BillLine[],
   source: readonly BillLine[],
 ): readonly BillLine[] {
   const merged: BillLine[] = [...target];
   for (const line of source) {
-    const index = merged.findIndex(
-      (item) => item.productId === line.productId && item.unit === line.unit,
-    );
+    const index = merged.findIndex((item) => {
+      if (item.productId !== line.productId || item.unit !== line.unit) {
+        return false;
+      }
+      return sameTerms(item, line) && mergedDiscount(item.discount, line.discount).ok;
+    });
     const existing = merged[index];
     if (existing === undefined) {
       merged.push(line);
     } else {
-      merged[index] = { ...existing, quantity: round3(existing.quantity + line.quantity) };
+      const { discount } = mergedDiscount(existing.discount, line.discount);
+      merged[index] = {
+        ...existing,
+        quantity: round3(existing.quantity + line.quantity),
+        ...(discount === undefined ? {} : { discount }),
+      };
     }
   }
   return merged;

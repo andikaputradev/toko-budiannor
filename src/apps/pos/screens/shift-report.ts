@@ -94,7 +94,11 @@ export function openShiftReport(options: ShiftReportOptions): void {
       row('laporan-tunai', label('laporanTunai'), formatRupiah(expected)),
       closed === undefined
         ? false
-        : row('selisih-tunai', label('selisihTunai'), formatRupiah(closed.difference)),
+        : row(
+            'selisih-tunai',
+            label('selisihTunai'),
+            closed.counted ? formatRupiah(closed.difference) : label('belumDihitung'),
+          ),
       el('h3', { className: 't-section-title', text: label('penerimaanAkhirPengeluaran') }),
       row(
         'penerimaan',

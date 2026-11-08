@@ -66,6 +66,21 @@ export function defaultRefundMethod(sale: Sale): RefundMethod {
   return best ?? 'tunai';
 }
 
+// Uang yang masih boleh dikembalikan untuk satu penjualan: yang sudah dibayar dikurangi pengembalian
+// yang sudah tercatat (penjualan DP atau piutang belum dibayar penuh, jadi tidak sama dengan nilai barang).
+export function refundableCash(
+  sale: Sale,
+  returns: readonly {
+    readonly saleNumber: string;
+    readonly refund?: { readonly amount: number } | undefined;
+  }[],
+): number {
+  const refunded = returns
+    .filter((item) => item.saleNumber === sale.number)
+    .reduce((sum, item) => sum + (item.refund?.amount ?? 0), 0);
+  return Math.max(0, sale.paid - refunded);
+}
+
 export function validateRefundAmount(
   amount: number,
   value: number,

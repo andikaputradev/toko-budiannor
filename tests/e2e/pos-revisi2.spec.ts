@@ -356,6 +356,33 @@ test.describe('modal Retur', () => {
     return page.getByRole('dialog', { name: /Retur Penjualan/ });
   }
 
+  test('pengembalian pada penjualan DP tidak melebihi uang yang sudah dibayar', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page.locator('.pos-history__item', { hasText: 'T-000140' }).click();
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: /Retur Penjualan/ });
+    await dialog.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    const amount = dialog.locator('.pos-return__amount');
+    const prefilled = Number((await amount.inputValue()).replace(/\D/g, ''));
+    expect(prefilled).toBeGreaterThan(0);
+    expect(prefilled).toBeLessThan(460825);
+    await dialog.getByRole('radio', { name: 'QRIS' }).click();
+    await amount.fill('460825');
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(
+      dialog.getByText('Jumlah dikembalikan melebihi uang yang sudah dibayar.'),
+    ).toBeVisible();
+    await amount.fill(String(prefilled));
+    await dialog.getByRole('button', { name: 'Retur', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Retur Berhasil' })).toBeVisible();
+  });
+
   test('baris barang menampilkan foto, Total, jumlah dengan satuan, dan Diinput Oleh', async ({
     page,
   }) => {
@@ -1586,6 +1613,22 @@ test.describe('Selesai Shift, Karyawan, dan laporan shift', () => {
     await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
   });
 
+  test('shift yang ditutup tanpa hitungan menampilkan Belum dihitung pada Selisih Tunai', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    const dialog = await endShift(page);
+    await dialog.getByRole('button', { name: 'Akhiri Shift' }).click();
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    await page.locator('.pos-employee-shift').first().click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    const difference = report.locator('[data-row="selisih-tunai"]');
+    await expect(difference).toContainText('Belum dihitung');
+    await expect(difference).not.toContainText('Rp');
+  });
+
   test('Karyawan tanpa shift menampilkan Tidak ada data dan Belum ada shift dimulai', async ({
     page,
   }) => {
@@ -2512,5 +2555,44 @@ test.describe('pemuatan malas layar sekunder', () => {
     await expect(page.locator('#root > *')).toHaveCount(1);
     await expect(page.locator('.pos-sell')).toBeVisible();
     await expect(page.locator('.pos-employee, .pos-settings-item, .pos-loading')).toHaveCount(0);
+  });
+});
+
+test.describe('penyimpanan diblokir', () => {
+  test('palet dan mode tetap berlaku di layar lain walau penyimpanan menolak tulisan', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.addInitScript(() => {
+      // Dipanggil ulang lewat call(this) pada penyimpanan yang sama, jadi tidak ada this yang hilang.
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key: string, value: string): void {
+        if (key === 'toko-budiannor-tema-pos' || key === 'toko-budiannor-mode-pos') {
+          throw new DOMException('penyimpanan penuh', 'QuotaExceededError');
+        }
+        original.call(this, key, value);
+      };
+    });
+    await loginPos(page, 'Dewi');
+    await openDrawerItem(page, 'Pengaturan');
+    await page.getByRole('button', { name: 'Pengaturan Lainnya', exact: true }).click();
+    const panel = page.locator('.pos-split__detail');
+    await panel
+      .getByRole('radiogroup', { name: 'Tema' })
+      .getByRole('radio', { name: 'Biru' })
+      .click();
+    await panel
+      .getByRole('radiogroup', { name: 'Mode Tampilan' })
+      .getByRole('radio', { name: 'Gelap' })
+      .click();
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('data-pos-theme', 'biru');
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
+    await openDrawerItem(page, 'Pesanan Baru');
+    await expect(page.locator('.pos-card').first()).toBeVisible();
+    await expect(root).toHaveAttribute('data-pos-theme', 'biru');
+    await expect(root).toHaveAttribute('data-pos-mode', 'gelap');
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
   });
 });

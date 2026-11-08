@@ -27,6 +27,8 @@ export interface ClosedShift {
   readonly openingCash: number;
   readonly expectedCash: number;
   readonly countedCash: number;
+  // false bila kasir tidak memasukkan hitungan: countedCash memakai saldo harapan dan selisih 0 bukan hasil hitung.
+  readonly counted: boolean;
   readonly difference: number;
   readonly report: ShiftReport;
   readonly review: {

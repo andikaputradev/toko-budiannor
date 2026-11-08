@@ -113,7 +113,15 @@ export function mount(root: HTMLElement, path: string, context: AppContext): voi
   const active = sessionFor(context.store);
   document.documentElement.dataset['app'] = 'pos';
   migrateLegacyTheme();
-  applyAppearance(document.documentElement, loadTheme(), loadMode(), prefersDark());
+  // Pilihan yang sudah terpasang di akar menang atas penyimpanan: bila penyimpanan menolak tulisan,
+  // pilihan baru hanya hidup di atribut akar dan tidak boleh kembali ke nilai lama saat berpindah layar.
+  const dataset = document.documentElement.dataset;
+  applyAppearance(
+    document.documentElement,
+    dataset['posTheme'] === undefined ? loadTheme() : parseTheme(dataset['posTheme']),
+    dataset['posMode'] === undefined ? loadMode() : parseMode(dataset['posMode']),
+    prefersDark(),
+  );
   stopSchemeWatch ??= watchScheme(refreshScheme);
   currentPath = path;
   if (watched !== context.store) {

@@ -13,6 +13,7 @@ import {
   defaultRefundMethod,
   itemsValue,
   REASON_LABELS,
+  refundableCash,
   REFUND_METHODS,
   RETUR_REASONS,
   type ReturReason,
@@ -128,6 +129,8 @@ export function openReturnModal(
   onDoneClosed?: () => void,
 ): void {
   let amountTouched = false;
+  // Penjualan DP atau piutang belum dibayar penuh: pengembalian dibatasi uang yang sudah dibayar.
+  const cap = (): number => refundableCash(sale, session.state().returns);
   let method: RefundMethod = defaultRefundMethod(sale);
   let channel: string | undefined;
   const groupName = nextId('alasan');
@@ -214,6 +217,10 @@ export function openReturnModal(
   const amountInput = el('input', {
     className: 'input pos-return__amount',
     attrs: { id: amountId, inputmode: 'numeric', autocomplete: 'off' },
+  });
+  const nothingPaid = el('p', {
+    className: 't-label pos-return__hint',
+    text: label('belumAdaUangDibayar'),
   });
   const methodButtons = new Map<RefundMethod, HTMLButtonElement>();
   const methodGroup = el('div', {
@@ -322,9 +329,11 @@ export function openReturnModal(
     const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
     totalOutput.textContent = formatRupiah(value);
     quantityText.textContent = label('dariKuantitas', { jumlah: formatDecimal(quantity) });
+    const limit = Math.min(value, cap());
     if (!amountTouched) {
-      amountInput.value = value === 0 ? '' : plain(value);
+      amountInput.value = limit === 0 ? '' : plain(limit);
     }
+    nothingPaid.hidden = cap() > 0;
     for (const [key, button] of methodButtons) {
       button.setAttribute('aria-checked', key === method ? 'true' : 'false');
     }
@@ -373,6 +382,7 @@ export function openReturnModal(
         attrs: { for: amountId },
       }),
       amountInput,
+      nothingPaid,
       el('h3', { className: 't-section-title', text: label('metodePengembalian') }),
       methodGroup,
       channelGroup,
@@ -413,11 +423,14 @@ export function openReturnModal(
               items: selection(),
               reason: chosenReason(),
               note: note.value,
-              refund: {
-                method,
-                amount: digitsOf(amountInput.value),
-                ...(channel === undefined ? {} : { channel }),
-              },
+              refund:
+                cap() > 0
+                  ? {
+                      method,
+                      amount: digitsOf(amountInput.value),
+                      ...(channel === undefined ? {} : { channel }),
+                    }
+                  : undefined,
               photoName: photo.files?.[0]?.name,
             });
             if (!result.ok) {

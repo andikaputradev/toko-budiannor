@@ -304,3 +304,62 @@ describe('split dan merge baris bill', () => {
     expect(merged).not.toBe(target);
   });
 });
+
+describe('diskon dan harga ubahan pada gabungan dan perubahan harga tier', () => {
+  const base: BillLine = { productId: semen.id, unit: 'Sak', quantity: 2, unitPrice: 70000 };
+
+  it('mergeLines menjumlahkan diskon nominal dan mempertahankan diskon persen yang sama', () => {
+    const nominal = mergeLines(
+      [{ ...base, discount: { kind: 'nominal', value: 10000 } }],
+      [{ ...base, quantity: 1, discount: { kind: 'nominal', value: 5000 } }],
+    );
+    expect(nominal).toEqual([
+      { ...base, quantity: 3, discount: { kind: 'nominal', value: 15000 } },
+    ]);
+    const percent = mergeLines(
+      [{ ...base, discount: { kind: 'persen', value: 10 } }],
+      [{ ...base, quantity: 1, discount: { kind: 'persen', value: 10 } }],
+    );
+    expect(percent).toEqual([{ ...base, quantity: 3, discount: { kind: 'persen', value: 10 } }]);
+  });
+
+  it('mergeLines tidak menghapus diskon, harga ubahan, atau catatan sumber: syarat berbeda tetap terpisah', () => {
+    const plain = { ...base };
+    const cases: BillLine[] = [
+      { ...base, quantity: 1, discount: { kind: 'nominal', value: 10000 } },
+      { ...base, quantity: 1, discount: { kind: 'persen', value: 5 } },
+      { ...base, quantity: 1, unitPrice: 65000, listPrice: 70000 },
+      { ...base, quantity: 1, note: 'Warna putih' },
+      { ...base, quantity: 1, sellerId: 'U-5' },
+    ];
+    for (const source of cases) {
+      const merged = mergeLines([plain], [source]);
+      expect(merged, JSON.stringify(source)).toEqual([plain, source]);
+    }
+    const bothDiscounted = mergeLines(
+      [{ ...base, discount: { kind: 'persen', value: 10 } }],
+      [{ ...base, quantity: 1, discount: { kind: 'persen', value: 20 } }],
+    );
+    expect(bothDiscounted).toHaveLength(2);
+  });
+
+  it('repriceLines membuang diskon nominal yang melebihi jumlah baris setelah harga tier turun', () => {
+    const products = new Map([[semen.id, semen]]);
+    const eceran = unitPrice(semen, 'Sak', 'eceran');
+    const grosir = unitPrice(semen, 'Sak', 'grosir');
+    expect(grosir).toBeLessThan(eceran);
+    const tooBig: BillLine = {
+      productId: semen.id,
+      unit: 'Sak',
+      quantity: 1,
+      unitPrice: eceran,
+      discount: { kind: 'nominal', value: grosir + 500 },
+    };
+    const fits: BillLine = { ...tooBig, discount: { kind: 'nominal', value: 100 } };
+    const percent: BillLine = { ...tooBig, discount: { kind: 'persen', value: 10 } };
+    const [first, second, third] = repriceLines([tooBig, fits, percent], products, 'grosir');
+    expect(first?.discount).toBeUndefined();
+    expect(second?.discount).toEqual({ kind: 'nominal', value: 100 });
+    expect(third?.discount).toEqual({ kind: 'persen', value: 10 });
+  });
+});

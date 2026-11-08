@@ -1040,3 +1040,6 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1030: "Kartu". Kunci katalogKartu.
 - TB-1031: "Daftar". Kunci katalogDaftar.
 - TB-1032: "Peran". Kunci peranPengguna.
+- TB-1033: "Jumlah dikembalikan melebihi uang yang sudah dibayar.". Kunci nominalMelebihiDibayar.
+- TB-1034: "Belum ada uang yang dibayar, retur dicatat tanpa pengembalian.". Kunci belumAdaUangDibayar.
+- TB-1035: "Belum dihitung". Kunci belumDihitung.

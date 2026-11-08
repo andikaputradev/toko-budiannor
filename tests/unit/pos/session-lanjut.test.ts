@@ -718,3 +718,25 @@ describe('ubah PIN', () => {
     expect(session.authorizeOwner('Pelanggan lama', '135790')).toEqual({ ok: true });
   });
 });
+
+describe('diskon nominal yang terbawa', () => {
+  it('setLineDetail menolak jumlah baru yang membuat diskon nominal terbawa melebihi jumlah barang', () => {
+    const { session } = setup('U-2');
+    session.addProduct(first(), undefined, 3);
+    const line = session.state().lines[0];
+    if (line === undefined) {
+      throw new Error('baris tidak ada');
+    }
+    const gross = Math.round(line.quantity * line.unitPrice);
+    const value = Math.round(gross * 0.75);
+    expect(session.setLineDetail(0, { discount: { kind: 'nominal', value } }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { quantity: 1 }, true)).toEqual({
+      ok: false,
+      labelKey: 'diskonMelebihi',
+    });
+    expect(session.state().lines[0]?.quantity).toBe(3);
+    expect(session.setLineDetail(0, { quantity: 3 }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { discount: null }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { quantity: 1 }, true).ok).toBe(true);
+  });
+});
