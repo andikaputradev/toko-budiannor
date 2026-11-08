@@ -724,24 +724,6 @@ a.pos-chip {
   gap: var(--primitive-space-3);
 }
 
-.pos-cash__value {
-  display: block;
-  min-height: 64px;
-  padding: var(--primitive-space-3) var(--primitive-space-4);
-  border-radius: var(--radius-control);
-  background: var(--color-bg-page);
-  color: var(--color-text-primary);
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 40px;
-  text-align: end;
-}
-
-.pos-cash__value:empty::before {
-  content: attr(data-placeholder);
-  color: var(--color-text-secondary);
-}
-
 .pos-cash__error {
   min-height: 28px;
   margin: 0;

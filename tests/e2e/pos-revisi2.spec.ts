@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   finishPaymentDialog,
   loginPos,
+  loginPosRaw,
   openDrawerItem,
   sellFirstProduct,
   sellSplitThree,
@@ -428,5 +429,29 @@ test.describe('modal Retur', () => {
         expect(height).toBeGreaterThanOrEqual(47.5);
       }
     }
+  });
+});
+
+test.describe('entri nominal', () => {
+  test('modal awal menerima ketikan papan ketik fisik dan papan angka layar bergantian', async ({
+    page,
+  }) => {
+    await loginPosRaw(page);
+    await page.getByRole('button', { name: 'Mulai Shift' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Masukkan Modal' });
+    const value = dialog.locator('.pos-amount__value');
+    await expect(value).toHaveText('');
+    await page.keyboard.type('250000');
+    await expect(value).toHaveText('Rp 250.000');
+    await page.keyboard.press('Backspace');
+    await expect(value).toHaveText('Rp 25.000');
+    await dialog.getByRole('button', { name: '000', exact: true }).click();
+    await expect(value).toHaveText('Rp 25.000.000');
+    await page.keyboard.type('1');
+    await expect(value).toHaveText('Rp 250.000.001');
+    await dialog.getByRole('button', { name: 'C', exact: true }).click();
+    await page.keyboard.type('5');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(page.locator('.pos-card').first()).toBeVisible();
   });
 });

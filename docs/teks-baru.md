@@ -881,3 +881,4 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-871: "Umum". Kunci kanalUmum.
 - TB-872: "Tambah foto bukti". Kunci tambahFotoBukti.
 - TB-873: "Total {jumlah}". Kunci totalBarisRetur.
+- TB-874: "OK". Kunci tombolOk.

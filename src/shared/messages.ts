@@ -620,6 +620,7 @@ export const labels = {
   simpanPerubahan: 'Simpan Perubahan',
   hapusItem: 'Hapus Item',
   tombolKoma: ',',
+  tombolOk: 'OK',
   metodeTunai: 'Tunai',
   metodeQris: 'QRIS',
   metodeEdc: 'EDC',

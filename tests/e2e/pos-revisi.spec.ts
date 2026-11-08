@@ -30,9 +30,9 @@ test.describe('shift', () => {
     await expect(dialog.getByRole('alert')).toHaveText('Isi modal awal terlebih dahulu.');
     await dialog.getByRole('button', { name: '1', exact: true }).click();
     await dialog.getByRole('button', { name: '000', exact: true }).click();
-    await expect(dialog.locator('.pos-cash__value')).toHaveText('Rp 1.000');
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 1.000');
     await dialog.getByRole('button', { name: 'C', exact: true }).click();
-    await expect(dialog.locator('.pos-cash__value')).toHaveText('Rp 0');
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 0');
     await dialog.getByRole('button', { name: '2', exact: true }).click();
     await dialog.getByRole('button', { name: 'Lanjut' }).click();
     await expect(page.locator('.pos-card').first()).toBeVisible();

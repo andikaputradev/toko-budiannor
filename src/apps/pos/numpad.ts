@@ -1,6 +1,6 @@
 import { el } from '../../shared/dom';
 import { label } from '../../shared/messages';
-import type { MoneyKey } from './domain/shift';
+import type { AmountKey } from './domain/amount';
 
 export interface Numpad {
   readonly element: HTMLDivElement;
@@ -24,9 +24,17 @@ export function createNumpad(onKey: (key: string) => void): Numpad {
   return { element };
 }
 
-// Papan uang modal: 1 sampai 9, 000, 0, C, dan hapus (4 kolom, minimal 48 px).
-export function createMoneyPad(onKey: (key: MoneyKey) => void): Numpad {
-  const layout: readonly (MoneyKey | undefined)[] = [
+function keyText(key: AmountKey, enterText: string | undefined): string {
+  if (key === 'Backspace') {
+    return label('pinHapus');
+  }
+  return key === 'Enter' ? (enterText ?? '') : key;
+}
+
+// Papan nominal: 1 sampai 9, 000, 0, C, dan hapus (4 kolom, minimal 48 px).
+// Tombol enter (dua baris tinggi di kolom kanan) hanya tampil bila enterText diberikan.
+export function createMoneyPad(onKey: (key: AmountKey) => void, enterText?: string): Numpad {
+  const layout: readonly (AmountKey | undefined)[] = [
     '1',
     '2',
     '3',
@@ -38,7 +46,7 @@ export function createMoneyPad(onKey: (key: MoneyKey) => void): Numpad {
     '7',
     '8',
     '9',
-    undefined,
+    enterText === undefined ? undefined : 'Enter',
     '000',
     '0',
   ];
@@ -56,9 +64,12 @@ export function createMoneyPad(onKey: (key: MoneyKey) => void): Numpad {
     if (key === '000') {
       classes.push('pos-moneypad__wide');
     }
+    if (key === 'Enter') {
+      classes.push('pos-moneypad__enter');
+    }
     const button = el('button', {
       className: classes.join(' '),
-      text: key === 'Backspace' ? label('pinHapus') : key,
+      text: keyText(key, enterText),
       attrs: { type: 'button' },
     });
     button.addEventListener('click', () => {

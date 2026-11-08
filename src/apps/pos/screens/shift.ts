@@ -4,44 +4,25 @@ import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { createIllustration } from '../../../shared/ui/illustration';
 import { openModal } from '../../../shared/ui/modal';
-import { applyMoneyKey, needsShift, type MoneyKey } from '../domain/shift';
+import { createAmountEntry } from '../amount-entry';
+import { needsShift } from '../domain/shift';
 import { failureText } from '../failure';
-import { createMoneyPad } from '../numpad';
 import type { PosSession } from '../pos-session';
 
 export function openOpeningCashModal(session: PosSession, onStarted: () => void): void {
-  let value: number | undefined;
-  const display = el('output', {
-    className: 'pos-cash__value',
-    attrs: { 'aria-live': 'polite', 'data-placeholder': 'Rp' },
-  });
   const error = el('p', { className: 'pos-cash__error', attrs: { role: 'alert' } });
-  const paint = (): void => {
-    display.textContent = value === undefined ? '' : formatRupiah(value);
-  };
-  const press = (key: MoneyKey): void => {
-    value = applyMoneyKey(value ?? 0, key);
-    error.textContent = '';
-    paint();
-  };
-  const pad = createMoneyPad(press);
+  const entry = createAmountEntry({
+    labelText: label('masukkanModal'),
+    onChange: () => {
+      error.textContent = '';
+    },
+  });
   const handle = openModal({
     title: label('masukkanModal'),
-    body: el(
-      'div',
-      { className: 'pos-cash' },
-      el('p', { className: 't-label', text: label('masukkanModal') }),
-      display,
-      error,
-      pad.element,
-    ),
+    body: el('div', { className: 'pos-cash' }, entry.element, error),
     actions: [],
   });
-  handle.dialog.addEventListener('keydown', (event) => {
-    if (/^\d$/.test(event.key)) {
-      press(event.key as MoneyKey);
-    }
-  });
+  entry.listenOn(handle.dialog);
   handle.dialog.append(
     el(
       'div',
@@ -56,7 +37,7 @@ export function openOpeningCashModal(session: PosSession, onStarted: () => void)
       createButton({
         text: label('lanjut'),
         onClick: () => {
-          const result = session.startShift(value);
+          const result = session.startShift(entry.hasValue() ? entry.value() : undefined);
           if (result.ok) {
             handle.close();
             onStarted();
@@ -67,7 +48,6 @@ export function openOpeningCashModal(session: PosSession, onStarted: () => void)
       }),
     ),
   );
-  paint();
 }
 
 export function openShiftSummary(session: PosSession, onEnded: () => void): void {
