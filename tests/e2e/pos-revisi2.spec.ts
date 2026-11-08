@@ -1201,3 +1201,125 @@ test.describe('Detail Barang dan Cek Stok', () => {
     }
   });
 });
+
+test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () => {
+  async function openDetail(page: Page, taps = 1) {
+    await loginPos(page, 'Ibu Sinta');
+    for (let index = 0; index < taps; index += 1) {
+      await page.locator('.pos-card__main').first().click();
+    }
+    await page.locator('.pos-bill__name').first().click();
+    return page.getByRole('dialog', { name: 'Detail Barang' });
+  }
+  async function discount(dialog: Locator, digits: string): Promise<void> {
+    await dialog.getByRole('button', { name: 'Berikan Diskon' }).click();
+    for (const digit of digits) {
+      await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+  }
+  const save = (dialog: Locator) => dialog.getByRole('button', { name: 'Simpan', exact: true });
+
+  test('baris pesanan menampilkan harga dicoret dan tanda diskon', async ({ page }) => {
+    const dialog = await openDetail(page);
+    await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
+    await dialog.getByRole('button', { name: 'C', exact: true }).click();
+    for (const digit of '65000') {
+      await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+    await discount(dialog, '10');
+    await save(dialog).click();
+    await expect(dialog).toBeHidden();
+    const row = page.locator('.pos-order__item').first();
+    await expect(row.locator('s')).toHaveText('70.000');
+    await expect(row.locator('.pos-order__qty')).toContainText('65.000');
+    await expect(row.locator('.pos-order__flag')).toHaveText('-10%');
+    await expect(row.locator('.pos-order__amount')).toHaveText('Rp 58.500');
+  });
+
+  test('layar bayar menampilkan diskon pada daftar dan Subtotal', async ({ page }) => {
+    const dialog = await openDetail(page);
+    await discount(dialog, '10');
+    await save(dialog).click();
+    await expect(dialog).toBeHidden();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page).toHaveURL(/#\/pos\/bayar$/);
+    const item = page.locator('.pos-pay__item').first();
+    await expect(item).toContainText('Rp 63.000');
+    await expect(item.locator('.pos-order__flag')).toHaveText('-10%');
+    await expect(page.locator('.pos-pay__grand')).toHaveText('Rp 63.000');
+    const bar = page.getByRole('button', { name: /^Subtotal/ });
+    await expect(bar).toContainText('Rp 70.000');
+    await bar.click();
+    await expect(page.locator('.pos-pay__discount')).toHaveText('-Rp 7.000');
+    await expect(page.locator('.pos-pay__breakdown-total')).toContainText('Rp 63.000');
+  });
+
+  test('transaksi tanpa diskon tidak menampilkan baris Diskon pada ringkasan bayar', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: /^Subtotal/ }).click();
+    await expect(page.locator('.pos-pay__breakdown')).toBeVisible();
+    await expect(page.locator('.pos-pay__discount')).toBeHidden();
+    await expect(page.locator('.pos-pay__item .pos-order__flag')).toHaveCount(0);
+  });
+
+  test('struk memuat baris Diskon dan riwayat menampilkan Subtotal, Diskon, dan Grand Total yang konsisten', async ({
+    page,
+  }) => {
+    const dialog = await openDetail(page);
+    await discount(dialog, '10');
+    await save(dialog).click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    const done = page.getByRole('dialog', { name: 'Pembayaran Berhasil' });
+    await done.getByRole('button', { name: 'Cetak Struk' }).click();
+    const receipt = page.locator('.pos-receipt');
+    await expect(receipt).toContainText('Diskon');
+    await expect(receipt).toContainText('-Rp 7.000');
+    await expect(receipt).toContainText('Rp 63.000');
+    await page
+      .getByRole('dialog', { name: 'Pratinjau Struk' })
+      .getByRole('button', { name: 'Tutup' })
+      .click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const detail = page.locator('.pos-history__detail');
+    const totals = detail.locator('.pos-history__totals');
+    await expect(totals).toContainText('Subtotal');
+    await expect(totals).toContainText('Rp 70.000');
+    await expect(totals).toContainText('Diskon');
+    await expect(totals).toContainText('-Rp 7.000');
+    await expect(totals).toContainText('Grand Total');
+    await expect(totals).toContainText('Rp 63.000');
+    const line = detail.locator('.pos-history__lines li').first();
+    await expect(line.locator('.pos-order__flag')).toHaveText('-10%');
+    await expect(line.locator('output')).toHaveText('Rp 70.000');
+  });
+
+  test('retur baris berdiskon mengembalikan nominal proporsional', async ({ page }) => {
+    const dialog = await openDetail(page, 3);
+    await discount(dialog, '10');
+    await save(dialog).click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await page.getByRole('button', { name: 'Bayar', exact: true }).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await page
+      .locator('.pos-history__detail')
+      .getByRole('button', { name: 'Retur', exact: true })
+      .click();
+    const retur = page.getByRole('dialog', { name: /Retur Penjualan/ });
+    await expect(retur.locator('.pos-return__item').first()).toContainText('Total Rp 189.000');
+    await retur.getByRole('checkbox', { name: 'Pilih Semua' }).check();
+    await expect(retur.locator('.pos-return__total')).toHaveText('Rp 189.000');
+    const minus = retur.getByRole('button', { name: 'Kurangi jumlah' });
+    await minus.click();
+    await minus.click();
+    await expect(retur.locator('.pos-return__total')).toHaveText('Rp 63.000');
+  });
+});

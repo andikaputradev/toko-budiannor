@@ -670,6 +670,7 @@ export const labels = {
   qtyBarisAwal: 'QTY : {jumlah} X',
   diskonTandaPersen: '-{nilai}%',
   diskonTandaNominal: '-{nilai}',
+  tenagaPenjualNama: 'Tenaga Penjual: {nama}',
   metodeTunai: 'Tunai',
   metodeQris: 'QRIS',
   metodeEdc: 'EDC',

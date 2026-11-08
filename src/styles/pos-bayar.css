@@ -280,6 +280,10 @@
   justify-content: space-between;
 }
 
+.pos-pay__breakdown > div[hidden] {
+  display: none;
+}
+
 .pos-pay__breakdown dt,
 .pos-pay__breakdown dd {
   margin: 0;
@@ -583,4 +587,8 @@
     flex: 1;
     min-width: 0;
   }
+}
+
+.pos-pay__item-price {
+  grid-column: 1 / -1;
 }

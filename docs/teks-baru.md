@@ -931,3 +931,4 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-921: "QTY : {jumlah} X". Kunci qtyBarisAwal.
 - TB-922: "-{nilai}%". Kunci diskonTandaPersen.
 - TB-923: "-{nilai}". Kunci diskonTandaNominal.
+- TB-924: "Tenaga Penjual: {nama}". Kunci tenagaPenjualNama.

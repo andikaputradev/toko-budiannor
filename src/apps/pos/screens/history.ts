@@ -7,6 +7,7 @@ import { isAllowed } from '../../../shared/permissions';
 import { createButton } from '../../../shared/ui/button';
 import { createEmptyState } from '../../../shared/ui/empty';
 import { showToast } from '../../../shared/ui/toast';
+import { lineGross } from '../domain/bill';
 import { isRangeValid } from '../domain/forms';
 import {
   dayOf,
@@ -28,6 +29,7 @@ import {
 import { changeOf } from '../domain/receipt';
 import type { PosSession } from '../pos-session';
 import { ROLE_LABELS } from '../roles';
+import { discountTag, priceNodes } from './line-price';
 import { createSplitPane, type SplitPane } from '../split';
 import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
@@ -525,15 +527,32 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
               'span',
               { className: 'pos-history__linebody' },
               el('strong', { text: product?.name ?? line.productId }),
-              el('span', {
-                className: 't-label',
-                text: `${formatDecimal(line.quantity)} ${line.unit} x ${formatRupiah(line.unitPrice)}`,
-              }),
+              el(
+                'span',
+                { className: 't-label' },
+                document.createTextNode(`${formatDecimal(line.quantity)} ${line.unit} x Rp `),
+                ...priceNodes(line),
+                discountTag(line) === undefined
+                  ? false
+                  : el('span', {
+                      className: 'pos-order__flag',
+                      text: ` ${discountTag(line) ?? ''}`,
+                    }),
+              ),
+              line.sellerId === undefined
+                ? false
+                : el('span', {
+                    className: 't-label',
+                    text: label('tenagaPenjualNama', { nama: session.userName(line.sellerId) }),
+                  }),
+              line.note === undefined
+                ? false
+                : el('span', { className: 't-label', text: line.note }),
               el('span', { className: 't-label', text: enteredBy }),
             ),
             el('output', {
               className: 'is-end',
-              text: formatRupiah(Math.round(line.quantity * line.unitPrice)),
+              text: formatRupiah(lineGross(line)),
             }),
           );
         }),

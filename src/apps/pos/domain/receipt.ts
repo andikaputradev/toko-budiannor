@@ -12,7 +12,10 @@ export interface ReceiptItem {
   readonly quantity: number;
   readonly unit: string;
   readonly unitPrice: number;
+  // Jumlah kotor baris, sebelum diskon.
   readonly subtotal: number;
+  readonly discount?: number | undefined;
+  readonly listPrice?: number | undefined;
 }
 
 export interface ReceiptPayment {
@@ -107,6 +110,16 @@ export function buildReceipt(input: ReceiptInput): string[] {
             width,
           )),
     );
+    if (input.kind !== 'draft') {
+      if (item.listPrice !== undefined) {
+        lines.push(
+          `  ${label('hargaAsli', { harga: formatRupiah(item.listPrice) })}`.slice(0, width),
+        );
+      }
+      if (item.discount !== undefined && item.discount > 0) {
+        lines.push(...pair(`  ${label('diskon')}`, `-${formatRupiah(item.discount)}`, width));
+      }
+    }
   }
   lines.push(rule('-'));
   if (input.kind === 'draft') {

@@ -32,6 +32,7 @@ import type { ScreenHandle } from './login';
 import { openDraftPreview } from './receipt-preview';
 import { needsShift } from '../domain/shift';
 import { guardWithShift } from './shift';
+import { discountTag, priceNodes } from './line-price';
 import { openUnitModal } from './unit-modal';
 
 const RESULT_LIMIT = 60;
@@ -307,37 +308,23 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
   };
 
   const orderQuantity = (line: BillLine): HTMLElement => {
-    const price = formatRupiah(line.unitPrice).replace('Rp ', '');
     const quantityText = formatDecimal(line.quantity, 3, 0);
-    if (line.listPrice === undefined && line.discount === undefined) {
+    const tag = discountTag(line);
+    if (line.listPrice === undefined && tag === undefined) {
       return el('span', {
         className: 'pos-order__qty',
-        text: label('qtyBaris', { jumlah: quantityText, harga: price }),
+        text: label('qtyBaris', {
+          jumlah: quantityText,
+          harga: formatRupiah(line.unitPrice).replace('Rp ', ''),
+        }),
       });
     }
-    const discount = line.discount;
     return el(
       'span',
       { className: 'pos-order__qty' },
       document.createTextNode(`${label('qtyBarisAwal', { jumlah: quantityText })} `),
-      line.listPrice === undefined
-        ? false
-        : el('s', {
-            className: 'pos-order__list',
-            text: formatRupiah(line.listPrice).replace('Rp ', ''),
-          }),
-      line.listPrice === undefined ? false : document.createTextNode(' '),
-      document.createTextNode(price),
-      discount === undefined
-        ? false
-        : el('span', {
-            className: 'pos-order__flag',
-            text: ` ${
-              discount.kind === 'persen'
-                ? label('diskonTandaPersen', { nilai: discount.value })
-                : label('diskonTandaNominal', { nilai: formatRupiah(discount.value) })
-            }`,
-          }),
+      ...priceNodes(line),
+      tag === undefined ? false : el('span', { className: 'pos-order__flag', text: ` ${tag}` }),
     );
   };
 

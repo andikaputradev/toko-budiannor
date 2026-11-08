@@ -1,4 +1,5 @@
 import { wibDate } from '../../../shared/data/receivable';
+import { lineGross } from './bill';
 import type { PaymentMethod, Sale, SalePayment, SyncItem } from '../../../shared/data/types';
 
 export type StatusFilter = 'semua' | 'lunas' | 'pending';
@@ -171,7 +172,7 @@ export function saleBreakdown(sale: Sale): {
   const gross =
     sale.lines.length === 0
       ? sale.total
-      : sale.lines.reduce((sum, line) => sum + Math.round(line.quantity * line.unitPrice), 0);
+      : sale.lines.reduce((sum, line) => sum + lineGross(line), 0);
   return {
     subtotal: gross,
     discount: Math.max(0, gross - sale.total),

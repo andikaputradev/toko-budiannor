@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import { generateDataset } from '../../../src/shared/data/generator';
+import { withProposalData } from '../../../src/shared/data/proposal';
+import { createStore } from '../../../src/shared/store/store';
+import { discountAmount } from '../../../src/apps/pos/domain/bill';
+import { saleBreakdown } from '../../../src/apps/pos/domain/history';
 import {
   buildReceipt,
   PAPER_CHARS,
   wrapText,
   type PaperWidth,
   type ReceiptInput,
+  type ReceiptItem,
 } from '../../../src/apps/pos/domain/receipt';
+import { createPosSession } from '../../../src/apps/pos/pos-session';
+import { returnReceipt, saleReceipt } from '../../../src/apps/pos/screens/receipt-preview';
 
 function input(kind: ReceiptInput['kind'], width: PaperWidth): ReceiptInput {
   return {
@@ -100,4 +108,175 @@ describe('struk bukti retur', () => {
       }
     });
   }
+});
+
+describe('struk dengan diskon dan perubahan harga', () => {
+  const semenItem: ReceiptItem = {
+    name: 'Semen Gresik 40kg',
+    quantity: 3,
+    unit: 'Sak',
+    unitPrice: 70000,
+    subtotal: 210000,
+  };
+  const plainItems: ReceiptInput['items'] = [
+    semenItem,
+    { name: 'Paku 2 inci', quantity: 10, unit: 'Kg', unitPrice: 15200, subtotal: 152000 },
+  ];
+  const base: ReceiptInput = {
+    kind: 'sale',
+    width: 58,
+    number: 'T-000141',
+    at: new Date('2026-10-19T03:00:00Z'),
+    cashier: 'Dewi',
+    customer: 'Umum',
+    items: plainItems,
+    total: 362000,
+    payments: [{ method: 'Tunai', amount: 400000 }],
+    change: 38000,
+  };
+
+  it('memuat baris Diskon dan harga asli bila ada, dengan harga setelah ubah pada baris jumlah', () => {
+    const lines = buildReceipt({
+      ...base,
+      items: [
+        {
+          name: 'Semen Gresik 40kg',
+          quantity: 3,
+          unit: 'Sak',
+          unitPrice: 65000,
+          subtotal: 195000,
+          discount: 19500,
+          listPrice: 70000,
+        },
+      ],
+      total: 175500,
+      payments: [{ method: 'Tunai', amount: 200000 }],
+      change: 24500,
+    });
+    const text = lines.join('\n');
+    expect(text).toContain('3 Sak x Rp 65.000');
+    expect(text).toContain('Rp 195.000');
+    expect(text).toContain('Harga asli Rp 70.000');
+    expect(lines.some((line) => /^\s*Diskon\s+-Rp 19\.500$/.test(line))).toBe(true);
+    expect(text).toContain('Rp 175.500');
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[58]);
+    }
+  });
+
+  it('struk tanpa diskon tidak berubah: cetakan lama sama persis', () => {
+    const legacy = buildReceipt(base);
+    const withUndefined = buildReceipt({
+      ...base,
+      items: plainItems.map((item) => ({ ...item, discount: undefined, listPrice: undefined })),
+    });
+    const withZero = buildReceipt({
+      ...base,
+      items: plainItems.map((item) => ({ ...item, discount: 0 })),
+    });
+    expect(withUndefined).toEqual(legacy);
+    expect(withZero).toEqual(legacy);
+    expect(legacy.join('\n')).not.toContain('Diskon');
+    expect(legacy.join('\n')).not.toContain('Harga asli');
+  });
+
+  it('struk 80 mm menaruh Diskon rata kanan tanpa melebihi 48 karakter', () => {
+    const lines = buildReceipt({
+      ...base,
+      width: 80,
+      items: [{ ...semenItem, discount: 21000 }],
+      total: 189000,
+      payments: [{ method: 'Tunai', amount: 189000 }],
+      change: 0,
+    });
+    const discount = lines.find((line) => line.includes('Diskon'));
+    expect(discount).toBeDefined();
+    expect(discount?.length).toBe(PAPER_CHARS[80]);
+    expect(discount?.endsWith('-Rp 21.000')).toBe(true);
+  });
+});
+
+describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
+  const dataset = withProposalData(generateDataset());
+
+  function sellDiscounted() {
+    const store = createStore({ dataset });
+    store.setUser('U-2');
+    const session = createPosSession(store, { clock: () => 1_000_000 });
+    session.startShift(100000);
+    const product = dataset.products.find((item) => item.id === 'P-01');
+    if (product === undefined) {
+      throw new Error('barang proposal tidak ada');
+    }
+    session.addProduct(product, 'SAK', 3);
+    session.setLineDetail(0, { price: 65000, discount: { kind: 'persen', value: 10 } });
+    session.exactAmount();
+    const sale = session.finish();
+    if (sale === undefined) {
+      throw new Error('penjualan gagal');
+    }
+    return { session, sale };
+  }
+
+  it('saleReceipt memuat jumlah kotor, diskon, harga asli, dan total setelah diskon', () => {
+    const { session, sale } = sellDiscounted();
+    const receipt = saleReceipt(session, sale, 'sale', 58);
+    expect(sale.total).toBe(175500);
+    expect(receipt.total).toBe(175500);
+    expect(receipt.items[0]).toMatchObject({
+      unitPrice: 65000,
+      subtotal: 195000,
+      discount: 19500,
+      listPrice: 70000,
+    });
+  });
+
+  it('saleBreakdown cocok dengan baris: subtotal kotor, diskon dari baris, dan grand total', () => {
+    const { sale } = sellDiscounted();
+    const breakdown = saleBreakdown(sale);
+    const fromLines = sale.lines.reduce((sum, line) => sum + discountAmount(line), 0);
+    expect(breakdown.subtotal).toBe(195000);
+    expect(breakdown.discount).toBe(fromLines);
+    expect(breakdown.discount).toBe(19500);
+    expect(breakdown.subtotal - breakdown.discount).toBe(breakdown.grandTotal);
+    expect(breakdown.grandTotal).toBe(sale.total);
+  });
+
+  it('transaksi tanpa diskon: diskon nol dan subtotal sama dengan grand total', () => {
+    const store = createStore({ dataset });
+    store.setUser('U-2');
+    const session = createPosSession(store, { clock: () => 1_000_000 });
+    session.startShift(100000);
+    const product = dataset.products.find((item) => item.id === 'P-01');
+    if (product === undefined) {
+      throw new Error('barang proposal tidak ada');
+    }
+    session.addProduct(product, 'SAK', 2);
+    session.exactAmount();
+    const sale = session.finish();
+    if (sale === undefined) {
+      throw new Error('penjualan gagal');
+    }
+    const breakdown = saleBreakdown(sale);
+    expect(breakdown).toEqual({ subtotal: 140000, discount: 0, grandTotal: 140000 });
+    expect(saleReceipt(session, sale, 'sale', 58).items[0]).not.toHaveProperty('discount');
+  });
+
+  it('bukti retur atas baris berdiskon memuat nilai proporsional', () => {
+    const { session, sale } = sellDiscounted();
+    const result = session.returnItems(sale.number, {
+      items: [{ index: 0, quantity: 1 }],
+      reason: 'barang',
+      note: '',
+      refund: { method: 'tunai', amount: 58500 },
+    });
+    expect(result).toMatchObject({ ok: true, value: 58500 });
+    const record = session.state().returns[0];
+    if (record === undefined) {
+      throw new Error('retur tidak tersimpan');
+    }
+    const receipt = returnReceipt(session, record, 58);
+    expect(receipt.items[0]?.subtotal).toBe(58500);
+    expect(receipt.total).toBe(58500);
+  });
 });

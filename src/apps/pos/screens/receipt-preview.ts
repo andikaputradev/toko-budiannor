@@ -6,7 +6,7 @@ import { failureText } from '../failure';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
-import { lineSubtotal } from '../domain/bill';
+import { discountAmount, lineGross } from '../domain/bill';
 import {
   buildReceipt,
   changeOf,
@@ -16,6 +16,7 @@ import {
   type ReceiptKind,
   type ReceiptPayment,
 } from '../domain/receipt';
+import { itemsValue } from '../domain/retur';
 import type { PosSession, ReturnRecord } from '../pos-session';
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
@@ -35,13 +36,18 @@ const SUCCESS_LABELS: Readonly<Record<ReceiptKind, LabelKey>> = {
 };
 
 function itemsOf(session: PosSession, lines: Sale['lines']): ReceiptItem[] {
-  return lines.map((line) => ({
-    name: session.product(line.productId)?.name ?? line.productId,
-    quantity: line.quantity,
-    unit: line.unit,
-    unitPrice: line.unitPrice,
-    subtotal: lineSubtotal(line),
-  }));
+  return lines.map((line) => {
+    const discount = discountAmount(line);
+    return {
+      name: session.product(line.productId)?.name ?? line.productId,
+      quantity: line.quantity,
+      unit: line.unit,
+      unitPrice: line.unitPrice,
+      subtotal: lineGross(line),
+      ...(discount > 0 ? { discount } : {}),
+      ...(line.listPrice === undefined ? {} : { listPrice: line.listPrice }),
+    };
+  });
 }
 
 function methodText(method: PaymentMethod, channel: string | undefined): string {
@@ -104,7 +110,7 @@ export function returnReceipt(
             quantity: entry.quantity,
             unit: line.unit,
             unitPrice: line.unitPrice,
-            subtotal: Math.round(entry.quantity * line.unitPrice),
+            subtotal: sale === undefined ? 0 : itemsValue(sale, [entry]),
           },
         ];
   });

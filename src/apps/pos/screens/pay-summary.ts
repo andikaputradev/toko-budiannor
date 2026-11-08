@@ -2,9 +2,10 @@ import { el, nextId } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label } from '../../../shared/messages';
-import { billTotal, lineSubtotal } from '../domain/bill';
+import { discountAmount, lineGross, lineSubtotal } from '../domain/bill';
 import { customerLabel, initialsOf } from '../domain/catalog-view';
 import type { PosSession } from '../pos-session';
+import { discountTag, priceNodes } from './line-price';
 
 export interface PaySummary {
   readonly element: HTMLElement;
@@ -20,6 +21,13 @@ export function createPaySummary(session: PosSession): PaySummary {
   const list = el('ul', { className: 'pos-pay__items' });
   const barAmount = el('output', { className: 'pos-pay__subtotal-amount' });
   const subtotalRow = el('output', { className: 'is-end' });
+  const discountValue = el('output', { className: 'is-end pos-pay__discount' });
+  const discountRow = el(
+    'div',
+    { attrs: { hidden: '' } },
+    el('dt', { text: label('diskon') }),
+    el('dd', {}, discountValue),
+  );
   const totalRow = el('output', { className: 'is-end' });
   const toggle = el(
     'button',
@@ -35,6 +43,7 @@ export function createPaySummary(session: PosSession): PaySummary {
     'dl',
     { className: 'pos-pay__breakdown', attrs: { id: detailId, hidden: '' } },
     el('div', {}, el('dt', { text: label('kolomSubtotal') }), el('dd', {}, subtotalRow)),
+    discountRow,
     el(
       'div',
       { className: 'pos-pay__breakdown-total' },
@@ -73,8 +82,10 @@ export function createPaySummary(session: PosSession): PaySummary {
     );
     heading.textContent = label('pesananJumlah', { jumlah: state.lines.length });
     list.replaceChildren(
-      ...state.lines.map((line) =>
-        el(
+      ...state.lines.map((line) => {
+        const tag = discountTag(line);
+        const changed = line.listPrice !== undefined || tag !== undefined;
+        return el(
           'li',
           { className: 'pos-pay__item' },
           el('span', { text: session.product(line.productId)?.name ?? line.productId }),
@@ -83,12 +94,26 @@ export function createPaySummary(session: PosSession): PaySummary {
             text: `${String(line.quantity).replace('.', ',')} ${line.unit}`,
           }),
           el('span', { className: 'is-end', text: formatRupiah(lineSubtotal(line)) }),
-        ),
-      ),
+          changed
+            ? el(
+                'span',
+                { className: 'pos-pay__item-price t-label' },
+                document.createTextNode('@'),
+                ...priceNodes(line),
+                tag === undefined
+                  ? false
+                  : el('span', { className: 'pos-order__flag', text: ` ${tag}` }),
+              )
+            : false,
+        );
+      }),
     );
-    const subtotal = billTotal(state.lines);
-    barAmount.textContent = formatRupiah(subtotal);
-    subtotalRow.textContent = formatRupiah(subtotal);
+    const gross = state.lines.reduce((sum, line) => sum + lineGross(line), 0);
+    const discount = state.lines.reduce((sum, line) => sum + discountAmount(line), 0);
+    barAmount.textContent = formatRupiah(gross);
+    subtotalRow.textContent = formatRupiah(gross);
+    discountValue.textContent = `-${formatRupiah(discount)}`;
+    discountRow.hidden = discount === 0;
     totalRow.textContent = formatRupiah(session.summary().total);
   };
   return { element, paint };
