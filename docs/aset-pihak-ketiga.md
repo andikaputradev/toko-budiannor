@@ -2,6 +2,8 @@
 
 Aset diunduh sekali pada 7 November 2026, disimpan lokal di `public/`, dan tidak pernah dimuat dari luar saat aplikasi berjalan (CSP dan `jaringan.spec.ts` menjaganya). Hanya sumber berlisensi bebas yang dipakai.
 
+Revisi POS putaran kedua (7 sampai 8 November 2026) menambah 19 ikon Lucide, lima avatar karyawan, dan sembilan foto kategori yang tercatat di bawah; tidak ada font, ilustrasi, atau gambar lain dari internet. Rancangan awal menyebut Pexels atau Unsplash untuk foto kategori, tetapi yang dipakai hanya berkas Wikimedia Commons berlisensi CC0 atau domain publik, seperti tercatat di bawah.
+
 ## Ikon
 
 - Sumber: Lucide, paket `lucide-static` 1.66.0 (sudah menjadi dependensi proyek). Lisensi ISC; teks lisensi ada di `public/icons/LICENSE-Lucide-ISC.txt`.

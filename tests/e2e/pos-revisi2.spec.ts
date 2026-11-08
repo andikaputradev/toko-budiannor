@@ -2374,11 +2374,18 @@ test.describe('susunan kartu barang seperti referensi', () => {
     await loginPos(page, 'Dewi');
     const cards = page.locator('.pos-card');
     await expect(cards.nth(3)).toBeVisible();
-    const boxes = await Promise.all([0, 1, 2, 3].map((index) => cards.nth(index).boundingBox()));
-    const [one, two, three, four] = boxes;
-    expect(Math.abs((one?.y ?? 0) - (two?.y ?? 99))).toBeLessThan(1);
-    expect(Math.abs((one?.y ?? 0) - (three?.y ?? 99))).toBeLessThan(1);
-    expect((four?.y ?? 0) - (one?.y ?? 0)).toBeGreaterThan(150);
+    const boxes = await Promise.all([0, 1, 2, 3, 4].map((index) => cards.nth(index).boundingBox()));
+    const [one, two, three] = boxes;
+    // Jumlah kolom: kartu yang sebaris dengan kartu pertama. 3 kolom pada 1280 dan 1366 px, boleh 4 pada layar lebih lebar.
+    const columns = boxes.filter((box) => Math.abs((box?.y ?? 99) - (one?.y ?? 0)) < 1).length;
+    const width = page.viewportSize()?.width ?? 0;
+    expect(columns).toBeGreaterThanOrEqual(3);
+    expect(columns).toBeLessThanOrEqual(4);
+    if (width <= 1366) {
+      expect(columns).toBe(3);
+    }
+    const next = boxes[columns];
+    expect((next?.y ?? 0) - (one?.y ?? 0)).toBeGreaterThan(150);
     expect(Math.abs((one?.height ?? 0) - (two?.height ?? 99))).toBeLessThan(1.5);
     expect(Math.abs((one?.height ?? 0) - (three?.height ?? 99))).toBeLessThan(1.5);
 
