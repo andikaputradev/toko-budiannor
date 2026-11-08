@@ -10,8 +10,9 @@ export interface AmountEntry {
   setValue(value: number): void;
   setMax(max: number | undefined): void;
   focus(): void;
-  // Ketikan papan ketik fisik juga diterima dari target ini (mis. dialog yang memuat entri).
-  listenOn(target: HTMLElement): void;
+  // Ketikan papan ketik fisik juga diterima dari target ini (mis. dialog atau dokumen).
+  // Mengembalikan fungsi pelepas.
+  listenOn(target: EventTarget): () => void;
 }
 
 export interface AmountEntryOptions {
@@ -21,6 +22,8 @@ export interface AmountEntryOptions {
   enterText?: string;
   onChange: (value: number) => void;
   onEnter?: () => void;
+  // Ketikan papan ketik hanya diterima selama fungsi ini mengembalikan true.
+  enabled?: () => boolean;
 }
 
 const FIELD_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
@@ -52,7 +55,7 @@ export function createAmountEntry(options: AmountEntryOptions): AmountEntry {
   );
   const element = el(
     'div',
-    { className: 'pos-amount', attrs: { role: 'group', 'aria-label': options.labelText } },
+    { className: 'pos-amount' },
     el('p', { className: 't-label', text: options.labelText }),
     display,
     pad.element,
@@ -60,6 +63,9 @@ export function createAmountEntry(options: AmountEntryOptions): AmountEntry {
   // Satu ketikan ditangani sekali walau dua target (entri dan dialog) sama-sama mendengar.
   const onKeydown = (event: KeyboardEvent): void => {
     if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+    if (options.enabled?.() === false) {
       return;
     }
     const target = event.target;
@@ -93,7 +99,11 @@ export function createAmountEntry(options: AmountEntryOptions): AmountEntry {
       pad.element.querySelector('button')?.focus();
     },
     listenOn(target) {
-      target.addEventListener('keydown', onKeydown);
+      const handler = onKeydown as EventListener;
+      target.addEventListener('keydown', handler);
+      return () => {
+        target.removeEventListener('keydown', handler);
+      };
     },
   };
 }

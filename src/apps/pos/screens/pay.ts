@@ -6,7 +6,7 @@ import type { PaidMethod, PaymentMethod } from '../../../shared/data/types';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
-import { lineSubtotal } from '../domain/bill';
+import { createAmountEntry } from '../amount-entry';
 import { DEFAULT_DUE_DAYS } from '../domain/forms';
 import { CASH_METHODS, maxAmount, QUICK_AMOUNTS } from '../domain/payment';
 import { dueDateOf, parseTermDays, TERM_CHOICES } from '../domain/terms';
@@ -14,7 +14,19 @@ import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
 import { openPaymentDone } from './payment-done';
+import { createPaySummary } from './pay-summary';
 import type { ScreenHandle } from './login';
+
+type PayTab = 'tunai' | 'nontunai' | 'split' | 'piutang';
+
+const TABS: readonly { readonly id: PayTab; readonly text: LabelKey }[] = [
+  { id: 'tunai', text: 'tabTunai' },
+  { id: 'nontunai', text: 'tabNonTunai' },
+  { id: 'split', text: 'tabSplit' },
+  { id: 'piutang', text: 'tabPiutang' },
+];
+
+const NON_CASH_METHODS: readonly PaidMethod[] = CASH_METHODS.filter((method) => method !== 'tunai');
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
@@ -23,13 +35,6 @@ const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   transfer: 'metodeTransfer',
   dp: 'metodeDp',
   piutang: 'metodePiutang',
-};
-
-const SHORTCUTS: Readonly<Record<string, PaidMethod>> = {
-  '1': 'tunai',
-  '2': 'qris',
-  '3': 'edc',
-  '4': 'transfer',
 };
 
 function plain(value: number): string {
@@ -45,52 +50,41 @@ function asPaid(method: PaymentMethod): PaidMethod {
   return method === 'dp' || method === 'piutang' ? 'tunai' : method;
 }
 
+// Tab awal mengikuti pembayaran yang sudah tersimpan di sesi (mis. kembali dari layar lain).
+function initialTab(session: PosSession): PayTab {
+  const state = session.state();
+  if (state.method === 'piutang' || state.rows.some((row) => row.method === 'piutang')) {
+    return 'piutang';
+  }
+  const paid = state.rows.filter((row) => row.method !== 'dp' && row.amount > 0);
+  if (paid.length > 1) {
+    return 'split';
+  }
+  return asPaid(state.method) === 'tunai' ? 'tunai' : 'nontunai';
+}
+
 export function renderPay(session: PosSession, go: (path: string) => void): ScreenHandle {
   const topbar = createTopbar(session, 'judulPembayaran');
+  const summaryPane = createPaySummary(session);
   const amountId = nextId('diterima');
-  const referenceId = nextId('referensi');
   const dpId = nextId('dp');
   const daysId = nextId('hari');
-  const stored = session.state().rows;
-  let split =
-    stored.filter((row) => row.method !== 'dp' && row.method !== 'piutang' && row.amount > 0)
-      .length > 1;
+  let tab: PayTab = initialTab(session);
   let pending = 0;
-  let dpVia: PaidMethod = stored.find((row) => row.method === 'dp')?.via ?? 'tunai';
+  let dpVia: PaidMethod = session.state().rows.find((row) => row.method === 'dp')?.via ?? 'tunai';
 
-  const summaryList = el('ul', { className: 'pos-pay__items' });
-  const totalOutput = el('output', { className: 't-total pos-pay__total' });
+  const grand = el('output', { className: 't-total pos-pay__grand' });
 
-  const radio = (text: string, onClick: () => void): HTMLButtonElement => {
-    const button = createButton({ text, variant: 'secondary', onClick });
-    button.setAttribute('role', 'radio');
-    button.classList.add('pos-pay__method');
-    return button;
-  };
-  const termsTunai = radio(label('metodeTunai'), () => {
-    split = false;
-    pending = 0;
-    session.chooseSingle('tunai');
-  });
-  const termsPiutang = radio(label('metodePiutang'), () => {
-    session.chooseReceivable('piutang');
-  });
-  const termsGroup = el(
-    'div',
-    {
-      className: 'pos-pay__terms-choice',
-      attrs: { role: 'radiogroup', 'aria-label': label('syaratBayar') },
-    },
-    termsTunai,
-    termsPiutang,
-  );
-
-  const methodGroup = (onPick: (method: PaidMethod) => void, name: LabelKey): HTMLDivElement => {
+  const methodGroup = (
+    onPick: (method: PaidMethod) => void,
+    name: LabelKey,
+    methods: readonly PaidMethod[],
+  ): HTMLDivElement => {
     const group = el('div', {
       className: 'pos-pay__methods',
       attrs: { role: 'group', 'aria-label': label(name) },
     });
-    for (const method of CASH_METHODS) {
+    for (const method of methods) {
       const button = createButton({
         text: label(METHOD_LABELS[method]),
         variant: 'secondary',
@@ -104,58 +98,110 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     }
     return group;
   };
-  const methods = methodGroup((method) => {
-    pending = 0;
-    if (split) {
-      session.setMethod(method);
-    } else {
-      session.chooseSingle(method);
-    }
-  }, 'caraBayar');
-  const dpMethods = methodGroup((method) => {
-    dpVia = method;
-    session.setDownPayment(
-      session.state().rows.find((row) => row.method === 'dp')?.amount ?? 0,
-      dpVia,
+  const referenceField = (): HTMLElement => {
+    const id = nextId('referensi');
+    return el(
+      'div',
+      { className: 'pos-pay__reference' },
+      el('label', {
+        className: 'field__label',
+        text: label('nomorReferensi'),
+        attrs: { for: id },
+      }),
+      el('input', { className: 'input', attrs: { id, autocomplete: 'off' } }),
     );
-    paint();
-  }, 'caraBayarDp');
+  };
+  const quickRow = (onExact: () => void, onAmount: (amount: number) => void): HTMLElement => {
+    const row = el('div', { className: 'pos-pay__quick' });
+    const quickButton = (text: string, onClick: () => void): HTMLButtonElement =>
+      createButton({ text, variant: 'secondary', onClick });
+    row.append(
+      quickButton(label('uangPas'), onExact),
+      ...QUICK_AMOUNTS.map((amount) =>
+        quickButton(plain(amount), () => {
+          onAmount(amount);
+        }),
+      ),
+    );
+    return row;
+  };
 
-  const splitSwitch = createButton({
-    text: label('splitPayment'),
-    variant: 'secondary',
+  const messageBox = el('div', { className: 'pos-pay__message', attrs: { 'aria-live': 'polite' } });
+  const finish = createButton({
+    text: label('bayar'),
+    pay: true,
     onClick: () => {
-      split = !split;
-      pending = 0;
-      if (!split) {
-        session.chooseSingle(asPaid(session.state().method));
-      } else {
-        paint();
+      const sale = session.finish();
+      if (sale === undefined) {
+        return;
       }
+      showToast({ kind: 'success', text: label('transaksiTersimpan', { nomor: sale.number }) });
+      openPaymentDone(session, sale, go);
     },
   });
-  splitSwitch.setAttribute('role', 'switch');
-  splitSwitch.classList.add('pos-pay__split');
 
+  // Tab Tunai: papan angka di halaman; OK mengisi Uang Pas hanya bila nominal masih kosong.
+  const entry = createAmountEntry({
+    labelText: label('jumlahDiterima'),
+    value: session.state().rows.find((row) => row.method === 'tunai')?.amount ?? 0,
+    onChange: (value) => {
+      session.setAmount('tunai', value);
+    },
+    onEnter: () => {
+      if (entry.value() === 0) {
+        session.exactAmount();
+      } else {
+        finish.focus();
+      }
+    },
+    enabled: () => tab === 'tunai' && document.querySelector('.modal-overlay') === null,
+  });
+  const tunaiPanel = el(
+    'div',
+    { className: 'pos-pay__mode' },
+    entry.element,
+    quickRow(
+      () => {
+        session.exactAmount();
+      },
+      (amount) => {
+        session.quickAmount(amount);
+      },
+    ),
+  );
+
+  // Tab Non-Tunai dan Split: kontrol sementara yang digantikan kartu kanal (Task 14) dan
+  // modal Pembayaran N (Task 15).
+  const nonCashMethods = methodGroup(
+    (method) => {
+      session.chooseSingle(method);
+    },
+    'caraBayar',
+    NON_CASH_METHODS,
+  );
+  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, nonCashMethods, referenceField());
+
+  const splitMethods = methodGroup(
+    (method) => {
+      pending = 0;
+      session.setMethod(method);
+    },
+    'caraBayar',
+    CASH_METHODS,
+  );
   const amountInput = el('input', {
     className: 'input pos-pay__amount',
     attrs: { id: amountId, inputmode: 'numeric', autocomplete: 'off' },
   });
-  const reference = el('input', {
-    className: 'input',
-    attrs: { id: referenceId, autocomplete: 'off' },
-  });
-  const referenceField = el(
-    'div',
-    { className: 'pos-pay__reference' },
-    el('label', {
-      className: 'field__label',
-      text: label('nomorReferensi'),
-      attrs: { for: referenceId },
-    }),
-    reference,
+  const splitQuick = quickRow(
+    () => {
+      setPending(session.summary().shortfall);
+    },
+    (amount) => {
+      setPending(amount);
+    },
   );
-  const quick = el('div', { className: 'pos-pay__quick' });
+  const splitReference = referenceField();
   const addRow = createButton({
     text: label('tambahPembayaran'),
     variant: 'secondary',
@@ -167,34 +213,47 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     },
   });
   const rows = el('ul', { className: 'pos-pay__rows' });
-  const sisa = el('output', { className: 't-total pos-pay__sisa' });
-  const change = el('output', { className: 't-total pos-pay__change' });
-  const tunaiPanel = el(
+  const splitPanel = el(
     'div',
     { className: 'pos-pay__mode' },
-    methods,
-    splitSwitch,
+    splitMethods,
     el('label', {
       className: 'field__label',
       text: label('jumlahDiterima'),
       attrs: { for: amountId },
     }),
     amountInput,
-    referenceField,
-    quick,
+    splitReference,
+    splitQuick,
     addRow,
     el('h2', { className: 't-section-title', text: label('rincianPembayaran') }),
     rows,
-    el('p', { className: 't-label', text: label('sisaBayar') }),
-    sisa,
-    el('p', { className: 't-label', text: label('kembalian') }),
-    change,
+  );
+
+  const sisa = el('output', { className: 't-total pos-pay__sisa' });
+  const change = el('output', { className: 't-total pos-pay__change' });
+  const result = el(
+    'div',
+    { className: 'pos-pay__result' },
+    el(
+      'div',
+      { className: 'pos-pay__figure' },
+      el('p', { className: 't-label', text: label('sisaBayar') }),
+      sisa,
+    ),
+    el(
+      'div',
+      { className: 'pos-pay__figure' },
+      el('p', { className: 't-label', text: label('kembalian') }),
+      change,
+    ),
   );
 
   const termChips = el('div', {
     className: 'pos-pay__terms',
     attrs: { role: 'group', 'aria-label': label('tempoLabel') },
   });
+  const daysError = el('p', { className: 'pos-pay__error', attrs: { role: 'alert' } });
   for (const days of TERM_CHOICES) {
     const chip = createButton({
       text: label('tempoHari', { hari: days }),
@@ -208,11 +267,22 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     chip.classList.add('pos-pay__method');
     termChips.append(chip);
   }
+  const dpMethods = methodGroup(
+    (method) => {
+      dpVia = method;
+      session.setDownPayment(
+        session.state().rows.find((row) => row.method === 'dp')?.amount ?? 0,
+        dpVia,
+      );
+      paint();
+    },
+    'caraBayarDp',
+    CASH_METHODS,
+  );
   const daysInput = el('input', {
     className: 'input pos-pay__days',
     attrs: { id: daysId, inputmode: 'numeric', autocomplete: 'off' },
   });
-  const daysError = el('p', { className: 'pos-pay__error', attrs: { role: 'alert' } });
   const dpInput = el('input', {
     className: 'input pos-pay__amount',
     attrs: { id: dpId, inputmode: 'numeric', autocomplete: 'off' },
@@ -251,19 +321,77 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     limitText,
   );
 
-  const messageBox = el('div', { className: 'pos-pay__message', attrs: { 'aria-live': 'polite' } });
-  const finish = createButton({
-    text: label('bayar'),
-    pay: true,
-    onClick: () => {
-      const sale = session.finish();
-      if (sale === undefined) {
-        return;
-      }
-      showToast({ kind: 'success', text: label('transaksiTersimpan', { nomor: sale.number }) });
-      openPaymentDone(session, sale, go);
-    },
+  const panels: Readonly<Record<PayTab, HTMLElement>> = {
+    tunai: tunaiPanel,
+    nontunai: nonCashPanel,
+    split: splitPanel,
+    piutang: piutangPanel,
+  };
+  const tabButtons = new Map<PayTab, HTMLButtonElement>();
+  const tablist = el('div', {
+    className: 'pos-pay__tabs',
+    attrs: { role: 'tablist', 'aria-label': label('caraBayar') },
   });
+  for (const item of TABS) {
+    const tabId = nextId('tab-bayar');
+    const panelId = nextId('panel-bayar');
+    const button = el('button', {
+      className: 'pos-pay__tab',
+      text: label(item.text),
+      attrs: {
+        type: 'button',
+        role: 'tab',
+        id: tabId,
+        'aria-controls': panelId,
+        'aria-selected': 'false',
+        tabindex: '-1',
+      },
+    });
+    panels[item.id].setAttribute('role', 'tabpanel');
+    panels[item.id].setAttribute('id', panelId);
+    panels[item.id].setAttribute('aria-labelledby', tabId);
+    button.addEventListener('click', () => {
+      selectTab(item.id);
+    });
+    tabButtons.set(item.id, button);
+    tablist.append(button);
+  }
+  tablist.addEventListener('keydown', (event) => {
+    const order = TABS.map((item) => tabButtons.get(item.id)).filter(
+      (button): button is HTMLButtonElement => button !== undefined,
+    );
+    const at = order.findIndex((button) => button === event.target);
+    const step: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
+    let next = -1;
+    if (event.key === 'Home') {
+      next = 0;
+    } else if (event.key === 'End') {
+      next = order.length - 1;
+    } else if (at >= 0 && step[event.key] !== undefined) {
+      next = (at + (step[event.key] ?? 0) + order.length) % order.length;
+    }
+    if (next >= 0) {
+      event.preventDefault();
+      order[next]?.focus();
+    }
+  });
+
+  const selectTab = (next: PayTab): void => {
+    if (next === tab) {
+      return;
+    }
+    tab = next;
+    pending = 0;
+    daysError.textContent = '';
+    if (next === 'tunai') {
+      session.chooseSingle('tunai');
+    } else if (next === 'piutang') {
+      session.chooseReceivable('piutang');
+    } else {
+      session.resetPayment();
+    }
+    paint();
+  };
 
   const setPending = (value: number): void => {
     const method = asPaid(session.state().method);
@@ -272,34 +400,29 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     paint();
   };
 
+  const paintMethods = (group: HTMLElement, method: PaidMethod): void => {
+    for (const button of group.querySelectorAll<HTMLButtonElement>('button')) {
+      button.setAttribute('aria-pressed', button.dataset['method'] === method ? 'true' : 'false');
+    }
+  };
+
   const paint = (): void => {
     const state = session.state();
     const summary = session.summary();
     const current = session.customer();
-    const receivable =
-      state.method === 'piutang' || state.rows.some((row) => row.method === 'piutang');
     const method = asPaid(state.method);
-    summaryList.replaceChildren(
-      ...state.lines.map((line) =>
-        el(
-          'li',
-          { className: 'pos-pay__item' },
-          el('span', { text: session.product(line.productId)?.name ?? line.productId }),
-          el('span', {
-            className: 't-label',
-            text: `${String(line.quantity).replace('.', ',')} ${line.unit}`,
-          }),
-          el('span', { className: 'is-end', text: formatRupiah(lineSubtotal(line)) }),
-        ),
-      ),
-    );
-    totalOutput.textContent = formatRupiah(summary.total);
-    termsTunai.setAttribute('aria-checked', receivable ? 'false' : 'true');
-    termsPiutang.setAttribute('aria-checked', receivable ? 'true' : 'false');
-    tunaiPanel.hidden = receivable;
-    piutangPanel.hidden = !receivable;
+    summaryPane.paint();
+    grand.textContent = formatRupiah(summary.total);
+    for (const item of TABS) {
+      const button = tabButtons.get(item.id);
+      const selected = item.id === tab;
+      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      panels[item.id].hidden = !selected;
+    }
+    result.hidden = tab === 'piutang';
 
-    if (receivable) {
+    if (tab === 'piutang') {
       const days = state.terms?.dueDays ?? current?.dueDays ?? DEFAULT_DUE_DAYS;
       for (const chip of termChips.querySelectorAll<HTMLButtonElement>('button')) {
         chip.setAttribute('aria-pressed', chip.dataset['days'] === String(days) ? 'true' : 'false');
@@ -311,9 +434,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       if (document.activeElement !== dpInput) {
         dpInput.value = dp === 0 ? '' : plain(dp);
       }
-      for (const button of dpMethods.querySelectorAll<HTMLButtonElement>('button')) {
-        button.setAttribute('aria-pressed', button.dataset['method'] === dpVia ? 'true' : 'false');
-      }
+      paintMethods(dpMethods, dpVia);
       dpOutput.textContent = formatRupiah(dp);
       dueAmount.textContent = formatRupiah(summary.receivable);
       dueDate.textContent = formatDate(new Date(dueDateOf(session.now(), days)));
@@ -323,27 +444,17 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
           : label('sisaLimitPiutang', {
               jumlah: formatRupiah(Math.max(0, remainingLimit(current))),
             });
+    } else if (tab === 'tunai') {
+      entry.setValue(state.rows.find((row) => row.method === 'tunai')?.amount ?? 0);
+    } else if (tab === 'nontunai') {
+      paintMethods(nonCashMethods, method);
     } else {
-      for (const button of methods.querySelectorAll<HTMLButtonElement>('button')) {
-        button.setAttribute('aria-pressed', button.dataset['method'] === method ? 'true' : 'false');
-      }
-      splitSwitch.setAttribute('aria-checked', split ? 'true' : 'false');
-      const row = state.rows.find((item) => item.method === method);
-      const editable = split || method === 'tunai';
-      amountInput.readOnly = !editable;
-      amountInput.value = split
-        ? pending === 0
-          ? ''
-          : plain(pending)
-        : row === undefined || row.amount === 0
-          ? ''
-          : plain(row.amount);
-      referenceField.hidden = method === 'tunai';
-      quick.hidden = method !== 'tunai';
-      addRow.hidden = !split;
-      rows.hidden = !split;
+      paintMethods(splitMethods, method);
+      amountInput.value = pending === 0 ? '' : plain(pending);
+      splitReference.hidden = method === 'tunai';
+      splitQuick.hidden = method !== 'tunai';
       rows.replaceChildren(
-        ...(split ? state.rows : []).map((item) => {
+        ...state.rows.map((item) => {
           const remove = createButton({
             text: label('hapus'),
             variant: 'secondary',
@@ -391,8 +502,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
             text: label('gantiCaraBayar'),
             variant: 'secondary',
             onClick: () => {
-              split = false;
-              session.resetPayment();
+              selectTab('tunai');
             },
           }),
         );
@@ -415,34 +525,8 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     finish.setAttribute('aria-disabled', ready ? 'false' : 'true');
   };
 
-  const quickButton = (text: string, onClick: () => void): HTMLButtonElement =>
-    createButton({ text, variant: 'secondary', onClick });
-  quick.append(
-    quickButton(label('uangPas'), () => {
-      if (split) {
-        setPending(session.summary().shortfall);
-      } else {
-        session.exactAmount();
-      }
-    }),
-    ...QUICK_AMOUNTS.map((amount) =>
-      quickButton(plain(amount), () => {
-        if (split) {
-          setPending(amount);
-        } else {
-          session.quickAmount(amount);
-        }
-      }),
-    ),
-  );
-
   amountInput.addEventListener('input', () => {
-    const value = digitsOf(amountInput.value);
-    if (split) {
-      setPending(value);
-    } else {
-      session.setAmount(session.state().method, value);
-    }
+    setPending(digitsOf(amountInput.value));
   });
   dpInput.addEventListener('input', () => {
     session.setDownPayment(digitsOf(dpInput.value), dpVia);
@@ -475,20 +559,16 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     if (document.querySelector('.modal-overlay') !== null) {
       return;
     }
-    const typing = event.target instanceof HTMLInputElement;
     if (event.key === 'Escape') {
       event.preventDefault();
       go('/pos/jual');
     } else if (event.key === 'F4') {
       event.preventDefault();
       finish.click();
-    } else if (!typing && piutangPanel.hidden && SHORTCUTS[event.key] !== undefined) {
-      methods
-        .querySelector<HTMLButtonElement>(`[data-method="${SHORTCUTS[event.key] ?? 'tunai'}"]`)
-        ?.click();
     }
   };
   document.addEventListener('keydown', onKey);
+  const stopKeys = entry.listenOn(document);
   const stop = session.subscribe(paint);
 
   const element = el(
@@ -498,20 +578,15 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     el(
       'main',
       { className: 'pos-pay' },
-      el(
-        'section',
-        { className: 'pos-pay__summary', attrs: { 'aria-label': label('totalTagihan') } },
-        summaryList,
-        el('p', { className: 't-label', text: label('totalTagihan') }),
-        totalOutput,
-      ),
+      summaryPane.element,
       el(
         'section',
         { className: 'pos-pay__panel' },
-        el('h2', { className: 't-section-title', text: label('syaratBayar') }),
-        termsGroup,
-        tunaiPanel,
-        piutangPanel,
+        el('p', { className: 't-label', text: label('totalPembayaran') }),
+        grand,
+        tablist,
+        ...TABS.map((item) => panels[item.id]),
+        result,
         messageBox,
         el(
           'div',
@@ -530,11 +605,11 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     ),
   );
   paint();
-  amountInput.focus();
   return {
     element,
     destroy: () => {
       stop();
+      stopKeys();
       document.removeEventListener('keydown', onKey);
       topbar.destroy();
     },

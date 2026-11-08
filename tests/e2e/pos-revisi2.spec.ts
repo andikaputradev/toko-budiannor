@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import {
+  chooseCustomer,
   finishPaymentDialog,
   loginPos,
   loginPosRaw,
@@ -453,5 +454,135 @@ test.describe('entri nominal', () => {
     await page.keyboard.type('5');
     await dialog.getByRole('button', { name: 'Lanjut' }).click();
     await expect(page.locator('.pos-card').first()).toBeVisible();
+  });
+});
+
+test.describe('layar bayar', () => {
+  async function toPay(page: Page, customer?: string): Promise<void> {
+    await loginPos(page);
+    if (customer !== undefined) {
+      await chooseCustomer(page, customer);
+    }
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page).toHaveURL(/#\/pos\/bayar$/);
+  }
+  const pay = (page: Page) => page.getByRole('button', { name: 'Bayar', exact: true });
+  const value = (page: Page) => page.locator('.pos-amount__value');
+  async function pad(page: Page, digits: string): Promise<void> {
+    for (const digit of digits) {
+      await page.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+  }
+
+  test('empat tab terlihat dengan role tab dan Tunai terpilih', async ({ page }) => {
+    await toPay(page);
+    const tabs = page.getByRole('tablist', { name: 'Cara bayar' }).getByRole('tab');
+    await expect(tabs).toHaveText(['Tunai', 'Non-Tunai', 'Split', 'Piutang']);
+    await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'true');
+    for (const index of [1, 2, 3]) {
+      await expect(tabs.nth(index)).toHaveAttribute('aria-selected', 'false');
+    }
+    await expect(page.getByRole('tabpanel')).toHaveCount(1);
+    await expect(page.getByText('Total Pembayaran', { exact: true })).toBeVisible();
+    await expect(page.locator('.pos-pay__grand')).toHaveText('Rp 70.000');
+    await expect(page.getByRole('radiogroup', { name: 'Syarat bayar' })).toHaveCount(0);
+  });
+
+  test('Tunai: papan angka mengisi Jumlah diterima, Uang Pas melunasi, dan Kembalian tampil', async ({
+    page,
+  }) => {
+    await toPay(page);
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+    await pad(page, '100000');
+    await expect(value(page)).toHaveText('Rp 100.000');
+    await expect(page.locator('.pos-pay__change')).toHaveText('Rp 30.000');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await page.getByRole('button', { name: 'C', exact: true }).click();
+    await expect(value(page)).toHaveText('Rp 0');
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 70.000');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+    await page.getByRole('button', { name: 'Uang Pas' }).click();
+    await expect(value(page)).toHaveText('Rp 70.000');
+    await expect(page.locator('.pos-pay__change')).toHaveText('Rp 0');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await pay(page).click();
+    await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+  });
+
+  test('papan ketik fisik mengisi nominal Tunai, dan OK mengisi Uang Pas hanya bila masih kosong', async ({
+    page,
+  }) => {
+    await toPay(page);
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(value(page)).toHaveText('Rp 70.000');
+    await page.getByRole('button', { name: 'C', exact: true }).click();
+    await page.keyboard.type('100000');
+    await expect(value(page)).toHaveText('Rp 100.000');
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(value(page)).toHaveText('Rp 100.000');
+    await page.keyboard.press('Backspace');
+    await expect(value(page)).toHaveText('Rp 10.000');
+  });
+
+  test('Piutang: tempo 30 hari, DP, sisa tagihan, dan jatuh tempo tampil seperti sebelumnya', async ({
+    page,
+  }) => {
+    await toPay(page, 'Bu Sherly');
+    await page.getByRole('tab', { name: 'Piutang' }).click();
+    await expect(page.getByRole('tab', { name: 'Piutang' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: '30 hari' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(page.locator('.pos-pay__due')).toContainText('18 Nov 2026');
+    await page.getByLabel('DP', { exact: true }).fill('20000');
+    await expect(page.locator('.pos-pay__due-amount')).toContainText('Rp 50.000');
+    await expect(page.locator('.pos-pay__dp')).toContainText('Rp 20.000');
+    await page.getByRole('button', { name: '45 hari' }).click();
+    await expect(page.locator('.pos-pay__due')).toContainText('3 Des 2026');
+    await pay(page).click();
+    await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
+  });
+
+  test('berpindah dari Piutang ke Tunai membuang baris tersembunyi', async ({ page }) => {
+    await toPay(page, 'Bu Sherly');
+    await page.getByRole('tab', { name: 'Piutang' }).click();
+    await page.getByLabel('DP', { exact: true }).fill('20000');
+    await expect(page.locator('.pos-pay__due-amount')).toContainText('Rp 50.000');
+    await page.getByRole('tab', { name: 'Tunai', exact: true }).click();
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 70.000');
+    await expect(value(page)).toHaveText('Rp 0');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('layar bayar lolos axe dan target 48 px pada mode terang dan gelap', async ({ page }) => {
+    await toPay(page, 'Bu Sherly');
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      for (const tab of ['Tunai', 'Piutang']) {
+        await page.getByRole('tab', { name: tab, exact: true }).click();
+        await settle(page);
+        const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+        expect(result.violations, `${scheme} ${tab}`).toEqual([]);
+        const heights = await page
+          .locator('.pos-pay button, .pos-pay input')
+          .evaluateAll((nodes) =>
+            nodes
+              .filter((node) => node.getClientRects().length > 0)
+              .map(
+                (node) =>
+                  [node.getAttribute('class') ?? '', node.getBoundingClientRect().height] as const,
+              ),
+          );
+        for (const [name, height] of heights) {
+          expect(height, `${scheme} ${tab} ${name}`).toBeGreaterThanOrEqual(47.5);
+        }
+      }
+    }
   });
 });

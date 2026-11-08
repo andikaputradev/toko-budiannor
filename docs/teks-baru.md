@@ -882,3 +882,8 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-872: "Tambah foto bukti". Kunci tambahFotoBukti.
 - TB-873: "Total {jumlah}". Kunci totalBarisRetur.
 - TB-874: "OK". Kunci tombolOk.
+- TB-875: "Tunai". Kunci tabTunai.
+- TB-876: "Non-Tunai". Kunci tabNonTunai.
+- TB-877: "Split". Kunci tabSplit.
+- TB-878: "Piutang". Kunci tabPiutang.
+- TB-879: "Total Pembayaran". Kunci totalPembayaran.

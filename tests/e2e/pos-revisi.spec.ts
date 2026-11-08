@@ -8,6 +8,7 @@ import {
   openDrawerItem,
   settle,
   startShift,
+  typeAmount,
 } from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -341,21 +342,22 @@ test.describe('pembayaran', () => {
 
   test('QRIS langsung sebesar total dan Bayar aktif', async ({ page }) => {
     await toPay(page);
+    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await expect(page.getByLabel('Jumlah diterima')).toHaveValue('70.000');
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
   });
 
   test('Split Payment: tunai 30.000 lalu QRIS dibatasi sisa 40.000', async ({ page }) => {
     await toPay(page);
-    await page.getByRole('switch', { name: 'Split Payment' }).click();
-    await page.getByLabel('Jumlah diterima').fill('30000');
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
     await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
     await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 40.000');
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'true');
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await page.getByLabel('Jumlah diterima').fill('99999');
-    await expect(page.getByLabel('Jumlah diterima')).toHaveValue('40.000');
+    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('99999');
+    await expect(page.getByRole('textbox', { name: 'Jumlah diterima' })).toHaveValue('40.000');
     await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
     await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 0');
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
@@ -367,7 +369,7 @@ test.describe('pembayaran', () => {
     page,
   }) => {
     await toPay(page, 'Bu Sherly');
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(page.getByRole('button', { name: '30 hari' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -388,7 +390,7 @@ test.describe('pembayaran', () => {
 
   test('Piutang tanpa pelanggan terdaftar menampilkan MSG-034', async ({ page }) => {
     await toPay(page);
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(
       page.getByText('Piutang hanya untuk pelanggan terdaftar. Pilih atau daftarkan pelanggan.'),
     ).toBeVisible();
@@ -396,26 +398,20 @@ test.describe('pembayaran', () => {
 
   test('Piutang Pak Wahyudi ditolak MSG-036 dan menawarkan otorisasi Owner', async ({ page }) => {
     await toPay(page, 'Pak Wahyudi');
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(
       page.getByText('Transaksi piutang ditolak: pelanggan memiliki tagihan melewati jatuh tempo.'),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Minta Otorisasi Owner' })).toBeVisible();
   });
 
-  test('pintasan angka memilih cara bayar dan Esc kembali ke layar jual', async ({ page }) => {
+  test('angka papan ketik mengisi Jumlah diterima dan Esc kembali ke layar jual', async ({
+    page,
+  }) => {
     await toPay(page);
     await page.getByRole('heading', { name: 'Pembayaran', exact: true }).click();
-    await page.keyboard.press('2');
-    await expect(page.getByRole('button', { name: 'QRIS', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await page.keyboard.press('3');
-    await expect(page.getByRole('button', { name: 'EDC', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await page.keyboard.type('250');
+    await expect(page.locator('.pos-amount__value')).toHaveText('Rp 250');
     await page.keyboard.press('Escape');
     await expect(page).toHaveURL(/#\/pos\/jual$/);
   });
@@ -426,11 +422,11 @@ test.describe('pembayaran', () => {
     await settle(page);
     const tunai = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(tunai.violations).toEqual([]);
-    await page.getByRole('switch', { name: 'Split Payment' }).click();
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
     await settle(page);
     const split = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(split.violations).toEqual([]);
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await settle(page);
     const piutang = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(piutang.violations).toEqual([]);
@@ -463,7 +459,7 @@ test.describe('pembayaran berhasil', () => {
     if (options.given === undefined) {
       await page.getByRole('button', { name: 'Uang Pas' }).click();
     } else {
-      await page.getByLabel('Jumlah diterima').fill(options.given);
+      await typeAmount(page, options.given);
     }
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Pembayaran Berhasil' });
@@ -571,11 +567,11 @@ test.describe('riwayat penjualan', () => {
   async function saleSplit(page: Page): Promise<void> {
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
-    await page.getByRole('switch', { name: 'Split Payment' }).click();
-    await page.getByLabel('Jumlah diterima').fill('30000');
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
     await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await page.getByLabel('Jumlah diterima').fill('40000');
+    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('40000');
     await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     await finishPaymentDialog(page);
@@ -585,7 +581,7 @@ test.describe('riwayat penjualan', () => {
     await chooseCustomer(page, 'Bu Sherly');
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await page.getByLabel('DP', { exact: true }).fill('20000');
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
@@ -831,13 +827,13 @@ test.describe('perbaikan hasil review', () => {
     await chooseCustomer(page, 'Bu Sherly');
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await page.getByLabel('DP', { exact: true }).fill('20000');
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
     await page.getByRole('button', { name: 'Kembali' }).click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
-    await expect(page.getByRole('radio', { name: 'Piutang' })).toHaveAttribute(
-      'aria-checked',
+    await expect(page.getByRole('tab', { name: 'Piutang' })).toHaveAttribute(
+      'aria-selected',
       'true',
     );
     await expect(page.getByRole('button', { name: 'QRIS', exact: true })).toHaveAttribute(
@@ -850,16 +846,16 @@ test.describe('perbaikan hasil review', () => {
     await loginPos(page);
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
-    await page.getByRole('switch', { name: 'Split Payment' }).click();
-    await page.getByLabel('Jumlah diterima').fill('30000');
+    await page.getByRole('tab', { name: 'Split', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
     await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-    await page.getByLabel('Jumlah diterima').fill('10000');
+    await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('10000');
     await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
     await page.getByRole('button', { name: 'Kembali' }).click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
-    await expect(page.getByRole('switch', { name: 'Split Payment' })).toHaveAttribute(
-      'aria-checked',
+    await expect(page.getByRole('tab', { name: 'Split', exact: true })).toHaveAttribute(
+      'aria-selected',
       'true',
     );
     await expect(page.locator('.pos-pay__rows li')).toHaveCount(2);

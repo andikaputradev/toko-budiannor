@@ -219,3 +219,35 @@
     padding-left: calc(var(--space-screen-margin) + 16px);
   }
 }
+
+/* Layar bayar: satu kolom, ringkasan terlipat, dan tombol Bayar menempel di bawah panel. */
+@media (max-width: 899px) {
+  .pos-pay {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pos-pay__summary {
+    flex: none;
+  }
+
+  .pos-pay__items {
+    flex: none;
+    max-height: 30dvh;
+  }
+
+  .pos-pay__summary[data-open='false'] .pos-pay__items {
+    display: none;
+  }
+
+  .pos-pay__grand {
+    font-size: 30px;
+    line-height: 38px;
+  }
+}
+
+@media (max-width: 599px) {
+  .pos-pay__tab {
+    font-size: 14px;
+  }
+}

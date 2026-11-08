@@ -1,6 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { chooseCustomer, loginPos, loginPosRaw, sellFirstProduct, settle } from './helpers/routes';
+import {
+  chooseCustomer,
+  clickPay,
+  loginPos,
+  loginPosRaw,
+  sellFirstProduct,
+  settle,
+} from './helpers/routes';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -356,5 +363,63 @@ test.describe('jual pada tablet lanskap 1280 x 800', () => {
     await expect(page.locator('.pos-order-bar')).toBeHidden();
     await expect(page.locator('.pos-bill-panel')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Tutup Pesanan' })).toBeHidden();
+  });
+});
+
+async function openPayScreen(page: Page): Promise<void> {
+  await loginPos(page);
+  await page.locator('.pos-card__main').first().click();
+  await clickPay(page);
+  await expect(page).toHaveURL(/#\/pos\/bayar$/);
+}
+
+test.describe('bayar pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: ringkasan terlipat dan tombol Bayar menempel di bawah', async ({ page }) => {
+    await openPayScreen(page);
+    const toggle = page.getByRole('button', { name: /^Subtotal/ });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.pos-pay__items')).toBeHidden();
+    const bayar = page.getByRole('button', { name: 'Bayar', exact: true });
+    const box = await bayar.boundingBox();
+    expect(box).not.toBeNull();
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeGreaterThan(730);
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(800);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    for (const tab of await page.getByRole('tab').all()) {
+      const tabBox = await tab.boundingBox();
+      expect(tabBox?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+      expect((tabBox?.x ?? 0) + (tabBox?.width ?? 0)).toBeLessThanOrEqual(360);
+    }
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.pos-pay__items')).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+
+  test('HP 360: papan angka Tunai terjangkau dan tidak tertutup peluncur', async ({ page }) => {
+    await openPayScreen(page);
+    await page.getByRole('button', { name: 'Uang Pas' }).scrollIntoViewIfNeeded();
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+    await expect(page.getByRole('button', { name: 'Uang Pas' })).toBeVisible();
+    await expect(page.locator('.pos-amount__value')).toBeVisible();
+  });
+});
+
+test.describe('bayar pada tablet lanskap 1280 x 800', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('pada 1280 px ringkasan dan pembayaran berdampingan', async ({ page }) => {
+    await openPayScreen(page);
+    const summary = await page.locator('.pos-pay__summary').boundingBox();
+    const panel = await page.locator('.pos-pay__panel').boundingBox();
+    expect(summary).not.toBeNull();
+    expect(panel).not.toBeNull();
+    expect((summary?.x ?? 0) + (summary?.width ?? 0)).toBeLessThanOrEqual((panel?.x ?? 0) + 1);
+    expect(Math.abs((summary?.y ?? 0) - (panel?.y ?? 0))).toBeLessThanOrEqual(4);
+    await expect(page.locator('.pos-pay__items')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Subtotal/ })).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });

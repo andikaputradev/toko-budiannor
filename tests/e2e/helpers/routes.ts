@@ -163,6 +163,7 @@ export async function sellFirstProduct(
   await page.locator('.pos-card__main').first().click();
   await clickPay(page);
   if (method === 'qris') {
+    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
   } else {
     await page.getByRole('button', { name: 'Uang Pas' }).click();
@@ -175,17 +176,24 @@ export async function sellFirstProduct(
 export async function sellSplitThree(page: Page): Promise<void> {
   await page.locator('.pos-card__main').first().click();
   await clickPay(page);
-  await page.getByRole('switch', { name: 'Split Payment' }).click();
-  await page.getByLabel('Jumlah diterima').fill('30000');
+  await page.getByRole('tab', { name: 'Split', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('30000');
   await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
   await page.getByRole('button', { name: 'QRIS', exact: true }).click();
-  await page.getByLabel('Jumlah diterima').fill('20000');
+  await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('20000');
   await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
   await page.getByRole('button', { name: 'EDC', exact: true }).click();
-  await page.getByLabel('Jumlah diterima').fill('20000');
+  await page.getByRole('textbox', { name: 'Jumlah diterima' }).fill('20000');
   await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
   await page.getByRole('button', { name: 'Bayar', exact: true }).click();
   await finishPaymentDialog(page);
+}
+
+// Mengetik nominal lewat papan angka di halaman (tab Tunai).
+export async function typeAmount(page: Page, digits: string): Promise<void> {
+  for (const digit of digits) {
+    await page.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+  }
 }
 
 export async function openRoute(page: Page, route: RouteCase): Promise<void> {
@@ -227,7 +235,7 @@ export const OVERLAYS: readonly OverlayCase[] = [
       await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
       await chooseCustomer(page, 'UD Maju Jaya');
       await clickPay(page);
-      await page.getByRole('radio', { name: 'Piutang' }).click();
+      await page.getByRole('tab', { name: 'Piutang' }).click();
       await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
     },

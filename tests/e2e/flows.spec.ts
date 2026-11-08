@@ -54,7 +54,7 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
     await recallBill(page, 'B-0002');
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(
       page.getByText(
         'Transaksi piutang ditolak: jumlah piutang Rp 3.031.200 melebihi sisa limit Rp 435.000.',
@@ -100,7 +100,7 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
     await expect(page.locator('.pos-order__item')).toHaveCount(3);
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(
       page.getByText('Disetujui Owner dari HP: Pelanggan lama, disetujui Owner'),
     ).toBeVisible();

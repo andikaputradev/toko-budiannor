@@ -91,7 +91,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await addLargeQuantity(page);
     await chooseCustomer(page, 'UD Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(page.locator('.pos-pay__message')).toContainText(
       /Transaksi piutang ditolak: jumlah piutang Rp [\d.]+ melebihi sisa limit Rp [\d.]+\./,
     );
@@ -106,7 +106,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await page.locator('.pos-card__main').first().click();
     await chooseCustomer(page, 'PT Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await expect(page.locator('.pos-pay__message')).toContainText(
       'Transaksi piutang ditolak: pelanggan memiliki tagihan melewati jatuh tempo.',
     );
@@ -119,7 +119,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await addLargeQuantity(page);
     await chooseCustomer(page, 'UD Maju Jaya');
     await page.getByRole('button', { name: /^Bayar/ }).click();
-    await page.getByRole('radio', { name: 'Piutang' }).click();
+    await page.getByRole('tab', { name: 'Piutang' }).click();
     await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Alasan').fill('Pelanggan lama, disetujui Owner');
