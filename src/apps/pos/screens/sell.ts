@@ -4,7 +4,7 @@ import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
 import { canOpenScreen, isAllowed } from '../../../shared/permissions';
 import { createSearchIndex, type SearchIndex } from '../../../shared/data/search-index';
-import type { Product, Role, UnitDef } from '../../../shared/data/types';
+import type { BillLine, Product, Role, UnitDef } from '../../../shared/data/types';
 import { unitPrice } from '../../../shared/data/units';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
@@ -306,6 +306,41 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     );
   };
 
+  const orderQuantity = (line: BillLine): HTMLElement => {
+    const price = formatRupiah(line.unitPrice).replace('Rp ', '');
+    const quantityText = formatDecimal(line.quantity, 3, 0);
+    if (line.listPrice === undefined && line.discount === undefined) {
+      return el('span', {
+        className: 'pos-order__qty',
+        text: label('qtyBaris', { jumlah: quantityText, harga: price }),
+      });
+    }
+    const discount = line.discount;
+    return el(
+      'span',
+      { className: 'pos-order__qty' },
+      document.createTextNode(`${label('qtyBarisAwal', { jumlah: quantityText })} `),
+      line.listPrice === undefined
+        ? false
+        : el('s', {
+            className: 'pos-order__list',
+            text: formatRupiah(line.listPrice).replace('Rp ', ''),
+          }),
+      line.listPrice === undefined ? false : document.createTextNode(' '),
+      document.createTextNode(price),
+      discount === undefined
+        ? false
+        : el('span', {
+            className: 'pos-order__flag',
+            text: ` ${
+              discount.kind === 'persen'
+                ? label('diskonTandaPersen', { nilai: discount.value })
+                : label('diskonTandaNominal', { nilai: formatRupiah(discount.value) })
+            }`,
+          }),
+    );
+  };
+
   const renderOrder = (): void => {
     const state = session.state();
     const frontliner = role() === 'frontliner';
@@ -327,20 +362,16 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       );
       open.addEventListener('click', () => {
         if (product !== undefined) {
-          openUnitModal({ session, product, lineIndex: position, onDone: refocus });
+          void import('./line-detail').then(({ openLineDetail }) => {
+            openLineDetail({ session, product, lineIndex: position, onDone: refocus });
+          });
         }
       });
       return el(
         'li',
         { className: 'pos-order__item' },
         open,
-        el('span', {
-          className: 'pos-order__qty',
-          text: label('qtyBaris', {
-            jumlah: formatDecimal(line.quantity, 3, 0),
-            harga: formatRupiah(line.unitPrice).replace('Rp ', ''),
-          }),
-        }),
+        orderQuantity(line),
         el('span', { className: 'pos-order__unit t-label', text: line.unit }),
         el('output', { className: 'pos-order__amount', text: formatRupiah(lineSubtotal(line)) }),
       );

@@ -18,19 +18,16 @@ import type { PosSession } from '../pos-session';
 export interface UnitModalOptions {
   readonly session: PosSession;
   readonly product: Product;
-  readonly lineIndex?: number | undefined;
   readonly onDone?: (() => void) | undefined;
 }
 
 export function openUnitModal(options: UnitModalOptions): void {
   const { session, product } = options;
-  const editing =
-    options.lineIndex === undefined ? undefined : session.state().lines[options.lineIndex];
   const tier = session.customer()?.tier ?? 'eceran';
-  let unit = editing?.unit ?? defaultUnitOf(product).code;
+  let unit = defaultUnitOf(product).code;
   const field = createTextField({
     labelText: label('jumlah'),
-    value: editing === undefined ? '1' : formatDecimal(editing.quantity).replace('.', ''),
+    value: '1',
     inputMode: 'decimal',
   });
   const stock = el('p', { className: 't-label' });
@@ -114,11 +111,7 @@ export function openUnitModal(options: UnitModalOptions): void {
       field.setError(message(QUANTITY_MESSAGES[key]));
       return;
     }
-    if (editing === undefined || options.lineIndex === undefined) {
-      session.addProduct(product, unit, amount);
-    } else {
-      session.setLine(options.lineIndex, unit, amount);
-    }
+    session.addProduct(product, unit, amount);
     handle.close();
     options.onDone?.();
   };
@@ -134,37 +127,10 @@ export function openUnitModal(options: UnitModalOptions): void {
       },
     }),
     createButton({
-      text: label(editing === undefined ? 'tambahkanKeBill' : 'simpanPerubahan'),
+      text: label('tambahkanKeBill'),
       onClick: submit,
     }),
   );
-  if (editing !== undefined && options.lineIndex !== undefined) {
-    const index = options.lineIndex;
-    buttons.prepend(
-      createButton({
-        text: label('hapusItem'),
-        variant: 'danger',
-        onClick: () => {
-          openModal({
-            title: label('modalJudulHapus'),
-            body: message('MSG-015'),
-            actions: [
-              { text: label('batal'), variant: 'secondary' },
-              {
-                text: label('hapus'),
-                variant: 'danger',
-                onClick: () => {
-                  session.deleteLine(index);
-                  handle.close();
-                  options.onDone?.();
-                },
-              },
-            ],
-          });
-        },
-      }),
-    );
-  }
   handle.dialog.append(buttons);
   field.input.addEventListener('input', () => {
     field.setError(undefined);

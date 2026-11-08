@@ -17,7 +17,7 @@ async function addLargeQuantity(page: Page): Promise<void> {
   await page.locator('.pos-card__main').first().click();
   await page.locator('.pos-bill__name').first().click();
   await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
-  await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+  await page.getByRole('button', { name: 'Simpan', exact: true }).click();
 }
 
 async function chooseCustomer(page: Page, name: string): Promise<void> {
@@ -145,13 +145,13 @@ test.describe('POS-01 sampai POS-04', () => {
     await page.locator('.pos-bill__name').first().click();
     const quantity = page.getByRole('textbox', { name: 'Jumlah' });
     await quantity.fill('0');
-    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page.getByText('Jumlah harus lebih dari 0.')).toBeVisible();
     await quantity.fill('1,2345');
-    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page.getByText('Maksimal 3 angka di belakang koma.')).toBeVisible();
     await quantity.fill('2,5');
-    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page.locator('.pos-order__item').first()).toContainText('QTY : 2,5 X');
   });
 

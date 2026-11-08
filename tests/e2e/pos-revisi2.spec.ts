@@ -971,3 +971,233 @@ test.describe('Split', () => {
     }
   });
 });
+
+test.describe('Detail Barang dan Cek Stok', () => {
+  async function openDetail(page: Page, user = 'Ibu Sinta') {
+    await loginPos(page, user);
+    await page.locator('.pos-card__main').first().click();
+    await page.locator('.pos-bill__name').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Detail Barang' });
+    await expect(dialog).toBeVisible();
+    return dialog;
+  }
+  const padIn = async (dialog: Locator, digits: string): Promise<void> => {
+    for (const digit of digits) {
+      await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+  };
+  const save = (dialog: Locator) => dialog.getByRole('button', { name: 'Simpan', exact: true });
+
+  test('ketuk baris pesanan membuka Detail Barang dengan Kode Barang, Subtotal, Tenaga Penjual, Diskon, Ubah Harga, Catatan, dan Cek Stok', async ({
+    page,
+  }) => {
+    const dialog = await openDetail(page);
+    await expect(dialog.getByText('Kode Barang', { exact: true })).toBeVisible();
+    await expect(dialog.locator('.pos-line__code')).toHaveText('P001');
+    await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 70.000');
+    await expect(dialog.getByLabel('Tenaga Penjual')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Berikan Diskon' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Ubah Harga' })).toBeVisible();
+    await expect(dialog.getByRole('textbox', { name: 'Catatan' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cek Stok Barang' })).toBeVisible();
+    await expect(save(dialog)).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Hapus Item' })).toBeVisible();
+    await expect(dialog.getByRole('radio', { name: 'SAK' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  test('Supervisor memberi diskon 10 persen dan Subtotal berubah', async ({ page }) => {
+    const dialog = await openDetail(page);
+    await dialog.getByRole('button', { name: 'Berikan Diskon' }).click();
+    await padIn(dialog, '10');
+    await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 63.000');
+    await save(dialog).click();
+    await expect(dialog).toBeHidden();
+    const row = page.locator('.pos-order__item').first();
+    await expect(row.locator('.pos-order__amount')).toHaveText('Rp 63.000');
+    await expect(row).toContainText('-10%');
+  });
+
+  test('Kasir diminta PIN Supervisor untuk diskon dan PIN benar membuka isian', async ({
+    page,
+  }) => {
+    const dialog = await openDetail(page, 'Dewi');
+    await dialog.getByRole('button', { name: 'Berikan Diskon' }).click();
+    await expect(dialog.locator('.pos-amount:visible')).toHaveCount(0);
+    const auth = page.getByRole('dialog', { name: 'Otorisasi Supervisor atau Owner' });
+    await expect(auth).toBeVisible();
+    await auth.getByLabel('Alasan').fill('Pelanggan langganan');
+    await auth.getByLabel('PIN Supervisor atau Owner').fill('3571');
+    await auth.getByRole('button', { name: 'Setujui' }).click();
+    await expect(auth).toBeHidden();
+    await expect(dialog.locator('.pos-amount:visible')).toHaveCount(1);
+    await padIn(dialog, '5');
+    await save(dialog).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('.pos-order__item').first()).toContainText('-5%');
+  });
+
+  test('PIN salah menolak dan isian tetap terkunci', async ({ page }) => {
+    const dialog = await openDetail(page, 'Dewi');
+    await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
+    const auth = page.getByRole('dialog', { name: 'Otorisasi Supervisor atau Owner' });
+    await auth.getByLabel('Alasan').fill('Pelanggan langganan');
+    await auth.getByLabel('PIN Supervisor atau Owner').fill('1111');
+    await auth.getByRole('button', { name: 'Setujui' }).click();
+    await expect(auth.getByRole('alert')).toContainText('PIN');
+    await expect(auth).toBeVisible();
+    await auth.getByRole('button', { name: 'Batal' }).click();
+    await expect(auth).toBeHidden();
+    await expect(dialog.locator('.pos-amount:visible')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Ubah Harga' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  test('Ubah Harga memunculkan harga asli dicoret pada baris pesanan', async ({ page }) => {
+    const dialog = await openDetail(page);
+    await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
+    await dialog.getByRole('button', { name: 'C', exact: true }).click();
+    await padIn(dialog, '65000');
+    await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 65.000');
+    await save(dialog).click();
+    await expect(dialog).toBeHidden();
+    const row = page.locator('.pos-order__item').first();
+    await expect(row.locator('s')).toHaveText('70.000');
+    await expect(row.locator('.pos-order__amount')).toHaveText('Rp 65.000');
+    await page.locator('.pos-bill__name').first().click();
+    const again = page.getByRole('dialog', { name: 'Detail Barang' });
+    await again.getByRole('button', { name: 'Ubah Harga' }).click();
+    await expect(again.getByText('Harga asli Rp 70.000')).toBeVisible();
+    await again.getByRole('button', { name: 'Pulihkan harga asli' }).click();
+    await save(again).click();
+    await expect(page.locator('.pos-order__item s')).toHaveCount(0);
+    await expect(page.locator('.pos-order__item .pos-order__amount').first()).toHaveText(
+      'Rp 70.000',
+    );
+  });
+
+  test('Cek Stok menampilkan stok Toko, Gudang, PO per satuan', async ({ page }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page
+      .locator('.pos-card', { hasText: 'LEM FOX' })
+      .locator('.pos-card__main')
+      .first()
+      .click();
+    await page.locator('.pos-bill__name').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Detail Barang' });
+    await dialog.getByRole('button', { name: 'Cek Stok Barang' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Cek Stok Barang' });
+    await expect(sheet).toBeVisible();
+    for (const location of ['Toko', 'Gudang', 'PO']) {
+      await expect(sheet.getByRole('rowheader', { name: location, exact: true })).toBeVisible();
+    }
+    for (const unit of ['KLG', 'LSN', 'DOS']) {
+      await expect(sheet.getByRole('columnheader', { name: unit, exact: true })).toBeVisible();
+    }
+    await expect(sheet.getByRole('row', { name: /^Toko/ }).getByRole('cell').first()).toHaveText(
+      '78,0',
+    );
+    await expect(sheet.getByRole('row', { name: /^PO/ }).getByRole('cell').first()).toHaveText(
+      '72,0',
+    );
+    await sheet.getByRole('button', { name: 'Tutup' }).click();
+    await expect(sheet).toBeHidden();
+    await expect(dialog).toBeVisible();
+  });
+
+  test('Tenaga Penjual dipilih dari frontliner dan sales dan tersimpan pada baris', async ({
+    page,
+  }) => {
+    const dialog = await openDetail(page, 'Dewi');
+    const select = dialog.getByLabel('Tenaga Penjual');
+    await expect(select.locator('option')).toHaveText([
+      'Pilih tenaga penjual',
+      'Agus',
+      'Budi Lapangan',
+    ]);
+    await select.selectOption({ label: 'Agus' });
+    await dialog.getByRole('textbox', { name: 'Catatan' }).fill('Antar sore');
+    await save(dialog).click();
+    await expect(dialog).toBeHidden();
+    await page.locator('.pos-bill__name').first().click();
+    const again = page.getByRole('dialog', { name: 'Detail Barang' });
+    await expect(again.getByLabel('Tenaga Penjual')).toHaveValue('U-5');
+    await expect(again.getByRole('textbox', { name: 'Catatan' })).toHaveValue('Antar sore');
+  });
+
+  test('ikon hapus membuang baris setelah konfirmasi', async ({ page }) => {
+    const dialog = await openDetail(page);
+    await dialog.getByRole('button', { name: 'Hapus Item' }).click();
+    await page
+      .getByRole('dialog')
+      .last()
+      .getByRole('button', { name: 'Hapus', exact: true })
+      .click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
+  });
+
+  test('diskon melebihi jumlah baris menampilkan galat dan modal tetap terbuka', async ({
+    page,
+  }) => {
+    const dialog = await openDetail(page);
+    await dialog.getByRole('button', { name: 'Berikan Diskon' }).click();
+    await dialog.getByRole('radio', { name: 'Nominal' }).click();
+    await padIn(dialog, '999999');
+    await save(dialog).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Diskon tidak boleh melebihi jumlah barang.',
+    );
+    await expect(dialog).toBeVisible();
+  });
+
+  test('jumlah divalidasi dan stepper menambah serta mengurangi', async ({ page }) => {
+    const dialog = await openDetail(page);
+    const quantity = dialog.getByRole('textbox', { name: 'Jumlah' });
+    await dialog.getByRole('button', { name: 'Tambah jumlah' }).click();
+    await expect(quantity).toHaveValue('2');
+    await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 140.000');
+    await dialog.getByRole('button', { name: 'Kurangi jumlah' }).click();
+    await dialog.getByRole('button', { name: 'Kurangi jumlah' }).click();
+    await expect(quantity).toHaveValue('1');
+    await quantity.fill('0');
+    await save(dialog).click();
+    await expect(dialog.getByRole('alert')).toHaveText('Jumlah harus lebih dari 0.');
+  });
+
+  test('Frontliner melihat catatan dan stok tetapi tidak diskon atau ubah harga', async ({
+    page,
+  }) => {
+    const dialog = await openDetail(page, 'Agus');
+    await expect(dialog.getByRole('textbox', { name: 'Catatan' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cek Stok Barang' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Berikan Diskon' })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Ubah Harga' })).toHaveCount(0);
+  });
+
+  test('Detail Barang lolos axe dan target 48 px pada mode terang dan gelap', async ({ page }) => {
+    const dialog = await openDetail(page);
+    await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(result.violations, scheme).toEqual([]);
+      const heights = await dialog
+        .locator('button, input, select, textarea')
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => [node.tagName, node.getBoundingClientRect().height] as const),
+        );
+      for (const [tag, height] of heights) {
+        expect(height, `${scheme} ${tag}`).toBeGreaterThanOrEqual(47.5);
+      }
+    }
+  });
+});

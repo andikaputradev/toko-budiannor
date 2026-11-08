@@ -509,3 +509,35 @@ test.describe('Split pada ponsel 360 x 800', () => {
     expect(await controlsUnderLauncher(page)).toEqual([]);
   });
 });
+
+test.describe('Detail Barang pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: modal layar penuh, tanpa meluap, dengan Simpan terjangkau dan lolos axe', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page.locator('.pos-card__main').first().click();
+    await page.locator('.pos-order-bar').click();
+    await page.locator('.pos-bill__name').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Detail Barang' });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    expect(box?.x).toBeCloseTo(0, 0);
+    expect(box?.width).toBeCloseTo(360, 0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const save = dialog.getByRole('button', { name: 'Simpan', exact: true });
+    await expect(save).toBeInViewport();
+    const saveBox = await save.boundingBox();
+    expect((saveBox?.y ?? 0) + (saveBox?.height ?? 0)).toBeGreaterThan(700);
+    await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
+    await dialog.getByRole('button', { name: 'Ubah Harga' }).scrollIntoViewIfNeeded();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    expect(await controlsUnderLauncher(page, '.modal')).toEqual([]);
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await settle(page);
+      await expectNoAxeViolations(page);
+    }
+  });
+});

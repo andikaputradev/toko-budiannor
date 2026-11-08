@@ -113,7 +113,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await page.locator('.pos-card__main').first().click();
     await page.locator('.pos-bill__name').first().click();
     await page.getByRole('textbox', { name: 'Jumlah' }).fill('9999');
-    await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page.getByText('Stok kurang')).toBeVisible();
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();

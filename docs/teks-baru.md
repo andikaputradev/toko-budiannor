@@ -910,3 +910,24 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-900: "Tenaga penjual harus Frontliner atau Sales yang aktif.". Kunci tenagaPenjualTidakSah.
 - TB-901: "Catatan paling banyak 200 karakter.". Kunci catatanTerlaluPanjang.
 - TB-902: "Barang pada pesanan tidak ditemukan.". Kunci barisTidakAda.
+- TB-903: "Detail Barang". Kunci detailBarang.
+- TB-904: "Kode Barang". Kunci kodeBarangJudul.
+- TB-905: "Tenaga Penjual". Kunci tenagaPenjual.
+- TB-906: "Pilih tenaga penjual". Kunci pilihTenagaPenjual.
+- TB-907: "Berikan Diskon". Kunci berikanDiskon.
+- TB-908: "Ubah Harga". Kunci ubahHarga.
+- TB-909: "Cek Stok Barang". Kunci cekStokBarang.
+- TB-910: "Persen". Kunci diskonPersen.
+- TB-911: "Nominal". Kunci diskonNominal.
+- TB-912: "Harga asli {harga}". Kunci hargaAsli.
+- TB-913: "Pulihkan harga asli". Kunci pulihkanHarga.
+- TB-914: "Nilai diskon". Kunci nilaiDiskon.
+- TB-915: "Harga baru". Kunci hargaBaru.
+- TB-916: "Lokasi". Kunci lokasiStok.
+- TB-917: "Otorisasi Supervisor atau Owner". Kunci otorisasiJudulHarga.
+- TB-918: "Ubah harga dan diskon memerlukan persetujuan Supervisor atau Owner.". Kunci otorisasiTindakanHarga.
+- TB-919: "Barang: {nama}". Kunci otorisasiBarangNama.
+- TB-920: "PIN Supervisor atau Owner". Kunci pinPenyetuju.
+- TB-921: "QTY : {jumlah} X". Kunci qtyBarisAwal.
+- TB-922: "-{nilai}%". Kunci diskonTandaPersen.
+- TB-923: "-{nilai}". Kunci diskonTandaNominal.

@@ -19,6 +19,7 @@ export interface AmountModelOptions {
   max?: number | undefined;
   onChange: (value: number) => void;
   onEnter?: (() => void) | undefined;
+  format?: ((value: number) => string) | undefined;
 }
 
 export function keyFromKeyboard(key: string): AmountKey | undefined {
@@ -43,7 +44,7 @@ export function createAmountModel(options: AmountModelOptions): AmountModel {
   return {
     value: () => value,
     hasValue: () => filled,
-    text: () => (filled ? formatRupiah(value) : ''),
+    text: () => (filled ? (options.format ?? formatRupiah)(value) : ''),
     setValue(next) {
       value = clamp(next, max);
       filled = true;

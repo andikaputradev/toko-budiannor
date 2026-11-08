@@ -261,7 +261,7 @@ export const OVERLAYS: readonly OverlayCase[] = [
       await page.locator('.pos-card__main').first().click();
       await page.locator('.pos-bill__name').first().click();
       await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
-      await page.getByRole('button', { name: 'Simpan Perubahan' }).click();
+      await page.getByRole('button', { name: 'Simpan', exact: true }).click();
       await chooseCustomer(page, 'UD Maju Jaya');
       await clickPay(page);
       await page.getByRole('tab', { name: 'Piutang' }).click();

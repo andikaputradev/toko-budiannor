@@ -24,6 +24,8 @@ export interface AmountEntryOptions {
   onEnter?: () => void;
   // Ketikan papan ketik hanya diterima selama fungsi ini mengembalikan true.
   enabled?: () => boolean;
+  // Tampilan nilai; bawaannya rupiah.
+  format?: (value: number) => string;
 }
 
 const FIELD_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
@@ -46,6 +48,7 @@ export function createAmountEntry(options: AmountEntryOptions): AmountEntry {
       options.onChange(value);
     },
     onEnter: options.onEnter,
+    format: options.format,
   });
   const pad = createMoneyPad(
     (key) => {
