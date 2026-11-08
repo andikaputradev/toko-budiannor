@@ -67,7 +67,7 @@ export const ICON_NAMES = [
 
 export type IconName = (typeof ICON_NAMES)[number];
 
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 export function icon(name: IconName, size: 'default' | 'table' = 'default'): SVGSVGElement {
   const svg = document.createElementNS(SVG_NAMESPACE, 'svg');

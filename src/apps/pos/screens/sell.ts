@@ -1,10 +1,10 @@
 import { el, nextId } from '../../../shared/dom';
-import { formatDecimal, formatDocumentNumber, formatRupiah } from '../../../shared/format';
+import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
 import { canOpenScreen, isAllowed } from '../../../shared/permissions';
 import { createSearchIndex, type SearchIndex } from '../../../shared/data/search-index';
-import type { HeldBill, Product, Role, UnitDef } from '../../../shared/data/types';
+import type { Product, Role, UnitDef } from '../../../shared/data/types';
 import { unitPrice } from '../../../shared/data/units';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
@@ -29,7 +29,7 @@ import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
 import { openCustomerPicker } from './customer-picker';
 import type { ScreenHandle } from './login';
-import { billReceipt, openReceiptPreview } from './receipt-preview';
+import { openDraftPreview } from './receipt-preview';
 import { needsShift } from '../domain/shift';
 import { guardWithShift } from './shift';
 import { openUnitModal } from './unit-modal';
@@ -264,20 +264,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       fail(message('MSG-025'));
       return;
     }
-    const draft: HeldBill = {
-      id: 'draft',
-      number: formatDocumentNumber('B', session.state().heldBills.length + 1),
-      createdAt: session.now().toISOString(),
-      userId: store.getState().userId,
-      customerId: session.state().customerId,
-      lines,
-    };
-    openReceiptPreview({
-      session,
-      kind: 'draft',
-      reference: draft.number,
-      build: (width) => billReceipt(session, draft, width),
-    });
+    openDraftPreview(session);
   };
 
   const hold = (): void => {

@@ -423,3 +423,44 @@ test.describe('bayar pada tablet lanskap 1280 x 800', () => {
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe('Non-Tunai pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('modal Scan QR Code layar penuh, tanpa meluap, dengan tombol terjangkau', async ({
+    page,
+  }) => {
+    await openPayScreen(page);
+    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
+    await page
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'Gopay', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    expect(box?.width).toBeCloseTo(360, 0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await expect(dialog.getByRole('button', { name: 'Cek Status Pembayaran' })).toBeInViewport();
+    await dialog.getByRole('button', { name: 'Ubah Metode Pembayaran' }).scrollIntoViewIfNeeded();
+    await expect(dialog.getByRole('button', { name: 'Ubah Metode Pembayaran' })).toBeInViewport();
+    expect(await controlsUnderLauncher(page, '.modal')).toEqual([]);
+  });
+
+  test('kartu kanal Non-Tunai muat di 360 px tanpa meluap', async ({ page }) => {
+    await openPayScreen(page);
+    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await expect(
+      page.getByRole('group', { name: 'Kanal pembayaran' }).getByRole('button'),
+    ).toHaveCount(8);
+    for (const cardButton of await page
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button')
+      .all()) {
+      const cardBox = await cardButton.boundingBox();
+      expect(cardBox?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+      expect((cardBox?.x ?? 0) + (cardBox?.width ?? 0)).toBeLessThanOrEqual(360);
+    }
+  });
+});

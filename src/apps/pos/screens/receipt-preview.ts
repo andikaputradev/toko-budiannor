@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { formatDocumentNumber } from '../../../shared/format';
 import type { HeldBill, PaymentMethod, Sale } from '../../../shared/data/types';
 import { label, type LabelKey } from '../../../shared/messages';
 import { failureText } from '../failure';
@@ -221,4 +222,23 @@ export function openReceiptPreview(options: PreviewOptions): void {
   );
   paint();
   group.querySelector<HTMLElement>('button')?.focus();
+}
+
+// Pratinjau struk draf untuk pesanan yang sedang berjalan (menu Cetak Struk Draf dan Cetak Kode QR).
+export function openDraftPreview(session: PosSession): void {
+  const state = session.state();
+  const draft: HeldBill = {
+    id: 'draft',
+    number: formatDocumentNumber('B', state.heldBills.length + 1),
+    createdAt: session.now().toISOString(),
+    userId: session.store.getState().userId,
+    customerId: state.customerId,
+    lines: state.lines,
+  };
+  openReceiptPreview({
+    session,
+    kind: 'draft',
+    reference: draft.number,
+    build: (width) => billReceipt(session, draft, width),
+  });
 }

@@ -586,3 +586,149 @@ test.describe('layar bayar', () => {
     }
   });
 });
+
+test.describe('Non-Tunai dan QR', () => {
+  async function toNonCash(page: Page): Promise<void> {
+    await loginPos(page);
+    await page.locator('.pos-card__main').first().click();
+    await page.getByRole('button', { name: /^Bayar Rp/ }).click();
+    await expect(page).toHaveURL(/#\/pos\/bayar$/);
+    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
+  }
+  const pay = (page: Page) => page.getByRole('button', { name: 'Bayar', exact: true });
+  const card = (page: Page, name: string) =>
+    page
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name, exact: true });
+  const qrDialog = (page: Page) => page.getByRole('dialog', { name: 'Scan QR Code' });
+
+  test('Non-Tunai menampilkan kartu QRIS, Gopay, OVO, Shopee Pay, EDC, Transfer BCA, BRI, Mandiri', async ({
+    page,
+  }) => {
+    await toNonCash(page);
+    await expect(
+      page.getByRole('group', { name: 'Kanal pembayaran' }).getByRole('button'),
+    ).toHaveText([
+      'QRIS',
+      'Gopay',
+      'OVO',
+      'Shopee Pay',
+      'EDC',
+      'Transfer BCA',
+      'Transfer BRI',
+      'Transfer Mandiri',
+    ]);
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('memilih Gopay membuka Scan QR Code dengan Tagihan sama dengan total', async ({ page }) => {
+    await toNonCash(page);
+    await card(page, 'Gopay').click();
+    const dialog = qrDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.pos-qr__amount')).toHaveText('Rp 70.000');
+    await expect(dialog.getByText('Tagihan', { exact: true })).toBeVisible();
+    await expect(dialog.getByText('Reference ID', { exact: true })).toBeVisible();
+    await expect(dialog.locator('.pos-qr__reference')).toHaveText(/^QR\d{10}$/);
+    await expect(dialog.locator('svg.pos-qr__code')).toBeVisible();
+    await expect(dialog.locator('svg.pos-qr__code path')).toHaveCount(1);
+  });
+
+  test('Bayar tetap nonaktif untuk kanal QR sebelum Cek Status', async ({ page }) => {
+    await toNonCash(page);
+    await card(page, 'QRIS').click();
+    await expect(qrDialog(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(qrDialog(page)).toBeHidden();
+    await expect(card(page, 'QRIS')).toHaveAttribute('aria-pressed', 'true');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('Cek Status Pembayaran menandai diterima sekali lalu Bayar aktif', async ({ page }) => {
+    await toNonCash(page);
+    await card(page, 'Gopay').click();
+    const dialog = qrDialog(page);
+    const check = dialog.getByRole('button', { name: 'Cek Status Pembayaran' });
+    await check.click();
+    await check.dispatchEvent('click');
+    await check.dispatchEvent('click');
+    await expect(dialog).toBeHidden({ timeout: 5000 });
+    await expect(page.getByText('Pembayaran diterima', { exact: true })).toBeVisible();
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await pay(page).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    const detail = page.locator('.pos-history__detail');
+    await expect(detail).toContainText('QRIS Gopay');
+    await expect(detail.locator('.pos-history__pay li')).toHaveCount(1);
+  });
+
+  test('Ubah metode menutup modal dan kembali ke daftar kanal', async ({ page }) => {
+    await toNonCash(page);
+    await card(page, 'OVO').click();
+    await qrDialog(page).getByRole('button', { name: 'Ubah Metode Pembayaran' }).click();
+    await expect(qrDialog(page)).toBeHidden();
+    await expect(page.getByRole('tab', { name: 'Non-Tunai' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(card(page, 'OVO')).toHaveAttribute('aria-pressed', 'false');
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('Cetak Kode QR membuka pratinjau', async ({ page }) => {
+    await toNonCash(page);
+    await card(page, 'Shopee Pay').click();
+    await qrDialog(page).getByRole('button', { name: 'Cetak Kode QR' }).click();
+    await expect(page.getByRole('dialog', { name: 'Pratinjau Struk' })).toBeVisible();
+    await expect(page.locator('.pos-receipt')).toContainText('STRUK DRAF');
+  });
+
+  test('Transfer BCA meminta Nomor Referensi dan kanal BCA tampil di riwayat', async ({ page }) => {
+    await toNonCash(page);
+    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toBeHidden();
+    await card(page, 'Transfer BCA').click();
+    await expect(qrDialog(page)).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toBeVisible();
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await pay(page).click();
+    await finishPaymentDialog(page);
+    await openDrawerItem(page, 'Riwayat Penjualan');
+    await expect(page.locator('.pos-history__detail')).toContainText('Transfer BCA');
+  });
+
+  test('EDC langsung memilih tanpa modal QR dan meminta Nomor Referensi', async ({ page }) => {
+    await toNonCash(page);
+    await card(page, 'EDC').click();
+    await expect(qrDialog(page)).toHaveCount(0);
+    await expect(card(page, 'EDC')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toBeVisible();
+    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+  });
+
+  test('Non-Tunai dan modal QR lolos axe dan target 48 px pada mode terang dan gelap', async ({
+    page,
+  }) => {
+    await toNonCash(page);
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const tab = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(tab.violations, `${scheme} tab`).toEqual([]);
+      await card(page, 'Gopay').click();
+      await expect(qrDialog(page)).toBeVisible();
+      await settle(page);
+      const modal = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(modal.violations, `${scheme} modal`).toEqual([]);
+      const heights = await qrDialog(page)
+        .locator('button')
+        .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+      for (const height of heights) {
+        expect(height, scheme).toBeGreaterThanOrEqual(47.5);
+      }
+      await page.keyboard.press('Escape');
+      await expect(qrDialog(page)).toBeHidden();
+    }
+  });
+});

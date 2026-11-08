@@ -164,7 +164,13 @@ export async function sellFirstProduct(
   await clickPay(page);
   if (method === 'qris') {
     await page.getByRole('tab', { name: 'Non-Tunai' }).click();
-    await page.getByRole('button', { name: 'QRIS', exact: true }).click();
+    await page
+      .getByRole('group', { name: 'Kanal pembayaran' })
+      .getByRole('button', { name: 'QRIS', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await dialog.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(dialog).toBeHidden();
   } else {
     await page.getByRole('button', { name: 'Uang Pas' }).click();
   }

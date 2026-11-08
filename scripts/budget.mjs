@@ -46,7 +46,7 @@ const depTable =
 
 function preloads(app) {
   const pattern = new RegExp(
-    `import\\(["\`']\\./(${app}-[^"\`']+\\.js)["\`']\\),__vite__mapDeps\\(\\[([\\d,]+)\\]\\)`,
+    `import\\(["\`']\\./(${app}-[^"\`']+\\.js)["\`']\\)(?:\\.then\\([^)]*\\))?,__vite__mapDeps\\(\\[([\\d,]+)\\]\\)`,
   );
   const found = pattern.exec(sources.get(entry) ?? '');
   if (found === null) {

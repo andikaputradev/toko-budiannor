@@ -7,8 +7,10 @@ import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import { createAmountEntry } from '../amount-entry';
+import { channelsOf, rowKey } from '../domain/channels';
 import { DEFAULT_DUE_DAYS } from '../domain/forms';
 import { CASH_METHODS, maxAmount, QUICK_AMOUNTS } from '../domain/payment';
+import { qrReference } from '../domain/qr';
 import { dueDateOf, parseTermDays, TERM_CHOICES } from '../domain/terms';
 import type { PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
@@ -19,14 +21,18 @@ import type { ScreenHandle } from './login';
 
 type PayTab = 'tunai' | 'nontunai' | 'split' | 'piutang';
 
+interface ChannelCard {
+  readonly method: PaidMethod;
+  readonly channel: string | undefined;
+  readonly text: string;
+}
+
 const TABS: readonly { readonly id: PayTab; readonly text: LabelKey }[] = [
   { id: 'tunai', text: 'tabTunai' },
   { id: 'nontunai', text: 'tabNonTunai' },
   { id: 'split', text: 'tabSplit' },
   { id: 'piutang', text: 'tabPiutang' },
 ];
-
-const NON_CASH_METHODS: readonly PaidMethod[] = CASH_METHODS.filter((method) => method !== 'tunai');
 
 const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   tunai: 'metodeTunai',
@@ -71,6 +77,9 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const daysId = nextId('hari');
   let tab: PayTab = initialTab(session);
   let pending = 0;
+  // Status QR diterima hanya disimulasikan di layar ini (A-3), per pasangan metode dan kanal.
+  let qrPaidKey: string | undefined;
+  let destroyed = false;
   let dpVia: PaidMethod = session.state().rows.find((row) => row.method === 'dp')?.via ?? 'tunai';
 
   const grand = el('output', { className: 't-total pos-pay__grand' });
@@ -170,17 +179,73 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     ),
   );
 
-  // Tab Non-Tunai dan Split: kontrol sementara yang digantikan kartu kanal (Task 14) dan
-  // modal Pembayaran N (Task 15).
-  const nonCashMethods = methodGroup(
-    (method) => {
-      session.chooseSingle(method);
-    },
-    'caraBayar',
-    NON_CASH_METHODS,
-  );
-  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, nonCashMethods, referenceField());
+  // Tab Non-Tunai: kartu kanal. QRIS dan dompet digital membuka layar Scan QR Code; EDC dan
+  // Transfer meminta nomor referensi.
+  const cards: readonly ChannelCard[] = [
+    { method: 'qris', channel: undefined, text: label('metodeQris') },
+    ...channelsOf('qris').map((channel) => ({ method: 'qris' as const, channel, text: channel })),
+    { method: 'edc', channel: undefined, text: label('metodeEdc') },
+    ...channelsOf('transfer').map((channel) => ({
+      method: 'transfer' as const,
+      channel,
+      text: `${label('metodeTransfer')} ${channel}`,
+    })),
+  ];
+  const openQr = (card: ChannelCard): void => {
+    void import('./qr-modal').then(({ openQrModal }) => {
+      if (destroyed) {
+        return;
+      }
+      openQrModal({
+        session,
+        channel: card.channel,
+        amount: session.total(),
+        reference: qrReference(
+          `${session.nextSaleNumber()}|${rowKey(card)}|${String(session.total())}`,
+        ),
+        onPaid: () => {
+          qrPaidKey = rowKey(card);
+          paint();
+        },
+        onChangeMethod: () => {
+          qrPaidKey = undefined;
+          session.resetPayment();
+        },
+      });
+    });
+  };
+  const chooseCard = (card: ChannelCard): void => {
+    session.chooseSingle(card.method, card.channel);
+    if (card.method !== 'qris') {
+      qrPaidKey = undefined;
+      return;
+    }
+    if (qrPaidKey !== rowKey(card)) {
+      qrPaidKey = undefined;
+      openQr(card);
+    }
+  };
+  const cardGroup = el('div', {
+    className: 'pos-pay__cards',
+    attrs: { role: 'group', 'aria-label': label('kanalPembayaran') },
+  });
+  const cardButtons = new Map<ChannelCard, HTMLButtonElement>();
+  for (const card of cards) {
+    const button = createButton({
+      text: card.text,
+      variant: 'secondary',
+      onClick: () => {
+        chooseCard(card);
+      },
+    });
+    button.classList.add('pos-pay__method', 'pos-pay__card');
+    cardButtons.set(card, button);
+    cardGroup.append(button);
+  }
+  const nonCashReference = referenceField();
+  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, cardGroup, nonCashReference);
 
+  // Tab Split: kontrol sementara yang digantikan modal Pembayaran N (Task 15).
   const splitMethods = methodGroup(
     (method) => {
       pending = 0;
@@ -382,6 +447,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     }
     tab = next;
     pending = 0;
+    qrPaidKey = undefined;
     daysError.textContent = '';
     if (next === 'tunai') {
       session.chooseSingle('tunai');
@@ -447,7 +513,11 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     } else if (tab === 'tunai') {
       entry.setValue(state.rows.find((row) => row.method === 'tunai')?.amount ?? 0);
     } else if (tab === 'nontunai') {
-      paintMethods(nonCashMethods, method);
+      for (const [card, button] of cardButtons) {
+        const chosen = method === card.method && state.channel === card.channel;
+        button.setAttribute('aria-pressed', chosen ? 'true' : 'false');
+      }
+      nonCashReference.hidden = method !== 'edc' && method !== 'transfer';
     } else {
       paintMethods(splitMethods, method);
       amountInput.value = pending === 0 ? '' : plain(pending);
@@ -520,7 +590,9 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
           : [createBanner('info', label('disetujuiDariHp', { alasan: approved.note ?? '' }))]),
       );
     }
-    const ready = summary.status === 'ready';
+    const needsQr = tab === 'nontunai' && state.method === 'qris';
+    const qrOk = !needsQr || qrPaidKey === rowKey({ method: state.method, channel: state.channel });
+    const ready = summary.status === 'ready' && qrOk;
     finish.toggleAttribute('data-inactive', !ready);
     finish.setAttribute('aria-disabled', ready ? 'false' : 'true');
   };
@@ -608,6 +680,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   return {
     element,
     destroy: () => {
+      destroyed = true;
       stop();
       stopKeys();
       document.removeEventListener('keydown', onKey);

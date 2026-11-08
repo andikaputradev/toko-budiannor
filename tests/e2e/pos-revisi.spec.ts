@@ -340,11 +340,15 @@ test.describe('pembayaran', () => {
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
   });
 
-  test('QRIS langsung sebesar total dan Bayar aktif', async ({ page }) => {
+  test('QRIS langsung sebesar total dan Bayar aktif setelah Cek Status', async ({ page }) => {
     await toPay(page);
     await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
     await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
+    await expect(finish(page)).toHaveAttribute('aria-disabled', 'true');
+    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
+    await dialog.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
+    await expect(dialog).toBeHidden();
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
   });
 

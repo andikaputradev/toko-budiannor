@@ -887,3 +887,14 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-877: "Split". Kunci tabSplit.
 - TB-878: "Piutang". Kunci tabPiutang.
 - TB-879: "Total Pembayaran". Kunci totalPembayaran.
+- TB-880: "Kanal pembayaran". Kunci kanalPembayaran.
+- TB-881: "Scan QR Code". Kunci scanQrCode.
+- TB-882: "Reference ID". Kunci referenceId.
+- TB-883: "Tagihan". Kunci tagihan.
+- TB-884: "Cek Status Pembayaran". Kunci cekStatusPembayaran.
+- TB-885: "Cetak Kode QR". Kunci cetakKodeQr.
+- TB-886: "Ubah Metode Pembayaran". Kunci ubahMetodePembayaran.
+- TB-887: "Pembayaran diterima". Kunci pembayaranDiterima.
+- TB-888: "Menunggu pembayaran". Kunci menungguPembayaran.
+- TB-889: "Memeriksa status pembayaran". Kunci memeriksaPembayaran.
+- TB-890: "Kode QR simulasi {kanal}". Kunci kodeQrSimulasi.

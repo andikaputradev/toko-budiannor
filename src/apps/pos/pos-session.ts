@@ -199,6 +199,7 @@ export interface PosSession {
     reference?: string,
   ): FlowResult;
   finish(): Sale | undefined;
+  nextSaleNumber(): string;
   mobileApproval(): ApprovalRequest | undefined;
   printReceipt(kind: ReceiptKind, reference: string): FlowResult;
   retryPrint(): FlowResult;
@@ -298,6 +299,8 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     );
     bus.emit('change', state);
   };
+
+  const nextSaleNumber = (): string => formatDocumentNumber('T', 101 + state.sales.length);
 
   const mobileApproval = (): ApprovalRequest | undefined =>
     state.billRef === undefined
@@ -780,6 +783,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       return fail(outcome.kind === 'locked' ? 'MSG-051' : 'MSG-022');
     },
     mobileApproval,
+    nextSaleNumber,
     finish: () => {
       const result = summary();
       if (result.status !== 'ready') {
@@ -797,7 +801,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       const days = state.terms?.dueDays ?? customer()?.dueDays ?? DEFAULT_DUE_DAYS;
       const sale: Sale = {
         id: `S-${String(state.sales.length + 1)}`,
-        number: formatDocumentNumber('T', 101 + state.sales.length),
+        number: nextSaleNumber(),
         createdAt: at,
         cashierId: store.getState().userId,
         customerId: state.customerId,
