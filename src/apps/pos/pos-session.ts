@@ -24,11 +24,15 @@ import {
   addLine,
   billTotal,
   defaultUnitOf,
+  MAX_BILL_LINES,
+  mergeLines,
   removeLine,
   repriceLines,
   replaceLine,
+  splitLines,
   validateDiscount,
   type AddResult,
+  type SplitPick,
 } from './domain/bill';
 import { DEFAULT_DUE_DAYS, MAX_DUE_DAYS, normalizePhone, type ExpenseKind } from './domain/forms';
 import { dueDateOf } from './domain/terms';
@@ -192,6 +196,8 @@ export interface PosSession {
   holdBill(): HeldBill | undefined;
   recallBill(id: string): FlowResult;
   deleteHeldBill(id: string): FlowResult;
+  splitHeldBill(id: string, picks: readonly SplitPick[]): FlowResult;
+  mergeHeldBills(targetId: string, sourceId: string): FlowResult;
   setMethod(method: PaymentMethod, channel?: string): void;
   setAmount(method: PaymentMethod, amount: number, channel?: string): void;
   setPart(index: number, part: PaymentPart | undefined): void;
@@ -414,6 +420,15 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     });
     return { ok: true };
   };
+
+  // Urutan bill berikutnya: satu di atas nomor terbesar yang ada, sehingga id dan nomor tidak
+  // kembar walau bill lain sudah dihapus.
+  const nextBillSequence = (): number =>
+    state.heldBills.reduce(
+      (max, bill) =>
+        Math.max(max, Number(bill.id.slice(2)) || 0, Number(bill.number.slice(2)) || 0),
+      0,
+    ) + 1;
 
   const nextSaleNumber = (): string => formatDocumentNumber('T', 101 + state.sales.length);
 
@@ -735,7 +750,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       if (state.lines.length === 0) {
         return undefined;
       }
-      const number = state.heldBills.length + 1;
+      const number = nextBillSequence();
       const held: HeldBill = {
         id: `H-${String(number)}`,
         number: formatDocumentNumber('B', number),
@@ -780,6 +795,74 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       commit({
         heldBills: state.heldBills.filter((item) => item.id !== id),
         activity: [...state.activity, entry('Hapus bill', bill.number)],
+      });
+      return { ok: true };
+    },
+    splitHeldBill: (id, picks) => {
+      if (!isAllowed(store.getState().role, 'POS-05', 'Split Bill')) {
+        return fail('MSG-003');
+      }
+      const bill = state.heldBills.find((item) => item.id === id);
+      if (bill === undefined) {
+        return fail('MSG-038');
+      }
+      const result = splitLines(bill.lines, picks);
+      if ('error' in result) {
+        return failLabel(
+          result.error === 'kosong'
+            ? 'splitKosong'
+            : result.error === 'melebihi'
+              ? 'splitMelebihi'
+              : 'splitSemua',
+        );
+      }
+      const sequence = nextBillSequence();
+      const created: HeldBill = {
+        id: `H-${String(sequence)}`,
+        number: formatDocumentNumber('B', sequence),
+        createdAt: stamp(),
+        userId: store.getState().userId,
+        customerId: bill.customerId,
+        lines: result.moved,
+      };
+      commit({
+        heldBills: [
+          ...state.heldBills.map((item) =>
+            item.id === id ? { ...item, lines: result.kept } : item,
+          ),
+          created,
+        ],
+        activity: [
+          ...state.activity,
+          entry('Split bill', `${bill.number} menjadi ${created.number}`),
+        ],
+      });
+      return { ok: true };
+    },
+    mergeHeldBills: (targetId, sourceId) => {
+      if (!isAllowed(store.getState().role, 'POS-05', 'Merge Bill')) {
+        return fail('MSG-003');
+      }
+      if (targetId === sourceId) {
+        return failLabel('mergeSama');
+      }
+      const target = state.heldBills.find((item) => item.id === targetId);
+      const source = state.heldBills.find((item) => item.id === sourceId);
+      if (target === undefined || source === undefined) {
+        return fail('MSG-038');
+      }
+      const targetTier =
+        store.getState().data.customers.find((item) => item.id === target.customerId)?.tier ??
+        'eceran';
+      const lines = repriceLines(mergeLines(target.lines, source.lines), products(), targetTier);
+      if (lines.length > MAX_BILL_LINES) {
+        return failLabel('mergeTerlaluBanyak');
+      }
+      commit({
+        heldBills: state.heldBills
+          .filter((item) => item.id !== sourceId)
+          .map((item) => (item.id === targetId ? { ...item, lines } : item)),
+        activity: [...state.activity, entry('Merge bill', `${source.number} ke ${target.number}`)],
       });
       return { ok: true };
     },

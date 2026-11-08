@@ -106,3 +106,107 @@ export function repriceLines(
       : { ...line, listPrice: tierPrice };
   });
 }
+
+export interface SplitPick {
+  readonly index: number;
+  readonly quantity: number;
+}
+
+function sized(line: BillLine, quantity: number, discount: LineDiscount | undefined): BillLine {
+  return {
+    productId: line.productId,
+    unit: line.unit,
+    quantity,
+    unitPrice: line.unitPrice,
+    ...(discount === undefined ? {} : { discount }),
+    ...(line.listPrice === undefined ? {} : { listPrice: line.listPrice }),
+    ...(line.note === undefined ? {} : { note: line.note }),
+    ...(line.sellerId === undefined ? {} : { sellerId: line.sellerId }),
+  };
+}
+
+// Membagi diskon baris saat sebagian jumlahnya dipindahkan: persen ikut ke dua bagian, nominal
+// dibagi proporsional dengan sisa pembulatan pada bagian yang tertinggal.
+function shareDiscount(
+  line: BillLine,
+  take: number,
+): { readonly kept: LineDiscount | undefined; readonly moved: LineDiscount | undefined } {
+  const discount = line.discount;
+  if (discount === undefined) {
+    return { kept: undefined, moved: undefined };
+  }
+  if (discount.kind === 'persen') {
+    return { kept: discount, moved: discount };
+  }
+  const movedValue = Math.round((discount.value * take) / line.quantity);
+  const keptValue = discount.value - movedValue;
+  return {
+    kept: keptValue > 0 ? { kind: 'nominal', value: keptValue } : undefined,
+    moved: movedValue > 0 ? { kind: 'nominal', value: movedValue } : undefined,
+  };
+}
+
+export function splitLines(
+  lines: readonly BillLine[],
+  picks: readonly SplitPick[],
+):
+  | { readonly kept: readonly BillLine[]; readonly moved: readonly BillLine[] }
+  | { readonly error: 'kosong' | 'melebihi' | 'semua' } {
+  const totals = new Map<number, number>();
+  for (const pick of picks) {
+    if (pick.quantity > 0) {
+      totals.set(pick.index, round3((totals.get(pick.index) ?? 0) + pick.quantity));
+    }
+  }
+  if (totals.size === 0) {
+    return { error: 'kosong' };
+  }
+  for (const [index, quantity] of totals) {
+    const line = lines[index];
+    if (line === undefined || quantity > line.quantity) {
+      return { error: 'melebihi' };
+    }
+  }
+  const kept: BillLine[] = [];
+  const moved: BillLine[] = [];
+  lines.forEach((line, index) => {
+    const take = totals.get(index);
+    if (take === undefined) {
+      kept.push(line);
+      return;
+    }
+    const rest = round3(line.quantity - take);
+    if (rest <= 0) {
+      moved.push(line);
+      return;
+    }
+    const shares = shareDiscount(line, take);
+    kept.push(sized(line, rest, shares.kept));
+    moved.push(sized(line, take, shares.moved));
+  });
+  if (kept.length === 0) {
+    return { error: 'semua' };
+  }
+  return { kept, moved };
+}
+
+// Gabungan dua bill: barang dan satuan sama dijumlahkan dengan harga, diskon, dan catatan bill
+// target; baris lain dari bill sumber ditambahkan apa adanya.
+export function mergeLines(
+  target: readonly BillLine[],
+  source: readonly BillLine[],
+): readonly BillLine[] {
+  const merged: BillLine[] = [...target];
+  for (const line of source) {
+    const index = merged.findIndex(
+      (item) => item.productId === line.productId && item.unit === line.unit,
+    );
+    const existing = merged[index];
+    if (existing === undefined) {
+      merged.push(line);
+    } else {
+      merged[index] = { ...existing, quantity: round3(existing.quantity + line.quantity) };
+    }
+  }
+  return merged;
+}

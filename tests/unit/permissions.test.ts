@@ -12,8 +12,8 @@ import {
 import { ROLES } from '../../src/shared/data/types';
 
 describe('matriks hak akses Lampiran B', () => {
-  it('memuat 153 aturan untuk 43 layar', () => {
-    expect(PERMISSION_RULES).toHaveLength(153);
+  it('memuat 156 aturan untuk 43 layar', () => {
+    expect(PERMISSION_RULES).toHaveLength(156);
     expect(SCREEN_IDS).toHaveLength(43);
     const screens = new Set(PERMISSION_RULES.map((rule) => rule.screen));
     expect(screens.size).toBe(43);
@@ -98,8 +98,8 @@ describe('hak Retur (perubahan atas proposal, keputusan pemilik proyek 7 Novembe
     expect(accessFor('sales', 'BO-10', 'Simpan Retur')).toBe('tidak');
   });
 
-  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur (153 setelah baris Detail Barang)', () => {
-    expect(PERMISSION_RULES).toHaveLength(153);
+  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur (156 setelah baris Detail Barang dan Open Bill)', () => {
+    expect(PERMISSION_RULES).toHaveLength(156);
   });
 });
 
@@ -150,5 +150,23 @@ describe('hak Detail Barang POS-03 (revisi POS putaran kedua)', () => {
       }
       expect(accessFor('sales', 'POS-03', action)).toBe('tidak');
     }
+  });
+});
+
+describe('hak Open Bill POS-05 (revisi POS putaran kedua)', () => {
+  it('Ubah, Split Bill, dan Merge Bill terbuka bagi Owner, Supervisor, Kasir, dan Frontliner', () => {
+    for (const action of ['Ubah', 'Split Bill', 'Merge Bill']) {
+      for (const role of ['owner', 'supervisor', 'kasir', 'frontliner'] as const) {
+        expect(accessFor(role, 'POS-05', action)).toBe('ya');
+      }
+      expect(accessFor('sales', 'POS-05', action)).toBe('tidak');
+    }
+  });
+
+  it('Hapus Bill tetap hanya Owner dan Supervisor sebagai dasar tombol Batalkan', () => {
+    expect(accessFor('owner', 'POS-05', 'Hapus Bill')).toBe('ya');
+    expect(accessFor('supervisor', 'POS-05', 'Hapus Bill')).toBe('ya');
+    expect(accessFor('kasir', 'POS-05', 'Hapus Bill')).toBe('tidak');
+    expect(accessFor('frontliner', 'POS-05', 'Hapus Bill')).toBe('tidak');
   });
 });

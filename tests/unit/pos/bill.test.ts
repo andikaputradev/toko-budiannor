@@ -12,7 +12,9 @@ import {
   lineSubtotal,
   MAX_BILL_LINES,
   removeLine,
+  mergeLines,
   repriceLines,
+  splitLines,
   validateDiscount,
 } from '../../../src/apps/pos/domain/bill';
 import { isShort } from '../../../src/apps/pos/domain/stock';
@@ -178,5 +180,127 @@ describe('diskon baris', () => {
     expect(first?.listPrice).toBeUndefined();
     expect(second?.unitPrice).toBe(eceran - 1000);
     expect(second?.listPrice).toBe(grosir);
+  });
+});
+
+describe('split dan merge baris bill', () => {
+  const semenLine: BillLine = { productId: 'P-01', unit: 'SAK', quantity: 4, unitPrice: 70000 };
+  const lemLine: BillLine = { productId: 'P-02', unit: 'KLG', quantity: 2, unitPrice: 10000 };
+
+  it('splitLines memindahkan jumlah sebagian dan menghapus baris yang habis dari yang tersisa', () => {
+    const result = splitLines(
+      [semenLine, lemLine],
+      [
+        { index: 0, quantity: 1.5 },
+        { index: 1, quantity: 2 },
+      ],
+    );
+    if ('error' in result) {
+      throw new Error(result.error);
+    }
+    expect(result.kept).toEqual([{ ...semenLine, quantity: 2.5 }]);
+    expect(result.moved).toEqual([{ ...semenLine, quantity: 1.5 }, lemLine]);
+  });
+
+  it('splitLines menolak daftar kosong, jumlah melebihi isi, dan pemindahan semua baris', () => {
+    expect(splitLines([semenLine], [])).toEqual({ error: 'kosong' });
+    expect(splitLines([semenLine], [{ index: 0, quantity: 0 }])).toEqual({ error: 'kosong' });
+    expect(splitLines([semenLine], [{ index: 0, quantity: 4.001 }])).toEqual({
+      error: 'melebihi',
+    });
+    expect(splitLines([semenLine], [{ index: 5, quantity: 1 }])).toEqual({ error: 'melebihi' });
+    expect(splitLines([semenLine], [{ index: 0, quantity: 4 }])).toEqual({ error: 'semua' });
+    expect(
+      splitLines(
+        [semenLine, lemLine],
+        [
+          { index: 0, quantity: 4 },
+          { index: 1, quantity: 2 },
+        ],
+      ),
+    ).toEqual({ error: 'semua' });
+  });
+
+  it('splitLines menjumlahkan pilihan ganda pada baris yang sama dan tidak melampaui isi', () => {
+    const result = splitLines(
+      [semenLine, lemLine],
+      [
+        { index: 0, quantity: 1 },
+        { index: 0, quantity: 1 },
+      ],
+    );
+    if ('error' in result) {
+      throw new Error(result.error);
+    }
+    expect(result.moved[0]?.quantity).toBe(2);
+    expect(result.kept[0]?.quantity).toBe(2);
+    expect(
+      splitLines(
+        [semenLine, lemLine],
+        [
+          { index: 0, quantity: 3 },
+          { index: 0, quantity: 2 },
+        ],
+      ),
+    ).toEqual({ error: 'melebihi' });
+  });
+
+  it('split memperhatikan diskon dan catatan baris', () => {
+    const percent: BillLine = {
+      ...semenLine,
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+      sellerId: 'U-5',
+    };
+    const nominal: BillLine = {
+      ...lemLine,
+      quantity: 3,
+      discount: { kind: 'nominal', value: 1000 },
+    };
+    const result = splitLines(
+      [percent, nominal],
+      [
+        { index: 0, quantity: 1 },
+        { index: 1, quantity: 1 },
+      ],
+    );
+    if ('error' in result) {
+      throw new Error(result.error);
+    }
+    expect(result.moved[0]).toMatchObject({
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+      sellerId: 'U-5',
+    });
+    expect(result.kept[0]).toMatchObject({
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+      sellerId: 'U-5',
+    });
+    const movedNominal = result.moved[1]?.discount;
+    const keptNominal = result.kept[1]?.discount;
+    expect(movedNominal).toEqual({ kind: 'nominal', value: 333 });
+    expect(keptNominal).toEqual({ kind: 'nominal', value: 667 });
+    expect((movedNominal?.value ?? 0) + (keptNominal?.value ?? 0)).toBe(1000);
+  });
+
+  it('mergeLines menjumlahkan barang dan satuan sama dan mempertahankan harga bill target', () => {
+    const target: BillLine[] = [semenLine];
+    const source: BillLine[] = [{ ...semenLine, quantity: 1.5, unitPrice: 65000 }];
+    const merged = mergeLines(target, source);
+    expect(merged).toEqual([{ ...semenLine, quantity: 5.5 }]);
+  });
+
+  it('mergeLines menjaga baris dengan satuan atau barang berbeda terpisah, termasuk diskon dan catatan', () => {
+    const target: BillLine[] = [semenLine];
+    const otherUnit: BillLine = { ...semenLine, unit: 'KG', quantity: 5, unitPrice: 1800 };
+    const noted: BillLine = {
+      ...lemLine,
+      note: 'Warna putih',
+      discount: { kind: 'persen', value: 5 },
+    };
+    const merged = mergeLines(target, [otherUnit, noted]);
+    expect(merged).toEqual([semenLine, otherUnit, noted]);
+    expect(merged).not.toBe(target);
   });
 });

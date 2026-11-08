@@ -932,3 +932,8 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-922: "-{nilai}%". Kunci diskonTandaPersen.
 - TB-923: "-{nilai}". Kunci diskonTandaNominal.
 - TB-924: "Tenaga Penjual: {nama}". Kunci tenagaPenjualNama.
+- TB-925: "Pilih barang yang akan dipindahkan ke bill baru.". Kunci splitKosong.
+- TB-926: "Jumlah yang dipindahkan melebihi isi bill.". Kunci splitMelebihi.
+- TB-927: "Tidak bisa memindahkan semua barang. Sisakan minimal satu barang pada bill ini.". Kunci splitSemua.
+- TB-928: "Pilih bill sumber yang berbeda dari bill tujuan.". Kunci mergeSama.
+- TB-929: "Gabungan bill melebihi 200 baris.". Kunci mergeTerlaluBanyak.

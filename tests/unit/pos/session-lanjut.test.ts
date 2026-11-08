@@ -469,3 +469,164 @@ describe('detail baris pesanan', () => {
     expect(sale?.paid).toBe(expected);
   });
 });
+
+describe('split dan merge bill gantung', () => {
+  function holdTwo(userId = 'U-3') {
+    const harness = setup(userId);
+    const [semen, lem] = [dataset.products[0], dataset.products[1]];
+    if (semen === undefined || lem === undefined) {
+      throw new Error('data kosong');
+    }
+    harness.session.addProduct(semen, undefined, 4);
+    harness.session.addProduct(lem, undefined, 2);
+    const held = harness.session.holdBill();
+    if (held === undefined) {
+      throw new Error('bill tidak tertahan');
+    }
+    return { ...harness, held };
+  }
+
+  it('splitHeldBill menyimpan dua bill dan memberi nomor berikutnya', () => {
+    const { session, held } = holdTwo();
+    const before = session.state().heldBills.length;
+    expect(session.splitHeldBill(held.id, [{ index: 0, quantity: 1 }])).toEqual({ ok: true });
+    const bills = session.state().heldBills;
+    expect(bills).toHaveLength(before + 1);
+    const original = bills.find((bill) => bill.id === held.id);
+    const created = bills.at(-1);
+    expect(original?.lines[0]?.quantity).toBe(3);
+    expect(created?.lines).toHaveLength(1);
+    expect(created?.lines[0]?.quantity).toBe(1);
+    expect(created?.id).not.toBe(held.id);
+    expect(created?.number).toBe(`B-${String(before + 1).padStart(4, '0')}`);
+    expect(created?.customerId).toBe(held.customerId);
+    expect(session.state().activity.at(-1)?.action).toBe('Split bill');
+  });
+
+  it('splitHeldBill menolak pilihan tidak sah dengan labelKey dan bill tidak berubah', () => {
+    const { session, held } = holdTwo();
+    const before = JSON.stringify(session.state().heldBills);
+    expect(session.splitHeldBill(held.id, [])).toEqual({ ok: false, labelKey: 'splitKosong' });
+    expect(session.splitHeldBill(held.id, [{ index: 0, quantity: 9 }])).toEqual({
+      ok: false,
+      labelKey: 'splitMelebihi',
+    });
+    expect(
+      session.splitHeldBill(held.id, [
+        { index: 0, quantity: 4 },
+        { index: 1, quantity: 2 },
+      ]),
+    ).toEqual({ ok: false, labelKey: 'splitSemua' });
+    expect(session.splitHeldBill('H-404', [{ index: 0, quantity: 1 }])).toMatchObject({
+      ok: false,
+      messageId: 'MSG-038',
+    });
+    expect(JSON.stringify(session.state().heldBills)).toBe(before);
+  });
+
+  it('mergeHeldBills menjumlahkan ke bill target dan menghapus bill sumber', () => {
+    const { session, held } = holdTwo();
+    session.splitHeldBill(held.id, [{ index: 0, quantity: 1 }]);
+    const source = session.state().heldBills.at(-1);
+    if (source === undefined) {
+      throw new Error('bill hasil split tidak ada');
+    }
+    const count = session.state().heldBills.length;
+    expect(session.mergeHeldBills(held.id, source.id)).toEqual({ ok: true });
+    const bills = session.state().heldBills;
+    expect(bills).toHaveLength(count - 1);
+    expect(bills.some((bill) => bill.id === source.id)).toBe(false);
+    expect(bills.find((bill) => bill.id === held.id)?.lines[0]?.quantity).toBe(4);
+    expect(session.state().activity.at(-1)?.action).toBe('Merge bill');
+  });
+
+  it('mergeHeldBills menolak sumber sama dengan target dan bill yang tidak ada', () => {
+    const { session, held } = holdTwo();
+    const before = JSON.stringify(session.state().heldBills);
+    expect(session.mergeHeldBills(held.id, held.id)).toEqual({ ok: false, labelKey: 'mergeSama' });
+    expect(session.mergeHeldBills(held.id, 'H-404')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-038',
+    });
+    expect(session.mergeHeldBills('H-404', held.id)).toMatchObject({
+      ok: false,
+      messageId: 'MSG-038',
+    });
+    expect(JSON.stringify(session.state().heldBills)).toBe(before);
+  });
+
+  it('split dan merge menjaga diskon, catatan, dan harga yang diubah pada baris', () => {
+    const harness = setup('U-2');
+    const semen = dataset.products[0];
+    if (semen === undefined) {
+      throw new Error('data kosong');
+    }
+    harness.session.addProduct(semen, undefined, 4);
+    const original = harness.session.state().lines[0]?.unitPrice ?? 0;
+    harness.session.setLineDetail(0, {
+      price: original - 1000,
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+    });
+    const held = harness.session.holdBill();
+    if (held === undefined) {
+      throw new Error('bill tidak tertahan');
+    }
+    harness.session.splitHeldBill(held.id, [{ index: 0, quantity: 1 }]);
+    const created = harness.session.state().heldBills.at(-1);
+    expect(created?.lines[0]).toMatchObject({
+      unitPrice: original - 1000,
+      listPrice: original,
+      discount: { kind: 'persen', value: 10 },
+      note: 'Antar sore',
+    });
+    expect(harness.session.mergeHeldBills(held.id, created?.id ?? '')).toEqual({ ok: true });
+    const merged = harness.session.state().heldBills.find((bill) => bill.id === held.id);
+    expect(merged?.lines).toHaveLength(1);
+    expect(merged?.lines[0]).toMatchObject({
+      quantity: 4,
+      unitPrice: original - 1000,
+      discount: { kind: 'persen', value: 10 },
+    });
+  });
+
+  it('mergeHeldBills menolak gabungan lebih dari 200 baris dan kedua bill tetap utuh', () => {
+    const { session } = setup('U-2');
+    const hold = (items: typeof dataset.products) => {
+      for (const product of items) {
+        session.addProduct(product, undefined, 1);
+      }
+      const held = session.holdBill();
+      if (held === undefined) {
+        throw new Error('bill tidak tertahan');
+      }
+      return held;
+    };
+    expect(dataset.products.length).toBeGreaterThanOrEqual(240);
+    const first = hold(dataset.products.slice(0, 120));
+    const second = hold(dataset.products.slice(120, 240));
+    expect(session.mergeHeldBills(first.id, second.id)).toEqual({
+      ok: false,
+      labelKey: 'mergeTerlaluBanyak',
+    });
+    const bills = session.state().heldBills;
+    expect(bills.find((bill) => bill.id === first.id)?.lines).toHaveLength(120);
+    expect(bills.find((bill) => bill.id === second.id)?.lines).toHaveLength(120);
+  });
+
+  it('menahan bill setelah bill lain dihapus tidak menggandakan id atau nomor', () => {
+    const { session } = setup('U-2');
+    const product = dataset.products[0];
+    if (product === undefined) {
+      throw new Error('data kosong');
+    }
+    expect(session.deleteHeldBill('H-1')).toEqual({ ok: true });
+    session.addProduct(product, undefined, 1);
+    const held = session.holdBill();
+    const bills = session.state().heldBills;
+    expect(new Set(bills.map((bill) => bill.id)).size).toBe(bills.length);
+    expect(new Set(bills.map((bill) => bill.number)).size).toBe(bills.length);
+    expect(held?.id).toBe('H-4');
+    expect(held?.number).toBe('B-0004');
+  });
+});
