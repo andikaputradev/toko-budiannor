@@ -2444,3 +2444,66 @@ test.describe('susunan kartu barang seperti referensi', () => {
     await expect(page.locator('.pos-bill-panel')).toContainText('Pesanan (1)');
   });
 });
+
+test.describe('pemuatan malas layar sekunder', () => {
+  const SECONDARY = /\/assets\/(settings|employees)-[^/]+\.js/;
+  const requested = (page: Page): Promise<string[]> =>
+    page.evaluate(() => performance.getEntriesByType('resource').map((entry) => entry.name));
+
+  test('modul Pengaturan dan Karyawan tidak diminta sebelum rute dikunjungi', async ({ page }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await expect(page.locator('.pos-card').first()).toBeVisible();
+    expect((await requested(page)).filter((name) => SECONDARY.test(name))).toEqual([]);
+    await openDrawerItem(page, 'Karyawan');
+    await expect(page.locator('.pos-employee').first()).toBeVisible();
+    let names = await requested(page);
+    expect(names.some((name) => name.includes('/assets/employees-'))).toBe(true);
+    expect(names.some((name) => name.includes('/assets/settings-'))).toBe(false);
+    await openDrawerItem(page, 'Pengaturan');
+    await expect(page.locator('.pos-settings-item').first()).toBeVisible();
+    names = await requested(page);
+    expect(names.some((name) => name.includes('/assets/settings-'))).toBe(true);
+  });
+
+  test('layar sekunder menampilkan keadaan memuat lalu isi', async ({ page }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page.route(/\/assets\/employees-[^/]+\.js/, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await route.continue();
+    });
+    await openDrawerItem(page, 'Karyawan');
+    const loading = page.locator('.pos-loading');
+    await expect(loading).toBeVisible();
+    await expect(loading).toHaveText('Memuat data');
+    await expect(loading).toHaveAttribute('role', 'status');
+    await expect(page.locator('.pos-employee').first()).toBeVisible();
+    await expect(loading).toHaveCount(0);
+  });
+
+  test('berpindah rute dengan cepat tidak menumpuk atau menyisakan layar lama', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page.route(SECONDARY, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await route.continue();
+    });
+    await page.evaluate(() => {
+      window.location.hash = '/pos/karyawan';
+    });
+    await expect(page.locator('.pos-loading')).toBeVisible();
+    await page.evaluate(() => {
+      window.location.hash = '/pos/pengaturan';
+    });
+    await page.evaluate(() => {
+      window.location.hash = '/pos/jual';
+    });
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await expect(page.locator('.pos-sell')).toBeVisible();
+    // Modul yang terlambat tiba tidak boleh dipasang di atas layar jual.
+    await page.waitForTimeout(1600);
+    await expect(page.locator('#root > *')).toHaveCount(1);
+    await expect(page.locator('.pos-sell')).toBeVisible();
+    await expect(page.locator('.pos-employee, .pos-settings-item, .pos-loading')).toHaveCount(0);
+  });
+});

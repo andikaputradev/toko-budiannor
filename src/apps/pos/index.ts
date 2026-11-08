@@ -27,16 +27,9 @@ import {
   prefersDark,
   watchScheme,
 } from './theme';
-import { renderBills } from './screens/bill';
-import { renderCustomerForm } from './screens/customer-form';
-import { renderCustomers } from './screens/customers';
-import { renderEmployees } from './screens/employees';
-import { renderExpense } from './screens/expense';
-import { renderHistory } from './screens/history';
 import { renderLogin, type ScreenHandle } from './screens/login';
 import { renderPay } from './screens/pay';
 import { renderSell } from './screens/sell';
-import { renderStatus } from './screens/status';
 
 export interface AppContext {
   readonly store: Store;
@@ -55,13 +48,34 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/pos': { id: undefined, render: renderLogin },
   '/pos/jual': { id: 'POS-02', render: renderSell },
   '/pos/bayar': { id: 'POS-04', render: renderPay },
-  '/pos/bill': { id: 'POS-05', render: renderBills },
-  '/pos/riwayat': { id: 'POS-06', render: renderHistory },
-  '/pos/biaya': { id: 'POS-07', render: renderExpense },
-  '/pos/pelanggan': { id: 'POS-08', render: renderCustomers },
-  '/pos/pelanggan-baru': { id: 'POS-08', render: renderCustomerForm },
-  '/pos/status': { id: 'POS-09', render: renderStatus },
-  '/pos/karyawan': { id: 'POS-11', render: renderEmployees },
+  '/pos/bill': {
+    id: 'POS-05',
+    load: async () => (await import('./screens/bill')).renderBills,
+  },
+  '/pos/riwayat': {
+    id: 'POS-06',
+    load: async () => (await import('./screens/history')).renderHistory,
+  },
+  '/pos/biaya': {
+    id: 'POS-07',
+    load: async () => (await import('./screens/expense')).renderExpense,
+  },
+  '/pos/pelanggan': {
+    id: 'POS-08',
+    load: async () => (await import('./screens/customers')).renderCustomers,
+  },
+  '/pos/pelanggan-baru': {
+    id: 'POS-08',
+    load: async () => (await import('./screens/customer-form')).renderCustomerForm,
+  },
+  '/pos/status': {
+    id: 'POS-09',
+    load: async () => (await import('./screens/status')).renderStatus,
+  },
+  '/pos/karyawan': {
+    id: 'POS-11',
+    load: async () => (await import('./screens/employees')).renderEmployees,
+  },
   '/pos/pengaturan': {
     id: 'POS-12',
     load: async () => (await import('./screens/settings')).renderSettings,
