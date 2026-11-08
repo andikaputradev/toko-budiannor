@@ -31,6 +31,7 @@ import { openCustomerPicker } from './customer-picker';
 import type { ScreenHandle } from './login';
 import { openDraftPreview } from './receipt-preview';
 import { needsShift } from '../domain/shift';
+import { loadCatalogView } from '../settings';
 import { guardWithShift } from './shift';
 import { discountTag, priceNodes } from './line-price';
 import { openUnitModal } from './unit-modal';
@@ -84,7 +85,9 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     },
   });
   const searchError = el('p', { className: 'pos-search__error', attrs: { role: 'alert' } });
-  const grid = el('div', { className: 'pos-grid' });
+  const grid = el('div', {
+    className: loadCatalogView() === 'daftar' ? 'pos-grid pos-grid--daftar' : 'pos-grid',
+  });
   const note = el('p', { className: 't-label pos-note' });
   const orderId = nextId('pesanan');
   const order = el('section', { className: 'pos-bill-panel', attrs: { id: orderId } });

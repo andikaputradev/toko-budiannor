@@ -40,7 +40,7 @@ function repaint(): void {
   applyAppearance(document.documentElement, currentTheme(), currentMode(), prefersDark());
 }
 
-function radioGroup<T extends string>(options: {
+export function radioGroup<T extends string>(options: {
   readonly name: LabelKey;
   readonly values: readonly T[];
   readonly selected: T;
@@ -91,7 +91,7 @@ function radioGroup<T extends string>(options: {
   return group;
 }
 
-// Pemilih palet dan mode. Dipakai di menu samping sekarang dan di Pengaturan nanti.
+// Pemilih palet dan mode, dipakai di panel Pengaturan Lainnya.
 export function createAppearanceControls(): HTMLElement {
   const themes = radioGroup<PosTheme>({
     name: 'tema',

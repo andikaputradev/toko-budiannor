@@ -103,14 +103,15 @@ test.describe('kerangka', () => {
     page,
   }) => {
     await loginPos(page);
-    await page.getByRole('button', { name: 'Menu' }).click();
-    const drawer = page.getByRole('dialog', { name: 'Toko Budiannor' });
-    await expect(drawer.getByRole('radio', { name: 'Oranye' })).toHaveAttribute(
+    await openDrawerItem(page, 'Pengaturan');
+    await page.getByRole('button', { name: 'Pengaturan Lainnya', exact: true }).click();
+    const themes = page.getByRole('radiogroup', { name: 'Tema' });
+    await expect(themes.getByRole('radio', { name: 'Oranye' })).toHaveAttribute(
       'aria-checked',
       'true',
     );
-    await drawer.getByRole('radio', { name: 'Teal' }).click();
-    await expect(drawer.getByRole('radio', { name: 'Teal' })).toHaveAttribute(
+    await themes.getByRole('radio', { name: 'Teal' }).click();
+    await expect(themes.getByRole('radio', { name: 'Teal' })).toHaveAttribute(
       'aria-checked',
       'true',
     );

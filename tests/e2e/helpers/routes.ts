@@ -88,6 +88,18 @@ export async function openDrawerItem(page: Page, name: string): Promise<void> {
 
 // Menunggu transisi CSS selesai agar axe tidak mengukur warna di tengah peralihan.
 export async function settle(page: Page): Promise<void> {
+  // Dua bingkai dulu: peralihan dari perubahan skema warna baru dimulai setelah gaya dihitung ulang,
+  // jadi membaca getAnimations() seketika bisa kosong dan axe mengukur warna di tengah peralihan.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            resolve();
+          }),
+        ),
+      ),
+  );
   await page.evaluate(() =>
     Promise.all(document.getAnimations().map((animation) => animation.finished)),
   );

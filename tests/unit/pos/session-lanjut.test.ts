@@ -664,3 +664,57 @@ describe('split dan merge bill gantung', () => {
     expect(held?.number).toBe('B-0004');
   });
 });
+
+describe('ubah PIN', () => {
+  it('changePin menolak PIN lama salah, pola tidak sah, dan PIN sama dengan lama', () => {
+    const { session } = setup();
+    expect(session.changePin('U-3', '0000', '1357')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-023',
+    });
+    expect(session.changePin('U-3', '2468', '12')).toMatchObject({
+      ok: false,
+      labelKey: 'pinBaruTidakSah',
+    });
+    expect(session.changePin('U-3', '2468', '1234567')).toMatchObject({
+      labelKey: 'pinBaruTidakSah',
+    });
+    expect(session.changePin('U-3', '2468', 'abcd')).toMatchObject({ labelKey: 'pinBaruTidakSah' });
+    expect(session.changePin('U-3', '2468', '2468')).toMatchObject({
+      labelKey: 'pinBaruSamaDenganLama',
+    });
+    expect(session.changePin('U-404', '2468', '1357')).toMatchObject({ ok: false });
+    expect(session.state().pins).toEqual({});
+  });
+
+  it('changePin memakai penjaga percobaan yang sama dengan login', () => {
+    const { session } = setup();
+    expect(session.changePin('U-3', '0001', '1357')).toMatchObject({ messageId: 'MSG-023' });
+    expect(session.changePin('U-3', '0002', '1357')).toMatchObject({ messageId: 'MSG-023' });
+    expect(session.changePin('U-3', '0003', '1357')).toMatchObject({ messageId: 'MSG-024' });
+    expect(session.changePin('U-3', '2468', '1357')).toMatchObject({ messageId: 'MSG-024' });
+    expect(session.attemptLogin('U-3', '2468')).toMatchObject({ messageId: 'MSG-024' });
+  });
+
+  it('login memakai PIN baru dan menolak PIN lama sampai muat ulang', () => {
+    const first = setup();
+    expect(first.session.changePin('U-3', '2468', '1357')).toEqual({ ok: true });
+    expect(first.session.state().pins).toEqual({ 'U-3': '1357' });
+    first.session.logout();
+    expect(first.session.attemptLogin('U-3', '2468')).toMatchObject({
+      ok: false,
+      messageId: 'MSG-023',
+    });
+    expect(first.session.attemptLogin('U-3', '1357')).toEqual({ ok: true });
+    expect(first.session.changePin('U-3', '1357', '2468')).toEqual({ ok: true });
+    const reloaded = setup();
+    expect(reloaded.session.attemptLogin('U-3', '2468')).toEqual({ ok: true });
+  });
+
+  it('PIN Owner yang diganti dipakai untuk otorisasi dan PIN lamanya ditolak', () => {
+    const { session } = setup();
+    expect(session.changePin('U-1', '482916', '135790')).toEqual({ ok: true });
+    expect(session.authorizeOwner('Pelanggan lama', '482916').ok).toBe(false);
+    expect(session.authorizeOwner('Pelanggan lama', '135790')).toEqual({ ok: true });
+  });
+});

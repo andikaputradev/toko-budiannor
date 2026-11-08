@@ -13,18 +13,18 @@ import {
 import { SCREEN_IDS } from '../../../src/shared/permissions';
 import { label } from '../../../src/shared/messages';
 
-describe('katalog 44 layar', () => {
-  it('memuat tepat 44 layar yang sama dengan matriks izin dengan ID unik', () => {
-    expect(SCREENS).toHaveLength(44);
-    expect(new Set(SCREENS.map((entry) => entry.id)).size).toBe(44);
+describe('katalog 45 layar', () => {
+  it('memuat tepat 45 layar yang sama dengan matriks izin dengan ID unik', () => {
+    expect(SCREENS).toHaveLength(45);
+    expect(new Set(SCREENS.map((entry) => entry.id)).size).toBe(45);
     expect([...SCREENS.map((entry) => entry.id)].sort()).toEqual([...SCREEN_IDS].sort());
   });
 
-  it('membagi layar ke tiga ekosistem: 11 POS, 22 Back-Office, 11 mobile', () => {
-    expect(screensIn('pos')).toHaveLength(11);
+  it('membagi layar ke tiga ekosistem: 12 POS, 22 Back-Office, 11 mobile', () => {
+    expect(screensIn('pos')).toHaveLength(12);
     expect(screensIn('bo')).toHaveLength(22);
     expect(screensIn('mobile')).toHaveLength(11);
-    expect(builtIn('pos')).toBe(11);
+    expect(builtIn('pos')).toBe(12);
     expect(builtIn('bo')).toBe(8);
     expect(builtIn('mobile')).toBe(11);
   });

@@ -1004,3 +1004,39 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-994: "Total piutang". Kunci totalPiutang.
 - TB-995: "Faktur belum lunas". Kunci fakturBelumLunas.
 - TB-996: "Tidak ada faktur belum lunas.". Kunci tidakAdaFakturBelumLunas.
+- TB-997: "Pengaturan". Kunci layarPos12.
+- TB-998: "Pengaturan". Kunci pengaturan.
+- TB-999: "Profil Pengguna". Kunci profilPengguna.
+- TB-1000: "Printer". Kunci menuPrinter.
+- TB-1001: "Mesin EDC". Kunci mesinEdc.
+- TB-1002: "Perangkat". Kunci perangkat.
+- TB-1003: "Backup Data". Kunci backupData.
+- TB-1004: "Pengaturan Lainnya". Kunci pengaturanLainnya.
+- TB-1005: "Ubah PIN". Kunci ubahPin.
+- TB-1006: "PIN lama". Kunci pinLama.
+- TB-1007: "PIN baru". Kunci pinBaru.
+- TB-1008: "Ulangi PIN baru". Kunci ulangiPinBaru.
+- TB-1009: "PIN baru harus 4 sampai 6 digit angka.". Kunci pinBaruTidakSah.
+- TB-1010: "PIN baru tidak boleh sama dengan PIN lama.". Kunci pinBaruSamaDenganLama.
+- TB-1011: "Ulangi PIN baru tidak sama dengan PIN baru.". Kunci pinBaruTidakCocok.
+- TB-1012: "PIN berhasil diubah. Berlaku untuk masuk berikutnya selama aplikasi belum dimuat ulang.". Kunci pinDiubah.
+- TB-1013: "Terhubung". Kunci terhubung.
+- TB-1014: "Terputus". Kunci terputus.
+- TB-1015: "Status". Kunci statusKoneksi.
+- TB-1016: "Uji Cetak". Kunci ujiCetak.
+- TB-1017: "Barang contoh". Kunci barangContoh.
+- TB-1018: "Uji Koneksi". Kunci ujiKoneksi.
+- TB-1019: "Koneksi mesin EDC berhasil (simulasi).". Kunci koneksiEdcBerhasil.
+- TB-1020: "Mesin EDC hanya simulasi pada mockup ini.". Kunci catatanEdcSimulasi.
+- TB-1021: "Nama perangkat". Kunci namaPerangkat.
+- TB-1022: "Tablet Kasir (simulasi)". Kunci namaPerangkatNilai.
+- TB-1023: "Outlet terhubung". Kunci outletTerhubung.
+- TB-1024: "Versi mockup". Kunci versiMockup.
+- TB-1025: "Revisi POS 2". Kunci versiMockupNilai.
+- TB-1026: "Unduh Cadangan". Kunci unduhCadangan.
+- TB-1027: "Berkas JSON berisi penjualan, biaya, retur, bill tertahan, dan shift sesi ini. PIN tidak ikut dicadangkan.". Kunci petunjukCadangan.
+- TB-1028: "Cadangan diunduh.". Kunci cadanganDiunduh.
+- TB-1029: "Tampilan katalog". Kunci tampilanKatalog.
+- TB-1030: "Kartu". Kunci katalogKartu.
+- TB-1031: "Daftar". Kunci katalogDaftar.
+- TB-1032: "Peran". Kunci peranPengguna.

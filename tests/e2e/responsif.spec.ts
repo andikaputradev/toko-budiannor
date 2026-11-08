@@ -686,3 +686,29 @@ test.describe('Pelanggan pada ponsel 360 x 800', () => {
     await expect(page.locator('.pos-split__detail')).toBeHidden();
   });
 });
+
+test.describe('Pengaturan pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: menu lalu panel dengan tombol Kembali', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/pengaturan';
+    });
+    await expect(page.locator('.pos-settings-item').first()).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+    await page.getByRole('button', { name: 'Profil Pengguna', exact: true }).click();
+    await expect(page.locator('.pos-split__detail')).toBeVisible();
+    await expect(page.locator('.pos-split__list')).toBeHidden();
+    await expect(page.getByLabel('PIN lama', { exact: true })).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.getByRole('button', { name: 'Kembali', exact: true }).click();
+    await expect(page.locator('.pos-split__list')).toBeVisible();
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+    await page.getByRole('button', { name: 'Pengaturan Lainnya', exact: true }).click();
+    await expect(page.getByRole('radiogroup', { name: 'Tampilan katalog' })).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+});

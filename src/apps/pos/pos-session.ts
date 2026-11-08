@@ -63,7 +63,7 @@ import {
 } from './domain/payment';
 import { isValidChannel } from './domain/channels';
 import { applyPart, checkPart, partLimit, type PaymentPart } from './domain/split';
-import { checkPin, INITIAL_GUARD, type PinGuard } from './domain/pin';
+import { checkPin, INITIAL_GUARD, PIN_PATTERN, type PinGuard } from './domain/pin';
 import type { ReceiptKind } from './domain/receipt';
 
 export const SYNC_STEP_MS = 400;
@@ -136,6 +136,8 @@ export interface PosState {
   readonly printPending: string | undefined;
   readonly shift: Shift | undefined;
   readonly closedShifts: readonly ClosedShift[];
+  // PIN yang diganti lewat Pengaturan (id pengguna ke PIN baru); hanya hidup selama sesi aplikasi.
+  readonly pins: Readonly<Record<string, string>>;
   readonly channel: string | undefined;
 }
 
@@ -200,6 +202,7 @@ export interface PosSession {
   employees(): readonly AppUser[];
   shiftSummary(): ShiftSummary | undefined;
   attemptLogin(userId: string | undefined, pin: string): FlowResult;
+  changePin(userId: string, oldPin: string, newPin: string): FlowResult;
   logout(): void;
   addProduct(product: Product, unit?: string, quantity?: number): AddResult;
   setLine(index: number, unit: string, quantity: number): void;
@@ -297,6 +300,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       printPending: undefined,
       shift: undefined,
       closedShifts: [],
+      pins: {},
     };
   };
   let state: PosState = initial(false);
@@ -474,6 +478,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
 
   const userOf = (userId: string | undefined): AppUser | undefined =>
     store.getState().data.users.find((user) => user.id === userId);
+
+  // PIN berlaku: yang diganti di Pengaturan bila ada, kalau tidak PIN data awal.
+  const pinOf = (user: AppUser): string => state.pins[user.id] ?? user.pin;
 
   const fail = (
     messageId: SystemMessageId,
@@ -781,7 +788,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       if (!user?.active) {
         return fail('MSG-020');
       }
-      const outcome = checkPin(user.pin, pin, guards.get(userId) ?? INITIAL_GUARD, clock());
+      const outcome = checkPin(pinOf(user), pin, guards.get(userId) ?? INITIAL_GUARD, clock());
       guards.set(userId, outcome.guard);
       if (outcome.kind === 'success') {
         store.setUser(userId);
@@ -792,6 +799,35 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         return fail('MSG-023', { sisa: outcome.remaining });
       }
       return fail(outcome.kind === 'locked' ? 'MSG-024' : 'MSG-022');
+    },
+    changePin: (userId, oldPin, newPin) => {
+      const user = userOf(userId);
+      if (!user?.active) {
+        return fail('MSG-020');
+      }
+      // PIN lama diperiksa dengan penjaga percobaan yang sama dengan login.
+      const outcome = checkPin(pinOf(user), oldPin, guards.get(userId) ?? INITIAL_GUARD, clock());
+      guards.set(userId, outcome.guard);
+      if (outcome.kind === 'wrong') {
+        return fail('MSG-023', { sisa: outcome.remaining });
+      }
+      if (outcome.kind === 'locked') {
+        return fail('MSG-024');
+      }
+      if (outcome.kind === 'invalid-format') {
+        return fail('MSG-022');
+      }
+      if (!PIN_PATTERN.test(newPin)) {
+        return failLabel('pinBaruTidakSah');
+      }
+      if (newPin === oldPin) {
+        return failLabel('pinBaruSamaDenganLama');
+      }
+      commit({
+        pins: { ...state.pins, [userId]: newPin },
+        activity: [...state.activity, entry('Ubah PIN', user.name)],
+      });
+      return { ok: true };
     },
     logout: () => {
       commit({ loggedIn: false, lines: [], customerId: undefined, ...EMPTY_PAYMENT });
@@ -1030,18 +1066,18 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       // Perubahan harga boleh disetujui Supervisor atau Owner; tujuan lain hanya Owner.
       const mayApprove = (user: AppUser): boolean =>
         user.role === 'owner' || (purpose === 'harga' && user.role === 'supervisor');
-      if (users.some((user) => user.pin === pin && !mayApprove(user))) {
+      if (users.some((user) => pinOf(user) === pin && !mayApprove(user))) {
         return fail('MSG-050');
       }
       const approver =
-        users.find((user) => user.active && mayApprove(user) && user.pin === pin) ??
+        users.find((user) => user.active && mayApprove(user) && pinOf(user) === pin) ??
         users.find((user) => user.role === 'owner' && user.active);
       if (approver === undefined) {
         return fail('MSG-050');
       }
-      const outcome = checkPin(approver.pin, pin, ownerGuard, clock());
+      const outcome = checkPin(pinOf(approver), pin, ownerGuard, clock());
       ownerGuard = outcome.guard;
-      if (outcome.kind === 'success' && approver.pin === pin && mayApprove(approver)) {
+      if (outcome.kind === 'success' && pinOf(approver) === pin && mayApprove(approver)) {
         const at = stamp();
         const offline = !store.getState().online;
         const sequence = state.audit.length + 1;

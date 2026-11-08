@@ -34,6 +34,7 @@ const ROWS: readonly Row[] = [
   ['POS-09', 'layarPos09', 'pos', '/pos/status', undefined, undefined, true],
   ['POS-10', 'layarPos10', 'pos', undefined, '/pos/jual', 'petunjukPos10', true],
   ['POS-11', 'layarPos11', 'pos', '/pos/karyawan', undefined, undefined, true],
+  ['POS-12', 'layarPos12', 'pos', '/pos/pengaturan', undefined, undefined, true],
   ['BO-01', 'layarBo01', 'bo', '/bo', undefined, undefined, true],
   ['BO-02', 'layarBo02', 'bo', '/bo/dashboard', undefined, undefined, true],
   ['BO-03', 'layarBo03', 'bo', '/bo/barang', undefined, undefined, true],

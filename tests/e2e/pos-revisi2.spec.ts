@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
@@ -67,8 +68,9 @@ test.describe('tampilan', () => {
           .toLowerCase(),
       );
     expect(await accent()).toBe('#b94f00');
-    const drawer = await openDrawer(page);
-    await drawer
+    await openDrawerItem(page, 'Pengaturan');
+    await page.getByRole('button', { name: 'Pengaturan Lainnya', exact: true }).click();
+    await page
       .getByRole('radiogroup', { name: 'Tema' })
       .getByRole('radio', { name: 'Biru' })
       .click();
@@ -81,8 +83,9 @@ test.describe('tampilan', () => {
   }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await loginPos(page);
-    const drawer = await openDrawer(page);
-    await drawer
+    await openDrawerItem(page, 'Pengaturan');
+    await page.getByRole('button', { name: 'Pengaturan Lainnya', exact: true }).click();
+    await page
       .getByRole('radiogroup', { name: 'Mode Tampilan' })
       .getByRole('radio', { name: 'Gelap' })
       .click();
@@ -2105,6 +2108,256 @@ test.describe('Pelanggan', () => {
       await settle(page);
       const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
       expect(result.violations, scheme).toEqual([]);
+    }
+  });
+});
+
+test.describe('Pengaturan', () => {
+  const MENU = [
+    'Profil Pengguna',
+    'Printer',
+    'Mesin EDC',
+    'Perangkat',
+    'Backup Data',
+    'Pengaturan Lainnya',
+  ];
+  async function toSettings(page: Page): Promise<void> {
+    await openDrawerItem(page, 'Pengaturan');
+    await expect(page).toHaveURL(/#\/pos\/pengaturan$/);
+    await expect(page.locator('.pos-settings-item').first()).toBeVisible();
+  }
+  async function openPanel(page: Page, name: string): Promise<Locator> {
+    await page.getByRole('button', { name, exact: true }).click();
+    const detail = page.locator('.pos-split__detail');
+    await expect(detail.getByRole('heading', { name, exact: true })).toBeVisible();
+    return detail;
+  }
+  async function typePinDigits(page: Page, pin: string): Promise<void> {
+    for (const digit of pin) {
+      await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
+    }
+  }
+  async function simulate(page: Page, action: string): Promise<void> {
+    await page.getByRole('button', { name: 'Panel Simulasi' }).click();
+    await page.locator('.sim__action', { hasText: action }).click();
+    await page.getByRole('button', { name: 'Panel Simulasi' }).click();
+    await expect(page.locator('#sim-body')).toBeHidden();
+  }
+
+  test('Pengaturan menampilkan enam menu dan Profil Pengguna', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    await expect(page.locator('.pos-settings-item')).toHaveText(MENU);
+    const detail = page.locator('.pos-split__detail');
+    await expect(detail.getByRole('heading', { name: 'Profil Pengguna' })).toBeVisible();
+    await expect(detail.locator('[data-row="nama"]')).toContainText('Dewi');
+    await expect(detail.locator('[data-row="peran"]')).toContainText('Kasir');
+    await expect(detail.getByRole('heading', { name: 'Ubah PIN' })).toBeVisible();
+    await expect(detail.getByLabel('PIN lama', { exact: true })).toBeVisible();
+    await expect(detail.getByLabel('PIN baru', { exact: true })).toBeVisible();
+    await expect(detail.getByLabel('Ulangi PIN baru', { exact: true })).toBeVisible();
+  });
+
+  test('Ubah PIN menampilkan galat untuk isian yang salah', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    const detail = page.locator('.pos-split__detail');
+    const fill = async (oldPin: string, next: string, again: string): Promise<void> => {
+      await detail.getByLabel('PIN lama', { exact: true }).fill(oldPin);
+      await detail.getByLabel('PIN baru', { exact: true }).fill(next);
+      await detail.getByLabel('Ulangi PIN baru', { exact: true }).fill(again);
+      await detail.getByRole('button', { name: 'Ubah PIN', exact: true }).click();
+    };
+    await fill('2468', '1357', '1358');
+    await expect(detail.getByText('Ulangi PIN baru tidak sama dengan PIN baru.')).toBeVisible();
+    await fill('2468', '12', '12');
+    await expect(detail.getByText('PIN baru harus 4 sampai 6 digit angka.')).toBeVisible();
+    await fill('2468', '2468', '2468');
+    await expect(detail.getByText('PIN baru tidak boleh sama dengan PIN lama.')).toBeVisible();
+    await fill('0000', '1357', '1357');
+    await expect(detail.getByText('PIN salah. Sisa percobaan: 2.')).toBeVisible();
+  });
+
+  test('Ubah PIN berhasil lalu login ulang memakai PIN baru', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    const detail = page.locator('.pos-split__detail');
+    await detail.getByLabel('PIN lama', { exact: true }).fill('2468');
+    await detail.getByLabel('PIN baru', { exact: true }).fill('1357');
+    await detail.getByLabel('Ulangi PIN baru', { exact: true }).fill('1357');
+    await detail.getByRole('button', { name: 'Ubah PIN', exact: true }).click();
+    await expect(page.getByText(/PIN berhasil diubah/)).toBeVisible();
+    await expect(detail.getByLabel('PIN lama', { exact: true })).toHaveValue('');
+    await expect(detail.getByLabel('PIN baru', { exact: true })).toHaveValue('');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page
+      .getByRole('dialog', { name: 'Toko Budiannor' })
+      .getByRole('button', { name: 'Keluar' })
+      .click();
+    await expect(page).toHaveURL(/#\/pos$/);
+    await page.getByRole('radio', { name: /Dewi/ }).click();
+    await typePinDigits(page, '2468');
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await expect(page.getByText('PIN salah. Sisa percobaan: 2.')).toBeVisible();
+    await typePinDigits(page, '1357');
+    await page.getByRole('button', { name: 'Masuk' }).click();
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+  });
+
+  test('Uji Cetak membuka pratinjau struk contoh', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    const detail = await openPanel(page, 'Printer');
+    await expect(detail.locator('[data-row="status"]')).toContainText('Terhubung');
+    await detail.getByRole('button', { name: 'Uji Cetak' }).click();
+    const preview = page.getByRole('dialog', { name: 'Pratinjau struk' });
+    await expect(preview).toBeVisible();
+    await expect(preview.locator('.pos-receipt')).toContainText(/barang contoh/i);
+    await preview.getByRole('button', { name: 'Cetak', exact: true }).click();
+    await expect(page.getByText('Struk tercetak.')).toBeVisible();
+  });
+
+  test('Printer menampilkan Terputus saat disimulasikan terputus', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    const detail = await openPanel(page, 'Printer');
+    await expect(detail.locator('[data-row="status"]')).toContainText('Terhubung');
+    await simulate(page, 'Printer');
+    await expect(detail.locator('[data-row="status"]')).toContainText('Terputus');
+    await detail.getByRole('button', { name: 'Uji Cetak' }).click();
+    const preview = page.getByRole('dialog', { name: 'Pratinjau struk' });
+    await preview.getByRole('button', { name: 'Cetak', exact: true }).click();
+    await expect(
+      page.getByText('Struk belum tercetak. Periksa printer lalu coba lagi.'),
+    ).toBeVisible();
+  });
+
+  test('Mesin EDC dan Perangkat menampilkan status simulasi dan identitas mockup', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    const edc = await openPanel(page, 'Mesin EDC');
+    await expect(edc.locator('[data-row="status"]')).toContainText('Terhubung');
+    await edc.getByRole('button', { name: 'Uji Koneksi' }).click();
+    await expect(page.getByText('Koneksi mesin EDC berhasil (simulasi).')).toBeVisible();
+    const device = await openPanel(page, 'Perangkat');
+    await expect(device.locator('[data-row="nama"]')).toContainText('Tablet Kasir (simulasi)');
+    await expect(device.locator('[data-row="outlet"]')).toContainText('Toko Budiannor');
+    await expect(device.locator('[data-row="versi"]')).toContainText('Revisi POS 2');
+  });
+
+  test('Unduh Cadangan menghasilkan berkas JSON dengan kunci sales dan shift', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await sellFirstProduct(page, 'tunai');
+    await toSettings(page);
+    const detail = await openPanel(page, 'Backup Data');
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      detail.getByRole('button', { name: 'Unduh Cadangan' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^cadangan-pos-\d{8}-\d{4}\.json$/);
+    const path = await download.path();
+    const parsed = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown[]>;
+    for (const key of ['sales', 'expenses', 'returns', 'heldBills', 'closedShifts']) {
+      expect(Array.isArray(parsed[key]), key).toBe(true);
+    }
+    expect(JSON.stringify(parsed['sales'])).toContain('T-000141');
+    expect(Object.keys(parsed)).not.toContain('pins');
+    await expect(page.getByText('Cadangan diunduh.')).toBeVisible();
+  });
+
+  test('Tema dan Mode berubah langsung dari Pengaturan', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    const detail = await openPanel(page, 'Pengaturan Lainnya');
+    const root = page.locator('html');
+    await detail
+      .getByRole('radiogroup', { name: 'Tema' })
+      .getByRole('radio', { name: 'Biru' })
+      .click();
+    await expect(root).toHaveAttribute('data-pos-theme', 'biru');
+    await expect(
+      detail.getByRole('radiogroup', { name: 'Tema' }).getByRole('radio', { name: 'Biru' }),
+    ).toHaveAttribute('aria-checked', 'true');
+    await detail
+      .getByRole('radiogroup', { name: 'Mode Tampilan' })
+      .getByRole('radio', { name: 'Gelap' })
+      .click();
+    await expect(root).toHaveAttribute('data-pos-scheme', 'gelap');
+    await page.reload();
+    await expect(root).toHaveAttribute('data-pos-theme', 'biru');
+    await expect(root).toHaveAttribute('data-pos-mode', 'gelap');
+  });
+
+  test('Tampilan katalog Daftar mengubah layar jual menjadi baris', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await expect(page.locator('.pos-grid')).not.toHaveClass(/pos-grid--daftar/);
+    const cards = page.locator('.pos-card');
+    const first = await cards.nth(0).boundingBox();
+    const second = await cards.nth(1).boundingBox();
+    expect(Math.abs((first?.x ?? 0) - (second?.x ?? 0))).toBeGreaterThan(20);
+    await toSettings(page);
+    const detail = await openPanel(page, 'Pengaturan Lainnya');
+    await detail
+      .getByRole('radiogroup', { name: 'Tampilan katalog' })
+      .getByRole('radio', { name: 'Daftar' })
+      .click();
+    expect(await page.evaluate(() => localStorage.getItem('toko-budiannor-katalog-pos'))).toBe(
+      'daftar',
+    );
+    await openDrawerItem(page, 'Pesanan Baru');
+    await expect(page.locator('.pos-grid')).toHaveClass(/pos-grid--daftar/);
+    const rowA = await cards.nth(0).boundingBox();
+    const rowB = await cards.nth(1).boundingBox();
+    expect(Math.abs((rowA?.x ?? 0) - (rowB?.x ?? 0))).toBeLessThan(1);
+    expect(rowB?.y ?? 0).toBeGreaterThan(rowA?.y ?? 0);
+    expect(rowA?.height ?? 999).toBeLessThan(140);
+    await page.locator('.pos-card__main').first().click();
+    await expect(page.locator('.pos-bill-panel')).toContainText('Pesanan (1)');
+  });
+
+  test('menu samping memiliki tautan Pengaturan dan tidak lagi memuat pemilih tema', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Dewi');
+    const drawer = await openDrawer(page);
+    await expect(drawer.getByRole('link', { name: 'Pengaturan', exact: true })).toHaveAttribute(
+      'href',
+      '#/pos/pengaturan',
+    );
+    await expect(drawer.getByRole('radiogroup')).toHaveCount(0);
+    await expect(drawer.getByText('Tema', { exact: true })).toHaveCount(0);
+    await drawer.getByRole('link', { name: 'Pengaturan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/pos\/pengaturan$/);
+  });
+
+  test('Frontliner tidak melihat Pengaturan dan rutenya kembali ke layar jual', async ({
+    page,
+  }) => {
+    await loginPosRaw(page, 'Agus');
+    const drawer = await openDrawer(page);
+    await expect(drawer.getByRole('link', { name: 'Pengaturan', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/pengaturan';
+    });
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+  });
+
+  test('Pengaturan lolos axe mode terang dan gelap pada semua panel', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await toSettings(page);
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const name of MENU) {
+        await openPanel(page, name);
+        await page.evaluate(() => document.fonts.ready);
+        await settle(page);
+        const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+        expect(result.violations, `${scheme} ${name}`).toEqual([]);
+      }
     }
   });
 });

@@ -6,7 +6,6 @@ import { createButton } from '../../../shared/ui/button';
 import { openModal, type ModalHandle } from '../../../shared/ui/modal';
 import type { PosSession } from '../pos-session';
 import { ROLE_LABELS } from '../roles';
-import { createAppearanceControls } from './appearance';
 import { openShiftSummary } from './shift';
 
 interface DrawerItem {
@@ -24,6 +23,7 @@ const ITEMS: readonly DrawerItem[] = [
   { path: '/pos/pelanggan', screen: 'POS-08', key: 'pelanggan', icon: 'user-round' },
   { path: '/pos/karyawan', screen: 'POS-11', key: 'karyawan', icon: 'users' },
   { path: '/pos/status', screen: 'POS-09', key: 'statusSinkronisasi', icon: 'refresh-cw' },
+  { path: '/pos/pengaturan', screen: 'POS-12', key: 'pengaturan', icon: 'settings' },
 ];
 
 export function openDrawer(session: PosSession, go: (path: string) => void): void {
@@ -99,7 +99,6 @@ export function openDrawer(session: PosSession, go: (path: string) => void): voi
         { className: 'pos-drawer__nav', attrs: { 'aria-label': label('menuUtama') } },
         ...links,
       ),
-      createAppearanceControls(),
       footer,
     ),
     actions: [],

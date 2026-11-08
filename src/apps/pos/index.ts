@@ -8,7 +8,10 @@ import '../../styles/pos-retur.css';
 import '../../styles/pos-karyawan.css';
 import '../../styles/pos-biaya.css';
 import '../../styles/pos-pelanggan.css';
+import '../../styles/pos-pengaturan.css';
 import '../../styles/pos-responsif.css';
+import { el } from '../../shared/dom';
+import { label } from '../../shared/messages';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
@@ -41,9 +44,14 @@ export interface AppContext {
 
 type Renderer = (session: PosSession, go: (path: string) => void) => ScreenHandle;
 
-const ROUTES: Readonly<
-  Record<string, { readonly id: string | undefined; readonly render: Renderer }>
-> = {
+// Layar statis memakai render; layar sekunder memakai load sehingga modulnya baru diminta saat rute dikunjungi.
+interface RouteEntry {
+  readonly id: string | undefined;
+  readonly render?: Renderer;
+  readonly load?: () => Promise<Renderer>;
+}
+
+const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/pos': { id: undefined, render: renderLogin },
   '/pos/jual': { id: 'POS-02', render: renderSell },
   '/pos/bayar': { id: 'POS-04', render: renderPay },
@@ -54,6 +62,10 @@ const ROUTES: Readonly<
   '/pos/pelanggan-baru': { id: 'POS-08', render: renderCustomerForm },
   '/pos/status': { id: 'POS-09', render: renderStatus },
   '/pos/karyawan': { id: 'POS-11', render: renderEmployees },
+  '/pos/pengaturan': {
+    id: 'POS-12',
+    load: async () => (await import('./screens/settings')).renderSettings,
+  },
 };
 
 let session: PosSession | undefined;
@@ -61,6 +73,8 @@ let current: ScreenHandle | undefined;
 let watched: Store | undefined;
 let currentPath = '/pos';
 let stopSchemeWatch: (() => void) | undefined;
+// Setiap pemasangan menaikkan token; layar yang selesai dimuat setelah rute berganti tidak dipasang.
+let mountToken = 0;
 
 // Setelah dipasang, pilihan palet dan mode hidup di atribut akar; pengamat perangkat memakainya
 // sehingga tetap benar walau penyimpanan diblokir.
@@ -135,9 +149,33 @@ export function mount(root: HTMLElement, path: string, context: AppContext): voi
     return;
   }
   current?.destroy();
+  current = undefined;
+  mountToken += 1;
+  const token = mountToken;
   const go = (target: string): void => {
     navigate(target);
   };
-  current = screen.render(active, go);
-  root.replaceChildren(current.element);
+  const show = (render: Renderer): void => {
+    current = render(active, go);
+    root.replaceChildren(current.element);
+  };
+  if (screen.render !== undefined) {
+    show(screen.render);
+    return;
+  }
+  root.replaceChildren(
+    el('div', { className: 'pos pos-loading', attrs: { role: 'status' } }, label('memuatData')),
+  );
+  void screen
+    .load?.()
+    .then((render) => {
+      if (token === mountToken) {
+        show(render);
+      }
+    })
+    .catch(() => {
+      if (token === mountToken) {
+        navigate('/pos/jual');
+      }
+    });
 }

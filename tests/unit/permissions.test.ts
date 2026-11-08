@@ -12,11 +12,11 @@ import {
 import { ROLES } from '../../src/shared/data/types';
 
 describe('matriks hak akses Lampiran B', () => {
-  it('memuat 158 aturan untuk 44 layar', () => {
-    expect(PERMISSION_RULES).toHaveLength(158);
-    expect(SCREEN_IDS).toHaveLength(44);
+  it('memuat 161 aturan untuk 45 layar', () => {
+    expect(PERMISSION_RULES).toHaveLength(161);
+    expect(SCREEN_IDS).toHaveLength(45);
     const screens = new Set(PERMISSION_RULES.map((rule) => rule.screen));
-    expect(screens.size).toBe(44);
+    expect(screens.size).toBe(45);
     for (const screen of SCREEN_IDS) {
       expect(screens.has(screen)).toBe(true);
     }
@@ -76,7 +76,7 @@ describe('matriks hak akses Lampiran B', () => {
       expect(rule.supervisor).toBe('tidak');
       expect(rule.kasir).toBe('tidak');
     }
-    expect(screensFor('owner')).toHaveLength(39);
+    expect(screensFor('owner')).toHaveLength(40);
     expect(screensFor('kasir').every((screen) => screen.startsWith('POS-'))).toBe(true);
   });
 
@@ -98,8 +98,8 @@ describe('hak Retur (perubahan atas proposal, keputusan pemilik proyek 7 Novembe
     expect(accessFor('sales', 'BO-10', 'Simpan Retur')).toBe('tidak');
   });
 
-  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur (158 setelah baris Detail Barang, Open Bill, dan Karyawan)', () => {
-    expect(PERMISSION_RULES).toHaveLength(158);
+  it('jumlah aturan matriks tidak berubah oleh perubahan hak Retur (161 setelah baris Detail Barang, Open Bill, Karyawan, dan Pengaturan)', () => {
+    expect(PERMISSION_RULES).toHaveLength(161);
   });
 });
 
@@ -188,5 +188,20 @@ describe('hak Karyawan POS-11 (revisi POS putaran kedua)', () => {
     for (const role of ['kasir', 'frontliner', 'sales'] as const) {
       expect(canOpenScreen(role, 'POS-11')).toBe(false);
     }
+  });
+});
+
+describe('layar Pengaturan POS-12', () => {
+  it('dapat dibuka dan dipakai Owner, Supervisor, dan Kasir, tidak oleh Frontliner dan Sales', () => {
+    for (const role of ['owner', 'supervisor', 'kasir'] as const) {
+      expect(canOpenScreen(role, 'POS-12'), role).toBe(true);
+      for (const action of ['Ubah PIN', 'Unduh Cadangan', 'Uji Cetak']) {
+        expect(isAllowed(role, 'POS-12', action), `${role} ${action}`).toBe(true);
+      }
+    }
+    expect(canOpenScreen('frontliner', 'POS-12')).toBe(false);
+    expect(canOpenScreen('sales', 'POS-12')).toBe(false);
+    expect(isAllowed('frontliner', 'POS-12', 'Ubah PIN')).toBe(false);
+    expect(isAllowed('sales', 'POS-12', 'Ubah PIN')).toBe(false);
   });
 });
