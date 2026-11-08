@@ -55,12 +55,14 @@ test.describe('POS-05 sampai POS-10', () => {
 
     await openOrderMenu(page, 'Panggil Bill');
     await expect(page).toHaveURL(/#\/pos\/bill$/);
-    const rows = page.locator('.pos-bills__list tbody tr');
+    const rows = page.locator('.pos-bill-card');
     await expect(rows).toHaveCount(4);
     await expect(rows.first()).toContainText('B-0004');
-    await expect(page.getByRole('button', { name: 'Hapus Bill' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Opsi bill B-0004' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Batalkan' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
 
-    await page.getByRole('button', { name: 'Cetak Struk Draf' }).click();
+    await rows.first().getByRole('button', { name: 'Cetak Struk Draf' }).click();
     const sheet = page.locator('.pos-receipt');
     await expect(sheet).toContainText('STRUK DRAF, BUKAN BUKTI BAYAR');
     await expect(sheet).not.toContainText('Rp');
@@ -81,7 +83,8 @@ test.describe('POS-05 sampai POS-10', () => {
     await expect(page.getByText('Struk draf tercetak.')).toBeVisible();
     await expect(rows).toHaveCount(4);
 
-    await page.getByRole('button', { name: 'Panggil Bill' }).click();
+    await page.getByRole('button', { name: 'Opsi bill B-0004' }).click();
+    await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();
     await expect(page).toHaveURL(/#\/pos\/jual$/);
     await expect(page.locator('.pos-order__item')).toHaveCount(2);
     await openOrderMenu(page, 'Panggil Bill');
@@ -91,12 +94,13 @@ test.describe('POS-05 sampai POS-10', () => {
   test('F-04: Supervisor menghapus bill gantung setelah konfirmasi', async ({ page }) => {
     await login(page, 'Ibu Sinta');
     await page.goto('/#/pos/bill');
-    await page.getByRole('button', { name: 'Hapus Bill' }).click();
+    await page.getByRole('button', { name: 'Opsi bill B-0001' }).click();
+    await page.getByRole('menuitem', { name: 'Batalkan', exact: true }).click();
     await expect(
       page.getByText('Hapus bill B-0001? Bill yang dihapus tidak dapat dikembalikan.'),
     ).toBeVisible();
     await page.getByRole('dialog').getByRole('button', { name: 'Hapus', exact: true }).click();
-    await expect(page.locator('.pos-bills__list tbody tr')).toHaveCount(2);
+    await expect(page.locator('.pos-bill-card')).toHaveCount(2);
   });
 
   test('F-05: offline dari Panel Simulasi, stok negatif, antrean, lalu sinkronisasi', async ({

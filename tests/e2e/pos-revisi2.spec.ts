@@ -6,6 +6,7 @@ import {
   loginPos,
   loginPosRaw,
   openDrawerItem,
+  openOrderMenu,
   sellFirstProduct,
   sellSplitThree,
   settle,
@@ -1321,5 +1322,205 @@ test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () 
     await minus.click();
     await minus.click();
     await expect(retur.locator('.pos-return__total')).toHaveText('Rp 63.000');
+  });
+});
+
+test.describe('Open Bill', () => {
+  async function openBills(page: Page, user = 'Dewi'): Promise<void> {
+    await loginPos(page, user);
+    await openOrderMenu(page, 'Panggil Bill');
+    await expect(page).toHaveURL(/#\/pos\/bill$/);
+  }
+  const card = (page: Page, number: string) => page.locator('.pos-bill-card', { hasText: number });
+  const menu = (page: Page, number: string) =>
+    page.getByRole('button', { name: `Opsi bill ${number}` });
+  async function choose(page: Page, number: string, item: string): Promise<void> {
+    await menu(page, number).click();
+    await page.getByRole('menuitem', { name: item, exact: true }).click();
+  }
+  // Menahan satu barang pertama berjumlah tiga sebagai bill B-0004, lalu membuka Open Bill.
+  async function holdThree(page: Page, user = 'Dewi'): Promise<void> {
+    await loginPos(page, user);
+    const first = page.locator('.pos-card__main').first();
+    for (let index = 0; index < 3; index += 1) {
+      await first.click();
+    }
+    await openOrderMenu(page, 'Tahan Bill');
+    await openOrderMenu(page, 'Panggil Bill');
+    await expect(page).toHaveURL(/#\/pos\/bill$/);
+    await expect(card(page, 'B-0004')).toBeVisible();
+  }
+
+  test('kartu bill menampilkan Nomor, Nama Pelanggan, Dibuat oleh, Waktu, dan dua barang pertama dengan + N Barang Lainnya', async ({
+    page,
+  }) => {
+    await openBills(page);
+    await expect(page.locator('.pos-bill-card')).toHaveCount(3);
+    const long = card(page, 'B-0003');
+    await expect(long.locator('.pos-bill-card__number')).toHaveText('B-0003');
+    await expect(long.locator('.pos-bill-card__customer')).toHaveText('Umum');
+    await expect(long).toContainText('Dibuat oleh Agus');
+    await expect(long.locator('.pos-bill-card__time')).toHaveText(/\d{2}[.:]\d{2}/);
+    await expect(long.locator('.pos-bill-card__lines li')).toHaveCount(2);
+    await expect(long).toContainText('+ 2 Barang Lainnya');
+    const middle = card(page, 'B-0002');
+    await expect(middle.locator('.pos-bill-card__customer')).not.toHaveText('Umum');
+    await expect(middle).toContainText('+ 1 Barang Lainnya');
+    const short = card(page, 'B-0001');
+    await expect(short.locator('.pos-bill-card__lines li')).toHaveCount(2);
+    await expect(short).not.toContainText('Barang Lainnya');
+  });
+
+  test('menu titik tiga berisi Ubah, Split Bill, Merge Bill, Batalkan', async ({ page }) => {
+    await openBills(page, 'Ibu Sinta');
+    await menu(page, 'B-0001').click();
+    await expect(page.getByRole('menuitem')).toHaveText([
+      'Ubah',
+      'Split Bill',
+      'Merge Bill',
+      'Batalkan',
+    ]);
+  });
+
+  test('Ubah memanggil bill ke pesanan, dan ditolak bila pesanan berjalan belum kosong', async ({
+    page,
+  }) => {
+    await openBills(page);
+    await choose(page, 'B-0001', 'Ubah');
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await expect(page.locator('.pos-order__item')).toHaveCount(2);
+    await page.evaluate(() => {
+      window.location.hash = '/pos/bill';
+    });
+    await expect(page).toHaveURL(/#\/pos\/bill$/);
+    await choose(page, 'B-0002', 'Ubah');
+    await expect(page.getByText('Bill saat ini belum selesai.')).toBeVisible();
+    await expect(page).toHaveURL(/#\/pos\/bill$/);
+  });
+
+  test('Split Bill memindahkan 1 dari 3 ke bill baru dan keduanya tampil', async ({ page }) => {
+    await holdThree(page);
+    await choose(page, 'B-0004', 'Split Bill');
+    const dialog = page.getByRole('dialog', { name: 'Split Bill B-0004' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Tambah jumlah' }).click();
+    await dialog.getByRole('button', { name: 'Pindahkan' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('.pos-bill-card')).toHaveCount(5);
+    await expect(card(page, 'B-0004').locator('.pos-bill-card__lines')).toContainText('2 SAK');
+    await expect(card(page, 'B-0005').locator('.pos-bill-card__lines')).toContainText('1 SAK');
+  });
+
+  test('Split Bill menolak memindahkan semua baris dan pilihan kosong', async ({ page }) => {
+    await holdThree(page);
+    await choose(page, 'B-0004', 'Split Bill');
+    const dialog = page.getByRole('dialog', { name: 'Split Bill B-0004' });
+    await dialog.getByRole('button', { name: 'Pindahkan' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Pilih barang yang akan dipindahkan ke bill baru.',
+    );
+    await dialog.getByRole('textbox').first().fill('3');
+    await dialog.getByRole('button', { name: 'Pindahkan' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Tidak bisa memindahkan semua barang. Sisakan minimal satu barang pada bill ini.',
+    );
+    await expect(dialog).toBeVisible();
+    await expect(page.locator('.pos-bill-card')).toHaveCount(4);
+  });
+
+  test('Merge Bill menggabungkan dua bill dan sumber hilang', async ({ page }) => {
+    await holdThree(page);
+    await choose(page, 'B-0004', 'Split Bill');
+    const split = page.getByRole('dialog', { name: 'Split Bill B-0004' });
+    await split.getByRole('button', { name: 'Tambah jumlah' }).click();
+    await split.getByRole('button', { name: 'Pindahkan' }).click();
+    await expect(card(page, 'B-0005')).toBeVisible();
+    await choose(page, 'B-0004', 'Merge Bill');
+    const dialog = page.getByRole('dialog', { name: 'Merge Bill B-0004' });
+    await expect(dialog.getByRole('radio')).toHaveCount(4);
+    await expect(dialog.getByRole('radio', { name: /B-0004/ })).toHaveCount(0);
+    await dialog.getByRole('radio', { name: /B-0005/ }).check();
+    await dialog.getByRole('button', { name: 'Gabungkan' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(card(page, 'B-0005')).toHaveCount(0);
+    await expect(page.locator('.pos-bill-card')).toHaveCount(4);
+    await expect(card(page, 'B-0004').locator('.pos-bill-card__lines')).toContainText('3 SAK');
+  });
+
+  test('Merge Bill meminta memilih sumber lebih dulu', async ({ page }) => {
+    await openBills(page);
+    await choose(page, 'B-0001', 'Merge Bill');
+    const dialog = page.getByRole('dialog', { name: 'Merge Bill B-0001' });
+    await dialog.getByRole('button', { name: 'Gabungkan' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText('Pilih bill yang akan digabung.');
+    await expect(dialog).toBeVisible();
+  });
+
+  test('Batalkan tidak tersedia untuk Kasir dan menghapus bill untuk Supervisor', async ({
+    page,
+  }) => {
+    await openBills(page, 'Dewi');
+    await menu(page, 'B-0001').click();
+    await expect(page.getByRole('menuitem', { name: 'Batalkan' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem')).toHaveText(['Ubah', 'Split Bill', 'Merge Bill']);
+  });
+
+  test('Supervisor membatalkan bill setelah konfirmasi', async ({ page }) => {
+    await openBills(page, 'Ibu Sinta');
+    await choose(page, 'B-0001', 'Batalkan');
+    await expect(
+      page.getByText('Hapus bill B-0001? Bill yang dihapus tidak dapat dikembalikan.'),
+    ).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Hapus', exact: true }).click();
+    await expect(page.locator('.pos-bill-card')).toHaveCount(2);
+    await expect(card(page, 'B-0001')).toHaveCount(0);
+  });
+
+  test('Cetak Struk Draf pada kartu membuka pratinjau tanpa harga', async ({ page }) => {
+    await openBills(page);
+    await card(page, 'B-0001').getByRole('button', { name: 'Cetak Struk Draf' }).click();
+    const sheet = page.locator('.pos-receipt');
+    await expect(sheet).toContainText('STRUK DRAF, BUKAN BUKTI BAYAR');
+    await expect(sheet).toContainText('B-0001');
+    await expect(sheet).not.toContainText('Rp');
+  });
+
+  test('pencarian menyaring kartu menurut nomor atau pelanggan', async ({ page }) => {
+    await openBills(page);
+    const search = page.getByRole('searchbox', { name: 'Cari bill' });
+    await search.fill('B-0002');
+    await expect(page.locator('.pos-bill-card')).toHaveCount(1);
+    await search.fill('zzz');
+    await expect(page.locator('.pos-bill-card')).toHaveCount(0);
+    await expect(page.getByText('Tidak ada bill gantung.')).toBeVisible();
+  });
+
+  test('Open Bill lolos axe dan target 48 px pada mode terang dan gelap', async ({ page }) => {
+    await openBills(page, 'Ibu Sinta');
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const list = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(list.violations, `${scheme} daftar`).toEqual([]);
+      const heights = await page
+        .locator('.pos-bills button, .pos-bills input')
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.getBoundingClientRect().height),
+        );
+      for (const height of heights) {
+        expect(height, scheme).toBeGreaterThanOrEqual(47.5);
+      }
+      await choose(page, 'B-0002', 'Split Bill');
+      const dialog = page.getByRole('dialog', { name: 'Split Bill B-0002' });
+      await expect(dialog).toBeVisible();
+      await settle(page);
+      const modal = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(modal.violations, `${scheme} split`).toEqual([]);
+      await dialog.getByRole('button', { name: 'Batal' }).click();
+      await expect(dialog).toBeHidden();
+    }
   });
 });

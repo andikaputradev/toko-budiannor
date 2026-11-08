@@ -39,12 +39,8 @@ async function simulate(page: Page, action: string): Promise<void> {
 async function recallBill(page: Page, number: string): Promise<void> {
   await openOrderMenu(page, 'Panggil Bill');
   await expect(page).toHaveURL(/#\/pos\/bill$/);
-  await page
-    .locator('.pos-bills__list tbody tr', { hasText: number })
-    .getByRole('button')
-    .first()
-    .click();
-  await page.getByRole('button', { name: 'Panggil Bill' }).click();
+  await page.getByRole('button', { name: `Opsi bill ${number}` }).click();
+  await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();
   await expect(page).toHaveURL(/#\/pos\/jual$/);
 }
 

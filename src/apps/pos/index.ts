@@ -1,5 +1,6 @@
 import '../../styles/pos.css';
 import '../../styles/pos-lanjut.css';
+import '../../styles/pos-bill.css';
 import '../../styles/pos-jual.css';
 import '../../styles/pos-bayar.css';
 import '../../styles/pos-riwayat.css';

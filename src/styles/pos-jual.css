@@ -613,3 +613,14 @@
 .pos-stock__table th:first-child {
   text-align: left;
 }
+
+@media (max-width: 599px) {
+  .pos-line__head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pos-line__info {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}

@@ -1,0 +1,180 @@
+.pos-bills {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  min-height: 0;
+  padding: var(--primitive-space-3) var(--space-screen-margin);
+  overflow: auto;
+}
+
+.pos-bills__bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: center;
+}
+
+.pos-bills__search {
+  flex: 1 1 240px;
+  max-width: 416px;
+  height: var(--size-touch-target-min);
+}
+
+.pos-bills__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--primitive-space-3);
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-bills__grid[hidden] {
+  display: none;
+}
+
+.pos-bill-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-width: 0;
+  padding: var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.pos-bill-card {
+  position: relative;
+}
+
+.pos-bill-card:has(.menu__button[aria-expanded='true']) {
+  z-index: 5;
+}
+
+.pos-bill-card .menu__list {
+  top: calc(100% + 4px);
+  bottom: auto;
+}
+
+.pos-bill-card__head {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.pos-bill-card__head p,
+.pos-bill-card__meta,
+.pos-bill-card__more {
+  margin: 0;
+}
+
+.pos-bill-card__customer {
+  overflow-wrap: anywhere;
+}
+
+.pos-bill-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--primitive-space-3);
+  justify-content: space-between;
+}
+
+.pos-bill-card__lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-bill-card__lines li {
+  display: flex;
+  gap: var(--primitive-space-2);
+  justify-content: space-between;
+  padding: var(--primitive-space-1) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-bill-card__lines li span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pos-bill-card .btn {
+  height: var(--size-touch-target-min);
+}
+
+.pos-split-bill,
+.pos-merge-bill {
+  display: grid;
+  gap: var(--primitive-space-3);
+}
+
+.pos-split-bill p,
+.pos-merge-bill p {
+  margin: 0;
+}
+
+.pos-split-bill__lines {
+  display: grid;
+  gap: var(--primitive-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-split-bill__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2) var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--primitive-space-2);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-split-bill__name {
+  display: flex;
+  flex: 1 1 160px;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pos-merge-bill__options {
+  display: grid;
+  gap: var(--primitive-space-2);
+}
+
+.pos-merge-bill__option {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  min-height: var(--size-touch-target-min);
+  padding: 0 var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.pos-merge-bill__option input {
+  width: 24px;
+  height: 24px;
+}
+
+.pos-merge-bill__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-bill-card__lines li span:last-child {
+  flex: none;
+  white-space: nowrap;
+}
+
+.pos-bill-card .menu__button {
+  height: var(--size-touch-target-min);
+}

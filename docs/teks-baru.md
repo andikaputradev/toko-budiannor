@@ -937,3 +937,21 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-927: "Tidak bisa memindahkan semua barang. Sisakan minimal satu barang pada bill ini.". Kunci splitSemua.
 - TB-928: "Pilih bill sumber yang berbeda dari bill tujuan.". Kunci mergeSama.
 - TB-929: "Gabungan bill melebihi 200 baris.". Kunci mergeTerlaluBanyak.
+- TB-930: "Ubah". Kunci ubah.
+- TB-931: "Split Bill". Kunci splitBill.
+- TB-932: "Merge Bill". Kunci mergeBill.
+- TB-933: "Batalkan". Kunci batalkan.
+- TB-934: "+ {n} Barang Lainnya". Kunci barangLainnya.
+- TB-935: "Pilih bill yang digabung". Kunci pilihBillGabung.
+- TB-936: "Opsi bill {nomor}". Kunci opsiBill.
+- TB-937: "Dibuat oleh {nama}". Kunci dibuatOlehNama.
+- TB-938: "Daftar bill". Kunci daftarBill.
+- TB-939: "Pindahkan". Kunci pindahkan.
+- TB-940: "Gabungkan". Kunci gabungkan.
+- TB-941: "Pilih bill yang akan digabung.". Kunci mergePilih.
+- TB-942: "Split Bill {nomor}". Kunci splitJudul.
+- TB-943: "Merge Bill {nomor}". Kunci mergeJudul.
+- TB-944: "Atur jumlah barang yang dipindahkan ke bill baru.". Kunci splitPetunjuk.
+- TB-945: "Bill {baru} dibuat dari {asal}.". Kunci billSplitDibuat.
+- TB-946: "Bill {sumber} digabung ke {tujuan}.". Kunci billDigabung.
+- TB-947: "Tidak ada bill lain untuk digabung.". Kunci tidakAdaBillLain.

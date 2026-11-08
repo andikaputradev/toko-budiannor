@@ -541,3 +541,38 @@ test.describe('Detail Barang pada ponsel 360 x 800', () => {
     }
   });
 });
+
+test.describe('Open Bill pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: kartu bill satu kolom tanpa scroll horizontal dan menu terjangkau', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await page.evaluate(() => {
+      window.location.hash = '/pos/bill';
+    });
+    await expect(page.locator('.pos-bill-card').first()).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const cards = await page.locator('.pos-bill-card').all();
+    expect(cards).toHaveLength(3);
+    const lefts = new Set<number>();
+    for (const item of cards) {
+      const box = await item.boundingBox();
+      lefts.add(Math.round(box?.x ?? -1));
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(360);
+    }
+    expect(lefts.size).toBe(1);
+    const menuBox = await page.getByRole('button', { name: 'Opsi bill B-0001' }).boundingBox();
+    expect(menuBox?.width ?? 0).toBeGreaterThanOrEqual(47.5);
+    expect(menuBox?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+    await page.getByRole('button', { name: 'Opsi bill B-0001' }).click();
+    await page.getByRole('menuitem', { name: 'Split Bill' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Split Bill B-0001' });
+    const box = await dialog.boundingBox();
+    expect(box?.width).toBeCloseTo(360, 0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await expect(dialog.getByRole('button', { name: 'Pindahkan' })).toBeInViewport();
+  });
+});
