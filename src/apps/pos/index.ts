@@ -5,6 +5,7 @@ import '../../styles/pos-jual.css';
 import '../../styles/pos-bayar.css';
 import '../../styles/pos-riwayat.css';
 import '../../styles/pos-retur.css';
+import '../../styles/pos-karyawan.css';
 import '../../styles/pos-responsif.css';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
@@ -23,6 +24,7 @@ import {
 } from './theme';
 import { renderBills } from './screens/bill';
 import { renderCustomerForm } from './screens/customer-form';
+import { renderEmployees } from './screens/employees';
 import { renderExpense } from './screens/expense';
 import { renderHistory } from './screens/history';
 import { renderLogin, type ScreenHandle } from './screens/login';
@@ -47,6 +49,7 @@ const ROUTES: Readonly<
   '/pos/biaya': { id: 'POS-07', render: renderExpense },
   '/pos/pelanggan-baru': { id: 'POS-08', render: renderCustomerForm },
   '/pos/status': { id: 'POS-09', render: renderStatus },
+  '/pos/karyawan': { id: 'POS-11', render: renderEmployees },
 };
 
 let session: PosSession | undefined;

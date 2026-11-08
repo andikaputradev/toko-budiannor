@@ -22,6 +22,7 @@ const ITEMS: readonly DrawerItem[] = [
   { path: '/pos/riwayat', screen: 'POS-06', key: 'riwayatPenjualan', icon: 'file-text' },
   { path: '/pos/biaya', screen: 'POS-07', key: 'navBiaya', icon: 'wallet' },
   { path: '/pos/pelanggan-baru', screen: 'POS-08', key: 'pelanggan', icon: 'user-round' },
+  { path: '/pos/karyawan', screen: 'POS-11', key: 'karyawan', icon: 'users' },
   { path: '/pos/status', screen: 'POS-09', key: 'statusSinkronisasi', icon: 'refresh-cw' },
 ];
 

@@ -958,3 +958,28 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-948: "Karyawan". Kunci layarPos11.
 - TB-949: "Shift tidak ditemukan.". Kunci shiftTidakAda.
 - TB-950: "Laporan shift ini sudah diperiksa.". Kunci shiftSudahDiperiksa.
+- TB-951: "Karyawan". Kunci karyawan.
+- TB-952: "Shift Berjalan". Kunci shiftBerjalan.
+- TB-953: "Belum Diperiksa". Kunci belumDiperiksa.
+- TB-954: "Sudah Diperiksa". Kunci sudahDiperiksa.
+- TB-955: "Tidak ada data". Kunci tidakAdaData.
+- TB-956: "Belum ada shift dimulai". Kunci belumAdaShift.
+- TB-957: "Informasi Tunai". Kunci informasiTunai.
+- TB-958: "Laporan Tunai". Kunci laporanTunai.
+- TB-959: "Selisih Tunai". Kunci selisihTunai.
+- TB-960: "Riwayat Penerimaan Akhir & Pengeluaran". Kunci penerimaanAkhirPengeluaran.
+- TB-961: "Total Penerimaan Akhir". Kunci totalPenerimaanAkhir.
+- TB-962: "Total Biaya". Kunci totalBiaya.
+- TB-963: "Terima Laporan". Kunci terimaLaporan.
+- TB-964: "Terima & Cetak Laporan". Kunci terimaCetakLaporan.
+- TB-965: "Uang tunai di laci". Kunci uangTunaiDiLaci.
+- TB-966: "Total Diterima". Kunci totalDiterima.
+- TB-967: "Laporan Shift". Kunci laporanShift.
+- TB-968: "oleh {nama}". Kunci diperiksaOleh.
+- TB-969: "Laporan shift tercetak.". Kunci laporanTercetak.
+- TB-970: "Laporan shift diterima.". Kunci laporanDiterima.
+- TB-971: "Retur tanpa pengembalian". Kunci returTanpaPengembalian.
+- TB-972: "Status". Kunci statusShift.
+- TB-973: "Penerimaan". Kunci penerimaanRetur.
+- TB-974: "Retur". Kunci returRiwayat.
+- TB-975: "shift belum diperiksa". Kunci shiftBelumDiperiksa.

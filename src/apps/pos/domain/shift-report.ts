@@ -167,3 +167,57 @@ export function buildShiftReport(
     expenses: { count: spent.length, amount: spent.reduce((sum, item) => sum + item.amount, 0) },
   };
 }
+
+export interface MethodTransaction {
+  readonly kind: 'penerimaan' | 'retur';
+  readonly reference: string;
+  readonly at: string;
+  readonly amount: number;
+}
+
+interface ReturnRow extends ReturnLike {
+  readonly number: string;
+  readonly value: number;
+}
+
+// Daftar transaksi di balik satu baris rekap (kunci metode dan kanal) dalam rentang sebuah shift.
+// Penerimaan memakai angka bersih seperti rekap; retur tanpa pengembalian memakai nilai barangnya.
+export function methodTransactions(
+  window: { readonly startedAt: string; readonly endedAt?: string | undefined },
+  key: string,
+  sales: readonly Sale[],
+  deviceSales: readonly string[],
+  returns: readonly ReturnRow[],
+): readonly MethodTransaction[] {
+  const mine = new Set(deviceSales);
+  const inside = (at: string): boolean =>
+    at >= window.startedAt && (window.endedAt === undefined || at <= window.endedAt);
+  const rows: MethodTransaction[] = [];
+  for (const sale of sales) {
+    if (!mine.has(sale.number) || !inside(sale.createdAt)) {
+      continue;
+    }
+    const amount = received(sale).get(key)?.amount ?? 0;
+    if (amount > 0) {
+      rows.push({ kind: 'penerimaan', reference: sale.number, at: sale.createdAt, amount });
+    }
+  }
+  for (const item of returns) {
+    if (!inside(item.at)) {
+      continue;
+    }
+    const itemKey =
+      item.refund === undefined
+        ? 'retur:'
+        : rowKey({ method: item.refund.method, channel: item.refund.channel });
+    if (itemKey === key) {
+      rows.push({
+        kind: 'retur',
+        reference: item.number,
+        at: item.at,
+        amount: item.refund?.amount ?? item.value,
+      });
+    }
+  }
+  return rows.sort((first, second) => first.at.localeCompare(second.at));
+}

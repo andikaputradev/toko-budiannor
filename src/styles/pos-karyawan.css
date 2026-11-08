@@ -1,0 +1,315 @@
+/* POS-11 Karyawan, laporan shift, daftar transaksi per metode, dan hitungan tunai Selesai Shift. */
+
+.pos-employees {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.pos-employee {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0 var(--primitive-space-3);
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-default);
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-employee[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  box-shadow: inset 4px 0 0 var(--color-accent-default);
+}
+
+.pos-employee__avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-employee__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pos-employee__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-employee__who strong {
+  overflow-wrap: anywhere;
+}
+
+.pos-employee__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--primitive-space-2);
+  border-radius: var(--radius-chip);
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-fg);
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-employee-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  min-width: 0;
+  padding: var(--primitive-space-3);
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.pos-employee-head {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+}
+
+.pos-employee-head .pos-employee__avatar {
+  width: 56px;
+  height: 56px;
+}
+
+.pos-employee-head h2,
+.pos-employee-head p {
+  margin: 0;
+}
+
+.pos-employee-shifts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-employee-shift {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-employee-shift:hover {
+  border-color: var(--color-accent-default);
+}
+
+.pos-employee-shift__status {
+  display: inline-block;
+  padding: 0 var(--primitive-space-2);
+  border-radius: var(--radius-chip);
+  font-size: 12px;
+}
+
+.pos-employee-shift__running {
+  background: var(--color-accent-soft);
+  color: var(--color-text-primary);
+}
+
+/* Modal laporan shift dan daftar transaksi: judul tetap, isi bergulir, tombol menempel di bawah. */
+.modal:has(.pos-shift-report),
+.modal:has(.pos-method-tx),
+.modal:has(.pos-shiftsum) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal:has(.pos-shift-report),
+.modal:has(.pos-method-tx) {
+  width: min(600px, 94vw);
+}
+
+.modal:has(.pos-shift-report) .modal__body,
+.modal:has(.pos-method-tx) .modal__body,
+.modal:has(.pos-shiftsum) .modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.pos-shift-report {
+  display: grid;
+  gap: var(--primitive-space-2);
+}
+
+.pos-shift-report h3 {
+  margin: var(--primitive-space-3) 0 0;
+}
+
+.pos-shift-report__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.pos-shift-report__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--primitive-space-3);
+  margin: 0;
+  padding: var(--primitive-space-2) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-shift-report__row output {
+  font-weight: var(--primitive-font-weight-semibold);
+  text-align: right;
+}
+
+.pos-shift-report__row .t-label {
+  grid-column: 1 / -1;
+}
+
+.pos-shift-report__methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-shift-report__method {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--size-touch-target-min);
+  padding: var(--primitive-space-2) var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pos-shift-report__method:hover {
+  border-color: var(--color-accent-default);
+}
+
+.pos-shift-report__method output {
+  font-weight: var(--primitive-font-weight-semibold);
+  white-space: nowrap;
+}
+
+.pos-shift-report__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  justify-content: flex-end;
+  margin-top: var(--primitive-space-4);
+}
+
+.pos-shift-report__actions .btn {
+  min-width: 140px;
+  height: 56px;
+}
+
+.pos-method-tx {
+  display: grid;
+  gap: var(--primitive-space-3);
+}
+
+.pos-method-tx__total {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.pos-method-tx__search {
+  width: 100%;
+  height: var(--size-touch-target-min);
+}
+
+.pos-method-tx__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos-method-tx__row {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: var(--primitive-space-2) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pos-method-tx__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-method-tx__amount {
+  font-weight: var(--primitive-font-weight-semibold);
+  white-space: nowrap;
+}
+
+.pos-shiftsum__diff {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+/* Layar lebar: ringkasan dan selisih di kiri, hitungan uang tunai di kanan, supaya semuanya terlihat. */
+@media (min-width: 900px) {
+  .modal:has(.pos-shiftsum) {
+    width: min(800px, 94vw);
+  }
+
+  .pos-shiftsum {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--primitive-space-6);
+    align-items: start;
+  }
+}

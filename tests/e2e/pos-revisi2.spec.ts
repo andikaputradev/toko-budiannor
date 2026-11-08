@@ -1524,3 +1524,225 @@ test.describe('Open Bill', () => {
     }
   });
 });
+
+test.describe('Selesai Shift, Karyawan, dan laporan shift', () => {
+  async function endShift(page: Page, counted?: string): Promise<Locator> {
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page
+      .getByRole('dialog', { name: 'Toko Budiannor' })
+      .getByRole('button', { name: 'Selesai Shift' })
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Selesai Shift' });
+    await expect(dialog).toBeVisible();
+    if (counted !== undefined) {
+      for (const digit of counted) {
+        await dialog
+          .locator('.pos-amount')
+          .getByRole('button', { name: digit, exact: true })
+          .click();
+      }
+    }
+    return dialog;
+  }
+  async function toEmployees(page: Page): Promise<void> {
+    await openDrawerItem(page, 'Karyawan');
+    await expect(page).toHaveURL(/#\/pos\/karyawan$/);
+  }
+  const employee = (page: Page, name: string) =>
+    page.locator('.pos-employee', { hasText: name }).first();
+  // Satu penjualan tunai dan satu QRIS, lalu shift ditutup dengan hitungan 565.000.
+  async function closedShift(page: Page): Promise<void> {
+    await loginPos(page, 'Ibu Sinta');
+    await sellFirstProduct(page, 'tunai');
+    await sellFirstProduct(page, 'qris');
+    const dialog = await endShift(page, '565000');
+    await dialog.getByRole('button', { name: 'Akhiri Shift' }).click();
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+  }
+
+  test('Selesai Shift meminta Uang tunai di laci dan menampilkan selisih tunai', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await sellFirstProduct(page, 'tunai');
+    const dialog = await endShift(page);
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('');
+    await expect(dialog.getByText('Uang tunai di laci', { exact: true }).first()).toBeVisible();
+    await expect(dialog.locator('.pos-shiftsum__row--total output')).toHaveText('Rp 570.000');
+    await expect(dialog.locator('.pos-shiftsum__diff')).toHaveText('Rp 0');
+    for (const digit of '565000') {
+      await dialog.locator('.pos-amount').getByRole('button', { name: digit, exact: true }).click();
+    }
+    await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 565.000');
+    await expect(dialog.locator('.pos-shiftsum__diff')).toHaveText('-Rp 5.000');
+    // Selisih dan tombol Akhiri Shift tetap terlihat tanpa menggulir modal.
+    await expect(dialog.locator('.pos-shiftsum__diff')).toBeInViewport({ ratio: 1 });
+    await expect(dialog.getByRole('button', { name: 'Akhiri Shift' })).toBeInViewport({ ratio: 1 });
+    await dialog.getByRole('button', { name: 'Akhiri Shift' }).click();
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+  });
+
+  test('Karyawan tanpa shift menampilkan Tidak ada data dan Belum ada shift dimulai', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await toEmployees(page);
+    await expect(page.locator('.pos-employee')).toHaveCount(5);
+    await employee(page, 'Rizal').click();
+    await expect(page.getByText('Tidak ada data', { exact: true })).toBeVisible();
+    await expect(page.getByText('Belum ada shift dimulai', { exact: true })).toBeVisible();
+  });
+
+  test('shift yang ditutup muncul sebagai Belum Diperiksa dengan lencana 1 pada pengguna', async ({
+    page,
+  }) => {
+    await closedShift(page);
+    await toEmployees(page);
+    await expect(employee(page, 'Ibu Sinta').locator('.pos-employee__badge')).toHaveText('1');
+    await expect(employee(page, 'Rizal').locator('.pos-employee__badge')).toHaveCount(0);
+    await employee(page, 'Ibu Sinta').click();
+    const item = page.locator('.pos-employee-shift').first();
+    await expect(item).toContainText('Belum Diperiksa');
+    await expect(item).toContainText(/\d{2}[.:]\d{2}/);
+    await expect(page.locator('.pos-employee-shift')).toHaveCount(1);
+  });
+
+  test('laporan memuat Informasi Tunai, Total Penerimaan Akhir, Total Retur, Total Biaya, dan baris per metode', async ({
+    page,
+  }) => {
+    await closedShift(page);
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    await page.locator('.pos-employee-shift').first().click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    await expect(report).toBeVisible();
+    await expect(report.getByRole('heading', { name: 'Informasi Tunai' })).toBeVisible();
+    await expect(report.locator('[data-row="modal-awal"]')).toContainText('Rp 500.000');
+    await expect(report.locator('[data-row="laporan-tunai"]')).toContainText('Rp 570.000');
+    await expect(report.locator('[data-row="selisih-tunai"]')).toContainText('-Rp 5.000');
+    await expect(
+      report.getByRole('heading', { name: 'Riwayat Penerimaan Akhir & Pengeluaran' }),
+    ).toBeVisible();
+    await expect(report.locator('[data-row="penerimaan"]')).toContainText('Total Penerimaan Akhir');
+    await expect(report.locator('[data-row="penerimaan"]')).toContainText('Rp 140.000');
+    await expect(report.locator('[data-row="penerimaan"]')).toContainText('2 transaksi');
+    await expect(report.locator('[data-row="retur"]')).toContainText('Total Retur');
+    await expect(report.locator('[data-row="retur"]')).toContainText('Rp 0');
+    await expect(report.locator('[data-row="biaya"]')).toContainText('Total Biaya');
+    await expect(report.getByRole('button', { name: /^Tunai/ })).toBeVisible();
+    await expect(report.getByRole('button', { name: /^QRIS/ })).toBeVisible();
+    await expect(report.getByRole('button', { name: 'Terima Laporan' })).toBeVisible();
+    await expect(report.getByRole('button', { name: 'Terima & Cetak Laporan' })).toBeVisible();
+  });
+
+  test('mengetuk metode membuka daftar transaksi dengan Total Diterima dan pencarian', async ({
+    page,
+  }) => {
+    await closedShift(page);
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    await page.locator('.pos-employee-shift').first().click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    await report.getByRole('button', { name: /^QRIS/ }).click();
+    const list = page.getByRole('dialog', { name: /^QRIS \|/ });
+    await expect(list).toBeVisible();
+    await expect(list.locator('[data-row="total-diterima"]')).toContainText('Rp 70.000');
+    await expect(list.locator('.pos-method-tx__row')).toHaveCount(1);
+    await expect(list.locator('.pos-method-tx__row')).toContainText('T-000142');
+    await expect(list.locator('.pos-method-tx__amount')).toHaveText('+Rp 70.000');
+    const search = list.getByRole('searchbox', { name: 'Cari transaksi' });
+    await search.fill('zzz');
+    await expect(list.locator('.pos-method-tx__row')).toHaveCount(0);
+    await search.fill('142');
+    await expect(list.locator('.pos-method-tx__row')).toHaveCount(1);
+    await list.getByRole('button', { name: 'Tutup' }).click();
+    await expect(list).toBeHidden();
+    await expect(report).toBeVisible();
+  });
+
+  test('Terima Laporan mengubah status menjadi Sudah Diperiksa dan lencana hilang', async ({
+    page,
+  }) => {
+    await closedShift(page);
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    await page.locator('.pos-employee-shift').first().click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    await report.getByRole('button', { name: 'Terima Laporan', exact: true }).click();
+    await expect(report.locator('[data-row="status"]')).toContainText('Sudah Diperiksa');
+    await expect(report.locator('[data-row="status"]')).toContainText('Ibu Sinta');
+    await expect(report.getByRole('button', { name: /Terima/ })).toHaveCount(0);
+    await report.getByRole('button', { name: 'Tutup' }).click();
+    await expect(page.locator('.pos-employee-shift').first()).toContainText('Sudah Diperiksa');
+    await expect(employee(page, 'Ibu Sinta').locator('.pos-employee__badge')).toHaveCount(0);
+  });
+
+  test('Terima & Cetak Laporan menerima laporan dan mencetaknya', async ({ page }) => {
+    await closedShift(page);
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    await page.locator('.pos-employee-shift').first().click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    await report.getByRole('button', { name: 'Terima & Cetak Laporan' }).click();
+    await expect(report.locator('[data-row="status"]')).toContainText('Sudah Diperiksa');
+    await expect(page.getByText('Laporan shift tercetak.')).toBeVisible();
+  });
+
+  test('shift berjalan terbuka tanpa tombol Terima', async ({ page }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await sellFirstProduct(page, 'tunai');
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    const running = page.locator('.pos-employee-shift').first();
+    await expect(running).toContainText('Shift Berjalan');
+    await running.click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    await expect(report.locator('[data-row="laporan-tunai"]')).toContainText('Rp 570.000');
+    await expect(report.locator('[data-row="penerimaan"]')).toContainText('Rp 70.000');
+    await expect(report.getByRole('button', { name: /Terima/ })).toHaveCount(0);
+  });
+
+  test('Kasir tidak melihat Karyawan di menu dan tidak bisa membuka rutenya', async ({ page }) => {
+    await loginPos(page, 'Dewi');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    const drawer = page.getByRole('dialog', { name: 'Toko Budiannor' });
+    await expect(drawer.getByRole('link', { name: 'Riwayat Penjualan' })).toBeVisible();
+    await expect(drawer.getByRole('link', { name: 'Karyawan' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/karyawan';
+    });
+    await expect(page).toHaveURL(/#\/pos\/jual$/);
+  });
+
+  test('Karyawan dan laporan lolos axe pada mode terang dan gelap', async ({ page }) => {
+    await closedShift(page);
+    await toEmployees(page);
+    await employee(page, 'Ibu Sinta').click();
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page);
+      const screen = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(screen.violations, `${scheme} layar`).toEqual([]);
+      await page.locator('.pos-employee-shift').first().click();
+      const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+      await expect(report).toBeVisible();
+      await settle(page);
+      const modal = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(modal.violations, `${scheme} laporan`).toEqual([]);
+      const heights = await report
+        .locator('button')
+        .evaluateAll((nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.getBoundingClientRect().height),
+        );
+      for (const height of heights) {
+        expect(height, scheme).toBeGreaterThanOrEqual(47.5);
+      }
+      await report.getByRole('button', { name: 'Tutup' }).click();
+      await expect(report).toBeHidden();
+    }
+  });
+});

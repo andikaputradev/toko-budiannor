@@ -576,3 +576,48 @@ test.describe('Open Bill pada ponsel 360 x 800', () => {
     await expect(dialog.getByRole('button', { name: 'Pindahkan' })).toBeInViewport();
   });
 });
+
+test.describe('Karyawan pada ponsel 360 x 800', () => {
+  test.use({ viewport: { width: 360, height: 800 } });
+
+  test('HP 360: daftar karyawan lalu detail dengan tombol Kembali', async ({ page }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/karyawan';
+    });
+    await expect(page.locator('.pos-employee').first()).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    // Judul Karyawan muat utuh pada bilah atas 360 px, tidak berakhir dengan elipsis.
+    const title = page.locator('.pos-topbar__title');
+    await expect(title).toHaveText('Karyawan');
+    expect(await title.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(
+      0,
+    );
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+    expect(await controlsUnderLauncher(page)).toEqual([]);
+    await page.locator('.pos-employee', { hasText: 'Ibu Sinta' }).first().click();
+    await expect(page.locator('.pos-split__detail')).toBeVisible();
+    await expect(page.locator('.pos-split__list')).toBeHidden();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.getByRole('button', { name: 'Kembali', exact: true }).click();
+    await expect(page.locator('.pos-split__list')).toBeVisible();
+    await expect(page.locator('.pos-split__detail')).toBeHidden();
+  });
+
+  test('HP 360: modal laporan shift layar penuh tanpa meluap dan tombol terjangkau', async ({
+    page,
+  }) => {
+    await loginPos(page, 'Ibu Sinta');
+    await page.evaluate(() => {
+      window.location.hash = '/pos/karyawan';
+    });
+    await page.locator('.pos-employee', { hasText: 'Ibu Sinta' }).first().click();
+    await page.locator('.pos-employee-shift').first().click();
+    const report = page.getByRole('dialog', { name: 'Laporan Shift' });
+    await expect(report).toBeVisible();
+    const box = await report.boundingBox();
+    expect(box?.width).toBeCloseTo(360, 0);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await expect(report.getByRole('button', { name: 'Tutup' })).toBeInViewport();
+  });
+});

@@ -3,7 +3,7 @@ import type { Sale, SalePayment } from '../../../src/shared/data/types';
 import { generateDataset } from '../../../src/shared/data/generator';
 import { withProposalData } from '../../../src/shared/data/proposal';
 import { createStore } from '../../../src/shared/store/store';
-import { buildShiftReport } from '../../../src/apps/pos/domain/shift-report';
+import { buildShiftReport, methodTransactions } from '../../../src/apps/pos/domain/shift-report';
 import type { Shift } from '../../../src/apps/pos/domain/shift';
 import {
   createPosSession,
@@ -140,6 +140,95 @@ describe('buildShiftReport', () => {
         refunded: 7000,
       }),
     ]);
+  });
+});
+
+describe('methodTransactions', () => {
+  const RETURNS: readonly ReturnRecord[] = [
+    returned('R-1', { method: 'tunai', amount: 30000 }, '2026-11-07T02:30:00.000Z'),
+    returned(
+      'R-2',
+      { method: 'transfer', amount: 20000, channel: 'BCA' },
+      '2026-11-07T02:40:00.000Z',
+    ),
+    returned('R-3', undefined, '2026-11-07T02:50:00.000Z', 15000),
+    returned('R-0', { method: 'tunai', amount: 9000 }, BEFORE),
+  ];
+
+  it('memuat penerimaan dan retur metode itu dalam rentang shift, berurutan menurut waktu', () => {
+    const rows = methodTransactions(
+      { startedAt: SHIFT.startedAt },
+      'tunai:',
+      SALES,
+      DEVICE,
+      RETURNS,
+    );
+    expect(rows).toEqual([
+      { kind: 'penerimaan', reference: 'T-1', at: AFTER, amount: 70000 },
+      { kind: 'penerimaan', reference: 'T-2', at: AFTER, amount: 30000 },
+      { kind: 'penerimaan', reference: 'T-5', at: AFTER, amount: 20000 },
+      { kind: 'retur', reference: 'R-1', at: '2026-11-07T02:30:00.000Z', amount: 30000 },
+    ]);
+    const bca = methodTransactions(
+      { startedAt: SHIFT.startedAt },
+      'transfer:BCA',
+      SALES,
+      DEVICE,
+      RETURNS,
+    );
+    expect(bca.map((row) => `${row.kind}:${row.reference}:${String(row.amount)}`)).toEqual([
+      'penerimaan:T-2:40000',
+      'penerimaan:T-4:10000',
+      'retur:R-2:20000',
+    ]);
+  });
+
+  it('jumlah baris sama dengan rekap laporan untuk setiap kunci', () => {
+    const report = buildShiftReport(SHIFT, SALES, DEVICE, [], RETURNS);
+    for (const item of report.byMethod) {
+      const rows = methodTransactions(
+        { startedAt: SHIFT.startedAt },
+        item.key,
+        SALES,
+        DEVICE,
+        RETURNS,
+      );
+      expect(rows.filter((row) => row.kind === 'penerimaan')).toHaveLength(item.receipts);
+      expect(
+        rows.filter((row) => row.kind === 'penerimaan').reduce((sum, row) => sum + row.amount, 0),
+      ).toBe(item.amount);
+      expect(rows.filter((row) => row.kind === 'retur')).toHaveLength(item.returns);
+    }
+  });
+
+  it('membatasi sampai endedAt sehingga transaksi shift berikutnya tidak ikut', () => {
+    const rows = methodTransactions(
+      { startedAt: SHIFT.startedAt, endedAt: '2026-11-07T01:30:00.000Z' },
+      'tunai:',
+      SALES,
+      DEVICE,
+      RETURNS,
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it('kunci retur memuat retur tanpa pengembalian dengan nilai barangnya', () => {
+    const rows = methodTransactions(
+      { startedAt: SHIFT.startedAt },
+      'retur:',
+      SALES,
+      DEVICE,
+      RETURNS,
+    );
+    expect(rows).toEqual([
+      { kind: 'retur', reference: 'R-3', at: '2026-11-07T02:50:00.000Z', amount: 15000 },
+    ]);
+  });
+
+  it('kunci yang tidak dikenal menghasilkan daftar kosong', () => {
+    expect(
+      methodTransactions({ startedAt: SHIFT.startedAt }, 'edc:', SALES, DEVICE, RETURNS),
+    ).toEqual([]);
   });
 });
 

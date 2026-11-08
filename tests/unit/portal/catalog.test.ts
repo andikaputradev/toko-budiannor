@@ -24,18 +24,17 @@ describe('katalog 44 layar', () => {
     expect(screensIn('pos')).toHaveLength(11);
     expect(screensIn('bo')).toHaveLength(22);
     expect(screensIn('mobile')).toHaveLength(11);
-    expect(builtIn('pos')).toBe(10);
+    expect(builtIn('pos')).toBe(11);
     expect(builtIn('bo')).toBe(8);
     expect(builtIn('mobile')).toBe(11);
   });
 
-  it('memberi judul dari katalog pesan dan menandai 15 layar belum dibangun', () => {
+  it('memberi judul dari katalog pesan dan menandai 14 layar belum dibangun', () => {
     for (const entry of SCREENS) {
       expect(label(entry.title).length).toBeGreaterThan(2);
     }
     const missing = SCREENS.filter((entry) => !entry.built).map((entry) => entry.id);
     expect(missing).toEqual([
-      'POS-11',
       'BO-08',
       'BO-10',
       'BO-11',

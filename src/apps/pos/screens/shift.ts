@@ -62,22 +62,50 @@ export function openShiftSummary(session: PosSession, onEnded: () => void): void
     [label('returTunai'), summary.cashReturns, false],
     [label('saldoAkhirKas'), summary.closingCash, true],
   ];
+  // Selisih Tunai = uang yang dihitung di laci dikurangi saldo akhir kas; tanpa hitungan selisihnya 0.
+  const difference = el('output', {
+    className: 'pos-shiftsum__diff',
+    attrs: { 'aria-live': 'polite' },
+    text: formatRupiah(0),
+  });
+  const entry = createAmountEntry({
+    labelText: label('uangTunaiDiLaci'),
+    onChange: () => {
+      difference.textContent = formatRupiah(
+        entry.hasValue() ? entry.value() - summary.closingCash : 0,
+      );
+    },
+  });
   const handle = openModal({
     title: label('selesaiShift'),
     body: el(
       'div',
       { className: 'pos-shiftsum' },
-      ...rows.map(([text, amount, total]) =>
+      el(
+        'div',
+        { className: 'pos-shiftsum__sum' },
+        ...rows.map(([text, amount, total]) =>
+          el(
+            'p',
+            {
+              className: total ? 'pos-shiftsum__row pos-shiftsum__row--total' : 'pos-shiftsum__row',
+            },
+            el('span', { text }),
+            el('output', { text: formatRupiah(amount) }),
+          ),
+        ),
         el(
           'p',
-          { className: total ? 'pos-shiftsum__row pos-shiftsum__row--total' : 'pos-shiftsum__row' },
-          el('span', { text }),
-          el('output', { text: formatRupiah(amount) }),
+          { className: 'pos-shiftsum__row' },
+          el('span', { text: label('selisihTunai') }),
+          difference,
         ),
       ),
+      entry.element,
     ),
     actions: [],
   });
+  entry.listenOn(handle.dialog);
   handle.dialog.append(
     el(
       'div',
@@ -92,7 +120,7 @@ export function openShiftSummary(session: PosSession, onEnded: () => void): void
       createButton({
         text: label('akhiriShift'),
         onClick: () => {
-          session.endShift();
+          session.endShift(entry.hasValue() ? entry.value() : undefined);
           handle.close();
           onEnded();
         },

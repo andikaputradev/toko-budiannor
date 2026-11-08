@@ -129,9 +129,9 @@ async function loginWithPassword(
   await expect(page).toHaveURL(landing);
 }
 
-export async function loginFor(page: Page, app: AppName): Promise<void> {
+export async function loginFor(page: Page, app: AppName, posUser = 'Dewi'): Promise<void> {
   if (app === 'pos') {
-    await loginPos(page);
+    await loginPos(page, posUser);
   } else if (app === 'bo') {
     await loginWithPassword(page, 'bo', 'sinta.spv', 'Kunci2026B', /#\/bo\/dashboard$/);
   } else if (app === 'owner') {
@@ -229,7 +229,8 @@ export async function openRoute(page: Page, route: RouteCase): Promise<void> {
   if (route.app === 'portal' || isLoginPath(route.path)) {
     await page.goto(`/#${route.path}`);
   } else {
-    await loginFor(page, route.app);
+    // Layar Karyawan (POS-11) hanya untuk Owner dan Supervisor.
+    await loginFor(page, route.app, route.id === 'POS-11' ? 'Ibu Sinta' : 'Dewi');
     if (route.path === '/pos/bayar') {
       await page.locator('.pos-card__main').first().click();
       await clickPay(page);

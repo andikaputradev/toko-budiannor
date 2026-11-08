@@ -38,8 +38,8 @@ test.describe('Portal beranda', () => {
     await expect(page.locator('.portal-card[data-ecosystem]')).toHaveCount(3);
     await expect(page.getByRole('heading', { name: 'Daftar layar (44)' })).toBeVisible();
     await expect(page.locator('.portal-screen')).toHaveCount(44);
-    await expect(page.locator('.portal-screen .own-status--warn')).toHaveCount(15);
-    await expect(page.locator('.portal-screen .own-status--ok')).toHaveCount(29);
+    await expect(page.locator('.portal-screen .own-status--warn')).toHaveCount(14);
+    await expect(page.locator('.portal-screen .own-status--ok')).toHaveCount(30);
     await expect(page.getByRole('heading', { name: 'Alur ujung ke ujung (10)' })).toBeVisible();
     await expect(page.locator('.portal-card[data-flow]')).toHaveCount(10);
     await expect(page.getByText('POS Kasir').first()).toBeVisible();
