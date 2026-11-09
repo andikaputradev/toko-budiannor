@@ -1,0 +1,295 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+
+Lampiran B. Matriks hak akses per layar dan aksi
+Dibaca per aksi untuk Owner, Supervisor, dan Kasir. "Dengan otorisasi Owner" berarti PIN Owner di POS-10. Kasir tidak
+membuka Back-Office [Asumsi A-18]; kolom Kasir pada layar BO berarti "Tidak".
+
+ Layar      Aksi                                                 Owner          Supervisor             Kasir
+
+ POS-01     Kartu kasir                                          Ya             Ya                     Ya
+
+ POS-01     Angka 0 sampai 9                                     Ya             Ya                     Ya
+
+ POS-01     Hapus                                                Ya             Ya                     Ya
+
+ POS-01     Masuk                                                Ya             Ya                     Ya
+
+ POS-02     Kartu produk (ketuk)                                 Ya             Ya                     Ya
+
+ POS-02     Kartu produk (tahan 0,5 detik)                       Ya             Ya                     Ya
+
+ POS-02     Baris item (ketuk)                                   Ya             Ya                     Ya
+
+ POS-02     Cari                                                 Ya             Ya                     Ya
+
+ POS-02     Ganti, Pelanggan, Pelanggan Baru                     Ya             Ya                     Ya
+
+ POS-02     Tahan Bill                                           Ya             Ya                     Ya
+
+ POS-02     Panggil Bill                                         Ya             Ya                     Ya
+
+ POS-02     Bayar                                                Ya             Ya                     Ya
+
+ POS-03     Pilihan satuan                                       Ya             Ya                     Ya
+
+ POS-03     Papan angka                                          Ya             Ya                     Ya
+
+ POS-03     Batal                                                Ya             Ya                     Ya
+
+ POS-03     Tambahkan ke Bill (mode ubah: Simpan                 Ya             Ya                     Ya
+            Perubahan)
+
+ POS-03     Hapus Item (mode ubah)                               Ya             Ya                     Ya
+
+ POS-04     Tunai, QRIS, Transfer, DP, Piutang                   Ya             Ya                     Ya
+
+ POS-04     Uang Pas dan nominal cepat                           Ya             Ya                     Ya
+
+ POS-04     Kembali                                              Ya             Ya                     Ya
+
+ POS-04     Selesaikan dan Cetak Struk                           Ya             Ya                     Ya
+
+ POS-04     Minta Otorisasi Owner atau Ganti Cara Bayar (state   Ya             Ya                     Ya
+            limit)
+
+ POS-05     Cetak Struk Draf                                     Ya             Ya                     Ya
+
+ POS-05     Panggil Bill                                         Ya             Ya                     Ya
+
+ POS-05     Hapus Bill                                           Ya             Ya                     Tidak
+
+ POS-05     Kembali ke Jual                                      Ya             Ya                     Ya
+
+ POS-06     Cetak Ulang Struk                                    Ya             Ya                     Ya
+
+ POS-06     Ajukan Koreksi                                       Tidak          Ya                     Tidak
+
+ POS-06     Filter dan pencarian                                 Ya             Ya                     Ya
+
+ POS-07     Jenis biaya                                          Ya             Ya                     Ya
+
+ POS-07     Simpan Biaya                                         Ya             Ya                     Ya
+
+ POS-07     Batal                                                Ya             Ya                     Ya
+
+ POS-08     Kategori harga                                       Ya             Ya                     Ya
+
+ POS-08     Simpan Pelanggan                                     Ya             Ya                     Ya
+
+ POS-08     Batal                                                Ya             Ya                     Ya
+
+ POS-09     Sinkronkan Sekarang                                  Ya             Ya                     Ya
+
+ POS-09     Kembali ke Jual                                      Ya             Ya                     Ya
+
+ POS-10     Setujui                                              Ya             Ya                     Ya
+
+ POS-10     Batal                                                Ya             Ya                     Ya
+
+ BO-01      Tampilkan                                            Ya             Ya                     Ya
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                              Halaman 100 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                             Lampiran Kontrak
+
+
+
+
+ Layar      Aksi                                            Owner   Supervisor                Kasir
+
+ BO-01      Masuk                                           Ya      Ya                        Tidak
+
+ BO-02      Lihat Semua Stok                                Ya      Ya                        Tidak
+
+ BO-02      Kartu piutang jatuh tempo                       Ya      Ya                        Tidak
+
+ BO-02      Strip stok negatif                              Ya      Ya                        Tidak
+
+ BO-03      Cari                                            Ya      Ya                        Tidak
+
+ BO-03      Tambah Barang                                   Ya      Ya                        Tidak
+
+ BO-03      Impor Excel                                     Ya      Ya                        Tidak
+
+ BO-03      Simpan Barang                                   Ya      Ya                        Tidak
+
+ BO-03      Nonaktifkan Barang                              Ya      Tidak                     Tidak
+
+ BO-04      Tambah Satuan                                   Ya      Tidak                     Tidak
+
+ BO-04      Simpan Harga                                    Ya      Tidak                     Tidak
+
+ BO-04      Batal                                           Ya      Ya                        Tidak
+
+ BO-05      Chip gudang                                     Ya      Ya                        Tidak
+
+ BO-05      Di bawah minimum                                Ya      Ya                        Tidak
+
+ BO-05      Mutasi Stok                                     Ya      Ya                        Tidak
+
+ BO-05      Ekspor PDF                                      Ya      Ya                        Tidak
+
+ BO-05      Ekspor Excel                                    Ya      Ya                        Tidak
+
+ BO-05      Tandai Sudah Ditinjau (pada baris negatif)      Ya      Ya                        Tidak
+
+ BO-06      Hapus (baris)                                   Ya      Ya                        Tidak
+
+ BO-06      Simpan Mutasi                                   Ya      Ya                        Tidak
+
+ BO-06      Batal                                           Ya      Ya                        Tidak
+
+ BO-07      Simpan Draf Opname                              Ya      Ya                        Tidak
+
+ BO-07      Terapkan Penyesuaian Stok                       Ya      Ya                        Tidak
+
+ BO-08      Buat PO                                         Ya      Ya                        Tidak
+
+ BO-08      Terima Barang                                   Ya      Ya                        Tidak
+
+ BO-08      Cetak PO                                        Ya      Ya                        Tidak
+
+ BO-08      Tab Pemasok: Tambah Pemasok                     Ya      Ya                        Tidak
+
+ BO-09      Cetak Ulang Invoice                             Ya      Ya                        Tidak
+
+ BO-09      Buat Surat Jalan                                Ya      Ya                        Tidak
+
+ BO-09      Koreksi Transaksi (Otorisasi Owner)             Ya      Dengan otorisasi Owner    Tidak
+
+ BO-09      Hapus Transaksi                                 Tidak   Tidak                     Tidak
+
+ BO-10      Cari                                            Ya      Ya                        Tidak
+
+ BO-10      Simpan Retur                                    Ya      Ya                        Tidak
+
+ BO-10      Batal                                           Ya      Ya                        Tidak
+
+ BO-11      Tambah Pelanggan                                Ya      Ya                        Tidak
+
+ BO-11      Catat Pembayaran Piutang                        Ya      Ya                        Tidak
+
+ BO-11      Ubah Limit                                      Ya      Tidak                     Tidak
+
+ BO-11      Ekspor PDF                                      Ya      Ya                        Tidak
+
+ BO-12      Muat                                            Ya      Ya                        Tidak
+
+ BO-12      Pilih Semua ke Koli 1                           Ya      Ya                        Tidak
+
+ BO-12      Tambah Koli                                     Ya      Ya                        Tidak
+
+ BO-12      Simpan                                          Ya      Ya                        Tidak
+
+ BO-12      Cetak Packing List Koli                         Ya      Ya                        Tidak
+
+ BO-12      Cetak Surat Jalan                               Ya      Ya                        Tidak
+
+ BO-13      Label Barcode, Label Harga Rak                  Ya      Ya                        Tidak
+
+ BO-13      Pilih (kotak centang)                           Ya      Ya                        Tidak
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                      Halaman 101 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                 Lampiran Kontrak
+
+
+
+
+ Layar      Aksi                                            Owner   Supervisor    Kasir
+
+ BO-13      Cetak Label                                     Ya      Ya            Tidak
+
+ BO-14      Tambah Aturan                                   Ya      Tidak         Tidak
+
+ BO-14      Persen, Nominal tetap                           Ya      Tidak         Tidak
+
+ BO-14      Simpan Aturan                                   Ya      Tidak         Tidak
+
+ BO-14      Ekspor PDF, Ekspor Excel (tab Laporan)          Ya      Ya            Tidak
+
+ BO-15      Unduh Templat Excel                             Ya      Ya            Tidak
+
+ BO-15      Pilih Berkas                                    Ya      Ya            Tidak
+
+ BO-15      Mulai Impor                                     Ya      Ya            Tidak
+
+ BO-15      Batal                                           Ya      Ya            Tidak
+
+ BO-16      Pilih laporan                                   Ya      Ya            Tidak
+
+ BO-16      Tampilkan                                       Ya      Ya            Tidak
+
+ BO-16      Ekspor PDF                                      Ya      Ya            Tidak
+
+ BO-16      Ekspor Excel                                    Ya      Ya            Tidak
+
+ BO-17      Tab laporan                                     Ya      Tidak         Tidak
+
+ BO-17      Pemilih periode                                 Ya      Tidak         Tidak
+
+ BO-17      Ekspor PDF                                      Ya      Tidak         Tidak
+
+ BO-17      Ekspor Excel                                    Ya      Tidak         Tidak
+
+ BO-18      Tampilkan                                       Ya      Ya            Tidak
+
+ BO-18      Ekspor PDF                                      Ya      Ya            Tidak
+
+ BO-18      Ekspor Excel                                    Ya      Ya            Tidak
+
+ BO-19      Simpan Beban                                    Ya      Ya            Tidak
+
+ BO-19      Ekspor PDF, Ekspor Excel                        Ya      Ya            Tidak
+
+ BO-20      Tambah Pengguna                                 Ya      Tidak         Tidak
+
+ BO-20      Simpan                                          Ya      Tidak         Tidak
+
+ BO-20      Nonaktifkan                                     Ya      Tidak         Tidak
+
+ BO-21      Tampilkan                                       Ya      Ya            Tidak
+
+ BO-21      Ekspor PDF, Ekspor Excel                        Ya      Ya            Tidak
+
+ BO-22      Menu Toko, Gudang                               Ya      Tidak         Tidak
+
+ BO-22      USB atau LAN                                    Ya      Tidak         Tidak
+
+ BO-22      Cetak Halaman Uji                               Ya      Ya            Tidak
+
+ BO-22      Simpan                                          Ya      Tidak         Tidak
+
+ OWN-01     Tampilkan                                       Ya      Tidak         Tidak
+
+ OWN-01     Masuk                                           Ya      Tidak         Tidak
+
+ OWN-02     Chip periode                                    Ya      Tidak         Tidak
+
+ OWN-02     Tarik ke bawah                                  Ya      Tidak         Tidak
+
+ OWN-02     Batang grafik                                   Ya      Tidak         Tidak
+
+ OWN-02     Bilah bawah                                     Ya      Tidak         Tidak
+
+ OWN-03     Cari                                            Ya      Tidak         Tidak
+
+ OWN-03     Chip                                            Ya      Tidak         Tidak
+
+ OWN-04     Segmen                                          Ya      Tidak         Tidak
+
+ OWN-04     Chip periode                                    Ya      Tidak         Tidak
+
+ OWN-05     Kartu pelanggan                                 Ya      Tidak         Tidak
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                          Halaman 102 dari 107
+

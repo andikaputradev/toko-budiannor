@@ -1,6 +1,7 @@
 import type { Product, SalesOrder } from '../../../shared/data/types';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
-import { label, type LabelKey } from '../../../shared/messages';
+import { label } from '../../../shared/messages';
+import { METHOD_LABELS } from './history';
 
 export interface CopyContext {
   readonly salesName: string;
@@ -8,15 +9,6 @@ export interface CopyContext {
   readonly product: (id: string) => Product | undefined;
   readonly statusText: string;
 }
-
-const METHOD_LABELS: Readonly<Record<SalesOrder['payment'], LabelKey>> = {
-  tunai: 'metodeTunai',
-  qris: 'metodeQris',
-  edc: 'metodeEdc',
-  transfer: 'metodeTransfer',
-  dp: 'metodeDp',
-  piutang: 'metodePiutang',
-};
 
 export function buildOrderCopy(order: SalesOrder, context: CopyContext): string[] {
   const at = new Date(order.createdAt);
@@ -32,7 +24,11 @@ export function buildOrderCopy(order: SalesOrder, context: CopyContext): string[
     rule,
     ...order.lines.map((line) => {
       const name = context.product(line.productId)?.name ?? line.productId;
-      return `${name}\n  ${formatDecimal(line.quantity)} ${line.unit} x ${formatRupiah(line.unitPrice)} = ${formatRupiah(Math.round(line.quantity * line.unitPrice))}`;
+      const note =
+        line.listPrice === undefined || line.listPrice === line.unitPrice
+          ? ''
+          : `\n  ${label('hargaAsli', { harga: formatRupiah(line.listPrice) })}`;
+      return `${name}\n  ${formatDecimal(line.quantity)} ${line.unit} x ${formatRupiah(line.unitPrice)} = ${formatRupiah(Math.round(line.quantity * line.unitPrice))}${note}`;
     }),
     rule,
     `${label('totalSo')}: ${formatRupiah(order.total)}`,

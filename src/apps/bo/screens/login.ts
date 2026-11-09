@@ -1,4 +1,5 @@
 import { el, nextId } from '../../../shared/dom';
+import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
@@ -126,7 +127,11 @@ export function renderLogin(session: BoSession, go: (path: string) => void): Scr
       el(
         'section',
         { className: 'bo-login__card' },
-        el('div', { className: 'bo-login__logo', text: label('logoToko') }),
+        el(
+          'div',
+          { className: 'bo-login__logo', attrs: { role: 'img', 'aria-label': label('logoToko') } },
+          icon('store'),
+        ),
         el('h1', { className: 'bo-login__title', text: label('judulMasukBo') }),
         form,
       ),

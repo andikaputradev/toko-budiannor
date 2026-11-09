@@ -5,6 +5,7 @@ import type {
   PaymentMethod,
   Product,
   PurchaseOrderLine,
+  Tier,
   WarehouseId,
 } from '../data/types';
 import { unitPrice, validateQuantity } from '../data/units';
@@ -15,6 +16,8 @@ export interface OrderLineDraft {
   readonly productId: string;
   readonly unit: string;
   readonly quantity: string;
+  /** Harga satuan hasil ubah (angka, boleh berpemisah ribuan). Kosong berarti harga tier. */
+  readonly price?: string | undefined;
 }
 
 export interface SalesOrderDraft {
@@ -49,6 +52,8 @@ export type SalesCheck =
       readonly total: number;
       readonly downPayment: number;
       readonly decision: ReceivableDecision;
+      /** Ada baris yang harganya diubah menjadi di bawah harga tier pelanggan. */
+      readonly belowList: boolean;
     };
 
 export type PurchaseCheck =
@@ -87,11 +92,20 @@ function quantityIssue(product: Product, raw: string): SystemMessageId | undefin
   return issue === 'integer-only' ? 'MSG-032' : undefined;
 }
 
+// Harga ubah: hanya angka dipakai; kolom kosong berarti tidak diubah.
+export function parsePriceOverride(raw: string | undefined): number | undefined {
+  if (raw === undefined || raw.trim() === '') {
+    return undefined;
+  }
+  return Number(raw.replace(/\D/g, '') || '0');
+}
+
 export function checkSalesOrder(
   draft: SalesOrderDraft,
   lookup: (id: string) => Product | undefined,
   customer: Customer | undefined,
   now: Date,
+  fallbackTier: Tier = 'eceran',
 ): SalesCheck {
   if (draft.lines.length === 0) {
     return fail('MSG-025');
@@ -106,13 +120,23 @@ export function checkSalesOrder(
     if (issue !== undefined) {
       return fail(issue, index);
     }
+    const list = unitPrice(product, line.unit, customer?.tier ?? fallbackTier);
+    const override = parsePriceOverride(line.price);
+    if (override !== undefined && override <= 0) {
+      return fail('MSG-080', index);
+    }
+    const price = override ?? list;
     lines.push({
       productId: product.id,
       unit: line.unit,
       quantity: parseQuantity(line.quantity) ?? 0,
-      unitPrice: unitPrice(product, line.unit, customer?.tier ?? 'eceran'),
+      unitPrice: price,
+      ...(price === list ? {} : { listPrice: list }),
     });
   }
+  const belowList = lines.some(
+    (line) => line.listPrice !== undefined && line.unitPrice < line.listPrice,
+  );
   const total = lines.reduce((sum, line) => sum + Math.round(line.quantity * line.unitPrice), 0);
   const credit = draft.payment === 'piutang' || draft.payment === 'dp';
   if (credit && customer === undefined) {
@@ -128,7 +152,7 @@ export function checkSalesOrder(
   const decision: ReceivableDecision = credit
     ? checkReceivable(customer, Math.max(0, total - downPayment), now)
     : { ok: true };
-  return { kind: 'ok', lines, total, downPayment, decision };
+  return { kind: 'ok', lines, total, downPayment, decision, belowList };
 }
 
 export function checkPurchaseOrder(

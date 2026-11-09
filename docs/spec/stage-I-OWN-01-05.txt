@@ -1,0 +1,443 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+OWN-01 Masuk Monitoring Owner
+ Tujuan               Owner masuk ke aplikasi pemantau dari HP dengan nama pengguna dan kata sandi.
+ Aplikasi             Monitoring Owner (PWA)                        Prioritas rilis      Rilis 3
+ Perangkat            HP Android atau iOS (PWA), portrait;          Hak akses            Owner
+                      Portrait
+ Fitur RAB            15 Mobile Monitoring Owner; 13 RBAC Berjenjang dan Log Audit Trail
+
+                                                 ZONA TATA LETAK
+
+                                                  No    Zona                      Ukuran dan posisi
+                                                   1    Logo toko                 kotak 100 x 60 px, tengah, 90 px dari atas
+                                                   2    Judul "Monitoring         teks 24 px tebal
+                                                        Owner"
+                                                   3    Kolom nama                lebar penuh dikurangi 24 px tiap sisi,
+                                                        pengguna                  tinggi 52 px
+                                                   4    Kolom kata sandi          tinggi 52 px, ada tombol "Tampilkan"
+                                                   5    Tombol Masuk              tinggi 56 px, lebar penuh
+
+
+
+
+Wireframe OWN-01
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                    Sumber data
+ Nama pengguna              Sama dengan akun Back-Office                                           Akun
+ Kata sandi                 Tersembunyi, minimal 8 karakter                                        Akun
+ Sesi                       Tetap masuk 30 hari di HP yang sama sampai Owner keluar                Perangkat
+                            [Usulan, A-16]
+
+AKSI
+
+ Label persis                   Hasil                                                  Pintasan papan ketik          Peran O S K
+                                                                                       (PC)
+ Tampilkan                      Memperlihatkan kata sandi sementara                    Ketuk                               O--
+ Masuk                          Memeriksa akun peran Owner lalu membuka                Ketuk                               O--
+                                OWN-02; tercatat di BO-21
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Fokus di kolom nama pengguna, mode gelap mengikuti pengaturan HP.
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 81 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+
+ State                Tampilan dan perilaku
+ Memuat               Tombol "Memeriksa..." nonaktif maksimal 3 detik.
+ Kosong               Tidak berlaku.
+ Error                Pesan merah di bawah kolom kata sandi sesuai validasi.
+ Offline              Banner: "Tidak ada koneksi internet. Masuk memerlukan internet." Tombol Masuk nonaktif.
+ Hak akses            Akun bukan Owner: "Aplikasi ini hanya untuk peran Owner."
+ ditolak
+ Data banyak          Tidak berlaku.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Nama pengguna kosong                             Nama pengguna wajib diisi.
+ Kata sandi kosong                                Kata sandi wajib diisi.
+ Kombinasi salah                                  Nama pengguna atau kata sandi salah.
+ Akun bukan Owner                                 Aplikasi ini hanya untuk peran Owner.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Aplikasi ini tidak memakai scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                  Then
+ K-1     Akun Owner aktif                      Owner memasukkan kredensial           OWN-02 terbuka dan login tercatat di
+                                               benar                                 BO-21
+ K-2     Akun berperan Supervisor              Supervisor mencoba masuk              Pesan "Aplikasi ini hanya untuk peran
+                                                                                     Owner." tampil
+ K-3     HP tanpa internet                     Owner membuka layar masuk             Banner offline tampil dan tombol Masuk
+                                                                                     nonaktif
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 82 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+OWN-02 Ringkasan Omzet
+ Tujuan               Owner melihat omzet harian dan grafik per jam secara hampir real-time dari HP.
+ Aplikasi             Monitoring Owner (PWA)                       Prioritas rilis      Rilis 3
+ Perangkat            HP Android atau iOS (PWA), portrait;         Hak akses            Owner
+                      Portrait
+ Fitur RAB            15 Mobile Monitoring Owner; 14 Otomatisasi Akuntansi dan Laporan
+
+                                                 ZONA TATA LETAK
+
+                                                  No    Zona                     Ukuran dan posisi
+                                                   1    Judul layar              tinggi 56 px
+                                                   2    Chip periode             "Hari ini", "Kemarin", "7 hari"; tinggi 44 px
+                                                   3    Kartu omzet              tinggi 150 px, angka 32 px tebal,
+                                                                                 perbandingan dengan kemarin
+                                                   4    Grafik batang            tinggi 300 px
+                                                        omzet per jam
+                                                   5    Dua kartu kecil          Transaksi dan Rata-rata per transaksi,
+                                                                                 tinggi 112 px
+                                                   6    Baris waktu              tinggi 28 px
+                                                        pembaruan
+
+
+
+
+Wireframe OWN-02
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Omzet                      "Rp 1.337.000"                                                        Transaksi lunas dan piutang
+ Perbandingan               "+12% dibanding kemarin" atau "-5% dibanding kemarin";                Perhitungan
+                            tanda dan teks, tidak hanya warna
+ Grafik                     Batang per jam 08 sampai 17, nilai rupiah saat disentuh               Omzet per jam
+ Pembaruan                  "Diperbarui 14:32"; muat ulang otomatis tiap 60 detik saat            Server
+                            layar terbuka [Usulan]
+
+AKSI
+
+ Label persis                   Hasil                                                  Pintasan papan ketik          Peran O S K
+                                                                                       (PC)
+ Chip periode                   Mengganti periode                                      Ketuk                             O--
+ Tarik ke bawah                 Memuat ulang data                                      Gestur tarik                      O--
+ Batang grafik                  Menampilkan nilai jam itu                              Ketuk                             O--
+ Bilah bawah                    Pindah ke Stok, Laporan, Piutang                       Ketuk                             O--
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 83 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                        Lampiran Kontrak
+
+
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Periode "Hari ini".
+ Memuat               Kerangka abu-abu untuk kartu dan grafik.
+ Kosong               "Belum ada penjualan hari ini." Grafik kosong dengan sumbu tetap tampil.
+ Error                Kartu pesan: "Data tidak dapat dimuat. Tarik ke bawah untuk mencoba lagi."
+ Offline              Banner di bawah judul: "Tidak ada koneksi internet. Data terakhir diperbarui pukul 00:00." Data yang
+                      pernah dimuat tetap tampil; tombol muat ulang nonaktif.
+ Hak akses            Akun bukan Owner tidak bisa mencapai layar ini (lihat OWN-01).
+ ditolak
+ Data banyak          Periode "7 hari": grafik berganti batang per hari (7 batang).
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Pembaruan gagal saat tarik ke bawah              Pembaruan gagal. Data ditampilkan dari 14:32.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Aplikasi ini tidak memakai scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                  Then
+ K-1     Ada 24 transaksi hari ini              Owner membuka OWN-02                  Kartu omzet menunjukkan total hari ini
+                                                                                      dan grafik memuat batang tiap jam
+ K-2     Owner memilih chip "Kemarin"           Layar dimuat ulang                    Angka dan grafik berganti ke data
+                                                                                      kemarin
+ K-3     HP kehilangan internet                 Owner menarik layar ke bawah          Banner offline tampil dan data terakhir
+                                                                                      tetap terbaca
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                   Halaman 84 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+
+OWN-03 Cek Stok
+ Tujuan               Owner memeriksa sisa stok barang di Gudang Display dan Gudang Besar secara instan.
+ Aplikasi             Monitoring Owner (PWA)                     Prioritas rilis      Rilis 3
+ Perangkat            HP Android atau iOS (PWA), portrait;       Hak akses            Owner
+                      Portrait
+ Fitur RAB            15 Mobile Monitoring Owner; 7 Manajemen Multi-Gudang 2 Lokasi
+
+                                                  ZONA TATA LETAK
+
+                                                   No   Zona                   Ukuran dan posisi
+                                                   1    Kolom cari             tinggi 52 px
+                                                   2    Chip gudang dan        "Semua", "Display", "Besar", "Di bawah
+                                                        filter                 minimum"; tinggi 44 px
+                                                   3    Daftar barang          kartu tinggi 148 px
+
+
+
+
+Wireframe OWN-03
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                 Sumber data
+ Kartu barang               Nama, kode, satuan dasar, "Display: 12,0", "Besar: 40,0",           Stok per gudang
+                            "Total 52,0"
+ Lencana                    "Di bawah minimum" dengan ikon dan teks                             Stok minimum
+ Waktu data                 "Diperbarui 14:32" di dasar daftar                                  Server
+
+AKSI
+
+ Label persis                   Hasil                                               Pintasan papan ketik          Peran O S K
+                                                                                    (PC)
+ Cari                           Menyaring daftar                                    Ketuk kolom                       O--
+ Chip                           Menyaring gudang atau minimum                       Ketuk                             O--
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              "Semua", urut nama barang.
+ Memuat               5 kartu kerangka abu-abu.
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 85 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+
+ State                Tampilan dan perilaku
+ Kosong               "Barang tidak ditemukan."
+ Error                Kartu pesan: "Data tidak dapat dimuat. Tarik ke bawah untuk mencoba lagi."
+ Offline              Banner di bawah judul: "Tidak ada koneksi internet. Data terakhir diperbarui pukul 00:00." Data yang
+                      pernah dimuat tetap tampil; tombol muat ulang nonaktif.
+ Hak akses            Akun bukan Owner tidak bisa mencapai layar ini.
+ ditolak
+ Data banyak          3.500 barang: daftar memuat 30 kartu lalu 30 berikutnya saat digulir [Usulan].
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Pencarian kurang dari 2 karakter                 Ketik minimal 2 karakter untuk mencari.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Aplikasi ini tidak memakai scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                  Then
+ K-1     Barang B0002 punya stok Display 3     Owner memilih chip "Di bawah          B0002 tampil dengan lencana "Di bawah
+         dan minimum 5                         minimum"                              minimum"
+ K-2     Owner mengetik "semen"                Menunggu pencarian                    Daftar menampilkan barang bernama
+                                                                                     semen dengan stok kedua gudang
+ K-3     HP offline                            Owner membuka layar                   Data terakhir tampil dengan banner
+                                                                                     offline
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 86 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+OWN-04 Laporan Laba Rugi dan Beban
+ Tujuan               Owner membaca Laporan Laba Rugi dan Laporan Beban Operasional langsung dari HP (hanya lihat).
+ Aplikasi             Monitoring Owner (PWA)                     Prioritas rilis       Rilis 3
+ Perangkat            HP Android atau iOS (PWA), portrait;       Hak akses             Owner
+                      Portrait
+ Fitur RAB            15 Mobile Monitoring Owner; 14 Otomatisasi Akuntansi dan Laporan
+
+                                                  ZONA TATA LETAK
+
+                                                  No    Zona                   Ukuran dan posisi
+                                                   1    Dua tombol segmen      "Laba Rugi" dan "Beban Operasional";
+                                                                               tinggi 48 px
+                                                   2    Chip periode           "Hari ini", "Bulan ini", "Pilih tanggal";
+                                                                               tinggi 44 px
+                                                   3    Kartu laporan          tinggi 420 px, baris 66 px
+
+
+
+
+Wireframe OWN-04
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                  Sumber data
+ Laba Rugi                  Penjualan bersih, Harga pokok penjualan, Laba kotor, Beban           Jurnal
+                            operasional, Laba bersih
+ Beban Operasional          Kategori, Jumlah, total; daftar 10 kategori terbesar                 Jurnal beban
+ Pilih tanggal              Dua tanggal, maksimal 366 hari                                       Masukan
+
+AKSI
+
+ Label persis                   Hasil                                                Pintasan papan ketik           Peran O S K
+                                                                                     (PC)
+ Segmen                         Mengganti laporan                                    Ketuk                                 O--
+ Chip periode                   Mengganti periode                                    Ketuk                                 O--
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              "Laba Rugi", "Bulan ini".
+ Memuat               Kerangka abu-abu 5 baris.
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 87 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+
+ State                Tampilan dan perilaku
+ Kosong               "Belum ada data pada periode ini."
+ Error                Kartu pesan: "Data tidak dapat dimuat. Tarik ke bawah untuk mencoba lagi."
+ Offline              Banner di bawah judul: "Tidak ada koneksi internet. Data terakhir diperbarui pukul 00:00." Data yang
+                      pernah dimuat tetap tampil; tombol muat ulang nonaktif.
+ Hak akses            Akun bukan Owner tidak bisa mencapai layar ini.
+ ditolak
+ Data banyak          Tidak berlaku.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Tanggal akhir sebelum awal                       Tanggal akhir tidak boleh sebelum tanggal awal.
+ Rentang lebih dari 366 hari                      Rentang laporan maksimal 366 hari.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Aplikasi ini tidak memakai scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                 Then
+ K-1     Ada jurnal Oktober 2026               Owner membuka "Bulan ini"            Angka sama dengan BO-17 untuk
+                                                                                    periode yang sama
+ K-2     Owner memilih "Beban                  Layar berganti                       Daftar kategori beban dan totalnya
+         Operasional"                                                               tampil
+ K-3     Owner mencari ekspor PDF              Melihat layar                        Tidak ada tombol ekspor; teks arahan ke
+                                                                                    Back-Office tampil
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 88 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+OWN-05 Piutang Jatuh Tempo
+ Tujuan               Owner melihat pelanggan dengan piutang yang melewati jatuh tempo, terlama lebih dulu.
+ Aplikasi             Monitoring Owner (PWA)                      Prioritas rilis      Rilis 3
+ Perangkat            HP Android atau iOS (PWA), portrait;        Hak akses            Owner
+                      Portrait
+ Fitur RAB            15 Mobile Monitoring Owner; 5 Multi Opsi Bayar dan Limit Piutang
+
+                                                  ZONA TATA LETAK
+
+                                                  No    Zona                    Ukuran dan posisi
+                                                   1    Kartu total piutang     tinggi 140 px, angka 32 px tebal
+                                                        jatuh tempo
+                                                   2    Daftar pelanggan        kartu tinggi 136 px, urut keterlambatan
+                                                                                terlama
+
+
+
+
+Wireframe OWN-05
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                  Sumber data
+ Total                      "Rp 12.337.000"                                                      Kartu piutang
+ Kartu pelanggan            Nama, "Jatuh tempo 05 Okt 2026", "Rp 1.337.000", lencana             Kartu piutang
+                            "Terlambat 12 hari"
+ Waktu data                 "Diperbarui 14:32"                                                   Server
+
+AKSI
+
+ Label persis                   Hasil                                                Pintasan papan ketik            Peran O S K
+                                                                                     (PC)
+ Kartu pelanggan                Membuka rincian invoice jatuh tempo pelanggan        Ketuk                               O--
+                                itu (hanya lihat)
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Urut terlama.
+ Memuat               Kerangka abu-abu 5 kartu.
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 89 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+
+ State                Tampilan dan perilaku
+ Kosong               "Tidak ada piutang jatuh tempo."
+ Error                Kartu pesan: "Data tidak dapat dimuat. Tarik ke bawah untuk mencoba lagi."
+ Offline              Banner di bawah judul: "Tidak ada koneksi internet. Data terakhir diperbarui pukul 00:00." Data yang
+                      pernah dimuat tetap tampil; tombol muat ulang nonaktif.
+ Hak akses            Akun bukan Owner tidak bisa mencapai layar ini.
+ ditolak
+ Data banyak          Lebih dari 30 pelanggan: daftar memuat 30 kartu lalu 30 berikutnya saat digulir.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Pembaruan gagal                                  Pembaruan gagal. Data ditampilkan dari 14:32.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Aplikasi ini tidak memakai scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                  Then
+ K-1     Dua pelanggan jatuh tempo,            Owner membuka OWN-05                  Pelanggan terlambat 12 hari tampil
+         terlambat 12 dan 3 hari                                                     paling atas
+ K-2     Owner mengetuk kartu pelanggan        Rincian terbuka                       Daftar invoice jatuh tempo tampil tanpa
+                                                                                     tombol ubah
+ K-3     Pelanggan melunasi di Back-Office     Owner menarik layar ke bawah          Pelanggan itu hilang dari daftar dan total
+                                                                                     berkurang
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                   Halaman 90 dari 107
+

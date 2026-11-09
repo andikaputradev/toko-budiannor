@@ -2,12 +2,14 @@ import { el } from '../../../shared/dom';
 import { formatTime } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, type LabelKey } from '../../../shared/messages';
+import '../../../styles/mobile-owner.css';
 import { createButton } from '../../../shared/ui/button';
 import { createEmptyState } from '../../../shared/ui/empty';
 import { showToast } from '../../../shared/ui/toast';
 import { NOTIFICATION_KINDS, type NotificationKind } from '../domain/notifications';
 import type { OwnerSession } from '../owner-session';
 import type { ScreenHandle } from '../screen';
+import type { OwnerShell } from '../shell';
 
 const SIMULATE: Readonly<Record<NotificationKind, LabelKey>> = {
   stok: 'simulasiPushStok',
@@ -15,7 +17,9 @@ const SIMULATE: Readonly<Record<NotificationKind, LabelKey>> = {
   omzet: 'simulasiPushOmzet',
 };
 
-export function renderNotifications(session: OwnerSession): ScreenHandle {
+export function renderNotifications(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
+  shell?.setTitle(label('notifikasi'));
+  shell?.setBack('/owner/ringkasan');
   const list = el('div', { className: 'own-stack' });
   const simulate = el(
     'div',

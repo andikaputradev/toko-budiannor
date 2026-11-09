@@ -1,0 +1,505 @@
+/* Dashboard dan Laporan Owner (revisi mobile). Awalan dash-. Semua warna lewat token tema;
+   kartu bernada di mode gelap sudah ditangani mobile.css. */
+
+.dash {
+  padding-bottom: var(--primitive-space-4);
+}
+
+.dash-slot {
+  min-width: 0;
+}
+
+.dash .mob-card__action {
+  min-width: var(--size-touch-target-min);
+  min-height: var(--size-touch-target-min);
+}
+
+/* ===== Omzet Live ===== */
+.dash-live__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--primitive-space-2);
+}
+
+.dash-live__head .mob-card__title {
+  flex: 1 1 auto;
+}
+
+.dash-toggle {
+  display: inline-grid;
+  flex: none;
+  grid-template-columns: repeat(2, auto);
+}
+
+.dash-toggle .own-segment__button {
+  min-height: 48px;
+  padding: 0 var(--primitive-space-4);
+  white-space: nowrap;
+}
+
+.mob-card > .dash-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: var(--primitive-space-3);
+}
+
+.dash-live__value {
+  margin-top: var(--primitive-space-1);
+}
+
+.dash-compare {
+  margin-top: var(--primitive-space-2);
+  align-self: flex-start;
+  border-radius: 12px;
+  white-space: normal;
+}
+
+.dash-chart {
+  margin-top: var(--primitive-space-3);
+}
+
+.dash-chart .mob-area__svg {
+  overflow: visible;
+}
+
+.dash-chart .mob-area__tick {
+  font-size: 13px;
+}
+
+.dash-unit {
+  margin: 0 0 var(--primitive-space-1);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.dash-readout {
+  min-height: 24px;
+  margin: var(--primitive-space-2) 0 0;
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.dash-stamp {
+  margin-top: var(--primitive-space-2);
+}
+
+.dash-note {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  margin: var(--primitive-space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.dash-note .icon {
+  flex: none;
+}
+
+.mob-card--peringatan .dash-note--ok,
+.mob-card--sukses .dash-note--ok {
+  color: inherit;
+}
+
+/* ===== Laba rugi ===== */
+.dash-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+  margin: var(--primitive-space-3) 0 var(--primitive-space-1);
+  padding-top: var(--primitive-space-3);
+  border-top: 1px solid color-mix(in srgb, currentcolor 22%, transparent);
+}
+
+.dash-split__value {
+  display: block;
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+/* ===== Daftar baris (stok minim) ===== */
+.dash-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dash-line {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: var(--primitive-space-2) 0;
+  border-bottom: 1px solid color-mix(in srgb, currentcolor 20%, transparent);
+  color: inherit;
+  text-decoration: none;
+}
+
+.dash-list li:last-child .dash-line {
+  border-bottom: 0;
+}
+
+.dash-line__name {
+  min-width: 0;
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-medium);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.dash-line__value {
+  flex: none;
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-bold);
+  white-space: nowrap;
+}
+
+/* ===== Peringkat ===== */
+.dash-rank .mob-rank__name {
+  overflow: visible;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dash-rank .mob-rank__row {
+  align-items: flex-start;
+}
+
+.dash-rank .mob-rank__value {
+  white-space: nowrap;
+}
+
+.dash-rank .mob-sub {
+  margin-top: var(--primitive-space-3);
+}
+
+/* ===== Piutang dan hutang ===== */
+.dash-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--primitive-space-3);
+}
+
+.dash-debt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-height: 148px;
+  padding: var(--primitive-space-4) var(--primitive-space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+.dash-debt__title {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: flex-start;
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 1.3;
+}
+
+.dash-debt__title .icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.dash-debt .mob-value {
+  margin-top: var(--primitive-space-1);
+}
+
+.dash-debt .mob-sub {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.dash-debt__go {
+  display: grid;
+  place-items: center;
+  align-self: flex-end;
+  margin-top: auto;
+}
+
+/* ===== Daftar laporan ===== */
+.dash-conn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.dash-conn .mob-badge {
+  align-self: flex-start;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.dash-reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dash-report {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  min-height: 92px;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+.dash-report:hover {
+  border-color: var(--color-accent-default);
+}
+
+.dash-report__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-default);
+}
+
+.dash-report__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dash-report__title {
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 1.3;
+}
+
+.dash-report__sum {
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.dash-report__go {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.dash-status {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 3px 10px;
+}
+
+.dash-dot {
+  display: block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: currentcolor;
+}
+
+/* ===== Detail laporan ===== */
+.dash-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.dash-filter .own-chips .chip {
+  min-height: 48px;
+}
+
+.dash-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+}
+
+.dash-dates:empty {
+  display: none;
+}
+
+.dash-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.dash-field .input {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.dash-range {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.dash-error {
+  margin: 0;
+  color: var(--color-status-danger-fg);
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.dash-error:empty {
+  display: none;
+}
+
+[data-pos-scheme='gelap'] .dash-error {
+  color: var(--color-status-danger-bg);
+}
+
+.dash-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+  margin-top: var(--primitive-space-3);
+  padding-top: var(--primitive-space-3);
+  border-top: 1px solid color-mix(in srgb, currentcolor 22%, transparent);
+}
+
+.dash-metrics__value {
+  display: block;
+  margin-top: 2px;
+  font-size: 18px;
+  font-weight: var(--primitive-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.dash-balance {
+  align-self: stretch;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+  white-space: normal;
+}
+
+.dash-table-wrap {
+  overflow-x: auto;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.dash-table th,
+.dash-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--color-border-default);
+  text-align: left;
+  vertical-align: top;
+}
+
+.dash-table th:first-child,
+.dash-table td:first-child {
+  padding-left: 0;
+}
+
+.dash-table th:last-child,
+.dash-table td:last-child {
+  padding-right: 0;
+}
+
+.dash-table thead th {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.dash-table tbody th {
+  font-weight: var(--primitive-font-weight-regular);
+  overflow-wrap: anywhere;
+}
+
+.dash-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.dash-table .is-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dash-table .is-strong > * {
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.dash-table__sub {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-regular);
+}
+
+.mob-card--sukses .dash-table th,
+.mob-card--sukses .dash-table td {
+  border-color: color-mix(in srgb, currentcolor 20%, transparent);
+}
+
+.dash-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.dash-section > .mob-card__head {
+  margin-bottom: 0;
+}
+
+.dash-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* ===== Bilah atas layar Laporan =====
+   Chip sinkron menjadi ikon bulat dan judul boleh dua baris, agar judul seperti
+   "Penjualan Per Penjual" terbaca. Berlaku hanya bila layar Laporan memasang kelas dash-bar. */
+.dash-bar .own-top .own-chip {
+  justify-content: center;
+  width: var(--size-touch-target-min);
+  padding: 0;
+}
+
+.dash-bar .own-top .own-chip span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dash-bar .own-top__title {
+  display: -webkit-box;
+  font-size: 20px;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}

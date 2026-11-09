@@ -41,3 +41,29 @@ export function setup(options: { online?: boolean; signedIn?: boolean } = {}) {
     advance: (ms: number) => (now += ms),
   };
 }
+
+// Barang uji tetap, tidak bergantung pada data bangkitan: Kg (dasar) dan Sak (isi 40 Kg).
+export function fixtureProduct(overrides: Partial<Product> = {}): Product {
+  return {
+    id: 'P-UJI',
+    code: 'U0001',
+    barcode: '8990000000999',
+    name: 'Semen Uji',
+    brand: 'Merk Uji',
+    category: 'Bahan Dasar',
+    baseUnit: 'Kg',
+    allowDecimal: true,
+    units: [
+      { code: 'Kg', name: 'Kg', factor: 1 },
+      { code: 'Sak', name: 'Sak', factor: 40 },
+    ],
+    prices: {
+      Kg: { eceran: 1400, grosir: 1300, kontraktor: 1200 },
+      Sak: { eceran: 54900, grosir: 51000, kontraktor: 48300 },
+    },
+    hpp: 1000,
+    minStock: 800,
+    stock: { display: 2496.667, besar: 12787.302 },
+    ...overrides,
+  };
+}

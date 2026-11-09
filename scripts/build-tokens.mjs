@@ -99,6 +99,9 @@ function selectorList(apps) {
 
 const ROOT_AND_APPS = ':root,\n[data-app]';
 
+// Aplikasi selain POS yang ikut enam palet dan mode terang, gelap, atau otomatis pilihan pengguna.
+const PALETTE_APPS = ['bo', 'owner', 'sales'];
+
 // Tema POS: permukaan gelap login (selalu) dan skema gelap seluruh aplikasi (data-pos-scheme
 // pada elemen akar), lalu satu rangkaian blok per palet. Palet kosong (terakota) memulihkan
 // nilai bawaan. Urutan dan kekhususan penting: blok gelap palet mengalahkan blok terang palet
@@ -106,6 +109,10 @@ const ROOT_AND_APPS = ':root,\n[data-app]';
 function posThemeBlocks(forcedDarkLines) {
   const blocks = [
     `[data-app='pos'][data-pos-surface='dark'],\n[data-app='pos'][data-pos-scheme='gelap'] {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
+    ...PALETTE_APPS.map(
+      (app) =>
+        `[data-app='${app}'][data-pos-scheme='gelap'] {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,
+    ),
   ];
   const themes = Object.entries(document.$themes ?? {}).filter(([name]) => !name.startsWith('$'));
   // Setiap palet mengeluarkan seluruh token yang ditimpa palet mana pun (terakota memulihkan
@@ -129,9 +136,18 @@ function posThemeBlocks(forcedDarkLines) {
     // :where() menjaga kekhususan turunan tetap rendah agar blok akar palet itu sendiri menang.
     const roots = `${scope}[data-app='pos'],\n:where(${scope}) [data-app='pos']`;
     blocks.push(`${roots} {\n${lines('light').join('\n')}\n}`);
+    for (const app of PALETTE_APPS) {
+      const appRoots = `${scope}[data-app='${app}'],\n:where(${scope}) [data-app='${app}']`;
+      blocks.push(`${appRoots} {\n${lines('light').join('\n')}\n}`);
+    }
     blocks.push(
       `:where(${scope}) [data-app='pos'][data-pos-surface='dark'],\n${scope}[data-app='pos'][data-pos-scheme='gelap'] {\n${lines('dark').join('\n')}\n}`,
     );
+    for (const app of PALETTE_APPS) {
+      blocks.push(
+        `${scope}[data-app='${app}'][data-pos-scheme='gelap'] {\n${lines('dark').join('\n')}\n}`,
+      );
+    }
   }
   return blocks;
 }
@@ -185,7 +201,7 @@ function buildCss() {
   const themed = (qualifier) => darkApps.map((app) => `[data-app='${app}']${qualifier}`);
   blocks.push(`${selectorList(darkApps)} {\n  color-scheme: light dark;\n}`);
   blocks.push(
-    `@media (prefers-color-scheme: dark) {\n  ${themed(":not([data-theme='light'])").join(',\n  ')} {\n${darkLines.join('\n')}\n  }\n}`,
+    `@media (prefers-color-scheme: dark) {\n  ${themed(":not([data-theme='light']):not([data-pos-mode])").join(',\n  ')} {\n${darkLines.join('\n')}\n  }\n}`,
   );
   blocks.push(
     `${themed("[data-theme='dark']").join(',\n')} {\n  color-scheme: dark;\n${forcedDarkLines.join('\n')}\n}`,

@@ -1,0 +1,508 @@
+/* ==========================================================================
+   Master Data Back-Office: Kategori, Merk, Pemasok, Pelanggan, Sales, Ekspedisi.
+   Pola Data Barang: bilah tombol di atas, formulir di kiri, daftar di kanan.
+   Semua warna lewat token supaya enam palet dan mode gelap ikut berlaku.
+   ========================================================================== */
+
+.bo-master {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-4);
+  width: 100%;
+  padding-bottom: var(--primitive-space-6);
+}
+
+/* Bilah tombol */
+.bo-master__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--primitive-space-3);
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+}
+
+.bo-master__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--primitive-space-2);
+}
+
+.bo-master .btn {
+  height: 44px;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+/* Kartu angka */
+.bo-master__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+}
+
+.bo-master__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border-default);
+  border-left: 4px solid var(--color-accent-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+}
+
+.bo-master__stat-label {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.bo-master__stat-value {
+  color: var(--color-text-primary);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* Dua kolom: formulir dan daftar */
+.bo-master__split {
+  display: grid;
+  grid-template-columns: minmax(340px, 36fr) minmax(0, 64fr);
+  gap: var(--primitive-space-4);
+  align-items: start;
+}
+
+.bo-master__panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+}
+
+.bo-master__panelhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--primitive-space-3);
+  min-height: 64px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.bo-master__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bo-master__badge {
+  height: 28px;
+  font-size: 13px;
+}
+
+/* Formulir */
+.bo-master__form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px 12px;
+  padding: 20px;
+}
+
+.bo-master__span-2 {
+  grid-column: span 2;
+}
+
+.bo-master__span-3 {
+  grid-column: span 3;
+}
+
+.bo-master__span-4 {
+  grid-column: span 4;
+}
+
+.bo-master__span-6 {
+  grid-column: 1 / -1;
+}
+
+.bo-master .field {
+  gap: 6px;
+}
+
+.bo-master .field__label {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bo-master .input {
+  height: 44px;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.bo-master .input:disabled {
+  border-color: var(--color-border-default);
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  cursor: default;
+  opacity: 1;
+  -webkit-text-fill-color: currentcolor;
+}
+
+.bo-master .field__error {
+  font-size: 14px;
+}
+
+.bo-master__req {
+  color: var(--color-text-secondary);
+}
+
+.bo-master__area {
+  height: auto;
+  min-height: 76px;
+  padding: 10px 12px;
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.bo-master .select__control {
+  padding-right: var(--primitive-space-8);
+}
+
+.bo-master__hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.bo-master__formactions {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--primitive-space-3);
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* Ringkasan baris terpilih */
+.bo-master__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-bg-page);
+}
+
+.bo-master__summary-title {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bo-master__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.bo-master__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+}
+
+.bo-master__metric dt {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.bo-master__metric dd {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.bo-master__metric.is-danger {
+  border-color: transparent;
+  background: var(--color-status-danger-bg);
+}
+
+.bo-master__metric.is-danger dt,
+.bo-master__metric.is-danger dd {
+  color: var(--color-status-danger-fg);
+}
+
+.bo-master__metric.is-warning {
+  border-color: transparent;
+  background: var(--color-status-warning-bg);
+}
+
+.bo-master__metric.is-warning dt,
+.bo-master__metric.is-warning dd {
+  color: var(--color-status-warning-fg);
+}
+
+.bo-master__progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.bo-master__progress progress {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--color-accent-default);
+}
+
+/* Daftar */
+.bo-master__listhead {
+  flex-wrap: wrap;
+}
+
+.bo-master__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.bo-master__count {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.bo-master__tools {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--primitive-space-2);
+}
+
+.bo-master__search {
+  position: relative;
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+
+.bo-master__search > .icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.bo-master__searchinput {
+  padding-left: 40px;
+}
+
+.bo-master__tablewrap {
+  max-height: calc(100dvh - 380px);
+  min-height: 280px;
+  overflow: auto;
+}
+
+.bo-master__table {
+  min-width: 480px;
+}
+
+.bo-master .bo-master__table th {
+  z-index: 1;
+  height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bo-master .bo-master__table td {
+  height: 56px;
+  padding: 8px 12px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.bo-master .bo-master__table th:first-child,
+.bo-master .bo-master__table td:first-child {
+  padding-left: 16px;
+}
+
+.bo-master .bo-master__table th:last-child,
+.bo-master .bo-master__table td:last-child {
+  padding-right: 16px;
+}
+
+.bo-master .bo-master__table .is-end {
+  text-align: right;
+}
+
+.bo-master__num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bo-master__row {
+  cursor: pointer;
+}
+
+.bo-master .bo-master__table tbody tr:hover td {
+  background: var(--color-bg-page);
+}
+
+.bo-master .bo-master__table tr.is-selected td {
+  background: var(--color-accent-soft);
+}
+
+.bo-master .bo-master__table tr.is-selected td:first-child {
+  box-shadow: inset 4px 0 0 var(--color-accent-default);
+}
+
+.bo-master__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.bo-master__num .bo-master__main {
+  justify-content: flex-end;
+}
+
+.bo-master__text {
+  font-weight: 500;
+}
+
+.bo-master__name .bo-master__text {
+  font-weight: 600;
+}
+
+.bo-master__row.is-inactive .bo-master__text {
+  color: var(--color-text-secondary);
+}
+
+.bo-master__sub {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.bo-master__badge.badge {
+  height: 26px;
+  font-size: 13px;
+}
+
+.bo-master__empty {
+  padding: 56px 16px;
+}
+
+/* Dialog Info dan Impor (dibuka di luar .bo-master) */
+.bo-master__dl {
+  display: grid;
+  margin: 0;
+}
+
+.bo-master__dlrow {
+  display: grid;
+  grid-template-columns: minmax(130px, 40%) minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.bo-master__dlrow dt {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.bo-master__dlrow dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.bo-master__import {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bo-master__import p {
+  margin: 0;
+}
+
+.bo-master__import-title {
+  font-weight: 600;
+}
+
+.bo-master__import-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* Layar sempit: daftar di atas, formulir di bawahnya */
+@media (max-width: 1180px) {
+  .bo-master__split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bo-master__listpanel {
+    order: -1;
+  }
+
+  .bo-master__tablewrap {
+    max-height: 420px;
+  }
+}
+
+@media (max-width: 720px) {
+  .bo-master__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bo-master__span-2,
+  .bo-master__span-3,
+  .bo-master__span-4 {
+    grid-column: 1 / -1;
+  }
+
+  .bo-master__tools {
+    justify-content: stretch;
+  }
+
+  .bo-master__search {
+    max-width: none;
+  }
+}

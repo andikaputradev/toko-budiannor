@@ -1,0 +1,688 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+
+BO-01 Masuk ke Back-Office
+ Tujuan               Pengguna masuk ke Back-Office dengan nama pengguna dan kata sandi.
+ Aplikasi             Back-Office                                   Prioritas rilis   Rilis 1
+ Perangkat            Windows PC (browser), desktop;                Hak akses         Owner, Supervisor
+                      Landscape
+ Fitur RAB            13 RBAC Berjenjang dan Log Audit Trail
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-01. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Bilah atas sederhana                       tinggi 60 px
+   2      Judul "Masuk ke Back-Office"               teks 24 px tebal, kartu 576 x 594 px di tengah
+   3      Kolom nama pengguna                        lebar 504 px, tinggi 48 px
+   4      Kolom kata sandi                           lebar 504 px, tinggi 48 px, ada tombol tampilkan
+   5      Area pesan error                           tinggi 36 px
+   6      Tombol Masuk                               lebar 504 px, tinggi 56 px
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                Sumber data
+ Nama pengguna               Huruf kecil, angka, titik; 4 sampai 30 karakter                    Akun pengguna
+ Kata sandi                  Minimal 8 karakter, tersembunyi, tombol "Tampilkan"                Akun pengguna
+ Logo toko                   Kotak 126 x 72 px                                                  Pengaturan BO-22
+ Tautan bantuan              "Lupa kata sandi? Hubungi Owner." (teks, bukan fungsi              Tetap
+                             pemulihan)
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 37 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                    Hasil                                             Pintasan papan ketik        Peran O S K
+                                                                                   (PC)
+ Tampilkan                       Memperlihatkan kata sandi selama ditahan          Alt + T                         OSK
+ Masuk                           Memeriksa akun, mencatat ke Log Aktivitas         Enter                           OS-
+                                 (waktu, perangkat, IP), membuka BO-02
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Fokus di kolom nama pengguna.
+ Memuat               Tombol "Memeriksa..." nonaktif maksimal 3 detik.
+ Kosong               Tidak berlaku.
+ Error                Pesan merah pada area 5 sesuai validasi.
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol Masuk nonaktif.
+ Hak akses            Akun berperan Kasir: "Peran Kasir tidak memiliki akses ke Back-Office. Gunakan aplikasi POS." [Asumsi
+ ditolak              A-18]
+
+ Data banyak          Tidak berlaku.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Nama pengguna kosong                             Nama pengguna wajib diisi.
+ Kata sandi kosong                                Kata sandi wajib diisi.
+ Kombinasi salah                                  Nama pengguna atau kata sandi salah.
+ Gagal 5 kali berturut-turut [Usulan]             Akun dikunci 15 menit. Hubungi Owner.
+ Akun dinonaktifkan                               Akun Anda tidak aktif. Hubungi Owner.
+ Peran Kasir                                      Peran Kasir tidak memiliki akses ke Back-Office. Gunakan aplikasi POS.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                  Then
+ K-1     Akun Supervisor aktif                 Pengguna memasukkan kredensial        BO-02 terbuka dengan menu sesuai
+                                               benar lalu menekan Masuk              peran Supervisor dan login tercatat di
+                                                                                     BO-21
+ K-2     Kata sandi salah                      Pengguna menekan Masuk                Pesan "Nama pengguna atau kata sandi
+                                                                                     salah." tampil tanpa menyebutkan
+                                                                                     bagian mana yang salah
+ K-3     Akun berperan Kasir                   Pengguna menekan Masuk                Pesan penolakan tampil dan BO-02 tidak
+                                                                                     terbuka
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 38 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                              Lampiran Kontrak
+
+
+
+
+BO-02 Dashboard
+ Tujuan               Ringkasan harian toko dan daftar hal yang perlu ditindak: stok di bawah minimum, stok negatif, antrean
+                      sinkronisasi.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 3
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner, Supervisor
+                      Landscape
+ Fitur RAB            7 Manajemen Multi-Gudang 2 Lokasi; 11 Pembelian, Retur, dan Komisi Sales; 14 Otomatisasi Akuntansi
+                      dan Laporan
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-02. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Judul dan menu aktif                      sesuai kerangka BO
+   2      Empat kartu angka                         4 kartu 262 x 115 px dalam satu baris
+   3      Grafik omzet 7 hari                       lebar 51% area isi, tinggi 360 px, grafik batang
+   4      Tabel peringatan stok minimum             lebar 47% area isi, 4 baris
+   5      Strip "Perlu ditinjau"                    tinggi 108 px, tiga angka
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                  Sumber data
+ Omzet hari ini              "Rp 1.337.000"                                                       Transaksi lunas dan piutang hari
+                                                                                                  ini
+ Transaksi hari ini          Bilangan bulat                                                       Jumlah transaksi
+ Piutang jatuh tempo         "Rp 1.337.000"                                                       Kartu piutang
+ Stok di bawah minimum "12 barang"                                                                Stok dibanding stok minimum per
+                                                                                                  gudang
+ Grafik                      Batang per hari, sumbu tanggal "10 Okt" dan nilai rupiah             Omzet 7 hari
+ Perlu ditinjau              Stok negatif, antrean POS, status backup terakhir                    POS-09, BO-22
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                           Halaman 39 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                        Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                      Hasil                                            Pintasan papan ketik      Peran O S K
+                                                                                    (PC)
+ Lihat Semua Stok                  Membuka BO-05 dengan filter "Di bawah            Alt + S                         OS-
+                                   minimum"
+ Kartu piutang jatuh tempo         Membuka BO-11 dengan filter jatuh tempo          Enter pada kartu                OS-
+ Strip stok negatif                Membuka BO-05 dengan filter "Ditinjau            Enter pada angka                OS-
+                                   (negatif)"
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Data hari ini dengan tanggal dan jam "Diperbarui 14:32".
+ Memuat               Kerangka abu-abu (skeleton) menggantikan kartu dan grafik; tombol aksi nonaktif sampai data tampil.
+ Kosong               Belum ada transaksi: kartu "Rp 0", grafik "Belum ada penjualan 7 hari terakhir."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Peringatan stok lebih dari 4: tabel menampilkan 4 teratas dan tombol "Lihat Semua Stok".
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                           Pesan yang tampil
+ Pemuatan lebih dari 10 detik [Usulan]             Dashboard masih dimuat. Anda dapat membuka menu lain.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                 Then
+ K-1     Ada 12 barang di bawah minimum         Owner membuka Dashboard              Kartu menunjukkan "12 barang" dan
+                                                                                     tabel menampilkan 4 barang paling kritis
+ K-2     Owner menekan "Lihat Semua             Halaman berpindah                    BO-05 terbuka dengan filter "Di bawah
+         Stok"                                                                       minimum" aktif
+ K-3     Server tidak terjangkau                Pengguna membuka Dashboard           Banner error tampil dan tombol "Muat
+                                                                                     Ulang" tersedia
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 40 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                           Lampiran Kontrak
+
+
+
+
+BO-03 Barang
+ Tujuan                Mengelola master barang: kode, nama, kategori, satuan dasar, stok minimum, foto, dan satuan jual
+                       bawaan.
+ Aplikasi              Back-Office                                  Prioritas rilis   Rilis 1
+ Perangkat             Windows PC (browser), desktop;               Hak akses         Owner, Supervisor
+                       Landscape
+ Fitur RAB             8 Multi-Satuan Desimal dan HPP Average; 7 Manajemen Multi-Gudang 2 Lokasi; 11 Pembelian, Retur,
+                       dan Komisi Sales; 12 Impor Data Massal Excel
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-03. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Bilah cari dan filter                      tinggi 48 px, ada tombol "Impor Excel"
+   2      Tabel barang                               lebar 49% area isi, baris 47 px, 50 baris per halaman
+   3      Panel Form barang                          lebar 39% area isi
+   4      Kolom HPP rata-rata                        hanya baca, hanya Owner dan Supervisor
+   5      Satuan jual bawaan dan opsi pecahan        tinggi 60 px
+
+KOMPONEN DAN DATA
+
+ Komponen                     Format dan perilaku                                               Sumber data
+ Tabel                        Kode, Nama barang, Kategori, Satuan dasar, Stok, Min;             Master barang [Dari dokumen klien]
+                              3.500 baris
+ Kode barang                  Unik, 3 sampai 20 karakter                                        Masukan
+ Foto                         Rasio 3:2, maksimal 2 MB [Usulan], tanpa foto tampil kotak        Unggahan
+                              "Foto produk"
+ Stok minimum                 Per gudang (Display dan Besar), angka desimal                     Masukan
+ HPP rata-rata                "Rp 1.337.000" per satuan dasar                                   Perhitungan HPP Average
+ Boleh dijual pecahan         Ya atau Tidak                                                     Masukan
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 41 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                    Hasil                                            Pintasan papan ketik         Peran O S K
+                                                                                  (PC)
+ Cari                            Mencari kode, nama, atau barcode                 / (garis miring)                 OS-
+ Tambah Barang                   Mengosongkan form untuk barang baru              Ctrl + N                         OS-
+ Impor Excel                     Membuka BO-15                                    Alt + I                          OS-
+ Simpan Barang                   Menyimpan; toast "Barang tersimpan."             Ctrl + S                         OS-
+ Nonaktifkan Barang              Menyembunyikan dari POS; barang tidak dihapus Alt + D                             O--
+                                 bila punya riwayat
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Tabel halaman 1, form menampilkan barang pertama.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan baris tabel (8 baris); tombol aksi nonaktif sampai data
+                      tampil.
+ Kosong               "Belum ada barang. Tambah barang atau gunakan Impor Excel."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          3.500 barang dipaginasi 50 baris; penunjuk "Halaman 1 dari 70"; pencarian menyaring dalam 300 ms
+                      [Usulan].
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Kode kosong                                      Kode barang wajib diisi.
+ Kode sudah dipakai                               Kode barang sudah dipakai.
+ Nama kosong                                      Nama barang wajib diisi.
+ Satuan dasar belum dipilih                       Satuan dasar wajib dipilih.
+ Stok minimum negatif                             Stok minimum tidak boleh negatif.
+ Foto lebih dari 2 MB [Usulan]                    Ukuran foto maksimal 2 MB.
+
+PERILAKU SCANNER BARCODE
+Kolom cari menerima fokus saat layar terbuka. Pindai barcode: tabel menyaring ke barang itu dan form terisi. Pindai berulang:
+tidak mengubah apa pun selain menyorot ulang barang.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                   Then
+ K-1     Owner membuka formulir kosong         Owner mengisi data wajib lalu          Barang tersimpan, muncul di tabel, dan
+                                               menekan Simpan Barang                  tersedia di POS-02 setelah sinkron
+ K-2     Kode barang sudah ada                 Pengguna menekan Simpan Barang         Pesan "Kode barang sudah dipakai."
+                                                                                      tampil dan data tidak tersimpan
+ K-3     Pengguna berperan Supervisor          Supervisor melihat kolom HPP           HPP tampil hanya baca; Kasir tidak
+         membuka form                                                                 punya akses ke layar ini
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 42 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+BO-04 Satuan dan Harga Bertingkat
+ Tujuan               Menentukan satuan bertingkat (contoh Sak ke Kg, Roll ke Meter) beserta harga Eceran, Grosir, dan
+                      Kontraktor untuk setiap satuan.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 1
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner mengubah; Supervisor melihat
+                      Landscape                                                         [Asumsi A-19]
+
+ Fitur RAB            8 Multi-Satuan Desimal dan HPP Average
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-04. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Pemilih barang                            lebar 468 px, tinggi 48 px
+   2      Tabel satuan dan konversi                 lebar 46% area isi, baris 43 px
+   3      Kartu Nilai persediaan                    lebar 51% area isi, tinggi 250 px, hanya baca
+   4      Tabel harga per tier                      lebar penuh area isi, baris 47 px
+   5      Tombol Batal dan Simpan Harga             tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Satuan                     Nama satuan; satu ditandai "(dasar)"                                  Master barang
+ Isi (satuan dasar)         Desimal, maksimal 3 angka di belakang koma, contoh "0,25"             Masukan
+ Barcode per satuan         Opsional, 8 sampai 14 digit                                           Masukan
+ Harga tier                 "Rp 1.337.000" untuk Eceran, Grosir, Kontraktor per satuan            Masukan
+ Margin Eceran              Persentase dari harga dan HPP; hanya Owner dan Supervisor             Perhitungan
+ HPP per satuan dasar       "Rp 1.337.000"; metode HPP Average [Dari dokumen klien]               Perhitungan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 43 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                      Hasil                                                  Pintasan papan ketik       Peran O S K
+                                                                                          (PC)
+ Tambah Satuan                     Menambah baris satuan baru                             Ctrl + N                       O--
+ Simpan Harga                      Menyimpan satuan dan harga; riwayat                    Ctrl + S                       O--
+                                   perubahan harga tercatat di Log Aktivitas
+ Batal                             Mengembalikan isian ke data tersimpan                  Esc                            OS-
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Barang terakhir dibuka terpilih; semua kolom hanya baca sampai diklik.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel satuan dan harga; tombol aksi nonaktif sampai data
+                      tampil.
+ Kosong               "Barang ini belum punya satuan. Klik Tambah Satuan."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Supervisor melihat semua kolom tanpa tombol Simpan Harga dan Tambah Satuan. Untuk Kasir: Menu
+ ditolak              tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak akses ke
+                      halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Barang dengan lebih dari 6 satuan: tabel bergulir di dalam kartu.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                            Pesan yang tampil
+ Isi satuan 0 atau kosong                           Isi satuan harus lebih dari 0.
+ Nama satuan ganda                                  Nama satuan sudah dipakai pada barang ini.
+ Harga kosong atau 0                                Harga wajib diisi dan lebih dari 0.
+ Harga Grosir lebih tinggi dari Eceran [Usulan]     Harga Grosir lebih tinggi dari Eceran. Periksa kembali.
+ Harga di bawah HPP                                 Harga di bawah HPP satuan ini. Simpan tetap diperbolehkan setelah Anda
+                                                    mengonfirmasi.
+
+PERILAKU SCANNER BARCODE
+Fokus di pemilih barang; pindai barcode memilih barang itu. Pindai barcode satuan memilih barang dan menyorot baris
+satuannya.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                    When                                     Then
+ K-1     Barang punya satuan dasar Sak            Owner menambah satuan Kg                 Satuan Kg tersedia di POS-03 dengan
+                                                  dengan isi 0,02 lalu mengisi tiga        harga sesuai tier
+                                                  harga dan menyimpan
+ K-2     Harga Eceran diisi Rp 0                  Owner menekan Simpan Harga               Pesan "Harga wajib diisi dan lebih dari
+                                                                                           0." tampil
+ K-3     Supervisor membuka layar                 Supervisor melihat tabel harga           Tabel hanya baca dan tombol simpan
+                                                                                           tidak tampil
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 44 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                               Lampiran Kontrak
+
+
+
+
+BO-05 Stok per Gudang
+ Tujuan                Melihat stok setiap barang di Gudang Display dan Gudang Besar, termasuk peringatan stok minimum
+                       dan stok negatif yang perlu ditinjau.
+ Aplikasi              Back-Office                                  Prioritas rilis      Rilis 2
+ Perangkat             Windows PC (browser), desktop;               Hak akses            Owner, Supervisor
+                       Landscape
+ Fitur RAB             7 Manajemen Multi-Gudang 2 Lokasi; 11 Pembelian, Retur, dan Komisi Sales
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-05. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Chip gudang dan filter                     tinggi 40 px
+   2      Tabel stok                                 lebar penuh area isi, baris 50 px
+   3      Tombol Mutasi Stok, Ekspor PDF,            tinggi 54 px
+          Ekspor Excel
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                   Sumber data
+ Tabel                       Kode, Nama barang, Display, Besar, Total, Satuan dasar,               Stok per gudang
+                             Min, Status
+ Status                      "Aman", "Di bawah minimum", "Ditinjau (negatif)"; ikon dan            Stok dibanding minimum
+                             teks, bukan hanya warna
+ Angka stok                  Desimal berkoma, contoh "52,5"                                        Perhitungan mutasi
+
+AKSI
+
+ Label persis                      Hasil                                              Pintasan papan ketik              Peran O S K
+                                                                                      (PC)
+ Chip gudang                       Menyaring kolom dan baris per gudang               Panah kiri dan kanan                 OS-
+ Di bawah minimum                  Menyaring barang di bawah stok minimum             Alt + M                              OS-
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 45 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                        Lampiran Kontrak
+
+
+
+
+ Label persis                   Hasil                                               Pintasan papan ketik        Peran O S K
+                                                                                    (PC)
+ Mutasi Stok                    Membuka BO-06                                       Alt + T                         OS-
+ Ekspor PDF                     Mengunduh tabel tersaring sebagai PDF siap          Alt + P                         OS-
+                                cetak
+ Ekspor Excel                   Mengunduh tabel tersaring sebagai .xlsx             Alt + X                         OS-
+ Tandai Sudah Ditinjau (pada Mencatat peninjauan dan menghapus tanda;               Enter pada baris                OS-
+ baris negatif)              tercatat di BO-21
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Chip "Semua" aktif, urut nama barang.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel stok (8 baris); tombol aksi nonaktif sampai data
+                      tampil.
+ Kosong               "Tidak ada barang yang cocok dengan filter."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol ekspor tetap aktif; tombol tandai nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          3.500 baris dipaginasi 50 baris; ekspor memuat seluruh hasil filter.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Ekspor tanpa baris hasil                         Tidak ada data untuk diekspor.
+ Tandai peninjauan stok yang masih negatif        Stok masih negatif. Lakukan opname atau penerimaan barang terlebih
+                                                  dahulu.
+
+PERILAKU SCANNER BARCODE
+Kolom cari menerima fokus; pindai barcode menyaring ke barang itu. Pindai berulang menyorot baris yang sama.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                   Then
+ K-1     Stok barang B0002 di Display 3 dan    Supervisor membuka BO-05               Baris B0002 berstatus "Di bawah
+         minimum 5                                                                    minimum" dengan ikon dan teks
+ K-2     Transaksi offline membuat stok        Supervisor membuka BO-05 dan           Baris B0003 tampil "Ditinjau (negatif)"
+         B0003 menjadi -2,0                    memilih filter negatif                 dan ikut di strip BO-02
+ K-3     Supervisor menekan Ekspor Excel       Unduhan selesai                        Berkas .xlsx hanya memuat stok Gudang
+         pada filter Gudang Besar                                                     Besar
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                   Halaman 46 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+
+BO-06 Mutasi Antar Gudang
+ Tujuan               Memindahkan stok antara Gudang Besar dan Gudang Display secara real-time dan mencatatnya di kartu
+                      stok.
+ Aplikasi             Back-Office                                   Prioritas rilis   Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses         Owner, Supervisor
+                      Landscape
+ Fitur RAB            7 Manajemen Multi-Gudang 2 Lokasi
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-06. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Form kepala mutasi                         4 kolom, tinggi 48 px
+   2      Kolom cari barang                          lebar 540 px
+   3      Tabel item mutasi                          lebar penuh, baris 47 px
+   4      Tombol Batal dan Simpan Mutasi             tinggi 61 px
+   5      Riwayat mutasi terakhir                    tinggi 140 px, 5 baris
+
+KOMPONEN DAN DATA
+
+ Komponen                     Format dan perilaku                                               Sumber data
+ Gudang asal dan tujuan       Pilihan "Gudang Display" atau "Gudang Besar"; tidak boleh         Master gudang
+                              sama
+ Item                         Kode, Nama, Stok asal, Jumlah mutasi, Satuan                      Stok
+ Jumlah mutasi                Desimal, maksimal 3 angka di belakang koma                        Masukan
+ No. Mutasi                   "M-0001" otomatis                                                 Penomoran
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 47 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                         Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                                 Pintasan papan ketik       Peran O S K
+                                                                                      (PC)
+ Hapus (baris)                  Menghapus item dari daftar mutasi                     Delete                         OS-
+ Simpan Mutasi                  Menyimpan, memindahkan stok seketika, toast           Ctrl + S                       OS-
+                                "Mutasi M-0002 tersimpan."
+ Batal                          Mengosongkan form setelah konfirmasi                  Esc                            OS-
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Asal "Gudang Besar", tujuan "Gudang Display", tanggal hari ini, tabel kosong.
+ Memuat               Setelah Simpan: "Menyimpan..." maksimal 3 detik.
+ Kosong               Tabel item: "Belum ada barang. Cari atau pindai barang untuk dimutasi." Riwayat: "Belum ada mutasi."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Lebih dari 30 item: tabel bergulir dan penunjuk jumlah baris.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Gudang asal sama dengan tujuan                   Gudang asal dan tujuan tidak boleh sama.
+ Jumlah 0 atau kosong                             Jumlah harus lebih dari 0.
+ Jumlah melebihi stok asal                        Jumlah melebihi stok gudang asal (40,0 Sak).
+ Tabel kosong saat simpan                         Tambahkan minimal satu barang.
+
+PERILAKU SCANNER BARCODE
+Kolom cari berfokus. Pindai menambah barang ke tabel dengan jumlah 1 satuan sesuai barcode; pindai ulang menambah 1
+pada baris yang sama.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                    Then
+ K-1     Stok B0001 di Gudang Besar 40,0       Supervisor memindahkan 10,0 ke          Stok Besar menjadi 30,0, Display
+                                               Display lalu menekan Simpan             bertambah 10,0, dan kartu stok
+                                               Mutasi                                  mencatat M-nomor baru
+ K-2     Supervisor mengisi jumlah 50          Menekan Simpan Mutasi                   Pesan "Jumlah melebihi stok gudang
+         padahal stok 40                                                               asal (40,0 Sak)." tampil dan stok tidak
+                                                                                       berubah
+ K-3     Mutasi tersimpan                      Pengguna membuka BO-21                  Log mencatat pengguna, waktu,
+                                                                                       perangkat, IP, dan nomor mutasi
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                     Halaman 48 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+BO-07 Opname Stok
+ Tujuan               Mencocokkan stok fisik hasil hitung dengan stok sistem, lalu menerapkan penyesuaian per gudang.
+ Aplikasi             Back-Office                                   Prioritas rilis      Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses            Owner, Supervisor
+                      Landscape
+ Fitur RAB            7 Manajemen Multi-Gudang 2 Lokasi; 14 Otomatisasi Akuntansi dan Laporan
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-07. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No       Zona                                      Ukuran dan posisi
+   1       Kepala opname                             gudang, tanggal, status; tinggi 48 px
+   2       Kolom cari atau pindai                    lebar 360 px
+   3       Tabel opname                              baris 50 px
+   4       Tombol Simpan Draf Opname dan             tinggi 61 px
+           Terapkan Penyesuaian Stok
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                   Sumber data
+ Tabel                       Kode, Nama barang, Stok sistem, Stok fisik (isian), Selisih,          Stok per gudang
+                             Catatan
+ Selisih                     Stok fisik dikurangi stok sistem, tanda "-" untuk kurang              Perhitungan
+ Status                      "Draf" atau "Diterapkan"                                              Dokumen opname
+
+AKSI
+
+ Label persis                    Hasil                                                  Pintasan papan ketik         Peran O S K
+                                                                                        (PC)
+ Simpan Draf Opname              Menyimpan hasil hitung tanpa mengubah stok             Ctrl + S                         OS-
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 49 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+ Label persis                   Hasil                                                    Pintasan papan ketik       Peran O S K
+                                                                                         (PC)
+ Terapkan Penyesuaian Stok      Konfirmasi lalu mengubah stok sistem sesuai              Ctrl + Enter                   OS-
+                                stok fisik dan membuat jurnal selisih [Asumsi A-
+                                13]
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Draf baru untuk gudang pertama; stok fisik kosong.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel opname; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Belum ada barang di daftar opname. Cari atau pindai barang."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Opname penuh 3.500 barang dipaginasi 50 baris dengan penghitung "Terisi 120 dari 3.500".
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Stok fisik kosong pada baris yang dipilih        Isi stok fisik atau hapus baris ini.
+ Stok fisik negatif                               Stok fisik tidak boleh negatif.
+ Terapkan tanpa ada selisih                       Tidak ada selisih untuk diterapkan.
+ Opname sudah diterapkan lalu diubah              Opname yang sudah diterapkan tidak dapat diubah.
+
+PERILAKU SCANNER BARCODE
+Kolom cari berfokus. Pindai menyorot baris barang dan memfokuskan kolom Stok fisik; pindai berulang menambah 1 satuan
+dasar ke stok fisik baris itu.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                      Then
+ K-1     Stok sistem 3,0 dan hasil hitung 2,0   Supervisor mengisi 2,0 lalu               Selisih -1,0 tercatat, stok sistem menjadi
+                                                menerapkan                                2,0, dan kartu stok mencatat
+                                                                                          penyesuaian
+ K-2     Supervisor menekan Terapkan            Tombol ditekan                            Pesan "Tidak ada selisih untuk
+         tanpa selisih                                                                    diterapkan." tampil
+ K-3     Opname diterapkan                      Pengguna membuka BO-21                    Log memuat nama pengguna dan jumlah
+                                                                                          barang yang disesuaikan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 50 dari 107
+

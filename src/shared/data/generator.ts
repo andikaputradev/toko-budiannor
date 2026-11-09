@@ -1,5 +1,6 @@
 import { formatDocumentNumber } from '../format';
 import { BRANDS, BUSINESS_CORES, BUSINESS_PREFIXES, FAMILIES, PERSON_NAMES } from './catalog';
+import { buildInvoiceLines } from './invoice-lines';
 import { createRandom, type Random } from './prng';
 import { unitPrice } from './units';
 import type {
@@ -11,6 +12,7 @@ import type {
   Dataset,
   ExpenseRecord,
   HeldBill,
+  PayableInvoice,
   PaymentMethod,
   Product,
   ReceivableInvoice,
@@ -145,6 +147,29 @@ function createProduct(index: number, random: Random): Product {
     display = Math.min(display, Math.floor(minStock / 3));
     besar = Math.min(besar, Math.floor(minStock / 2));
   }
+  const rakLetters = ['A', 'B', 'C', 'D'];
+  const rakNumber = ((index * 17) % 350) + 1;
+  const rak = `${String(rakNumber).padStart(3, '0')}${rakLetters[index % rakLetters.length] ?? 'A'}`;
+  const weight =
+    family.baseUnit === 'Kg' ? 1000 : family.baseUnit === 'Sak' ? 40000 : ((index % 20) + 1) * 150;
+  const commPercent = (index % 3) + 1;
+  const commNominal = roundPrice(basePrice * (commPercent / 100));
+  const hasPromo = index % 4 === 0;
+  const promoPercent = hasPromo ? 10 + (index % 15) : 0;
+  const promoNominal = hasPromo ? roundPrice(basePrice * (promoPercent / 100)) : 0;
+  const suppliers = [
+    'PT Sekawan Jaya',
+    'PT Nippon Paint Indonesia',
+    'PT Rucika Mitra',
+    'PT Semen Gresik Distribusi',
+    'CV Makmur Sejahtera',
+  ];
+  const supplierName = suppliers[index % suppliers.length];
+  const lastPurchasePrice = roundPrice(basePrice * 0.74);
+  const hppAvg = roundPrice(basePrice * 0.78);
+  const incomingList = [0, 0, 12, 24, 60, 120];
+  const incoming = incomingList[index % incomingList.length];
+
   return {
     id: `P-${String(index + 1).padStart(4, '0')}`,
     code: `B${String(index + 1).padStart(4, '0')}`,
@@ -159,6 +184,27 @@ function createProduct(index: number, random: Random): Product {
     hpp: roundPrice(basePrice * 0.78),
     minStock,
     stock: { display, besar },
+    rak,
+    weight,
+    salesCommission: { percent: commPercent, nominal: commNominal },
+    promo: { percent: promoPercent, nominal: promoNominal },
+    notes: index % 5 === 0 ? 'Barang stok banyak, harga diskon' : 'Stok reguler toko',
+    supplierName,
+    lastPurchaseDate: '2026-09-12',
+    lastPurchasePrice,
+    hppAvg,
+    incoming,
+    minByWarehouse: {
+      display: Math.max(1, Math.round(minStock * 0.4)),
+      besar: Math.max(1, Math.round(minStock * 0.6)),
+    },
+    initialStock: {
+      date: '2026-01-01',
+      quantity: display + besar,
+      unit: family.baseUnit,
+      unitPrice: roundPrice(basePrice * 0.78),
+      warehouse: 'display',
+    },
   };
 }
 
@@ -226,6 +272,8 @@ function createCustomers(random: Random, base: Date): Customer[] {
       tier,
       limit,
       invoices: createInvoices(index % 5, limit, base, random, sequence),
+      // Sebagian pelanggan menitipkan uang (deposit); nilainya dari indeks agar benih acak tetap sama.
+      ...(index % 7 === 3 ? { deposit: ((index % 4) + 1) * 250000 } : {}),
     };
   });
 }
@@ -330,13 +378,58 @@ const SUPPLIER_NAMES: readonly string[] = [
   'UD Kayu Jati Makmur',
 ];
 
-function createSuppliers(random: Random): Supplier[] {
-  return SUPPLIER_NAMES.map((name, index) => ({
-    id: `V-${String(index + 1).padStart(3, '0')}`,
-    name,
-    phone: `08${String(random.int(100000000, 999999999))}`,
-    payable: index % 2 === 0 ? random.int(1, 8) * 1000000 : 0,
-  }));
+// Faktur pembelian supplier berutang: jumlah sisa seluruh faktur sama dengan payable supplier.
+// Supplier tanpa hutang memiliki satu faktur lunas sebagai riwayat.
+function createSupplierInvoices(
+  index: number,
+  payable: number,
+  products: readonly Product[],
+  base: Date,
+  random: Random,
+): PayableInvoice[] {
+  const make = (order: number, remaining: number, paid: number, age: number): PayableInvoice => {
+    const id = `FB2610${String(1100 + index * 10 + order)}`;
+    const amount = remaining + paid;
+    return {
+      id,
+      issuedAt: isoDate(base, -age),
+      dueAt: isoDate(base, 30 - age),
+      amount,
+      paid,
+      lines: buildInvoiceLines(id, amount, products, (product, unit) =>
+        Math.round(product.hpp * unit.factor),
+      ),
+    };
+  };
+  if (payable <= 0) {
+    return [make(0, 0, random.int(1, 5) * 1000000, random.int(35, 60))];
+  }
+  const count = random.int(1, 3);
+  const chunk = Math.floor(payable / count / 1000) * 1000;
+  return Array.from({ length: count }, (_, order) => {
+    const remaining = order === count - 1 ? payable - chunk * (count - 1) : chunk;
+    const paid = random.next() < 0.35 ? Math.round((remaining * 0.25) / 1000) * 1000 : 0;
+    return make(order, remaining, paid, random.int(8, 44));
+  });
+}
+
+function createSuppliers(
+  random: Random,
+  invoiceRandom: Random,
+  products: readonly Product[],
+  base: Date,
+): Supplier[] {
+  return SUPPLIER_NAMES.map((name, index) => {
+    const phone = `08${String(random.int(100000000, 999999999))}`;
+    const payable = index % 2 === 0 ? random.int(1, 8) * 1000000 : 0;
+    return {
+      id: `V-${String(index + 1).padStart(3, '0')}`,
+      name,
+      phone,
+      payable,
+      invoices: createSupplierInvoices(index, payable, products, base, invoiceRandom),
+    };
+  });
 }
 
 const EXPENSE_PLAN: readonly (readonly [
@@ -459,7 +552,7 @@ export function generateDataset(seed = DEFAULT_SEED, referenceDate = REFERENCE_D
     sales,
     queue: createQueue(sales),
     dailyRevenue,
-    suppliers: createSuppliers(createRandom(seed + 5)),
+    suppliers: createSuppliers(createRandom(seed + 5), createRandom(seed + 31), products, base),
     expenses: createExpenses(createRandom(seed + 6), base),
     approvals: createApprovals(bills, sales, base),
   };

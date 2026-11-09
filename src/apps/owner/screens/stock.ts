@@ -1,34 +1,122 @@
+import '../../../styles/mobile-owner.css';
 import { el } from '../../../shared/dom';
-import { formatDecimal, formatTime } from '../../../shared/format';
-import { icon } from '../../../shared/icons';
+import { formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { label, message, type LabelKey } from '../../../shared/messages';
-import type { Product, WarehouseId } from '../../../shared/data/types';
-import { fromBase, totalStock } from '../../../shared/data/units';
-import { matchesFilter, stockStatus, type WarehouseFilter } from '../../../shared/domain/stock';
+import { TIERS, type Product, type Tier, type WarehouseId } from '../../../shared/data/types';
+import { breakdownStock, fromBase } from '../../../shared/data/units';
+import { tierRows, warehouseTone } from '../../../shared/domain/product-view';
+import { matchesFilter, splitMin, type WarehouseFilter } from '../../../shared/domain/stock';
 import { createButton } from '../../../shared/ui/button';
 import { createChip } from '../../../shared/ui/chip';
 import { createEmptyState } from '../../../shared/ui/empty';
 import { createSelectField, createTextField } from '../../../shared/ui/field';
+import { openPhotoViewer } from '../../../shared/ui/image-viewer';
+import { createMobBadge } from '../../../shared/ui/mobile-card';
+import { openModal } from '../../../shared/ui/modal';
+import { createProductPhoto } from '../../../shared/ui/product-photo';
+import { createTierTable } from '../../../shared/ui/tier-table';
 import { showToast } from '../../../shared/ui/toast';
+import { failureText } from '../failure';
 import { PAGE_SIZE } from '../domain/constants';
 import { preferredUnit } from '../domain/orders';
 import type { OwnerSession } from '../owner-session';
 import { findProducts } from '../search';
 import type { ScreenHandle } from '../screen';
 import { openSheet } from '../sheet';
+import type { OwnerShell } from '../shell';
 
 const DEBOUNCE_MS = 300;
+const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
+  eceran: 'tierEceran',
+  grosir: 'tierGrosir',
+  kontraktor: 'tierKontraktor',
+};
 
 const WAREHOUSES: readonly (readonly [WarehouseFilter, LabelKey])[] = [
   ['semua', 'semua'],
-  ['display', 'gudangDisplay'],
-  ['besar', 'gudangBesar'],
+  ['display', 'stkChipToko'],
+  ['besar', 'stkChipGudang'],
 ];
 
-export function renderStock(session: OwnerSession, go: (path: string) => void): ScreenHandle {
+function stockText(product: Product, warehouse: WarehouseId): string {
+  return `${formatDecimal(product.stock[warehouse], 3, 0)} ${product.baseUnit}`;
+}
+
+// Satu kolom stok: judul kecil (STOK TOKO atau STOK GUDANG) dan lencana berwarna sesuai status.
+function stockBadge(product: Product, warehouse: WarehouseId): HTMLElement {
+  return el(
+    'span',
+    { className: 'trx-stk' },
+    el('span', {
+      className: 'trx-stk__label',
+      text: label(warehouse === 'display' ? 'stkLabelToko' : 'stkLabelGudang'),
+    }),
+    createMobBadge(stockText(product, warehouse), warehouseTone(product, warehouse)),
+  );
+}
+
+// Tabel harga ringkas pada kartu: satu baris per satuan jual, satu kolom per tier (dalam Rupiah).
+function priceTable(product: Product): HTMLElement {
+  return el(
+    'table',
+    { className: 'trx-prices' },
+    el('caption', { className: 'visually-hidden', text: label('hargaBertingkat') }),
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        el('th', { text: label('kolomSatuanJual'), attrs: { scope: 'col' } }),
+        ...TIERS.map((tier) =>
+          el('th', {
+            className: 'is-end',
+            text: label(TIER_LABELS[tier]),
+            attrs: { scope: 'col' },
+          }),
+        ),
+      ),
+    ),
+    el(
+      'tbody',
+      {},
+      ...tierRows(product).map((row) =>
+        el(
+          'tr',
+          {},
+          el(
+            'th',
+            { attrs: { scope: 'row' } },
+            el('strong', { text: row.unit }),
+            row.factor === 1
+              ? false
+              : el('small', {
+                  text: label('satuanSama', {
+                    faktor: formatDecimal(row.factor),
+                    dasar: product.baseUnit,
+                  }),
+                }),
+          ),
+          ...TIERS.map((tier) =>
+            el('td', { className: 'is-end', text: formatDecimal(row.prices[tier], 0) }),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+export function renderStock(
+  session: OwnerSession,
+  go: (path: string) => void,
+  query?: URLSearchParams,
+  shell?: OwnerShell,
+): ScreenHandle {
+  shell?.setTitle(label('stkJudul'));
+  shell?.setBack(undefined);
   const store = session.store;
   let warehouse: WarehouseFilter = 'semua';
-  let below = false;
+  let below = query?.get('filter') === 'minimum';
   let text = '';
   let shown = PAGE_SIZE;
   let timer: number | undefined;
@@ -39,7 +127,7 @@ export function renderStock(session: OwnerSession, go: (path: string) => void): 
       type: 'search',
       autocomplete: 'off',
       'aria-label': label('cari'),
-      placeholder: label('cariPlaceholderOwner'),
+      placeholder: label('stkCariPlaceholder'),
     },
   });
   const hint = el('p', { className: 'own-hint', attrs: { role: 'alert' } });
@@ -102,67 +190,129 @@ export function renderStock(session: OwnerSession, go: (path: string) => void): 
           showToast({ kind: 'success', text: message('MSG-012', { nomor: result.number }) });
           return undefined;
         }
-        return 'messageId' in result
-          ? message(result.messageId, result.values)
-          : label(result.labelKey);
+        return failureText(result);
       },
     });
   };
 
-  const card = (product: Product): HTMLElement => {
-    const status = stockStatus(product, 'semua');
-    const badge =
-      status === 'aman'
-        ? false
-        : el(
-            'span',
-            {
-              className:
-                status === 'minimum' ? 'own-status own-status--warn' : 'own-status own-status--bad',
-            },
-            icon(status === 'minimum' ? 'triangle-alert' : 'circle-x'),
-            el('span', {
-              text: label(status === 'minimum' ? 'diBawahMinimum' : 'ditinjauNegatif'),
-            }),
-          );
+  const zoom = (product: Product): void => {
+    openPhotoViewer({ product });
+  };
+
+  // Lembar Detail Barang: foto, stok tiap gudang, harga bertingkat, HPP, dan aksi.
+  const openDetail = (product: Product): void => {
+    const current = (): Product =>
+      store.getState().data.products.find((item) => item.id === product.id) ?? product;
+    const stockBox = (key: WarehouseId): HTMLElement => {
+      const item = current();
+      const parts = breakdownStock(item, item.stock[key])
+        .map((part) => `${formatDecimal(part.quantity, 3, 0)} ${part.unit}`)
+        .join(' + ');
+      return el(
+        'div',
+        { className: 'trx-detail-stock' },
+        stockBadge(item, key),
+        el('span', {
+          className: 'mob-muted',
+          text: label('stkMinimum', { nilai: formatDecimal(splitMin(item)[key], 3, 0) }),
+        }),
+        parts === '' ? false : el('span', { className: 'mob-muted', text: parts }),
+      );
+    };
     const mutate = createButton({
       text: label('buatMutasi'),
       variant: 'secondary',
       icon: 'arrow-left-right',
-      onClick: () => {
-        openMutation(product);
-      },
     });
-    mutate.setAttribute('aria-label', `${label('buatMutasi')} ${product.name}`);
-    const order = createButton({
-      text: label('buatPo'),
-      variant: 'secondary',
-      icon: 'clipboard-list',
-      onClick: () => {
-        go(`/owner/transaksi?tab=po&barang=${encodeURIComponent(product.code)}`);
-      },
-    });
-    order.setAttribute('aria-label', `${label('buatPo')} ${product.name}`);
-    return el(
-      'article',
-      { className: 'own-card own-card--stock' },
-      el('h2', { className: 'own-card__name', text: product.name }),
-      el('p', { className: 't-label', text: `${product.code} · ${product.baseUnit}` }),
+    const order = createButton({ text: label('buatPo'), icon: 'clipboard-list' });
+    const item = current();
+    const body = el(
+      'div',
+      { className: 'trx-detail-sheet' },
+      el(
+        'div',
+        { className: 'trx-detail-sheet__head' },
+        createProductPhoto(item, 'lg', {
+          onZoom: () => {
+            zoom(item);
+          },
+        }),
+        el(
+          'dl',
+          { className: 'trx-facts' },
+          el('dt', { text: label('kodeBarang') }),
+          el('dd', { text: item.code }),
+          el('dt', { text: label('merkBarang') }),
+          el('dd', { text: item.brand }),
+          el('dt', { text: label('kategoriBarang') }),
+          el('dd', { text: item.category }),
+        ),
+      ),
+      el('div', { className: 'trx-detail-stocks' }, stockBox('display'), stockBox('besar')),
+      createTierTable(item),
       el(
         'p',
-        { className: 'own-stock-line' },
-        el('span', {
-          text: label('stokBarisDisplay', { nilai: formatDecimal(product.stock.display, 3, 1) }),
-        }),
-        el('span', {
-          text: label('stokBarisBesar', { nilai: formatDecimal(product.stock.besar, 3, 1) }),
-        }),
-        el('strong', {
-          text: label('stokBarisTotal', { nilai: formatDecimal(totalStock(product), 3, 1) }),
+        { className: 'trx-hpp' },
+        el('span', { className: 'mob-muted', text: label('stkHpp', { satuan: item.baseUnit }) }),
+        el('strong', { text: formatRupiah(item.hpp) }),
+      ),
+      el('div', { className: 'trx-detail-actions' }, mutate, order),
+    );
+    const handle = openModal({
+      title: label('detailBarang'),
+      body,
+      actions: [{ text: label('tutup'), variant: 'secondary' }],
+    });
+    handle.dialog.classList.add('trx-dialog', 'trx-dialog--wide');
+    mutate.addEventListener('click', () => {
+      handle.close();
+      openMutation(item);
+    });
+    order.addEventListener('click', () => {
+      handle.close();
+      go(`/owner/transaksi?tab=po&barang=${encodeURIComponent(item.code)}`);
+    });
+  };
+
+  const card = (product: Product): HTMLElement => {
+    const open = el(
+      'button',
+      { className: 'trx-stock__open', attrs: { type: 'button' } },
+      el('span', { className: 'trx-stock__name', text: product.name }),
+      el('span', { className: 'trx-stock__code', text: `[${product.code}]` }),
+    );
+    open.addEventListener('click', () => {
+      openDetail(product);
+    });
+    return el(
+      'article',
+      { className: 'trx-stock' },
+      el(
+        'div',
+        { className: 'trx-stock__main' },
+        el('h2', { className: 'trx-stock__title' }, open),
+      ),
+      el(
+        'div',
+        { className: 'trx-stock__photo' },
+        createProductPhoto(product, 'md', {
+          onZoom: () => {
+            zoom(product);
+          },
         }),
       ),
-      badge,
-      el('div', { className: 'own-actions' }, mutate, order),
+      el(
+        'div',
+        { className: 'trx-stock__stocks' },
+        stockBadge(product, 'display'),
+        stockBadge(product, 'besar'),
+      ),
+      el(
+        'div',
+        { className: 'trx-stock__prices' },
+        el('p', { className: 'trx-stock__prices-title', text: label('stkHargaJual') }),
+        priceTable(product),
+      ),
     );
   };
 

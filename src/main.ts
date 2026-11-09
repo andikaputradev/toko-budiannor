@@ -4,9 +4,12 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/simulator.css';
 import { currentPath, navigate, onRouteChange } from './shared/router';
-import { mountSimulationPanel, reviewFlagFromLocation } from './shared/simulator/panel';
-import { installReviewBridge } from './shared/simulator/review-bridge';
 import { createSessionPersistence, createStore } from './shared/store/store';
+
+function reviewFlagFromLocation(search: string): boolean | undefined {
+  const value = new URLSearchParams(search).get('tinjau');
+  return value === '1' ? true : value === '0' ? false : undefined;
+}
 
 const root = document.getElementById('root');
 
@@ -62,8 +65,12 @@ const store = createStore({
   persistence: createSessionPersistence(),
   reviewMode: reviewFlagFromLocation(window.location.search) ?? false,
 });
-mountSimulationPanel(store);
-installReviewBridge(store);
+void import('./shared/simulator/panel').then((m) => {
+  m.mountSimulationPanel(store);
+});
+void import('./shared/simulator/review-bridge').then((m) => {
+  m.installReviewBridge(store);
+});
 
 onRouteChange((path) => {
   void render(path);

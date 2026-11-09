@@ -10,8 +10,11 @@ import {
   type Role,
   type Stock,
   type ApprovalRequest,
+  type DepositEntry,
   type PurchaseOrder,
+  type ReturnNote,
   type SalesOrder,
+  type Supplier,
 } from '../data/types';
 import { formatDocumentNumber, type DocumentKind } from '../format';
 import { round3 } from '../data/units';
@@ -47,6 +50,8 @@ export interface AppState extends Omit<Session, 'version' | 'stockOverrides'> {
   readonly approvals: readonly ApprovalRequest[];
   readonly salesOrders: readonly SalesOrder[];
   readonly purchaseOrders: readonly PurchaseOrder[];
+  readonly returnNotes: readonly ReturnNote[];
+  readonly depositEntries: readonly DepositEntry[];
   readonly counters: Readonly<Record<string, number>>;
 }
 
@@ -81,6 +86,7 @@ export interface Store {
   markReviewed(productId: string): void;
   reportQueue(count: number): void;
   saveCustomer(customer: Customer): void;
+  saveSupplier(supplier: Supplier): void;
   resolveApproval(
     id: string,
     status: 'disetujui' | 'ditolak',
@@ -92,6 +98,8 @@ export interface Store {
   addApproval(request: ApprovalRequest): void;
   markSalesOrderSynced(number: string): void;
   addPurchaseOrder(order: PurchaseOrder): void;
+  saveReturnNote(note: ReturnNote): void;
+  addDepositEntry(entry: DepositEntry): void;
   peekNumber(kind: DocumentKind): string;
   takeNumber(kind: DocumentKind): string;
   triggerLimitRejected(): ScenarioEvent | undefined;
@@ -216,6 +224,8 @@ export function createStore(options: StoreOptions = {}): Store {
   let edits: ReadonlyMap<string, Product> = new Map();
   let created: readonly Product[] = [];
   let customerEdits: ReadonlyMap<string, Customer> = new Map();
+  let supplierEdits: ReadonlyMap<string, Supplier> = new Map();
+  let addedSuppliers: readonly Supplier[] = [];
   const compose = (): Dataset => {
     const touched = Object.keys(overrides).length > 0 || edits.size > 0 || created.length > 0;
     const place = (product: Product): Product => {
@@ -232,6 +242,12 @@ export function createStore(options: StoreOptions = {}): Store {
         added.length === 0 && customerEdits.size === 0
           ? baseData.customers
           : [...baseData.customers, ...added].map((item) => customerEdits.get(item.id) ?? item),
+      suppliers:
+        supplierEdits.size === 0 && addedSuppliers.length === 0
+          ? baseData.suppliers
+          : [...baseData.suppliers, ...addedSuppliers].map(
+              (item) => supplierEdits.get(item.id) ?? item,
+            ),
     };
   };
   const pendingSeed = baseData.queue.filter((item) => item.status === 'menunggu').length;
@@ -251,6 +267,8 @@ export function createStore(options: StoreOptions = {}): Store {
     approvals: baseData.approvals,
     salesOrders: [],
     purchaseOrders: [],
+    returnNotes: [],
+    depositEntries: [],
     counters: INITIAL_COUNTERS,
   };
 
@@ -392,6 +410,17 @@ export function createStore(options: StoreOptions = {}): Store {
       state = { ...state, data: compose() };
       publish(false);
     },
+    saveSupplier: (supplier) => {
+      if (
+        !baseData.suppliers.some((item) => item.id === supplier.id) &&
+        !addedSuppliers.some((item) => item.id === supplier.id)
+      ) {
+        addedSuppliers = [...addedSuppliers, supplier];
+      }
+      supplierEdits = new Map(supplierEdits).set(supplier.id, supplier);
+      state = { ...state, data: compose() };
+      publish(false);
+    },
     resolveApproval: (id, status, by, at, note) => {
       state = {
         ...state,
@@ -422,6 +451,20 @@ export function createStore(options: StoreOptions = {}): Store {
     },
     addPurchaseOrder: (order) => {
       state = { ...state, purchaseOrders: [...state.purchaseOrders, order] };
+      publish(false);
+    },
+    saveReturnNote: (note) => {
+      const known = state.returnNotes.some((item) => item.id === note.id);
+      state = {
+        ...state,
+        returnNotes: known
+          ? state.returnNotes.map((item) => (item.id === note.id ? note : item))
+          : [...state.returnNotes, note],
+      };
+      publish(false);
+    },
+    addDepositEntry: (entry) => {
+      state = { ...state, depositEntries: [...state.depositEntries, entry] };
       publish(false);
     },
     peekNumber: (kind) => formatDocumentNumber(kind, (state.counters[kind] ?? 0) + 1),
@@ -474,6 +517,8 @@ export function createStore(options: StoreOptions = {}): Store {
       edits = new Map();
       created = [];
       customerEdits = new Map();
+      supplierEdits = new Map();
+      addedSuppliers = [];
       state = {
         role: 'owner',
         userId: userIdFor(baseData, 'owner'),
@@ -489,6 +534,8 @@ export function createStore(options: StoreOptions = {}): Store {
         approvals: baseData.approvals,
         salesOrders: [],
         purchaseOrders: [],
+        returnNotes: [],
+        depositEntries: [],
         counters: INITIAL_COUNTERS,
       };
       bus.emit('reset', { seed: baseData.seed });

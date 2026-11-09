@@ -28,7 +28,6 @@ import {
   watchScheme,
 } from './theme';
 import { renderLogin, type ScreenHandle } from './screens/login';
-import { renderPay } from './screens/pay';
 import { renderSell } from './screens/sell';
 
 export interface AppContext {
@@ -47,7 +46,10 @@ interface RouteEntry {
 const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/pos': { id: undefined, render: renderLogin },
   '/pos/jual': { id: 'POS-02', render: renderSell },
-  '/pos/bayar': { id: 'POS-04', render: renderPay },
+  '/pos/bayar': {
+    id: 'POS-04',
+    load: async () => (await import('./screens/pay')).renderPay,
+  },
   '/pos/bill': {
     id: 'POS-05',
     load: async () => (await import('./screens/bill')).renderBills,

@@ -15,7 +15,7 @@ import { createEventBus } from '../../shared/store/event-bus';
 import type { Store } from '../../shared/store/store';
 import { checkSalesLogin, createMemoryVault, type SalesVault } from './domain/auth';
 import { PRINTERS, SALES_DEVICE, SALES_IP, SESSION_DAYS, SYNC_STEP_MS } from './domain/constants';
-import { creditWarning, type CreditWarning } from './domain/credit';
+import { approvalWarning, belowListLines, type ApprovalWarning } from './domain/approval';
 
 export type QueueStatus = 'menunggu' | 'mengirim' | 'terkirim';
 
@@ -60,7 +60,7 @@ export interface Done {
 
 export type SaveResult =
   | { readonly ok: true; readonly number: string; readonly approval: boolean }
-  | { readonly ok: false; readonly warning: CreditWarning }
+  | { readonly ok: false; readonly warning: ApprovalWarning }
   | Failure;
 
 export type ApprovalView = 'tidak' | ApprovalStatus;
@@ -327,11 +327,18 @@ export function createSalesSession(store: Store, options: SalesSessionOptions = 
       }
       const draft = state.draft;
       const customer = data().customers.find((item) => item.id === draft.customerId);
-      const check = checkSalesOrder(draft, lookup, customer, now());
+      const check = checkSalesOrder(draft, lookup, customer, now(), state.catalogTier);
       if (check.kind === 'error') {
-        return { ok: false, messageId: check.messageId, values: check.values, line: check.line };
+        // Harga ubah nol memakai pesan harga umum, bukan pesan harga beli milik Purchase Order.
+        const messageId = check.messageId === 'MSG-080' ? 'MSG-066' : check.messageId;
+        return { ok: false, messageId, values: check.values, line: check.line };
       }
-      const warning = creditWarning(check.decision, customer, now());
+      const warning = approvalWarning({
+        decision: check.decision,
+        below: belowListLines(check.lines, lookup),
+        customer,
+        now: now(),
+      });
       if (warning !== undefined && saveOptions.requestApproval !== true) {
         return { ok: false, warning };
       }
@@ -344,12 +351,13 @@ export function createSalesSession(store: Store, options: SalesSessionOptions = 
         approvalId = `AP-${String(store.getState().approvals.length + 1)}`;
         store.addApproval({
           id: approvalId,
-          kind: 'piutang',
+          kind: warning.kind,
           status: 'menunggu',
           requestedBy: userId(),
           at: stamp(),
           reference: number,
-          amount: Math.max(0, check.total - check.downPayment),
+          amount:
+            warning.kind === 'piutang' ? Math.max(0, check.total - check.downPayment) : check.total,
           customerId: customer?.id,
           detail: warning.text,
           decidedBy: undefined,

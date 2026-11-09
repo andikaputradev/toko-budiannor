@@ -1,3 +1,5 @@
+import { icon } from '../../../shared/icons';
+import { openAppearanceSheet } from '../../../shared/ui/appearance';
 import { el, nextId } from '../../../shared/dom';
 import { label, message } from '../../../shared/messages';
 import { createBanner } from '../../../shared/ui/banner';
@@ -86,14 +88,31 @@ export function renderLogin(session: OwnerSession, go: (path: string) => void): 
     (username.value.trim() === '' ? username : password).focus();
   });
 
+  const themeButton = el(
+    'button',
+    {
+      className: 'own-icon-button mob-login-theme',
+      attrs: { type: 'button', 'aria-label': label('menuTema') },
+    },
+    icon('palette'),
+  );
+  themeButton.addEventListener('click', () => {
+    openAppearanceSheet();
+  });
+
   const element = el(
     'div',
     { className: 'own own--login' },
     banner,
+    themeButton,
     el(
       'main',
       { className: 'own-login' },
-      el('div', { className: 'own-login__logo', text: label('logoToko') }),
+      el(
+        'div',
+        { className: 'own-login__logo', attrs: { role: 'img', 'aria-label': label('logoToko') } },
+        icon('store'),
+      ),
       el('h1', { className: 'own-login__title', text: label('judulMonitoringOwner') }),
       el('p', { className: 't-label own-login__sub', text: label('aplikasiMobile') }),
       form,

@@ -1,0 +1,1134 @@
+/* Aliran B revisi mobile: Owner Stok, Transaksi, serta Piutang dan Hutang (awalan trx-).
+   Dimuat setelah mobile.css. Semua warna lewat token tema; tidak ada atribut style. */
+
+/* ===== Bilah atas: judul tidak boleh terpotong ===== */
+.own-top .own-chip {
+  justify-content: center;
+  width: var(--size-touch-target-min);
+  padding: 0;
+}
+
+.own-top .own-chip span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Pada layar detail (ada tombol kembali) hanya lonceng dan avatar yang tampil. */
+.own-top:has(.mob-back:not([hidden])) .own-chip,
+.own-top:has(.mob-back:not([hidden])) .own-top__tools > button.own-icon-button {
+  display: none;
+}
+
+.own-top__title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 20px;
+  line-height: 1.15;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ===== Kontras teks aksen pada latar accent-soft =====
+   accent-default pada accent-soft hanya 4,24 : 1 (oranye terang) dan 4,36 : 1 (terakota terang).
+   Nada pressed lolos 4,5 : 1 pada semua palet; pada mode gelap keduanya sama. */
+html:not([data-pos-scheme='gelap']) .mob-badge--info,
+html:not([data-pos-scheme='gelap']) .mob-card--info,
+html:not([data-pos-scheme='gelap']) .mob-avatar,
+html:not([data-pos-scheme='gelap']) .trx-tile--soft {
+  color: var(--color-accent-pressed);
+}
+
+/* ===== Judul bagian ===== */
+.trx-section {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  margin-top: var(--primitive-space-2);
+}
+
+.trx-section__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--primitive-font-weight-bold);
+  line-height: 1.3;
+}
+
+.trx-count {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.trx-hub > .trx-section:first-child {
+  margin-top: 0;
+}
+
+/* ===== Empat tombol besar Buat Transaksi ===== */
+.trx-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+}
+
+.trx-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  justify-content: center;
+  min-height: 104px;
+  padding: var(--primitive-space-3);
+  border: 1px solid transparent;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+}
+
+.trx-tile .icon {
+  width: 30px;
+  height: 30px;
+}
+
+.trx-tile--solid {
+  background: var(--color-accent-default);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--color-accent-default) 30%, transparent);
+  color: var(--color-text-on-accent);
+}
+
+.trx-tile--solid:active {
+  background: var(--color-accent-pressed);
+}
+
+.trx-tile--soft {
+  border-color: color-mix(in srgb, var(--color-accent-default) 35%, transparent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-default);
+}
+
+.trx-tile:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== Gelembung ikon ===== */
+.trx-bubble {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+}
+
+.trx-bubble--peringatan {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-fg);
+}
+
+.trx-bubble--sukses {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}
+
+.trx-bubble--info {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-default);
+}
+
+.trx-bubble--netral,
+.trx-bubble--bahaya {
+  background: var(--color-bg-table-header);
+  color: var(--color-text-primary);
+}
+
+/* ===== Kartu approval ===== */
+.trx-approval {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--primitive-space-3);
+  align-items: start;
+  padding: var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.05);
+}
+
+.trx-approval__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trx-approval__kind {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-semibold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.trx-approval__ref {
+  margin: 0;
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.trx-approval__detail {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.trx-approval__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--primitive-space-2);
+  margin: 0;
+  font-size: 14px;
+}
+
+.trx-approval__meta strong {
+  font-size: 16px;
+}
+
+.trx-approval__meta span {
+  color: var(--color-text-secondary);
+}
+
+.trx-approval__review {
+  min-width: 88px;
+  align-self: center;
+}
+
+.trx-fold summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-touch-target-min);
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-semibold);
+  cursor: pointer;
+}
+
+.trx-history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trx-history {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--primitive-space-3) 0;
+  border-top: 1px solid var(--color-border-default);
+  font-size: 15px;
+}
+
+.trx-history__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trx-history__ref {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+/* ===== Daftar bill dan faktur ===== */
+.trx-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.trx-group__title {
+  margin: var(--primitive-space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.trx-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.trx-doc {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  min-height: 80px;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.05);
+  color: inherit;
+  text-decoration: none;
+}
+
+.trx-doc:focus-visible,
+.trx-party:focus-visible,
+.trx-invoice:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.trx-doc__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trx-doc__top {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.trx-doc__number {
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.trx-doc__meta,
+.trx-doc__party {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-doc__foot {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.trx-doc__total {
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-bold);
+  white-space: nowrap;
+}
+
+.trx-doc > .icon {
+  color: var(--color-text-secondary);
+}
+
+.trx-note {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: flex-start;
+  margin: var(--primitive-space-2) 0 0;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border-radius: 14px;
+  background: var(--color-accent-soft);
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+.trx-note .icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-accent-default);
+}
+
+/* ===== Rincian: baris nilai, kepala, dan barang ===== */
+.trx-kv {
+  display: flex;
+  flex-direction: column;
+}
+
+.trx-kv--card {
+  padding: 0 var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+}
+
+.trx-kv--total {
+  margin-top: var(--primitive-space-2);
+  border-top: 2px solid var(--color-border-default);
+}
+
+.trx-kv .mob-row {
+  font-size: 15px;
+}
+
+.trx-kv .mob-row--strong {
+  font-size: 17px;
+}
+
+.trx-head {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  margin-bottom: var(--primitive-space-2);
+}
+
+.trx-head__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trx-head__number {
+  font-size: 20px;
+  font-weight: var(--primitive-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.trx-head .mob-badge {
+  align-self: center;
+}
+
+.trx-party-head__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--primitive-font-weight-bold);
+  line-height: 1.25;
+}
+
+.trx-stats {
+  margin-top: var(--primitive-space-3);
+}
+
+.trx-stats .mob-sub {
+  display: block;
+}
+
+.trx-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trx-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--primitive-space-3);
+  padding: var(--primitive-space-3) 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.trx-item:first-child {
+  padding-top: 0;
+}
+
+.trx-item__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trx-item__name {
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 1.3;
+}
+
+.trx-item__calc,
+.trx-item__note {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-item__note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: center;
+}
+
+.trx-item__sum {
+  align-self: start;
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-bold);
+  white-space: nowrap;
+}
+
+/* ===== Formulir SO dan PO ===== */
+.trx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+}
+
+.trx-search {
+  position: relative;
+}
+
+.trx-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.trx-results:not(:empty) {
+  margin-top: var(--primitive-space-2);
+}
+
+.trx-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  min-height: 56px;
+  padding: var(--primitive-space-2) var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  background: var(--color-bg-surface);
+  color: inherit;
+  text-align: left;
+}
+
+.trx-result:active {
+  background: var(--color-accent-soft);
+}
+
+.trx-result__name {
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.trx-result__code {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-results__empty,
+.trx-empty {
+  margin: 0;
+  padding: var(--primitive-space-3);
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  text-align: center;
+}
+
+.trx-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.trx-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  padding: var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  background: var(--color-bg-page);
+}
+
+.trx-line__head {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.trx-line__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trx-line__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 1.3;
+}
+
+.trx-line__code {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-icon-button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  margin: -8px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-status-danger-fg);
+}
+
+.trx-icon-button:active {
+  background: var(--color-status-danger-bg);
+}
+
+.trx-line__controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--primitive-space-3);
+  align-items: end;
+}
+
+.trx-line .stepper {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.trx-line .stepper__button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  padding: 0;
+  border: 1px solid var(--color-text-primary);
+  border-radius: 999px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+}
+
+.trx-line .stepper__input {
+  width: 64px;
+  height: var(--size-touch-target-min);
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+  text-align: center;
+}
+
+.trx-line .input {
+  height: var(--size-touch-target-min);
+  font-size: 16px;
+}
+
+.trx-price {
+  position: relative;
+}
+
+.trx-price__rp {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  color: var(--color-text-secondary);
+  font-weight: var(--primitive-font-weight-semibold);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.trx-price__input {
+  padding-left: 44px;
+  font-size: 18px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.trx-line__changed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  margin: var(--primitive-space-2) 0 0;
+}
+
+.trx-line__origin {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-line__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--primitive-space-2);
+  border-top: 1px dashed var(--color-border-default);
+  font-size: 15px;
+}
+
+.trx-line__sum {
+  font-size: 20px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+/* Bilah total dan simpan yang menempel di bawah layar; pada isi pendek tetap berada di dasar layar. */
+.own-main:has(.trx-form) {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.own-main:has(.trx-form) .own-content {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.trx-form {
+  flex: 1 0 auto;
+}
+
+.trx-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: auto calc(-1 * var(--space-screen-margin)) 0;
+  padding: var(--primitive-space-3) var(--space-screen-margin);
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  box-shadow: 0 -6px 18px rgb(0 0 0 / 0.08);
+}
+
+.trx-bar__row {
+  display: flex;
+  gap: var(--primitive-space-4);
+  align-items: center;
+}
+
+.trx-bar__total {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  max-width: 45%;
+}
+
+.trx-bar__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.trx-bar__value {
+  font-size: 22px;
+  font-weight: var(--primitive-font-weight-bold);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.trx-bar__save {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
+  padding: 0 var(--primitive-space-3);
+}
+
+/* ===== Kartu Stok ===== */
+.trx-stock {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--primitive-space-3);
+  padding: var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.05);
+}
+
+.trx-stock__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  min-width: 0;
+}
+
+.trx-stock__title {
+  margin: 0;
+}
+
+.trx-stock__open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  min-height: var(--size-touch-target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+/* Tombol nama memperluas area ketuk ke seluruh kartu; foto tetap tombol terpisah di atasnya. */
+.trx-stock__open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+}
+
+/* Penanda fokus tetap pada tombolnya sendiri (cincin fokus bawaan), bukan pada elemen semu. */
+.trx-stock__name {
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-bold);
+  line-height: 1.3;
+}
+
+.trx-stock__code {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-stock__photo {
+  position: relative;
+  z-index: 2;
+}
+
+.trx-stock__stocks {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-3);
+}
+
+.trx-stk {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trx-stk__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-bold);
+  letter-spacing: 0.04em;
+}
+
+.trx-stk .mob-badge {
+  padding: 5px 12px;
+  font-size: 15px;
+}
+
+.trx-stock__prices {
+  grid-column: 1 / -1;
+}
+
+.trx-stock__prices-title {
+  margin: 0 0 var(--primitive-space-1);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trx-prices {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.trx-prices th,
+.trx-prices td {
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border-default);
+  text-align: left;
+}
+
+.trx-prices thead th {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.trx-prices thead tr:first-child th {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.trx-prices .is-end {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.trx-prices tbody th {
+  font-weight: var(--primitive-font-weight-regular);
+}
+
+.trx-prices tbody small {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.trx-prices td {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.trx-prices td:nth-child(2) {
+  color: var(--color-accent-default);
+}
+
+.trx-prices td {
+  padding-left: 6px;
+}
+
+/* Lembar Detail Barang */
+.trx-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+
+.trx-dialog .modal__actions {
+  flex-wrap: nowrap;
+}
+
+.trx-dialog .modal__actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+html[data-app='owner'] .modal__actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.trx-detail-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.trx-detail-sheet__head {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: flex-start;
+}
+
+.trx-facts {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.trx-facts dt {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.trx-facts dd {
+  margin: 0 0 var(--primitive-space-1);
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+/* Dua kotak berdampingan hanya bila lebar cukup untuk lencana stok terpanjang; selain itu bertumpuk. */
+.trx-detail-stocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 156px), 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.trx-detail-stock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.trx-hpp {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 15px;
+}
+
+.trx-detail-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.trx-detail-actions .btn {
+  min-width: 0;
+  padding: 0 var(--primitive-space-2);
+}
+
+/* ===== Piutang dan Hutang ===== */
+.trx-summary:empty {
+  display: none;
+}
+
+.trx-party-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trx-party,
+.trx-invoice {
+  display: grid;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  width: 100%;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.05);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.trx-party {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 92px;
+}
+
+.trx-invoice {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 84px;
+}
+
+.trx-party .mob-avatar {
+  font-size: 19px;
+}
+
+.trx-party > .icon,
+.trx-invoice > .icon {
+  color: var(--color-text-secondary);
+}
+
+.trx-party__main,
+.trx-invoice__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trx-party__name {
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-bold);
+  line-height: 1.3;
+}
+
+.trx-party__meta,
+.trx-invoice__meta,
+.trx-invoice__caption {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-party__amount {
+  font-size: 18px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.trx-party__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  margin-top: 4px;
+}
+
+.trx-invoice__title {
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.trx-invoice__main .mob-badge {
+  margin-top: 4px;
+}
+
+.trx-invoice__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.trx-invoice__amount {
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-bold);
+  white-space: nowrap;
+}
+
+.trx-quick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.trx-quick .btn.trx-quick__button {
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+  height: auto;
+  min-height: 76px;
+  padding: var(--primitive-space-2);
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.trx-sheet-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 16px;
+}
+
+.trx-sheet-head__saldo {
+  margin-top: var(--primitive-space-1);
+  color: var(--color-accent-default);
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.trx-review__detail {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.trx-detail:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}

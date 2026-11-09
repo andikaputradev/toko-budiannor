@@ -20,12 +20,12 @@ export const TRADING_HOURS: readonly number[] = [8, 9, 10, 11, 12, 13, 14, 15, 1
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function wibMinutes(date: Date): number {
+export function wibMinutes(date: Date): number {
   const shifted = new Date(date.getTime() + WIB_OFFSET_MS);
   return shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
 }
 
-function shiftDay(day: string, offset: number): string {
+export function shiftDay(day: string, offset: number): string {
   return new Date(Date.parse(`${day}T00:00:00Z`) + offset * DAY_MS).toISOString().slice(0, 10);
 }
 
@@ -36,7 +36,7 @@ export function percentChange(current: number, previous: number): number | undef
   return Math.round(((current - previous) / previous) * 100);
 }
 
-function salesOn(data: Dataset, day: string): Dataset['sales'] {
+export function salesOn(data: Dataset, day: string): Dataset['sales'] {
   return data.sales.filter((sale) => wibDate(new Date(sale.createdAt)) === day);
 }
 
@@ -44,7 +44,7 @@ function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
 
-function hourlyBars(sales: Dataset['sales']): Bar[] {
+export function hourlyBars(sales: Dataset['sales']): Bar[] {
   return TRADING_HOURS.map((hour) => ({
     key: String(hour).padStart(2, '0'),
     value: sum(

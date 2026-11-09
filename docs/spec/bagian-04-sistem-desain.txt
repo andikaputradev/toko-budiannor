@@ -1,0 +1,227 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+
+4. Sistem desain
+Arah visual: hangat dan tenang. Latar krem, teks gelap hampir hitam, dan satu aksen terakota untuk tindakan utama.
+Hanya satu warna aksen dipakai agar kasir cepat menemukan tombol yang paling penting. Tidak ada gradasi, bayangan
+tebal, atau ilustrasi dekoratif. Warna di bawah adalah acuan klien; warna baru berlabel [Usulan] disertai hitungan
+kontras.
+
+4.1 Token warna
+ War    Peran                         Nilai          Pemakaian                                       Label
+ na
+
+        Latar halaman                 #F6F4F0        Latar semua layar kecuali mode gelap            [Dari dokumen klien]
+
+        Permukaan                     #FFFFFF        Kartu, panel, modal, kolom input                [Dari dokumen klien]
+
+        Teks utama                    #1C2024        Judul, isi, angka                               [Dari dokumen klien]
+
+        Teks sekunder                 #5F6670        Label, keterangan, placeholder                  [Dari dokumen klien]
+
+        Garis pembatas                #E2DDD4        Garis tabel, batas kartu                        [Dari dokumen klien]
+
+        Aksen aksi utama              #B4472B        Tombol utama, tautan aktif                      [Dari dokumen klien]
+
+        Sukses                        #1F7A4D        Teks dan ikon sukses, chip "Lunas"              [Dari dokumen klien]
+
+        Peringatan                    #8A5200        Teks peringatan pada latar #FBF0DC              [Dari dokumen klien]
+
+        Bahaya                        #B3261E        Teks error, tombol hapus                        [Dari dokumen klien]
+
+        Latar peringatan              #FBF0DC        Latar banner peringatan                         [Dari dokumen klien]
+
+        Latar bahaya                  #FBE9E7        Latar banner error                              [Usulan]
+
+        Latar sukses                  #E4F2EA        Latar toast dan chip sukses                     [Usulan]
+
+        Aksen tekan                   #963A22        Keadaan ditekan tombol utama                    [Usulan]
+
+        Fokus                         #1C2024        Cincin fokus 3 px dengan jarak 2 px             [Usulan]
+
+        Mode gelap: latar             #16181B        Hanya Monitoring Owner                          [Dari dokumen klien]
+
+        Mode gelap: teks              #ECE8E1        Hanya Monitoring Owner                          [Dari dokumen klien]
+
+        Mode gelap: sekunder          #9AA0A6        Hanya Monitoring Owner                          [Dari dokumen klien]
+
+        Mode gelap: aksen             #E8836A        Hanya Monitoring Owner                          [Dari dokumen klien]
+
+
+
+4.2 Rasio kontras (WCAG 2.2)
+Rumus: (L1 + 0,05) / (L2 + 0,05) dengan luminansi relatif sesuai WCAG; dihitung ulang untuk setiap pasangan. Batas
+minimum: 4,5 : 1 untuk teks biasa.
+
+ Pasangan                                         Warna                                        Rasio Hasil
+ Teks utama pada latar halaman                    #1C2024 pada #F6F4F0                      14,92 : 1 AAA (7 : 1)
+ Teks utama pada permukaan                        #1C2024 pada #FFFFFF                      16,39 : 1 AAA (7 : 1)
+ Teks sekunder pada latar halaman                 #5F6670 pada #F6F4F0                       5,28 : 1 AA (4,5 : 1)
+ Teks sekunder pada permukaan                     #5F6670 pada #FFFFFF                       5,80 : 1 AA (4,5 : 1)
+ Teks putih pada aksen aksi utama                 #FFFFFF pada #B4472B                       5,42 : 1 AA (4,5 : 1)
+ Teks putih pada aksen tekan                      #FFFFFF pada #963A22                       7,18 : 1 AAA (7 : 1)
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 7 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+
+ Pasangan                                         Warna                                          Rasio Hasil
+ Sukses pada permukaan                            #1F7A4D pada #FFFFFF                         5,32 : 1 AA (4,5 : 1)
+ Sukses pada latar sukses                         #1F7A4D pada #E4F2EA                         4,61 : 1 AA (4,5 : 1)
+ Peringatan pada latar peringatan                 #8A5200 pada #FBF0DC                         5,66 : 1 AA (4,5 : 1)
+ Bahaya pada permukaan                            #B3261E pada #FFFFFF                         6,54 : 1 AA (4,5 : 1)
+ Bahaya pada latar bahaya                         #B3261E pada #FBE9E7                         5,58 : 1 AA (4,5 : 1)
+ Aksen pada latar halaman (tautan)                #B4472B pada #F6F4F0                         4,93 : 1 AA (4,5 : 1)
+ Gelap: teks pada latar                           #ECE8E1 pada #16181B                       14,57 : 1 AAA (7 : 1)
+ Gelap: sekunder pada latar                       #9AA0A6 pada #16181B                         6,74 : 1 AA (4,5 : 1)
+ Gelap: aksen pada latar                          #E8836A pada #16181B                         6,68 : 1 AA (4,5 : 1)
+Teks nonaktif pada tombol (#5F6670 di atas #E2DDD4, 4,29 : 1) dikecualikan oleh WCAG untuk komponen nonaktif; tombol nonaktif
+tetap berlabel dan berbentuk berbeda (tanpa isi warna aksen). Pengembang memverifikasi ulang dengan alat ukur kontras setelah
+implementasi.
+
+
+4.3 Tipografi
+Huruf: IBM Plex Sans (berlisensi terbuka SIL OFL 1.1; pengembang memeriksa lisensi sebelum dikemas), bobot 400,
+500, 600, 700, dengan angka tabular (fitur "tnum") agar kolom rupiah sejajar.
+
+ Peran teks                       Ukuran                                   Bobot                        Tinggi baris
+ Judul layar                      POS 24 px, BO 22 px, Owner 20 px         Semibold (600)               Tinggi baris 1,3
+ Judul bagian                     POS 18 px, BO 16 px, Owner 16 px         Semibold (600)               1,35
+ Isi                              POS 16 px, BO 14 px, Owner 16 px         Regular (400)                1,5
+ Label kecil dan keterangan       POS 14 px, BO 12 px, Owner 13 px         Regular (400)                1,4
+ Harga dan jumlah                 POS 20 px, BO 14 px, Owner 18 px         Medium (500), angka          1,3
+                                                                           tabular
+ Total tagihan                    POS 32 px, BO 24 px, Owner 32 px         Bold (700), angka tabular    1,2
+
+
+4.4 Spasi dan radius
+ Token                                                      Nilai
+ Dasar                                                      4 px
+ Skala                                                      4, 8, 12, 16, 24, 32, 48 px
+ Jarak antar target sentuh POS                              minimal 8 px
+ Padding kartu                                              POS 16 px, BO 16 px, Owner 16 px
+ Margin tepi layar                                          POS 16 px, BO 24 px, Owner 16 px
+ Radius: Input dan tombol                                   6 px
+ Radius: Kartu dan panel                                    8 px
+ Radius: Modal                                              12 px
+ Radius: Chip dan lencana                                   999 px (bulat penuh)
+
+
+4.5 Komponen
+ Komponen                 Spesifikasi                                        State
+ Tombol utama             Latar #B4472B, teks putih 16 px medium, tinggi     Default, tekan (#963A22), fokus (cincin 3 px),
+                          POS 52 px, BO 40 px, Owner 52 px                   nonaktif (latar #E2DDD4, teks #5F6670),
+                                                                             memuat ("Menyimpan..." dan nonaktif)
+ Tombol sekunder          Latar putih, garis 1 px #1C2024, teks #1C2024      Default, tekan (latar #F6F4F0), fokus, nonaktif
+ Tombol bahaya            Latar putih, garis 2 px #B3261E, teks #B3261E      Default, tekan (latar #FBE9E7), fokus, nonaktif
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                    Halaman 8 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+
+ Komponen                 Spesifikasi                                         State
+ Kolom input              Tinggi POS 52 px, BO 40 px; garis 1 px #5F6670;     Default, fokus (garis 2 px #1C2024), error (garis
+                          label di atas, 12 sampai 14 px                      2 px #B3261E dan pesan di bawah dengan ikon),
+                                                                              nonaktif, hanya baca
+ Tabel                    Header tinggi 44 px latar #EFEAE0, teks tebal;      Default, baris terpilih (garis kiri 4 px #B4472B
+                          baris POS 48 px, BO 40 px; angka rata kanan         dan latar #F6F4F0), hover (PC), kosong, memuat
+                                                                              (kerangka)
+ Chip                     Tinggi 32 px (POS 36 px), bulat penuh, teks 14 px   Tak terpilih (garis), terpilih (latar #1C2024, teks
+                                                                              putih), status
+ Banner                   Lebar penuh, tinggi 28 sampai 56 px, ikon dan       Info, peringatan (#FBF0DC), bahaya (#FBE9E7),
+                          teks                                                offline (garis putus-putus)
+ Modal                    Lebar POS 400 sampai 500 px, radius 12 px, latar    Terbuka, memuat, error; fokus terkunci di dalam
+                          peredam 40%                                         modal; Esc menutup
+ Toast                    Muncul 16 px dari bawah, tinggi 48 px, hilang       Sukses, info, error (error tidak hilang sendiri)
+                          sendiri dalam 4 detik, tidak menutupi tombol
+                          Bayar
+ Lencana status           Chip kecil 24 px dengan ikon dan teks               Lunas, Pending, Menunggu, Gagal, Terkirim,
+                                                                              Aman, Di bawah minimum, Ditinjau (negatif),
+                                                                              Draf, Diterapkan
+
+
+4.6 Pola angka, tanggal, dan nomor dokumen
+ Jenis                                  Contoh tampil                Aturan
+ Uang                                   Rp 1.337.000                 Awalan "Rp" dan satu spasi; titik sebagai pemisah ribuan;
+                                                                     tanpa angka desimal.
+ Uang negatif                           -Rp 337.000                  Tanda minus di depan "Rp".
+ Jumlah desimal                         12,5                         Koma sebagai pemisah desimal; maksimal 3 angka di
+                                                                     belakang koma; kolom jumlah rata kanan.
+ Persentase                             12,5%                        Koma desimal, tanpa spasi sebelum tanda persen.
+ Tanggal                                17 Okt 2026                  Hari dua digit bila perlu, bulan tiga huruf (Jan, Feb, Mar,
+                                                                     Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des), tahun empat
+                                                                     digit.
+ Jam                                    14:32                        Format 24 jam, zona WIB.
+ Rentang                                17 Okt 2026 sampai 18 Okt    Memakai kata "sampai", bukan tanda garis.
+                                        2026
+ Nomor dokumen                          T-000103, B-0003, M-0002,    Awalan menurut jenis dokumen lalu nomor urut otomatis.
+                                        SJ-0001, PO-0002
+
+
+4.7 Ikon
+Satu keluarga ikon bergaya garis dengan tebal 1,5 px dan ukuran 24 px (20 px di tabel). Usulan: Lucide, berlisensi ISC
+[Usulan; pengembang memeriksa lisensi]. Setiap aksi utama (Bayar, Tahan Bill, Cetak, Simpan, Ekspor) selalu berikon dan
+berlabel teks; ikon tanpa label hanya untuk Tutup dan Tampilkan kata sandi, dan keduanya memiliki nama aksesibel.
+
+ Aksi atau status                       Ikon (nama Lucide)                     Catatan
+ Cari                                   search
+
+ Cetak                                  printer
+
+ Offline                                wifi-off                               Selalu dengan teks "Offline"
+ Online                                 wifi                                   Selalu dengan teks "Online"
+ Hapus                                  trash-2                                Warna bahaya dan label
+ Peringatan                             triangle-alert                         Dengan teks
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 9 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                 Lampiran Kontrak
+
+
+
+
+ Aksi atau status                     Ikon (nama Lucide)                 Catatan
+ Berhasil                             circle-check                       Dengan teks
+ Ekspor                               download                           Label "Ekspor PDF" atau "Ekspor Excel"
+ Tutup                                x                                  Nama aksesibel "Tutup"
+ Mutasi stok                          arrow-left-right                   Label "Mutasi Stok"
+
+
+4.8 Pratinjau gaya visual
+Ilustrasi berikut memperlihatkan arah warna dan huruf pada dua layar utama. Data dan harga hanya contoh. Wireframe pada
+Bagian 7 tetap menjadi acuan tata letak; pratinjau ini tidak mengunci piksel.
+
+
+
+
+Pratinjau POS-02, Jual Utama (data contoh).
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                            Halaman 10 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan           Lampiran Kontrak
+
+
+
+
+Pratinjau OWN-02, Ringkasan Omzet, mode gelap (data contoh).
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                        Halaman 11 dari 107
+

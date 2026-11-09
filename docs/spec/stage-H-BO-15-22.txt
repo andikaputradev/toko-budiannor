@@ -1,0 +1,745 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+BO-15 Impor Data Excel
+ Tujuan               Memasukkan master barang, satuan dan harga, pelanggan, pemasok, saldo utang piutang awal, dan stok
+                      awal dua gudang dari berkas Excel.
+ Aplikasi             Back-Office                                   Prioritas rilis    Rilis 1
+ Perangkat            Windows PC (browser), desktop;                Hak akses          Owner, Supervisor
+                      Landscape
+ Fitur RAB            12 Impor Data Massal Excel
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-15. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Langkah 1 sampai 4                        4 penanda, tinggi 43 px
+   2      Pilihan jenis data dan Unduh Templat      tinggi 47 px
+          Excel
+   3      Area unggah berkas                        tinggi 126 px, garis putus-putus
+   4      Tabel hasil pemeriksaan                   baris 43 px, kolom Keterangan memuat alasan error
+   5      Tombol Batal dan Mulai Impor              tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                  Sumber data
+ Jenis data                 Master barang, Satuan dan harga, Pelanggan, Pemasok,                 Pilihan [Dari dokumen klien]
+                            Saldo utang piutang awal, Stok awal Gudang Display, Stok
+                            awal Gudang Besar
+ Berkas                     .xlsx, maksimal 10 MB [Usulan]                                       Unggahan
+ Ringkasan                  "3.500 baris, 3.492 valid, 8 perlu diperbaiki"                       Hasil pemeriksaan
+ Tabel pemeriksaan          Baris, Kode, Nama barang, Satuan, Status, Keterangan                 Hasil pemeriksaan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 65 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                                    Pintasan papan ketik      Peran O S K
+                                                                                         (PC)
+ Unduh Templat Excel            Mengunduh templat sesuai jenis data                      Alt + U                       OS-
+ Pilih Berkas                   Membuka dialog berkas                                    Alt + B                       OS-
+ Mulai Impor                    Mengimpor hanya baris valid; baris error dilewati        Ctrl + Enter                  OS-
+                                dan tersedia di berkas "Baris Gagal" yang bisa
+                                diunduh
+ Batal                          Membatalkan proses sebelum impor dimulai                 Esc                           OS-
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Langkah 1 aktif, jenis data belum dipilih.
+ Memuat               Pemeriksaan: bilah kemajuan "Memeriksa 1.200 dari 3.500 baris".
+ Kosong               Tabel pemeriksaan: "Belum ada berkas diperiksa."
+ Error                "Berkas tidak dapat dibaca. Pastikan formatnya .xlsx sesuai templat."
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol Mulai Impor nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          3.500 baris: tabel dipaginasi 50 baris dan filter "Hanya error".
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Berkas bukan .xlsx                               Format berkas harus .xlsx.
+ Judul kolom tidak sesuai templat                 Judul kolom tidak sesuai templat. Unduh templat terbaru.
+ Satuan dasar kosong                              Satuan dasar wajib diisi.
+ Kode barang ganda                                Kode barang sudah dipakai.
+ Berkas lebih dari 10 MB [Usulan]                 Ukuran berkas maksimal 10 MB.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                      Then
+ K-1     Berkas master barang berisi 3.500      Pengguna menekan Mulai Impor              3.492 barang masuk dan 8 baris gagal
+         baris dan 8 baris salah                                                          tersedia untuk diunduh dengan alasan
+ K-2     Berkas berjudul kolom keliru           Pengguna mengunggah berkas                Pesan "Judul kolom tidak sesuai templat.
+                                                                                          Unduh templat terbaru." tampil dan
+                                                                                          impor tidak berjalan
+ K-3     Impor selesai                          Pengguna membuka BO-21                    Log mencatat pengguna, jenis data,
+                                                                                          jumlah baris berhasil dan gagal
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                      Halaman 66 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+BO-16 Laporan Operasional
+ Tujuan                 Menampilkan dan mengekspor Laporan Penjualan, Pembelian, Stok, dan Kartu Stok dengan filter periode
+                        dan gudang.
+ Aplikasi               Back-Office                                 Prioritas rilis    Rilis 3
+ Perangkat              Windows PC (browser), desktop;              Hak akses          Owner, Supervisor
+                        Landscape
+ Fitur RAB              14 Otomatisasi Akuntansi dan Laporan; 7 Manajemen Multi-Gudang 2 Lokasi; 11 Pembelian, Retur, dan
+                        Komisi Sales
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-16. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Daftar laporan                             lebar 17% area isi, 4 item
+   2      Filter                                     Dari, Sampai, Gudang, tombol Tampilkan; tinggi 47 px
+   3      Tabel hasil                                baris 50 px
+   4      Tombol Ekspor PDF dan Ekspor Excel         tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                     Format dan perilaku                                                Sumber data
+ Laporan Penjualan            Tanggal, No. Invoice, Pelanggan, Total, Cara bayar                 Transaksi
+ Laporan Pembelian            Tanggal, No. PO, Pemasok, Total, Status                            PO dan penerimaan
+ Laporan Stok                 Kode, Nama, Display, Besar, Total, Nilai (HPP Average)             Stok
+ Kartu Stok                   Tanggal, Dokumen, Masuk, Keluar, Saldo per barang dan              Mutasi stok
+                              gudang
+ Total periode                "Rp 1.337.000"                                                     Penjumlahan
+ Kolom Nilai dan HPP          Tampil hanya Owner dan Supervisor                                  HPP Average
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 67 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                     Hasil                                            Pintasan papan ketik        Peran O S K
+                                                                                   (PC)
+ Pilih laporan                    Mengganti jenis laporan                          Panah atas dan bawah           OS-
+ Tampilkan                        Menjalankan laporan dengan filter                Enter                          OS-
+ Ekspor PDF                       Mengunduh PDF siap cetak, A4, header berulang    Alt + P                        OS-
+ Ekspor Excel                     Mengunduh .xlsx dengan angka numerik (bukan      Alt + X                        OS-
+                                  teks)
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Laporan Penjualan, periode bulan berjalan, belum ditampilkan sampai Tampilkan ditekan.
+ Memuat               Bilah kemajuan "Menyusun laporan..." dan tabel kerangka.
+ Kosong               "Tidak ada data pada periode ini."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol Tampilkan dan Ekspor nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Hasil lebih dari 500 baris: tabel menampilkan 50 baris per halaman; ekspor memuat seluruh hasil.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Tanggal akhir sebelum tanggal awal               Tanggal akhir tidak boleh sebelum tanggal awal.
+ Rentang lebih dari 366 hari [Usulan]             Rentang laporan maksimal 366 hari.
+ Kartu Stok tanpa barang                          Pilih barang untuk Kartu Stok.
+
+PERILAKU SCANNER BARCODE
+Pada Kartu Stok, kolom Barang menerima fokus dan pindai barcode memilih barang. Selebihnya tidak berlaku.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                Then
+ K-1     Owner memilih Laporan Penjualan        Menekan Tampilkan lalu Ekspor       Berkas .xlsx memuat baris yang sama
+         01 sampai 17 Okt 2026                  Excel                               dengan tabel dan total periode
+ K-2     Pengguna menekan Ekspor PDF            Unduhan selesai                     PDF berukuran A4 dengan header tabel
+                                                                                    berulang tiap halaman
+ K-3     Rentang diisi 400 hari                 Pengguna menekan Tampilkan          Pesan "Rentang laporan maksimal 366
+                                                                                    hari." tampil
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                 Halaman 68 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+
+BO-17 Laporan Keuangan
+ Tujuan               Menampilkan dan mengekspor Laporan Laba Rugi, Neraca, dan Arus Kas yang disusun otomatis dari
+                      jurnal.
+ Aplikasi             Back-Office                                   Prioritas rilis   Rilis 3
+ Perangkat            Windows PC (browser), desktop;                Hak akses         Owner [Asumsi A-20]
+                      Landscape
+ Fitur RAB            14 Otomatisasi Akuntansi dan Laporan
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-17. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Tiga tab                                  "Laba Rugi", "Neraca", "Arus Kas"; tinggi 40 px
+   2      Pemilih periode                           dua kolom 198 x 43 px
+   3      Kertas laporan                            lebar penuh area isi, tinggi 522 px
+   4      Baris laporan                             tinggi 72 px; total dan laba bersih tebal
+   5      Tombol Ekspor PDF dan Ekspor Excel        tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                 Sumber data
+ Laba Rugi                  Penjualan bersih, Harga pokok penjualan, Laba kotor, Beban          Jurnal
+                            operasional, Laba bersih
+ Neraca                     Aset, Kewajiban, Ekuitas per tanggal laporan                        Jurnal
+ Arus Kas                   Kas masuk, kas keluar, saldo kas awal dan akhir                     Jurnal
+ Nilai                      "Rp 1.337.000"; negatif ditulis "-Rp 337.000"                       Jurnal
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 69 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                               Pintasan papan ketik          Peran O S K
+                                                                                    (PC)
+ Tab laporan                    Mengganti laporan                                   Ctrl + 1, 2, 3                    O--
+ Pemilih periode                Menetapkan periode                                  Alt + D                           O--
+ Ekspor PDF                     Mengunduh PDF siap cetak                            Alt + P                           O--
+ Ekspor Excel                   Mengunduh .xlsx                                     Alt + X                           O--
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Tab "Laba Rugi", bulan berjalan.
+ Memuat               Bilah kemajuan "Menyusun laporan..."
+ Kosong               "Belum ada jurnal pada periode ini."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol ekspor nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Supervisor: menu Laporan Keuangan tidak tampil. Alamat langsung: "Anda tidak memiliki hak akses ke
+ ditolak              halaman ini. Hubungi Owner."
+ Data banyak          Tidak berlaku; laporan ringkas satu halaman, rincian akun di lampiran baris bergulir.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Tanggal akhir sebelum tanggal awal               Tanggal akhir tidak boleh sebelum tanggal awal.
+ Neraca tidak seimbang                            Neraca tidak seimbang. Hubungi pengembang dengan kode laporan N-001.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                   Then
+ K-1     Ada penjualan dan beban pada          Owner membuka tab Laba Rugi            Laba bersih sama dengan laba kotor
+         Oktober 2026                                                                 dikurangi beban operasional
+ K-2     Owner menekan Ekspor PDF pada         Unduhan selesai                        PDF memuat Aset sama dengan
+         tab Neraca                                                                   Kewajiban ditambah Ekuitas
+ K-3     Supervisor mencoba membuka            Supervisor memakai alamat              Pesan penolakan tampil
+         layar                                 langsung
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 70 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                               Lampiran Kontrak
+
+
+
+
+BO-18 Price List
+ Tujuan               Mencetak atau mengunduh katalog harga per kategori, per tier pelanggan, dan menurut ketersediaan
+                      stok.
+ Aplikasi             Back-Office                                   Prioritas rilis      Rilis 3
+ Perangkat            Windows PC (browser), desktop;                Hak akses            Owner, Supervisor
+                      Landscape
+ Fitur RAB            14 Otomatisasi Akuntansi dan Laporan; 8 Multi-Satuan Desimal dan HPP Average
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-18. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Filter                                    Kategori, Tier harga, Ketersediaan, tombol Tampilkan; tinggi 43 px
+   2      Tabel price list                          baris 50 px, dikelompokkan per kategori
+   3      Tombol Ekspor PDF dan Ekspor Excel        tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                   Sumber data
+ Tabel                       Kode, Nama barang, Kategori, Satuan, Harga tier terpilih,             Master barang dan stok
+                             Ketersediaan
+ Ketersediaan                "Tersedia", "Stok menipis" (di bawah minimum), "Habis"                Stok
+ Harga                       "Rp 1.337.000" satu tier per cetakan                                  Matriks harga
+
+AKSI
+
+ Label persis                   Hasil                                                 Pintasan papan ketik             Peran O S K
+                                                                                      (PC)
+ Tampilkan                      Menyusun price list sesuai filter                     Enter                                 OS-
+ Ekspor PDF                     Mengunduh katalog siap cetak, dikelompokkan           Alt + P                               OS-
+                                per kategori
+ Ekspor Excel                   Mengunduh .xlsx                                       Alt + X                               OS-
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                            Halaman 71 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                     Lampiran Kontrak
+
+
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Kategori "Semua", tier "Eceran", ketersediaan "Semua".
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel price list; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Tidak ada barang yang cocok dengan filter."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol Tampilkan dan Ekspor nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel dipaginasi 50 baris; PDF memuat seluruh hasil dengan header berulang.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Tier belum dipilih                               Pilih tier harga.
+ Hasil kosong saat ekspor                         Tidak ada data untuk diekspor.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                 Then
+ K-1     Kategori Pipa dengan tier Grosir      Pengguna menekan Tampilkan           Tabel memuat barang kategori Pipa
+                                                                                    dengan harga Grosir
+ K-2     Barang stok 0                         Daftar tampil                        Ketersediaan tertulis "Habis" dengan
+                                                                                    ikon dan teks
+ K-3     Pengguna menekan Ekspor PDF           Unduhan selesai                      PDF memuat kategori sebagai judul
+                                                                                    kelompok dan harga tier terpilih
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                 Halaman 72 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+BO-19 Jurnal dan Beban Operasional
+ Tujuan               Melihat jurnal keuangan otomatis dan menginput beban operasional; beban dari Biaya Kasir (POS-07)
+                      muncul otomatis.
+ Aplikasi             Back-Office                                   Prioritas rilis      Rilis 3
+ Perangkat            Windows PC (browser), desktop;                Hak akses            Owner, Supervisor
+                      Landscape
+ Fitur RAB            14 Otomatisasi Akuntansi dan Laporan; 4 Biaya Kasir dan Pelanggan Baru
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-19. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Dua tab                                    "Jurnal Otomatis", "Beban Operasional"; tinggi 40 px
+   2      Kartu Input beban                          lebar 38% area isi, tinggi 468 px
+   3      Tabel beban                                lebar 58% area isi, baris 50 px
+   4      Tombol Ekspor PDF dan Ekspor Excel         tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                     Format dan perilaku                                                  Sumber data
+ Jurnal Otomatis              Tanggal, No. Jurnal, Akun, Debit, Kredit, Sumber; hanya baca         Transaksi, pembelian, beban
+ Input beban                  Tanggal, Kategori beban, Jumlah, Keterangan                          Masukan
+ Tabel beban                  Tanggal, Kategori, Keterangan, Jumlah, Sumber ("Kasir" atau Biaya Kasir dan input BO
+                              "Back-Office")
+
+AKSI
+
+ Label persis                    Hasil                                                 Pintasan papan ketik          Peran O S K
+                                                                                       (PC)
+ Simpan Beban                    Menyimpan dan membuat jurnal otomatis; toast          Ctrl + S                          OS-
+                                 "Beban tersimpan."
+ Ekspor PDF, Ekspor Excel        Mengunduh tab aktif                                   Alt + P, Alt + X                  OS-
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 73 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Tab "Beban Operasional", form tanggal hari ini.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Belum ada beban pada periode ini." Jurnal: "Belum ada jurnal."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel dipaginasi 50 baris.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                           Pesan yang tampil
+ Jumlah kosong atau 0                              Jumlah harus lebih dari 0.
+ Kategori kosong                                   Pilih kategori beban.
+ Tanggal di masa depan                             Tanggal tidak boleh melewati hari ini.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                    Then
+ K-1     Kasir mencatat parkir Rp 5.000 di     Supervisor membuka tab Beban            Baris parkir tampil dengan sumber
+         POS-07                                                                        "Kasir"
+ K-2     Supervisor mengisi listrik Rp         Pengguna membuka tab Jurnal             Jurnal beban terbentuk otomatis dengan
+         1.337.000 lalu menyimpan                                                      debit beban dan kredit kas
+ K-3     Tanggal diisi besok                   Pengguna menyimpan                      Pesan "Tanggal tidak boleh melewati hari
+                                                                                       ini." tampil
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                   Halaman 74 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+
+BO-20 Pengguna dan Hak Akses
+ Tujuan               Membuat akun pengguna dan menetapkan peran Owner, Supervisor, atau Kasir.
+ Aplikasi             Back-Office                                   Prioritas rilis   Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses         Owner
+                      Landscape
+ Fitur RAB            13 RBAC Berjenjang dan Log Audit Trail
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-20. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Tombol Tambah Pengguna                    lebar 216 px, tinggi 47 px
+   2      Tabel pengguna                            lebar 49% area isi, baris 54 px
+   3      Kartu Form pengguna                       lebar 39% area isi
+   4      Pilihan peran                             3 tombol, tinggi 43 px
+   5      Tombol Nonaktifkan dan Simpan             tinggi 54 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                 Sumber data
+ Tabel                      Nama, Username, Peran, Status, Masuk terakhir                       Akun
+ Peran                      Owner, Supervisor, Kasir; Kasir tanpa akses HPP dan laba;           Pilihan
+                            Supervisor tanpa hak ubah atau hapus transaksi selesai
+                            tanpa Owner [Dari dokumen klien]
+ Kata sandi                 Minimal 8 karakter, huruf dan angka                                 Masukan
+ PIN POS                    4 sampai 6 angka, diisi bersama akun                                Masukan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 75 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                               Pintasan papan ketik      Peran O S K
+                                                                                    (PC)
+ Tambah Pengguna                Mengosongkan form                                   Ctrl + N                      O--
+ Simpan                         Menyimpan akun; tercatat di BO-21                   Ctrl + S                      O--
+ Nonaktifkan                    Menonaktifkan akun tanpa menghapus riwayat          Alt + D                       O--
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Pengguna pertama terpilih.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel pengguna; tombol aksi nonaktif sampai data tampil.
+ Kosong               Tidak berlaku; minimal satu Owner selalu ada.
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel dipaginasi 50 baris.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                           Pesan yang tampil
+ Nama kosong                                       Nama wajib diisi.
+ Username sudah dipakai                            Username sudah dipakai.
+ Kata sandi kurang dari 8 karakter                 Kata sandi minimal 8 karakter.
+ Menonaktifkan satu-satunya Owner                  Tidak dapat menonaktifkan satu-satunya Owner.
+ PIN tidak 4 sampai 6 angka                        PIN harus 4 sampai 6 angka.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                  Then
+ K-1     Owner menambah akun Kasir             Owner mengisi data dan                Akun aktif, Kasir muncul di POS-01, dan
+                                               menyimpan                             Kasir tidak melihat HPP di layar mana
+                                                                                     pun
+ K-2     Owner menonaktifkan satu-satunya      Menekan Nonaktifkan                   Pesan penolakan tampil
+         Owner
+ K-3     Akun disimpan                         Pengguna membuka BO-21                Log mencatat pembuatan akun
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 76 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+BO-21 Log Aktivitas
+ Tujuan                Menelusuri rekaman tindakan pengguna (siapa, kapan, dari perangkat dan IP mana, melakukan apa)
+                       untuk mencegah kecurangan internal.
+ Aplikasi              Back-Office                                   Prioritas rilis    Rilis 2
+ Perangkat             Windows PC (browser), desktop;                Hak akses          Owner, Supervisor (hanya baca) [Asumsi
+                       Landscape                                                        A-22]
+
+ Fitur RAB             13 RBAC Berjenjang dan Log Audit Trail
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-21. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No       Zona                                       Ukuran dan posisi
+   1       Filter                                     Dari, Sampai, Pengguna, Jenis aksi, tombol Tampilkan; tinggi 43 px
+   2       Tabel log                                  baris 50 px
+   3       Catatan hanya baca                         tinggi 28 px
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                  Sumber data
+ Tabel                       Waktu (24 jam WIB), User ID, Perangkat dan IP, Aksi,                 Log sistem
+                             Rincian
+ Jenis aksi                  Masuk, Transaksi, Koreksi, Otorisasi, Mutasi, Opname,                Daftar tetap
+                             Impor, Cetak, Pengguna, Harga
+ Rincian                     Nilai sebelum dan sesudah untuk perubahan harga, limit,              Log sistem
+                             dan koreksi
+
+AKSI
+
+ Label persis                    Hasil                                                 Pintasan papan ketik          Peran O S K
+                                                                                       (PC)
+ Tampilkan                       Menjalankan filter                                    Enter                             OS-
+ Ekspor PDF, Ekspor Excel        Mengunduh hasil filter [Asumsi A-22]                  Alt + P, Alt + X                  OS-
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 77 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                          Lampiran Kontrak
+
+
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Hari ini, semua pengguna, semua aksi.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel log; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Tidak ada aktivitas pada filter ini."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol Tampilkan dan Ekspor nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel dipaginasi 100 baris; filter wajib saat rentang lebih dari 31 hari [Usulan].
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                            Pesan yang tampil
+ Tanggal akhir sebelum tanggal awal                 Tanggal akhir tidak boleh sebelum tanggal awal.
+ Rentang lebih dari 366 hari [Usulan]               Rentang laporan maksimal 366 hari.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                   When                                    Then
+ K-1     Kasir menyelesaikan transaksi           Supervisor membuka log hari ini         Baris dengan waktu, user ID, perangkat,
+         pukul 14:32                                                                     IP, aksi "Transaksi", dan nomor transaksi
+                                                                                         tampil
+ K-2     Pengguna mencari tombol ubah            Melihat layar                           Tidak ada tombol ubah atau hapus; log
+         atau hapus log                                                                  hanya bisa dibaca
+ K-3     Supervisor menekan Ekspor Excel         Unduhan selesai                         Berkas memuat seluruh hasil filter
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                      Halaman 78 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                               Lampiran Kontrak
+
+
+
+
+BO-22 Pengaturan
+ Tujuan               Mengatur printer thermal (USB atau LAN) dan melihat status cadangan (backup) harian; juga satu-
+                      satunya layar yang memetakan fitur Database Locking dan Cloud Backup.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 1
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner mengubah; Supervisor melihat
+                      Landscape                                                         [Asumsi A-23]
+
+ Fitur RAB            6 Cetak Struk ESC/POS (USB dan LAN); 16 Database Locking dan Cloud Backup
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-22. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Menu pengaturan                           "Toko", "Printer", "Gudang", "Backup"; lebar 234 px
+   2      Kartu Printer thermal                     lebar 76% area isi, tinggi 360 px
+   3      Kartu Status backup (hanya baca)          tinggi 216 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Nama printer               Teks, contoh "Epson atau Blueprint"                                   Masukan
+ Koneksi                    "USB" atau "LAN"; LAN mewajibkan alamat IP                            Pilihan
+ Lebar kertas               "58 mm" atau "80 mm"                                                  Pilihan [Belum diketahui, lihat A-02]
+ Cetak Halaman Uji          Mencetak halaman uji                                                  Aksi
+ Status backup              Backup terakhir, jadwal "setiap hari 23:59 WIB", retensi              Catatan backup [Dari dokumen
+                            "harian 30 hari, bulanan 12 bulan", tujuan cloud                      klien]
+
+ Database Locking           Tidak ada layar; bentrok stok diselesaikan sistem. Hasilnya           Tanpa layar pengguna
+                            terlihat sebagai tanda "Ditinjau (negatif)" di BO-05
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 79 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                               Pintasan papan ketik        Peran O S K
+                                                                                    (PC)
+ Menu Toko, Gudang              Menampilkan nama toko, logo, dan nama dua           Alt + 1 sampai 4                 O--
+                                gudang (Gudang Display, Gudang Besar); hanya
+                                hak ubah untuk Owner
+ USB atau LAN                   Mengganti jenis koneksi                             Alt + U, Alt + L                 O--
+ Cetak Halaman Uji              Mencetak teks uji dan garis; hasilnya diperiksa     Alt + T                          OS-
+                                petugas
+ Simpan                         Menyimpan pengaturan printer                        Ctrl + S                         O--
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Menu "Printer" aktif.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan kartu pengaturan; tombol aksi nonaktif sampai data tampil.
+ Kosong               Status backup belum pernah berjalan: "Belum ada backup. Backup pertama berjalan pukul 23:59 WIB."
+ Error                Backup gagal: chip "Gagal" dan teks "Backup terakhir gagal pada 17 Okt 2026, 23:59 WIB. Hubungi
+                      pengembang."
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Supervisor melihat semua kartu tanpa tombol Simpan. Kasir tidak memiliki akses. Jika dibuka lewat
+ ditolak              alamat langsung: "Anda tidak memiliki hak akses ke halaman ini. Hubungi Owner." dengan tombol
+                      "Kembali ke Dashboard".
+ Data banyak          Tidak berlaku.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ LAN tanpa alamat IP                              Alamat IP wajib diisi untuk koneksi LAN.
+ Alamat IP tidak valid                            Alamat IP tidak valid. Contoh: 192.168.1.50.
+ Cetak uji gagal                                  Halaman uji belum tercetak. Periksa kabel atau jaringan printer.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                  Then
+ K-1     Owner memilih LAN dan mengisi         Menekan Cetak Halaman Uji             Halaman uji tercetak di printer thermal
+         192.168.1.50                                                                dan Simpan mengaktifkan printer itu
+                                                                                     untuk POS-04
+ K-2     Backup 23:59 sukses                   Owner membuka kartu status            Waktu backup terakhir tampil dengan
+                                                                                     chip "Berhasil"
+ K-3     Owner memilih LAN dan                 Menekan Simpan                        Pesan "Alamat IP wajib diisi untuk
+         mengosongkan IP                                                             koneksi LAN." tampil
+
+Aplikasi Monitoring Owner (PWA)
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                   Halaman 80 dari 107
+
