@@ -1,0 +1,337 @@
+import { describe, expect, it } from 'vitest';
+import { generateDataset } from '../../../src/shared/data/generator';
+import {
+  calculateSalesTotals,
+  createSalesInvoiceDraft,
+  getCustomerCreditInfo,
+  importFromSalesOrder,
+  buildSalesInvoiceWhatsAppMessage,
+} from '../../../src/apps/bo/domain/sales-transaction';
+import {
+  calculatePurchaseTotals,
+  createPurchaseInvoiceDraft,
+  getSupplierDebtInfo,
+  importFromPurchaseOrder,
+} from '../../../src/apps/bo/domain/purchase-transaction';
+import {
+  createDefaultExpeditionFromInvoice,
+  addKoliPackage,
+} from '../../../src/apps/bo/domain/expedition';
+import {
+  calculateTransactionAgeDays,
+  computeTransactionMetrics,
+  filterTransactions,
+} from '../../../src/apps/bo/domain/transaction-list';
+
+const dataset = generateDataset();
+
+describe('domain transaksi back-office (Tahap 4)', () => {
+  describe('Form Penjualan (BO-09 / form-penjualan.png)', () => {
+    it('membuat draf penjualan default dengan nomor faktur dan tanggal terisi', () => {
+      const draft = createSalesInvoiceDraft(dataset, '2026-10-25');
+      expect(draft.invoiceNumber).toMatch(/^FJ26/);
+      expect(draft.date).toBe('2026-10-25');
+      expect(draft.paymentTerms).toBe('piutang');
+      expect(draft.lines).toEqual([]);
+    });
+
+    it('menghitung total penjualan dengan diskon bertingkat 5+5, diskon nota, dan ongkir ekspedisi', () => {
+      const lines = [
+        {
+          id: 'L1',
+          productId: 'P-01',
+          productName: 'Semen Gresik 40kg',
+          aliasName: 'Semen Gresik',
+          warehouse: 'toko' as const,
+          unit: 'ZAK',
+          quantity: 20,
+          unitPrice: 70_000,
+          discountExpr: '',
+        },
+        {
+          id: 'L2',
+          productId: 'P-02',
+          productName: 'Lem Fox 70gr',
+          aliasName: 'Lem Fox',
+          warehouse: 'toko' as const,
+          unit: 'PCS',
+          quantity: 20,
+          unitPrice: 50_000,
+          discountExpr: '5+5', // 20 x 50.000 = 1.000.000 -> 902.500
+        },
+      ];
+      // Subtotal L1 = 1.400.000
+      // Subtotal L2 = 902.500
+      // Total lines = 2.302.500
+      // Diskon nota = 2.500
+      // Ongkir = 50.000
+      // Grand total = 2.350.000
+      const totals = calculateSalesTotals(lines, 2_500, 50_000);
+      expect(totals.subtotal).toBe(2_302_500);
+      expect(totals.invoiceDiscount).toBe(2_500);
+      expect(totals.expeditionFee).toBe(50_000);
+      expect(totals.grandTotal).toBe(2_350_000);
+    });
+
+    it('menghitung info piutang dan mendeteksi overlimit plafon pelanggan', () => {
+      const customer = dataset.customers[1]; // Bu Sherly Tjoandra
+      if (!customer) throw new Error('Customer tidak ada');
+
+      const info = getCustomerCreditInfo(customer, 25_000_000);
+      expect(info.totalPiutang).toBeGreaterThan(0);
+      expect(info.creditLimit).toBeGreaterThan(0);
+      expect(typeof info.isOverlimit).toBe('boolean');
+    });
+
+    it('mengimpor data dari Sales Order (SO) pending secara otomatis', () => {
+      const product = dataset.products[0];
+      if (!product) throw new Error('Product kosong');
+
+      const fakeSO = {
+        id: 'SO-999',
+        number: 'SO26104444',
+        createdAt: '2026-10-25T10:00:00Z',
+        createdBy: 'U-1',
+        customerId: dataset.customers[1]?.id,
+        lines: [{ productId: product.id, unit: product.baseUnit, quantity: 10, unitPrice: 65_000 }],
+        total: 650_000,
+        payment: 'piutang' as const,
+        downPayment: 100_000,
+        status: 'draf' as const,
+        source: 'sales' as const,
+      };
+
+      const draft = importFromSalesOrder(fakeSO, dataset);
+      expect(draft.soNumber).toBe('SO26104444');
+      expect(draft.customerId).toBe(dataset.customers[1]?.id);
+      expect(draft.customerName).toBe(dataset.customers[1]?.name);
+      expect(draft.lines).toHaveLength(1);
+      expect(draft.lines[0]?.quantity).toBe(10);
+    });
+
+    it('menghasilkan teks WhatsApp siap kirim dengan rincian nota', () => {
+      const draft = createSalesInvoiceDraft(dataset, '2026-10-25');
+      const msg = buildSalesInvoiceWhatsAppMessage({
+        ...draft,
+        customerName: 'Bu Sherly Tjoandra',
+        grandTotal: 1_500_000,
+        lines: [
+          {
+            id: '1',
+            productId: 'P-1',
+            productName: 'Semen Gresik',
+            aliasName: '',
+            warehouse: 'toko',
+            unit: 'ZAK',
+            quantity: 20,
+            unitPrice: 75000,
+            discountExpr: '',
+          },
+        ],
+      });
+      expect(msg).toContain('Toko Budiannor');
+      expect(msg).toContain(draft.invoiceNumber);
+      expect(msg).toContain('Rp 1.500.000');
+    });
+  });
+
+  describe('Form Pembelian (BO-08 / form-pembelian.png)', () => {
+    it('membuat draf pembelian default dengan nomor faktur pembelian', () => {
+      const draft = createPurchaseInvoiceDraft(dataset, '2026-10-25');
+      expect(draft.invoiceNumber).toMatch(/^FB26/);
+      expect(draft.receivedDate).toBe('2026-10-25');
+      expect(draft.paymentTerms).toBe('hutang');
+    });
+
+    it('menghitung total faktur pembelian dengan diskon supplier dan biaya ekspedisi', () => {
+      const lines = [
+        {
+          id: 'PL1',
+          productId: 'P-01',
+          productName: 'Selang Maspion 3/4',
+          productCode: 'SLG-034',
+          destination: 'gudang' as const,
+          unit: 'ROL',
+          quantity: 10,
+          unitPrice: 200_000,
+          discountExpr: '3+2.5', // 10 x 200.000 = 2.000.000 -> -3% = 1.940.000 -> -2.5% = 1.891.500
+        },
+      ];
+      // Subtotal = 1.891.500
+      // Diskon nota = 1.500
+      // Biaya ekspedisi = 0
+      // Total = 1.890.000
+      const totals = calculatePurchaseTotals(lines, 1_500, 0);
+      expect(totals.subtotal).toBe(1_891_500);
+      expect(totals.invoiceDiscount).toBe(1_500);
+      expect(totals.grandTotal).toBe(1_890_000);
+    });
+
+    it('mengambil info total hutang dan jatuh tempo pemasok', () => {
+      const supplier = dataset.suppliers[0];
+      if (!supplier) throw new Error('Supplier tidak ada');
+      const debt = getSupplierDebtInfo(supplier);
+      expect(debt.totalHutang).toBe(supplier.payable);
+    });
+
+    it('mengimpor data dari Purchase Order (PO) pending', () => {
+      const product = dataset.products[0];
+      const supplier = dataset.suppliers[0];
+      if (!product || !supplier) throw new Error('Data tidak lengkap');
+
+      const fakePO = {
+        id: 'PO-100',
+        number: 'PO26104444',
+        createdAt: '2026-10-25T10:00:00Z',
+        createdBy: 'U-1',
+        supplierId: supplier.id,
+        warehouse: 'besar' as const,
+        lines: [{ productId: product.id, unit: product.baseUnit, quantity: 50, unitPrice: 60_000 }],
+        total: 3_000_000,
+        status: 'dipesan' as const,
+      };
+
+      const draft = importFromPurchaseOrder(fakePO, dataset);
+      expect(draft.poNumber).toBe('PO26104444');
+      expect(draft.supplierId).toBe(supplier.id);
+      expect(draft.lines).toHaveLength(1);
+      expect(draft.lines[0]?.quantity).toBe(50);
+    });
+  });
+
+  describe('Surat Jalan Ekspedisi & Koli (forn-surat-jalan-ekspedisi.png)', () => {
+    it('mengelompokkan barang ke dalam packing koli secara otomatis', () => {
+      const salesDraft = {
+        ...createSalesInvoiceDraft(dataset, '2026-10-25'),
+        invoiceNumber: 'FJ26101234',
+        customerName: 'Bu Sherly Tjoandra',
+        customerAddress: 'Jl. Rajawali No 17',
+        customerPhone: '0811230988',
+        expedition: 'JNE Cargo',
+        lines: [
+          {
+            id: '1',
+            productId: 'P-1',
+            productName: 'Kuas Roll',
+            aliasName: '',
+            warehouse: 'toko' as const,
+            unit: 'PCS',
+            quantity: 5,
+            unitPrice: 20000,
+            discountExpr: '',
+          },
+          {
+            id: '2',
+            productId: 'P-2',
+            productName: 'Obeng Bolak Balik',
+            aliasName: '',
+            warehouse: 'toko' as const,
+            unit: 'PCS',
+            quantity: 3,
+            unitPrice: 35000,
+            discountExpr: '',
+          },
+        ],
+      };
+
+      const sj = createDefaultExpeditionFromInvoice(salesDraft);
+      expect(sj.noteNumber).toMatch(/^SJ26/);
+      expect(sj.invoiceNumber).toBe('FJ26101234');
+      expect(sj.totalKoli).toBeGreaterThanOrEqual(1);
+    });
+
+    it('mendukung penambahan koli baru (barang campur)', () => {
+      const initial = createDefaultExpeditionFromInvoice(
+        createSalesInvoiceDraft(dataset, '2026-10-25'),
+      );
+      const updated = addKoliPackage(initial, {
+        koliIndex: 2,
+        packageType: 'Karung',
+        title: 'Barang Campur (Kuas / Obeng / Engsel)',
+        weightKg: 15,
+        items: [
+          { name: 'Kuas Roll', quantity: 5, unit: 'PCS' },
+          { name: 'Engsel Bellucci', quantity: 10, unit: 'SET' },
+        ],
+      });
+      expect(updated.koliList).toHaveLength(initial.koliList.length + 1);
+      expect(updated.totalKoli).toBe(initial.totalKoli + 1);
+    });
+  });
+
+  describe('Daftar Nota Penjualan & Pembelian (daftar-penjualan-pembelian.png)', () => {
+    it('menghitung umur nota transaksi dalam satuan hari secara tepat', () => {
+      const age0 = calculateTransactionAgeDays('2026-10-25', '2026-10-25');
+      expect(age0).toBe(0);
+
+      const age7 = calculateTransactionAgeDays('2026-10-18', '2026-10-25');
+      expect(age7).toBe(7);
+
+      const age30 = calculateTransactionAgeDays('2026-09-25', '2026-10-25');
+      expect(age30).toBe(30);
+    });
+
+    it('menyaring daftar nota berdasarkan jenis transaksi dan status', () => {
+      const rows = [
+        {
+          type: 'penjualan' as const,
+          number: 'FJ26101234',
+          date: '2026-10-25',
+          partyName: 'Bu Sherly Tjoandra',
+          paymentTerms: 'Piutang (30 Hari)',
+          status: 'belum-lunas' as const,
+          ageDays: 5,
+          total: 2_450_000,
+        },
+        {
+          type: 'pembelian' as const,
+          number: 'FB26101234',
+          date: '2026-10-25',
+          partyName: 'PT Sejati Raya',
+          paymentTerms: 'Hutang (30 Hari)',
+          status: 'lunas' as const,
+          ageDays: 2,
+          total: 1_890_000,
+        },
+      ];
+
+      const salesOnly = filterTransactions(rows, { type: 'penjualan', status: 'semua', query: '' });
+      expect(salesOnly).toHaveLength(1);
+      expect(salesOnly[0]?.number).toBe('FJ26101234');
+
+      const lunasOnly = filterTransactions(rows, { type: 'semua', status: 'lunas', query: '' });
+      expect(lunasOnly).toHaveLength(1);
+      expect(lunasOnly[0]?.number).toBe('FB26101234');
+    });
+
+    it('menghitung metrik total nilai, total belum lunas, dan jatuh tempo', () => {
+      const rows = [
+        {
+          type: 'penjualan' as const,
+          number: 'FJ1',
+          date: '2026-10-25',
+          partyName: 'Pelanggan 1',
+          paymentTerms: 'Piutang',
+          status: 'belum-lunas' as const,
+          ageDays: 10,
+          total: 1_000_000,
+        },
+        {
+          type: 'penjualan' as const,
+          number: 'FJ2',
+          date: '2026-09-20',
+          partyName: 'Pelanggan 2',
+          paymentTerms: 'Piutang',
+          status: 'jatuh-tempo' as const,
+          ageDays: 35,
+          total: 2_000_000,
+        },
+      ];
+
+      const metrics = computeTransactionMetrics(rows);
+      expect(metrics.totalNilai).toBe(3_000_000);
+      expect(metrics.totalBelumLunas).toBe(3_000_000);
+      expect(metrics.totalJatuhTempo).toBe(2_000_000);
+    });
+  });
+});

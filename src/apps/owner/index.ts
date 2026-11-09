@@ -1,18 +1,17 @@
 import '../../styles/owner.css';
 import '../../styles/tables.css';
-import { message } from '../../shared/messages';
+import '../../styles/mobile.css';
+import { label, message } from '../../shared/messages';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
 import { createBanner } from '../../shared/ui/banner';
+import { startAppearance } from '../../shared/ui/appearance';
+import { closeAllModals } from '../../shared/ui/modal';
 import { el } from '../../shared/dom';
 import { createStorageVault } from './domain/auth';
 import { createOwnerSession, type OwnerSession } from './owner-session';
 import { renderLogin } from './screens/login';
-import { renderReceivables } from './screens/receivables';
-import { renderReports } from './screens/reports';
-import { renderStock } from './screens/stock';
 import { renderSummary } from './screens/summary';
-import { renderTransactions } from './screens/transactions';
 import type { ScreenHandle } from './screen';
 import { createOwnerShell, type OwnerShell } from './shell';
 import type { LabelKey } from '../../shared/messages';
@@ -26,35 +25,55 @@ type Renderer = (
   session: OwnerSession,
   go: (path: string) => void,
   query: URLSearchParams,
+  shell: OwnerShell,
 ) => ScreenHandle;
 
-const ROUTES: Readonly<
-  Record<string, { readonly id: string; readonly title: LabelKey; readonly render: Renderer }>
-> = {
+interface RouteEntry {
+  readonly id: string;
+  readonly title: LabelKey;
+  readonly hero?: boolean;
+  readonly render?: Renderer;
+  readonly load?: () => Promise<Renderer>;
+}
+
+const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/owner/ringkasan': {
     id: 'OWN-02',
-    title: 'judulRingkasan',
-    render: (session) => renderSummary(session),
+    title: 'navDashboard',
+    hero: true,
+    render: (session, go) => renderSummary(session, go),
   },
   '/owner/stok': {
     id: 'OWN-03',
     title: 'judulCekStok',
-    render: (session, go) => renderStock(session, go),
+    load: async () => {
+      const { renderStock } = await import('./screens/stock');
+      return (session, go, query, shell) => renderStock(session, go, query, shell);
+    },
   },
   '/owner/transaksi': {
     id: 'OWN-06',
     title: 'judulTransaksi',
-    render: (session, _go, query) => renderTransactions(session, query),
+    load: async () => {
+      const { renderTransactions } = await import('./screens/transactions');
+      return (session, go, query, shell) => renderTransactions(session, query, go, shell);
+    },
   },
   '/owner/laporan': {
     id: 'OWN-04',
     title: 'judulLaporan',
-    render: (session) => renderReports(session),
+    load: async () => {
+      const { renderReports } = await import('./screens/reports');
+      return (session, go, query, shell) => renderReports(session, query, go, shell);
+    },
   },
   '/owner/piutang': {
     id: 'OWN-05',
     title: 'judulPiutang',
-    render: (session) => renderReceivables(session),
+    load: async () => {
+      const { renderReceivables } = await import('./screens/receivables');
+      return (session, go, query, shell) => renderReceivables(session, query, go, shell);
+    },
   },
 };
 
@@ -63,6 +82,7 @@ let screen: ScreenHandle | undefined;
 let shell: OwnerShell | undefined;
 let watched: Store | undefined;
 let latest: { root: HTMLElement; path: string; context: AppContext } | undefined;
+let mountToken = 0;
 
 function storage(): Storage | undefined {
   try {
@@ -85,6 +105,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   const query = new URLSearchParams(search);
   const active = sessionFor(context.store);
   document.documentElement.dataset['app'] = 'owner';
+  startAppearance();
   if (watched !== context.store) {
     watched = context.store;
     context.store.bus.on('role', () => {
@@ -101,6 +122,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   shell?.destroy();
   screen = undefined;
   shell = undefined;
+  closeAllModals();
 
   if (path === '/owner') {
     if (active.signedIn()) {
@@ -120,10 +142,24 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     navigate('/owner/ringkasan');
     return;
   }
-  shell = createOwnerShell(active, path, route.title, go);
+  mountToken += 1;
+  const token = mountToken;
+  shell = createOwnerShell(active, path, route.title, go, { hero: route.hero === true });
   if (canOpenScreen(context.store.getState().role, route.id)) {
-    screen = route.render(active, go, query);
-    shell.content.replaceChildren(screen.element);
+    if (route.render !== undefined) {
+      screen = route.render(active, go, query, shell);
+      shell.content.replaceChildren(screen.element);
+    } else if (route.load !== undefined) {
+      shell.content.replaceChildren(
+        el('div', { className: 'own-loading', attrs: { role: 'status' } }, label('memuatData')),
+      );
+      void route.load().then((renderer) => {
+        if (token === mountToken && shell !== undefined) {
+          screen = renderer(active, go, query, shell);
+          shell.content.replaceChildren(screen.element);
+        }
+      });
+    }
   } else {
     shell.content.replaceChildren(
       el('div', { className: 'own-stack' }, createBanner('danger', message('MSG-118'))),

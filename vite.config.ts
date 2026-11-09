@@ -2,10 +2,9 @@ import { readFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-// POS tidak ikut dikelompokkan: kelompok app-pos memaksa semua modul POS ke satu potongan, dan
-// import() ke modul di dalamnya membuat rolldown menghasilkan ekspor yang tidak terdefinisi
-// ("Export 'pos_exports' is not defined") sehingga aplikasi gagal dimuat.
-const APPS = ['portal', 'bo', 'owner', 'sales'] as const;
+// POS, BO, dan Owner tidak ikut dikelompokkan: import() ke layar sekunder membuat potongan terpisah
+// sehingga ukuran JS awal tetap di bawah anggaran.
+const APPS = ['portal', 'sales'] as const;
 
 const CSP_META = /<meta\s+http-equiv="Content-Security-Policy"[^>]*>/;
 

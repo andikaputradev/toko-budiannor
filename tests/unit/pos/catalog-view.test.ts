@@ -120,11 +120,9 @@ describe('foto kategori', () => {
     }
   });
 
-  it('sedikitnya delapan dari dua belas kategori barang punya foto', () => {
+  it('kedua belas kategori barang bangkitan punya foto', () => {
     const categories = categoriesOf(generateDataset().products);
     expect(categories).toHaveLength(12);
-    expect(
-      categories.filter((category) => categoryPhoto(category) !== undefined).length,
-    ).toBeGreaterThanOrEqual(8);
+    expect(categories.filter((category) => categoryPhoto(category) === undefined)).toEqual([]);
   });
 });

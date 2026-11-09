@@ -101,4 +101,16 @@ describe('generator data fiktif', () => {
       );
     }
   });
+
+  it('memuat atribut operasional Back Office seperti rak, berat, komisi, dan supplier', () => {
+    const first = dataset.products[0];
+    expect(first?.rak).toBeDefined();
+    expect(first?.weight).toBeGreaterThan(0);
+    expect(first?.supplierName).toBeDefined();
+    expect(first?.hppAvg).toBeGreaterThan(0);
+    expect(first?.minByWarehouse?.display).toBeGreaterThan(0);
+    expect(first?.minByWarehouse?.besar).toBeGreaterThan(0);
+    expect(first?.salesCommission).toBeDefined();
+    expect(first?.initialStock).toBeDefined();
+  });
 });

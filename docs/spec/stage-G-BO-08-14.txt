@@ -1,0 +1,698 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+BO-08 Pembelian dan Penerimaan
+ Tujuan               Membuat Pesanan Pembelian (PO) ke pemasok, menerima barang ke gudang, dan mengelola daftar
+                      pemasok.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner, Supervisor
+                      Landscape
+ Fitur RAB            11 Pembelian, Retur, dan Komisi Sales; 7 Manajemen Multi-Gudang 2 Lokasi
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-08. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Tiga tab                                  "Pesanan Pembelian", "Penerimaan Barang", "Pemasok"; tinggi 40 px
+   2      Tombol Buat PO                            lebar 216 px, tinggi 47 px
+   3      Tabel PO                                  lebar 49% area isi, baris 54 px
+   4      Panel detail PO                           lebar 45% area isi, tinggi 540 px
+   5      Tombol Terima Barang dan Cetak PO         tinggi 54 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Tabel PO                   No. PO, Tanggal, Pemasok, Total, Status ("Draf", "Dipesan",           Dokumen PO
+                            "Diterima sebagian", "Diterima")
+ Detail PO                  Barang, Pesan, Terima, Harga beli, gudang penerima                    Baris PO
+ Tab Pemasok                Nama, telepon, alamat, saldo utang awal (dari impor)                  Master pemasok
+ Harga beli                 "Rp 1.337.000" per satuan; memperbarui HPP Average saat               Masukan dan perhitungan
+                            barang diterima
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 51 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                         Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                                 Pintasan papan ketik       Peran O S K
+                                                                                      (PC)
+ Buat PO                        Membuka formulir PO baru di panel kanan               Ctrl + N                       OS-
+ Terima Barang                  Menambah stok gudang penerima, memperbarui            Ctrl + R                       OS-
+                                HPP Average, mengubah status PO
+ Cetak PO                       Mencetak PO ke printer biasa atau PDF                 Ctrl + P                       OS-
+ Tab Pemasok: Tambah            Membuka form pemasok                                  Ctrl + N                       OS-
+ Pemasok
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Tab "Pesanan Pembelian", PO terbaru terpilih.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel PO; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Belum ada PO. Klik Buat PO." Tab Pemasok: "Belum ada pemasok."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel PO dipaginasi 50 baris; panel detail bergulir.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Pemasok belum dipilih                            Pilih pemasok terlebih dahulu.
+ Jumlah terima melebihi jumlah pesan              Jumlah terima melebihi jumlah pesan (20,0).
+ Harga beli kosong atau 0                         Harga beli wajib diisi dan lebih dari 0.
+ Gudang penerima belum dipilih                    Pilih gudang penerima.
+
+PERILAKU SCANNER BARCODE
+Pada form PO dan penerimaan, kolom cari barang berfokus; pindai menambah barang 1 satuan sesuai barcode, pindai
+berulang menambah 1. Pada tabel PO tidak berlaku.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                    Then
+ K-1     PO-0002 memesan 20,0 Sak               Supervisor mengisi terima 10,0 dan      Status menjadi "Diterima sebagian", stok
+                                                menekan Terima Barang                   Gudang Besar bertambah 10,0, dan HPP
+                                                                                        Average dihitung ulang
+ K-2     Pengguna mengisi terima 25,0           Menekan Terima Barang                   Pesan "Jumlah terima melebihi jumlah
+         padahal pesan 20,0                                                             pesan (20,0)." tampil
+ K-3     PO tanpa pemasok                       Pengguna menekan Simpan                 Pesan "Pilih pemasok terlebih dahulu."
+                                                                                        tampil
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                     Halaman 52 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                              Lampiran Kontrak
+
+
+
+
+BO-09 Penjualan dan Riwayat Invoice
+ Tujuan               Menelusuri invoice kasir, mencetak ulang, membuat surat jalan, dan mengoreksi transaksi selesai
+                      dengan otorisasi Owner.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner, Supervisor
+                      Landscape
+ Fitur RAB            11 Pembelian, Retur, dan Komisi Sales; 13 RBAC Berjenjang dan Log Audit Trail; 9 Surat Jalan dan
+                      Packing List Koli
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-09. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Filter                                     tinggi 48 px, empat kolom
+   2      Tabel invoice                              lebar 49% area isi, baris 54 px
+   3      Panel detail                               lebar 39% area isi
+   4      Tiga tombol aksi                           Cetak Ulang Invoice, Buat Surat Jalan, Koreksi Transaksi; tinggi 50 px
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                  Sumber data
+ Tabel                       No. Invoice, Tanggal, Pelanggan, Total, Status                       Transaksi POS
+ Detail                      Kasir, cara bayar, gudang, daftar item, subtotal                     Transaksi terpilih
+ Laba kotor transaksi        Tampil hanya Owner dan Supervisor                                    Penjualan dikurangi HPP
+
+AKSI
+
+ Label persis                    Hasil                                                 Pintasan papan ketik            Peran O S K
+                                                                                       (PC)
+ Cetak Ulang Invoice             Mencetak salinan bertanda "SALINAN"                   Ctrl + P                           OS-
+ Buat Surat Jalan                Membuka BO-12 dengan invoice terisi                   Alt + J                            OS-
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 53 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                       Lampiran Kontrak
+
+
+
+
+ Label persis                    Hasil                                               Pintasan papan ketik       Peran O S K
+                                                                                     (PC)
+ Koreksi Transaksi (Otorisasi    Owner: membuka form koreksi langsung dengan         Alt + K                       O S* -
+ Owner)                          alasan tertulis. Supervisor: membuka POS-10
+                                 dan koreksi baru berlaku setelah PIN Owner
+                                 benar
+ Hapus Transaksi                 Tidak ada tombol hapus; pembatalan dilakukan        Tidak ada                      ---
+                                 lewat Koreksi atau Retur [Asumsi A-17]
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Filter bulan berjalan, invoice terbaru terpilih.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel invoice; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Tidak ada invoice pada filter ini."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel dipaginasi 50 baris.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                           Pesan yang tampil
+ Tanggal akhir sebelum tanggal awal                Tanggal akhir tidak boleh sebelum tanggal awal.
+ Koreksi tanpa alasan                              Alasan koreksi wajib diisi minimal 5 karakter.
+ Invoice sudah punya surat jalan                   Invoice ini sudah memiliki surat jalan SJ-0001.
+
+PERILAKU SCANNER BARCODE
+Kolom cari berfokus; memindai barcode nomor invoice pada struk membuka detail invoice itu.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                   When                                  Then
+ K-1     Supervisor memilih invoice yang         Supervisor menekan Koreksi            POS-10 terbuka dan invoice tetap tidak
+         sudah selesai                           Transaksi                             berubah sebelum PIN Owner benar
+ K-2     Owner memilih invoice dan               Owner mengisi alasan dan              Perubahan tersimpan dan Log Aktivitas
+         menekan Koreksi Transaksi               menyimpan                             mencatat nilai sebelum dan sesudah
+ K-3     Pengguna menekan Buat Surat             Halaman berpindah                     BO-12 terbuka dengan invoice terisi dan
+         Jalan                                                                         item siap dikelompokkan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                   Halaman 54 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                               Lampiran Kontrak
+
+
+
+
+BO-10 Retur Penjualan dan Pembelian
+ Tujuan               Mencatat barang yang dikembalikan pelanggan atau dikembalikan ke pemasok beserta dampaknya pada
+                      stok dan piutang atau utang.
+ Aplikasi             Back-Office                                   Prioritas rilis    Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses          Owner, Supervisor
+                      Landscape
+ Fitur RAB            11 Pembelian, Retur, dan Komisi Sales; 7 Manajemen Multi-Gudang 2 Lokasi
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-10. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                       Ukuran dan posisi
+   1      Dua tab                                    "Retur Penjualan", "Retur Pembelian"; tinggi 40 px
+   2      Kolom cari invoice asal                    lebar 468 px, tinggi 47 px
+   3      Tabel item retur                           baris 47 px, kolom Pilih
+   4      Kolom alasan                               lebar 540 px
+   5      Tombol Batal dan Simpan Retur              tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                    Format dan perilaku                                                 Sumber data
+ Invoice asal                Invoice penjualan atau penerimaan pembelian                         Transaksi asal
+ Tabel                       Pilih, Barang, Dibeli, Sudah diretur, Jumlah retur, Satuan,         Baris transaksi asal
+                             Nilai
+ Nilai retur                 "Rp 1.337.000" dihitung dari harga transaksi asal                   Perhitungan
+
+AKSI
+
+ Label persis                    Hasil                                                Pintasan papan ketik              Peran O S K
+                                                                                      (PC)
+ Cari                            Memuat invoice asal                                  Enter                                OS-
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 55 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                        Lampiran Kontrak
+
+
+
+
+ Label persis                    Hasil                                               Pintasan papan ketik        Peran O S K
+                                                                                     (PC)
+ Simpan Retur                    Menambah stok (retur penjualan) atau                Ctrl + S                       OS-
+                                 mengurangi stok (retur pembelian), mengurangi
+                                 piutang atau utang bila ada, membuat nomor
+                                 retur
+ Batal                           Mengosongkan form                                   Esc                            OS-
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Tab "Retur Penjualan", form kosong.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel item; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Invoice tidak ditemukan. Periksa nomor lalu coba lagi."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Invoice lebih dari 30 item: tabel bergulir.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                           Pesan yang tampil
+ Tidak ada item dipilih                            Pilih minimal satu barang untuk diretur.
+ Jumlah retur melebihi sisa yang bisa diretur      Jumlah retur melebihi jumlah yang dibeli (1,5 Sak).
+ Alasan kosong                                     Alasan retur wajib diisi.
+
+PERILAKU SCANNER BARCODE
+Kolom cari invoice berfokus; pindai barcode nomor invoice memuat invoice. Pada tabel tidak berlaku.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                   Then
+ K-1     Invoice T-000103 memuat 1,5 Sak        Supervisor meretur 0,5 Sak dengan      Stok bertambah 0,5 Sak, nilai retur Rp
+                                                alasan                                 668.500 terhitung dari harga invoice, dan
+                                                                                       nomor retur terbit
+ K-2     Pengguna meretur 2,0 Sak               Menekan Simpan Retur                   Pesan "Jumlah retur melebihi jumlah
+                                                                                       yang dibeli (1,5 Sak)." tampil
+ K-3     Retur pembelian disimpan               Pengguna membuka BO-05                 Stok barang berkurang sebesar jumlah
+                                                                                       retur
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                    Halaman 56 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+BO-11 Pelanggan dan Piutang
+ Tujuan               Mengelola pelanggan, limit piutang, kartu piutang, dan pencatatan pembayaran piutang atau DP.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 1
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner, Supervisor
+                      Landscape
+ Fitur RAB            4 Biaya Kasir dan Pelanggan Baru; 5 Multi Opsi Bayar dan Limit Piutang; 11 Pembelian, Retur, dan
+                      Komisi Sales
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-11. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Cari dan Tambah Pelanggan                 tinggi 47 px
+   2      Tabel pelanggan                           lebar 49% area isi, baris 54 px
+   3      Panel Kartu piutang                       lebar 45% area isi, tinggi 650 px
+   4      Tabel mutasi piutang                      4 kolom, baris 40 px
+   5      Tombol Catat Pembayaran Piutang,          tinggi 54 px
+          Ubah Limit, Ekspor PDF
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Tabel pelanggan            Nama, Tier, Limit, Piutang, Status ("Lancar" atau "Jatuh              Master pelanggan
+                            tempo")
+ Kartu piutang              Tanggal, Keterangan, Debit, Kredit; saldo berjalan                    Transaksi piutang, pembayaran,
+                                                                                                  DP
+ Limit                      "Rp 5.000.000"; terpakai dan sisa dihitung otomatis                   Master pelanggan
+ Jatuh tempo                Hari sejak invoice                                                    Master pelanggan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 57 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                     Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                             Pintasan papan ketik        Peran O S K
+                                                                                  (PC)
+ Tambah Pelanggan               Membuka form pelanggan                            Ctrl + N                       OS-
+ Catat Pembayaran Piutang       Mengurangi saldo piutang, mencatat cara bayar     Ctrl + B                       OS-
+                                dan nomor referensi
+ Ubah Limit                     Mengubah limit dan jatuh tempo; tercatat di BO-   Ctrl + L                       O--
+                                21 dengan nilai lama dan baru
+ Ekspor PDF                     Mengunduh kartu piutang                           Alt + P                        OS-
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Pelanggan dengan piutang terbesar terpilih.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel pelanggan; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Belum ada pelanggan. Tambah pelanggan atau gunakan Impor Excel."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Tabel dipaginasi 50 baris; kartu piutang bergulir.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Pembayaran melebihi saldo piutang                Pembayaran melebihi saldo piutang Rp 837.000.
+ Jumlah 0 atau kosong                             Jumlah harus lebih dari 0.
+ Limit negatif                                    Limit tidak boleh negatif.
+ Nama dan telepon ganda                           Pelanggan dengan nama dan telepon ini sudah terdaftar.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                Then
+ K-1     Pelanggan punya saldo piutang Rp       Supervisor mencatat pembayaran      Saldo menjadi Rp 437.000 dan baris
+         837.000                                Rp 400.000                          kredit tampil di kartu piutang
+ K-2     Supervisor menekan Ubah Limit          Tombol tidak tersedia               Hanya Owner yang dapat mengubah limit
+ K-3     Pembayaran Rp 1.000.000 untuk          Pengguna menyimpan                  Pesan "Pembayaran melebihi saldo
+         saldo Rp 837.000                                                           piutang Rp 837.000." tampil
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                 Halaman 58 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+BO-12 Surat Jalan dan Koli
+ Tujuan               Membuat Surat Jalan dari invoice kasir dan mengelompokkan banyak item kecil menjadi beberapa koli
+                      (kardus) pada lembar ekspedisi.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner, Supervisor
+                      Landscape
+ Fitur RAB            9 Surat Jalan dan Packing List Koli
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-12. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No       Zona                                     Ukuran dan posisi
+   1       Kolom nomor invoice dan tombol Muat      tinggi 47 px
+   2       Tabel item dan kolom Koli                lebar 49% area isi, baris 47 px
+   3       Tombol Pilih Semua ke Koli 1 dan         tinggi 47 px
+           Tambah Koli
+   4       Kartu Ringkasan koli                     lebar 39% area isi, tinggi 360 px
+   5       Tombol Simpan, Cetak Packing List        tinggi 61 px
+           Koli, Cetak Surat Jalan
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Invoice                    Nomor invoice kasir; satu surat jalan per invoice                     Transaksi POS
+ Armada dan Sopir           Teks bebas, maksimal 30 karakter                                      Masukan
+ Kolom Koli                 Pilihan "Koli 1", "Koli 2", dan seterusnya per baris item             Masukan
+ Ringkasan koli             "Koli 1: 11 jenis barang", total jenis barang dan jumlah koli         Perhitungan
+ Nomor surat jalan          "SJ-0001" otomatis                                                    Penomoran
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                         Halaman 59 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                           Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                                Pintasan papan ketik          Peran O S K
+                                                                                     (PC)
+ Muat                           Memuat item invoice                                  Enter                             OS-
+ Pilih Semua ke Koli 1          Menempatkan semua item belum berkoli ke Koli         Alt + 1                           OS-
+                                1
+ Tambah Koli                    Menambah satu koli baru                              Alt + K                           OS-
+ Simpan                         Menyimpan pengelompokan; toast "Surat jalan          Ctrl + S                          OS-
+                                SJ-0001 tersimpan."
+ Cetak Packing List Koli        Mencetak ringkasan per koli: 20 jenis barang         Ctrl + Shift + P                  OS-
+                                menjadi 2 baris koli dengan isi terperinci di
+                                lampiran bawah
+ Cetak Surat Jalan              Mencetak surat jalan resmi memuat nomor              Ctrl + P                          OS-
+                                invoice, armada, sopir, dan jumlah koli
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Kolom invoice kosong, tabel kosong.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel item; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Invoice tidak ditemukan. Periksa nomor lalu coba lagi."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+                      Cetak gagal: "Surat jalan belum tercetak. Periksa printer lalu coba lagi."
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Lebih dari 100 item: tabel bergulir dan pemilihan massal memakai kotak centang.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Invoice kosong                                   Masukkan nomor invoice.
+ Item belum diberi koli saat simpan               Masih ada 3 item yang belum masuk koli.
+ Koli kosong                                      Koli 2 tidak berisi barang. Hapus koli atau isi barangnya.
+ Invoice sudah punya surat jalan                  Invoice ini sudah memiliki surat jalan SJ-0001.
+
+PERILAKU SCANNER BARCODE
+Kolom invoice berfokus; pindai barcode nomor invoice dari struk memuat invoice itu. Pada tabel tidak berlaku.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                    Then
+ K-1     Invoice memuat 20 jenis barang        Supervisor menempatkan 11 ke            Lembar surat jalan menunjukkan 2 koli
+                                               Koli 1 dan 9 ke Koli 2 lalu menekan     dengan isi masing-masing dan nomor
+                                               Cetak Surat Jalan                       invoice tercantum
+ K-2     Dua item belum diberi koli            Supervisor menekan Simpan               Pesan "Masih ada 2 item yang belum
+                                                                                       masuk koli." tampil dan data tidak
+                                                                                       tersimpan
+ K-3     Surat jalan tercetak                  Pengguna membuka BO-21                  Log mencatat pencetakan oleh pengguna
+                                                                                       dan nomor SJ
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 60 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                               Lampiran Kontrak
+
+
+
+
+BO-13 Cetak Label Barcode dan Rak
+ Tujuan                Membuat dan mencetak label barcode dan label harga rak secara massal untuk ditempel pada barang
+                       atau rak.
+ Aplikasi              Back-Office                                     Prioritas rilis     Rilis 2
+ Perangkat             Windows PC (browser), desktop;                  Hak akses           Owner, Supervisor
+                       Landscape
+ Fitur RAB             10 Cetak Label Barcode dan Rak
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-13. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                         Ukuran dan posisi
+   1      Kolom cari barang                            lebar 414 px, tinggi 47 px
+   2      Tabel pilihan barang                         lebar 57% area isi, baris 50 px
+   3      Kartu Pengaturan label                       lebar 41% area isi, tinggi 288 px
+   4      Pratinjau satu label                         tinggi 198 px
+   5      Tombol Cetak Label                           lebar 324 px, tinggi 61 px
+
+KOMPONEN DAN DATA
+
+ Komponen                     Format dan perilaku                                                    Sumber data
+ Tabel                        Pilih, Kode, Nama barang, Jumlah label                                 Master barang
+ Jenis label                  "Label Barcode" atau "Label Harga Rak"                                 Pilihan
+ Tier harga di label          Eceran, Grosir, Kontraktor; hanya untuk Label Harga Rak                Pilihan
+ Ukuran label                 Pilihan dari daftar ukuran yang diisi Supervisor di BO-22              Pengaturan
+                              [Belum diketahui, lihat A-03]
+
+ Pratinjau                    Nama barang, harga "Rp 1.337.000 / Sak", barcode                       Barang pertama terpilih
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                            Halaman 61 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                        Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                   Hasil                                                Pintasan papan ketik        Peran O S K
+                                                                                     (PC)
+ Label Barcode, Label Harga     Mengganti jenis label dan pratinjau                  Alt + 1, Alt + 2                OS-
+ Rak
+ Pilih (kotak centang)          Memasukkan barang ke daftar cetak                    Spasi                           OS-
+ Cetak Label                    Mengirim semua label terpilih ke printer label       Ctrl + P                        OS-
+                                terpilih
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Jenis "Label Barcode", belum ada barang terpilih, tombol Cetak nonaktif.
+ Memuat               Kerangka abu-abu (skeleton) menggantikan tabel barang; tombol aksi nonaktif sampai data tampil.
+ Kosong               "Tidak ada barang yang cocok. Ubah kata kunci."
+ Error                Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+                      Cetak gagal: "Label belum tercetak. Periksa printer lalu coba lagi."
+ Offline              Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                      koneksi pulih." Cetak tetap bisa bila printer terhubung lewat jaringan lokal; data yang sudah tampil tetap
+                      terbaca.
+ Hak akses            Menu tidak ditampilkan untuk peran ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak
+ ditolak              akses ke halaman ini. Hubungi Owner." dengan tombol "Kembali ke Dashboard".
+ Data banyak          Cetak lebih dari 500 label: konfirmasi "Cetak 600 label? Ini mungkin memakan waktu."
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Tidak ada barang terpilih                        Pilih minimal satu barang.
+ Jumlah label 0 atau kosong                       Jumlah label harus lebih dari 0.
+ Barang belum punya barcode                       Barang B0003 belum punya barcode. Isi barcode di Satuan dan Harga
+                                                  Bertingkat.
+ Ukuran label belum dipilih                       Pilih ukuran label.
+
+PERILAKU SCANNER BARCODE
+Kolom cari berfokus; pindai barcode menambah barang ke daftar dengan jumlah label 1; pindai berulang menambah 1 pada
+jumlah label barang itu.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                 When                                   Then
+ K-1     10 barang dipilih, masing-masing 4    Supervisor menekan Cetak Label         40 label dikirim ke printer dan pratinjau
+         label                                                                        cocok dengan hasil cetak
+ K-2     Barang terpilih tidak punya barcode   Supervisor menekan Cetak Label         Pesan "Barang B0003 belum punya
+                                                                                      barcode. Isi barcode di Satuan dan Harga
+                                                                                      Bertingkat." tampil
+ K-3     Jenis diganti ke Label Harga Rak      Pratinjau dilihat                      Pratinjau memuat harga Grosir satuan
+         dan tier Grosir                                                              bawaan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                    Halaman 62 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                              Lampiran Kontrak
+
+
+
+
+BO-14 Komisi
+ Tujuan               Mengatur formula komisi pegawai atau sales (persentase atau nominal tetap per produk) dan melihat
+                      komisi yang terkumpul.
+ Aplikasi             Back-Office                                   Prioritas rilis     Rilis 2
+ Perangkat            Windows PC (browser), desktop;                Hak akses           Owner mengatur; Supervisor melihat
+                      Landscape                                                         [Asumsi A-21]
+
+ Fitur RAB            11 Pembelian, Retur, dan Komisi Sales
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe BO-14. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Dua tab                                   "Aturan Komisi", "Laporan Komisi"; tinggi 40 px
+   2      Tabel aturan                              lebar 49% area isi, baris 54 px
+   3      Kartu Form aturan komisi                  lebar 39% area isi, tinggi 450 px
+   4      Tombol Simpan Aturan                      lebar 414 px, tinggi 54 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                   Sumber data
+ Tabel aturan               Penerima, Barang atau kategori, Jenis ("Persen" atau                  Aturan komisi
+                            "Nominal"), Nilai, Aktif
+ Nilai                      Persen: 0,1 sampai 100 dengan satu angka desimal;                     Masukan
+                            Nominal: "Rp 5.000" per satuan dasar terjual
+ Tab Laporan Komisi         Penerima, Periode, Jumlah barang, Total komisi; ekspor PDF            Penjualan dan aturan
+                            dan Excel
+
+AKSI
+
+ Label persis                   Hasil                                                 Pintasan papan ketik            Peran O S K
+                                                                                      (PC)
+ Tambah Aturan                  Mengosongkan form                                     Ctrl + N                            O--
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                           Halaman 63 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                         Lampiran Kontrak
+
+
+
+
+ Label persis                    Hasil                                                 Pintasan papan ketik      Peran O S K
+                                                                                       (PC)
+ Persen, Nominal tetap           Mengganti jenis nilai                                 Alt + 1, Alt + 2              O--
+ Simpan Aturan                   Menyimpan; berlaku untuk penjualan setelah            Ctrl + S                      O--
+                                 disimpan
+ Ekspor PDF, Ekspor Excel        Mengunduh laporan komisi                              Alt + P, Alt + X              OS-
+ (tab Laporan)
+
+STATE
+
+ State                 Tampilan dan perilaku
+ Default               Tab "Aturan Komisi", aturan pertama terpilih.
+ Memuat                Kerangka abu-abu (skeleton) menggantikan tabel aturan; tombol aksi nonaktif sampai data tampil.
+ Kosong                "Belum ada aturan komisi. Klik Tambah Aturan."
+ Error                 Banner bahaya: "Data tidak dapat dimuat. Periksa koneksi lalu coba lagi." dengan tombol "Muat Ulang".
+ Offline               Banner bahaya di atas halaman: "Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai
+                       koneksi pulih." Tombol simpan nonaktif; data yang sudah tampil tetap terbaca.
+ Hak akses             Supervisor melihat aturan dan laporan tanpa tombol ubah. Kasir: Menu tidak ditampilkan untuk peran
+ ditolak               ini. Jika dibuka lewat alamat langsung: "Anda tidak memiliki hak akses ke halaman ini. Hubungi Owner."
+                       dengan tombol "Kembali ke Dashboard".
+ Data banyak           Tabel dipaginasi 50 baris.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                            Pesan yang tampil
+ Penerima kosong                                    Penerima komisi wajib dipilih.
+ Nilai persen lebih dari 100                        Persentase tidak boleh lebih dari 100.
+ Nilai kosong atau 0                                Nilai komisi harus lebih dari 0.
+ Aturan bentrok untuk penerima dan barang           Sudah ada aturan aktif untuk penerima dan barang ini.
+ yang sama
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Layar ini tidak menerima masukan scanner.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                    Then
+ K-1     Aturan Sales 1 untuk Semen persen      Sales 1 menjual barang Semen Rp         Laporan Komisi menunjukkan komisi Rp
+         2,0                                    10.000.000                              200.000 pada periode itu
+ K-2     Owner mengisi persen 120               Menekan Simpan Aturan                   Pesan "Persentase tidak boleh lebih dari
+                                                                                        100." tampil
+ K-3     Supervisor membuka tab Aturan          Melihat layar                           Tidak ada tombol Tambah Aturan atau
+                                                                                        Simpan Aturan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                     Halaman 64 dari 107
+

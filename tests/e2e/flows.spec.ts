@@ -69,27 +69,32 @@ test.describe('F-09 Owner menyetujui dari HP lalu transaksi POS lanjut', () => {
   }) => {
     await loginOwner(page);
     await page.goto('/#/owner/transaksi');
-    const cards = page.locator('.own-card--approval');
+    const cards = page.locator('.trx-approval');
+    const pendingCount = page
+      .locator('.trx-section', { hasText: 'Approval Menunggu' })
+      .locator('.trx-count');
     await expect(cards).toHaveCount(3);
+    await expect(pendingCount).toHaveText('3');
 
     const discount = cards.filter({ hasText: 'Diskon' });
-    await discount.getByRole('button', { name: 'Setujui' }).click();
-    let dialog = page.getByRole('dialog');
+    await discount.getByRole('button', { name: /^Review / }).click();
+    let dialog = page.getByRole('dialog', { name: 'Review Approval' });
     await dialog.getByLabel('Alasan').fill('Pelanggan langganan');
     await dialog.getByLabel('PIN Owner').fill('482916');
     await dialog.getByRole('button', { name: 'Setujui' }).click();
     await expect(page.getByText('Persetujuan B-0002 disetujui.')).toBeVisible();
 
-    const overLimit = page.locator('.own-card--approval', { hasText: 'Piutang over-limit' });
+    const overLimit = page.locator('.trx-approval', { hasText: 'Piutang over-limit' });
     await expect(overLimit).toContainText('B-0002');
     await expect(overLimit).toContainText('Rp 3.031.200');
-    await overLimit.getByRole('button', { name: 'Setujui' }).click();
-    dialog = page.getByRole('dialog');
+    await overLimit.getByRole('button', { name: /^Review / }).click();
+    dialog = page.getByRole('dialog', { name: 'Review Approval' });
     await dialog.getByLabel('Alasan').fill('Pelanggan lama, disetujui Owner');
     await dialog.getByLabel('PIN Owner').fill('482916');
     await dialog.getByRole('button', { name: 'Setujui' }).click();
-    await expect(page.getByRole('heading', { name: 'Menunggu persetujuan (1)' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Riwayat persetujuan' })).toBeVisible();
+    await expect(cards).toHaveCount(1);
+    await expect(pendingCount).toHaveText('1');
+    await expect(page.getByText('Riwayat persetujuan (2)')).toBeVisible();
 
     await loginPos(page, 'Dewi');
     await recallBill(page, 'B-0002');
@@ -123,14 +128,17 @@ test.describe('F-10 Sales membuat SO offline lalu sinkron, Draf di BO-09, kirim 
     await expect(page).toHaveURL(/#\/sales\/katalog$/);
 
     await page
-      .locator('.own-card--stock')
+      .locator('.sls-card')
       .first()
       .getByRole('button', { name: /^Tambah ke Order/ })
       .click();
     await expect(page.getByText(/ditambahkan ke order\./)).toBeVisible();
     await page.getByRole('button', { name: 'Lihat Order' }).click();
-    await expect(page.locator('.own-card--line')).toHaveCount(1);
-    await page.locator('[data-line="0"]').fill('3');
+    await expect(page.locator('.sls-line')).toHaveCount(1);
+    await page
+      .locator('[data-line="0"]')
+      .getByRole('textbox', { name: /^Jumlah/ })
+      .fill('3');
 
     await simulate(page, 'Online');
     await expect(page.getByText(/Mode offline: order tetap tersimpan di HP/)).toBeVisible();
@@ -143,15 +151,10 @@ test.describe('F-10 Sales membuat SO offline lalu sinkron, Draf di BO-09, kirim 
     await expect(page.locator('.own-chip')).toContainText('Tersinkron', { timeout: 8000 });
 
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
+    // Form Faktur Penjualan BO-09 baru memuat SO berstatus Draf sebagai "SO Pending" (nomor, pelanggan,
+    // total). Daftar dan rincian SO per Sales sebelumnya (tabel BO-09) sudah tidak ada pada BO baru.
     await page.goto('/#/bo/penjualan');
-    const row = page.locator('.bo-sales__table tbody tr', { hasText: 'SO-0001' });
-    await expect(row).toHaveCount(1);
-    await expect(row).toContainText('Draf');
-    await row.getByRole('button', { name: 'SO-0001' }).click();
-    const detail = page.locator('.bo-sales__detail');
-    await expect(detail).toContainText('Sales Lapangan');
-    await expect(detail).toContainText('Budi Lapangan');
-    await expect(detail).toContainText('Total Sales Order');
+    await expect(page.locator('option', { hasText: 'SO-0001 - Umum (Rp 164.700)' })).toHaveCount(1);
 
     await page.goto('/#/sales/riwayat?so=SO-0001');
     await expect(page.getByRole('heading', { name: 'SO-0001' })).toBeVisible();

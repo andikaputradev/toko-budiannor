@@ -1,0 +1,201 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                           Lampiran Kontrak
+
+
+
+
+5. Inventaris layar
+Total 37 layar: POS 10, Back-Office 22, Monitoring Owner 5. Prioritas rilis mengikuti tahap milestone RAB: Rilis 1 (fondasi,
+impor, POS), Rilis 2 (Back-Office operasional dan logistik, hak akses, log), Rilis 3 (laporan, akuntansi, Monitoring Owner) [Dari
+dokumen klien]. Peran: O = Owner, S = Supervisor, K = Kasir.
+
+ ID        Nama layar                           Aplikasi    Perangkat      Peran yang boleh         Fitur terkait        Rilis
+                                                                           membuka
+ POS-01    Login dan Pilih Kasir                POS         Tablet, PC     Kasir, Supervisor,       1, 13                1
+                                                                           Owner
+ POS-02    Jual Utama                           POS         Tablet, PC     Kasir, Supervisor,       1, 2, 5, 7, 8        1
+                                                                           Owner
+ POS-03    Pilih Satuan dan Jumlah              POS         Tablet, PC     Kasir, Supervisor,       1, 7, 8              1
+                                                                           Owner
+ POS-04    Pembayaran                           POS         Tablet, PC     Kasir, Supervisor,       2, 5, 6              1
+                                                                           Owner
+ POS-05    Bill Gantung dan Struk Draf          POS         Tablet, PC     Kasir, Supervisor,       3, 6                 1
+                                                                           Owner
+ POS-06    Riwayat Penjualan dan Cetak Ulang    POS         Tablet, PC     Kasir, Supervisor,       3, 6, 13             1
+                                                                           Owner
+ POS-07    Biaya Kasir                          POS         Tablet, PC     Kasir, Supervisor,       4, 14                1
+                                                                           Owner
+ POS-08    Pelanggan Baru                       POS         Tablet, PC     Kasir, Supervisor,       4, 5                 1
+                                                                           Owner
+ POS-09    Status Offline dan Antrean           POS         Tablet, PC     Kasir, Supervisor,       2                    1
+           Sinkronisasi                                                    Owner
+ POS-10    Otorisasi Owner                      POS, BO     Tablet, PC     Owner mengesahkan;       5, 13                1
+                                                                           Supervisor dan Kasir
+                                                                           memicu
+ BO-01     Masuk ke Back-Office                 BO          PC             Owner, Supervisor        13                   1
+ BO-02     Dashboard                            BO          PC             Owner, Supervisor        7, 11, 14            3
+ BO-03     Barang                               BO          PC             Owner, Supervisor        8, 7, 11, 12         1
+ BO-04     Satuan dan Harga Bertingkat          BO          PC             Owner mengubah;          8                    1
+                                                                           Supervisor melihat
+ BO-05     Stok per Gudang                      BO          PC             Owner, Supervisor        7, 11                2
+ BO-06     Mutasi Antar Gudang                  BO          PC             Owner, Supervisor        7                    2
+ BO-07     Opname Stok                          BO          PC             Owner, Supervisor        7, 14                2
+ BO-08     Pembelian dan Penerimaan             BO          PC             Owner, Supervisor        11, 7                2
+ BO-09     Penjualan dan Riwayat Invoice        BO          PC             Owner, Supervisor        11, 13, 9            2
+ BO-10     Retur Penjualan dan Pembelian        BO          PC             Owner, Supervisor        11, 7                2
+ BO-11     Pelanggan dan Piutang                BO          PC             Owner, Supervisor        4, 5, 11             1
+ BO-12     Surat Jalan dan Koli                 BO          PC             Owner, Supervisor        9                    2
+ BO-13     Cetak Label Barcode dan Rak          BO          PC             Owner, Supervisor        10                   2
+ BO-14     Komisi                               BO          PC             Owner mengatur;          11                   2
+                                                                           Supervisor melihat
+ BO-15     Impor Data Excel                     BO          PC             Owner, Supervisor        12                   1
+ BO-16     Laporan Operasional                  BO          PC             Owner, Supervisor        14, 7, 11            3
+ BO-17     Laporan Keuangan                     BO          PC             Owner                    14                   3
+ BO-18     Price List                           BO          PC             Owner, Supervisor        14, 8                3
+ BO-19     Jurnal dan Beban Operasional         BO          PC             Owner, Supervisor        14, 4                3
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 12 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                           Lampiran Kontrak
+
+
+
+
+ ID        Nama layar                           Aplikasi    Perangkat      Peran yang boleh         Fitur terkait        Rilis
+                                                                           membuka
+ BO-20     Pengguna dan Hak Akses               BO          PC             Owner                    13                   2
+ BO-21     Log Aktivitas                        BO          PC             Owner, Supervisor        13                   2
+                                                                           (hanya baca)
+ BO-22     Pengaturan                           BO          PC             Owner mengubah;          6, 16                1
+                                                                           Supervisor melihat
+ OWN-      Masuk Monitoring Owner               Owner       HP             Owner                    15, 13               3
+ 01
+ OWN-      Ringkasan Omzet                      Owner       HP             Owner                    15, 14               3
+ 02
+ OWN-      Cek Stok                             Owner       HP             Owner                    15, 7                3
+ 03
+ OWN-      Laporan Laba Rugi dan Beban          Owner       HP             Owner                    15, 14               3
+ 04
+ OWN-      Piutang Jatuh Tempo                  Owner       HP             Owner                    15, 5                3
+ 05
+
+Fitur 16 dan 17: fitur 17 (Penyerahan Source Code dan NDA) tanpa layar pengguna. Fitur 16 (Database Locking dan Cloud Backup)
+hanya memetakan layar status backup pada BO-22. Layar tambahan di luar daftar awal: BO-01 (login, untuk fitur 13), BO-09 (riwayat
+invoice kasir dari proposal), BO-19 (jurnal dan input beban dari proposal), OWN-01 (login), POS-10 (otorisasi Owner dari klausul
+RBAC).
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                      Halaman 13 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                  Lampiran Kontrak
+
+
+
+
+6. Alur kritis
+Setiap alur memiliki langkah bernomor dan diagram teks. Diagram dibaca dari kiri ke kanan; tanda kurung siku menunjukkan
+percabangan.
+
+
+F-01 Jual tunai
+ 1. Kasir membuka POS-02 (setelah masuk lewat POS-01).
+ 2. Kasir memindai barcode atau mengetuk kartu barang; barang masuk bill.
+ 3. Untuk barang pecahan, kasir menahan kartu atau mengetuk baris item, lalu mengisi jumlah di POS-03.
+ 4. Kasir menekan "Bayar" (F4) dan POS-04 terbuka.
+ 5. Kasir memilih "Tunai" lalu "Uang Pas" atau mengetik jumlah diterima.
+ 6. Kasir menekan "Selesaikan dan Cetak Struk".
+ 7. Sistem menyimpan transaksi, mencetak struk, dan membuka bill baru di POS-02.
+ POS-01 Masuk → POS-02 Tambah barang → [pecahan?] POS-03 → POS-04 Tunai → Struk tercetak → POS-02 bill
+ baru
+
+
+F-02 Jual piutang dengan pemeriksaan limit
+ 1. Kasir memilih pelanggan terdaftar di POS-02 (panel Pilih Pelanggan).
+ 2. Kasir menambah barang lalu menekan "Bayar".
+ 3. Di POS-04 kasir memilih "Piutang" (atau "DP" lalu sisa menjadi piutang).
+ 4. Sistem memeriksa dua syarat: jumlah piutang tidak melebihi sisa limit, dan tidak ada tagihan melewati jatuh
+     tempo.
+ 5. Jika kedua syarat terpenuhi, kasir menekan "Selesaikan dan Cetak Struk".
+ 6. Sistem menyimpan transaksi, menambah saldo piutang di kartu piutang (BO-11), dan mencetak struk.
+ POS-02 Pilih pelanggan → POS-04 Piutang → Cek limit dan jatuh tempo → [lolos] Selesai dan Struk → Saldo
+ piutang BO-11
+
+
+F-03 Limit ditolak lalu otorisasi Owner
+ 1. Pada langkah 4 alur F-02, salah satu syarat gagal.
+ 2. POS-04 menampilkan banner "Transaksi piutang ditolak: ..." dan dua tombol.
+ 3. Kasir memilih "Ganti Cara Bayar" untuk membatalkan piutang, atau "Minta Otorisasi Owner".
+ 4. POS-10 terbuka dengan ringkasan transaksi; Owner mengisi alasan dan PIN Owner.
+ 5. Jika PIN benar, tombol "Setujui" melanjutkan transaksi piutang dan Log Aktivitas (BO-21) mencatat nama Owner,
+     alasan, waktu, dan perangkat.
+ 6. Jika PIN salah, pesan "PIN Owner salah. Sisa percobaan: 2." tampil dan transaksi tetap ditolak.
+ POS-04 Piutang → [ditolak] Banner → POS-10 Alasan dan PIN Owner → [PIN benar] Transaksi dilanjutkan → Log
+ BO-21
+
+
+F-04 Hold bill dan panggil ulang
+ 1. Kasir menyusun bill di POS-02 lalu menekan "Tahan Bill" (F6); bill tersimpan sebagai bill gantung.
+ 2. Kasir membuka POS-05, memilih bill, lalu menekan "Cetak Struk Draf" sebagai daftar ambil barang untuk staf.
+ 3. Staf menyiapkan dan mengecek barang.
+ 4. Kasir menekan "Panggil Bill" di POS-05 dan bill terbuka di POS-02.
+ 5. Kasir melanjutkan ke pembayaran seperti F-01 atau F-02.
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                              Halaman 14 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                  Lampiran Kontrak
+
+
+
+ POS-02 Tahan Bill → POS-05 Struk Draf (picking list) → Barang siap → POS-05 Panggil Bill → POS-02 → POS-
+ 04
+
+
+F-05 Transaksi saat offline lalu sinkronisasi
+ 1. Internet terputus; chip di bilah atas berubah menjadi "Offline" dan banner offline tampil di POS-02.
+ 2. Kasir terus menjual; stok dihitung dari data lokal dan transaksi masuk antrean lokal.
+ 3. Bila stok total menjadi kurang dari 0, item tetap terjual dan barang ditandai "Ditinjau (negatif)".
+ 4. Kasir atau Supervisor dapat memantau antrean dan daftar stok negatif di POS-09.
+ 5. Internet pulih; sistem mengirim antrean otomatis, status berubah dari "Menunggu" menjadi "Terkirim".
+ 6. Supervisor meninjau barang berstatus "Ditinjau (negatif)" di BO-05 lalu menandainya sudah ditinjau setelah stok
+     diperbaiki (opname atau penerimaan).
+ Offline → POS-02 jual → Antrean lokal → [stok < 0] Tanda Ditinjau → Online → Kirim otomatis → BO-05
+ tinjau → Tandai Sudah Ditinjau
+
+
+F-06 Mutasi antar gudang
+ 1. Supervisor membuka BO-06.
+ 2. Supervisor memilih gudang asal dan gudang tujuan.
+ 3. Supervisor memindai atau mencari barang dan mengisi jumlah mutasi.
+ 4. Sistem memeriksa jumlah tidak melebihi stok gudang asal.
+ 5. Supervisor menekan "Simpan Mutasi".
+ 6. Stok kedua gudang berubah seketika dan kartu stok mencatat dokumen mutasi.
+ BO-06 Asal dan tujuan → Tambah barang → Cek stok asal → Simpan Mutasi → Stok dua gudang berubah → Kartu
+ stok
+
+
+F-07 Surat jalan dengan pengelompokan koli
+ 1. Supervisor membuka BO-12 (atau menekan "Buat Surat Jalan" di BO-09) dan memuat nomor invoice.
+ 2. Sistem menampilkan seluruh item invoice.
+ 3. Supervisor menempatkan tiap item ke koli (contoh: 11 item ke Koli 1, 9 item ke Koli 2).
+ 4. Supervisor mengisi armada dan sopir lalu menekan "Simpan".
+ 5. Supervisor menekan "Cetak Packing List Koli" dan "Cetak Surat Jalan".
+ 6. Lembar tercetak menampilkan 20 rincian item sebagai 2 koli beserta nomor invoice.
+ BO-09 atau BO-12 Muat invoice → Tempatkan item ke Koli → Simpan → Cetak Packing List → Cetak Surat Jalan
+
+
+F-08 Owner memeriksa omzet dan piutang dari HP
+ 1. Owner membuka aplikasi PWA dan masuk di OWN-01.
+ 2. OWN-02 menampilkan omzet hari ini dan grafik per jam.
+ 3. Owner membuka OWN-03 untuk mengecek stok.
+ 4. Owner membuka OWN-05 untuk melihat piutang jatuh tempo, terlama lebih dulu.
+ 5. Owner membuka OWN-04 untuk membaca Laba Rugi atau Beban Operasional.
+ OWN-01 Masuk → OWN-02 Omzet → OWN-03 Cek stok → OWN-05 Piutang jatuh tempo → OWN-04 Laporan
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                              Halaman 15 dari 107
+

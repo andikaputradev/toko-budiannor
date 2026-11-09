@@ -1,0 +1,37 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                     Lampiran Kontrak
+
+
+
+
+Lampiran A. Matriks keterlacakan
+Setiap fitur yang memiliki antarmuka terhubung ke minimal satu layar, dan setiap layar terhubung ke minimal satu fitur.
+Pemeriksaan: layar yatim 0, fitur yatim 0.
+
+  No    Fitur terkontrak                                Layar terkait
+  1     Aplikasi Kasir POS Multi-Platform               POS-01, POS-02, POS-03
+  2     Mode Kasir Offline-First                        POS-02, POS-04, POS-09
+  3     Hold Bill dan Cetak Struk Draf                  POS-05, POS-06
+  4     Biaya Kasir dan Pelanggan Baru                  POS-07, POS-08, BO-11, BO-19
+  5     Multi Opsi Bayar dan Limit Piutang              POS-02, POS-04, POS-08, POS-10, BO-11, OWN-05
+  6     Cetak Struk ESC/POS (USB dan LAN)               POS-04, POS-05, POS-06, BO-22
+  7     Manajemen Multi-Gudang 2 Lokasi                 POS-02, POS-03, BO-02, BO-03, BO-05, BO-06, BO-07, BO-08, BO-10,
+                                                        BO-16, OWN-03
+  8     Multi-Satuan Desimal dan HPP Average            POS-02, POS-03, BO-03, BO-04, BO-18
+  9     Surat Jalan dan Packing List Koli               BO-09, BO-12
+  10    Cetak Label Barcode dan Rak                     BO-13
+  11    Pembelian, Retur, dan Komisi Sales              BO-02, BO-03, BO-05, BO-08, BO-09, BO-10, BO-11, BO-14, BO-16
+  12    Impor Data Massal Excel                         BO-03, BO-15
+  13    RBAC Berjenjang dan Log Audit Trail             POS-01, POS-06, POS-10, BO-01, BO-09, BO-20, BO-21, OWN-01
+  14    Otomatisasi Akuntansi dan Laporan               POS-07, BO-02, BO-07, BO-16, BO-17, BO-18, BO-19, OWN-02, OWN-
+                                                        04
+  15    Mobile Monitoring Owner                         OWN-01, OWN-02, OWN-03, OWN-04, OWN-05
+  16    Database Locking dan Cloud Backup               BO-22
+  17    Penyerahan Source Code dan NDA                  Tanpa layar pengguna
+
+Keterlacakan arah sebaliknya (layar ke fitur) ada pada kolom "Fitur terkait" di Bagian 5.
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                 Halaman 99 dari 107
+

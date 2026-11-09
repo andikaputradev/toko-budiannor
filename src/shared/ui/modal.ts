@@ -1,10 +1,12 @@
 import { el, nextId } from '../dom';
 import { FOCUSABLE_SELECTOR, isEscape, trapTab } from '../focus-trap';
+import type { IconName } from '../icons';
 import { createButton, type ButtonVariant } from './button';
 
 export interface ModalAction {
   readonly text: string;
   readonly variant?: ButtonVariant;
+  readonly icon?: IconName;
   readonly onClick?: () => void;
 }
 
@@ -23,6 +25,14 @@ export interface ModalHandle {
 }
 
 const stack: HTMLElement[] = [];
+const closers: (() => void)[] = [];
+
+export function closeAllModals(): void {
+  while (closers.length > 0) {
+    const fn = closers.pop();
+    fn?.();
+  }
+}
 
 export function openModal(options: ModalOptions): ModalHandle {
   const opener = document.activeElement;
@@ -70,6 +80,10 @@ export function openModal(options: ModalOptions): ModalHandle {
       return;
     }
     closed = true;
+    const closerIdx = closers.indexOf(close);
+    if (closerIdx !== -1) {
+      closers.splice(closerIdx, 1);
+    }
     stack.splice(stack.indexOf(overlay), 1);
     document.removeEventListener('keydown', onKeydown, true);
     overlay.remove();
@@ -102,6 +116,7 @@ export function openModal(options: ModalOptions): ModalHandle {
       createButton({
         text: action.text,
         variant: action.variant ?? 'secondary',
+        ...(action.icon === undefined ? {} : { icon: action.icon }),
         onClick: () => {
           action.onClick?.();
           close();
@@ -113,6 +128,7 @@ export function openModal(options: ModalOptions): ModalHandle {
   overlay.append(dialog);
   document.body.append(overlay);
   stack.push(overlay);
+  closers.push(close);
   for (const sibling of siblings) {
     sibling.inert = true;
   }

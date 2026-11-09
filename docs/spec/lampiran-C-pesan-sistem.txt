@@ -1,0 +1,281 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                               Lampiran Kontrak
+
+
+
+
+Lampiran C. Daftar pesan sistem
+Teks dipakai persis seperti tertulis; angka dan nama pada pesan adalah contoh yang diganti nilai sebenarnya. Jumlah pesan:
+120.
+
+ Kode          Pesan                                                                                    Layar atau konteks
+
+ MSG-001       Tidak ada koneksi internet. Perubahan tidak dapat disimpan sampai koneksi pulih.         Umum Back-Office, banner
+
+ MSG-002       Data tidak dapat dimuat. Periksa koneksi lalu coba lagi.                                 Umum Back-Office, banner
+
+ MSG-003       Anda tidak memiliki hak akses ke halaman ini. Hubungi Owner.                             Umum, hak akses ditolak
+
+ MSG-004       Mode offline: transaksi tetap berjalan dan akan dikirim otomatis saat internet pulih.    POS-02, banner offline
+               Antrean: 3 transaksi.
+
+ MSG-005       Data barang tidak dapat dibaca. Mulai ulang aplikasi.                                    POS-02, error
+
+ MSG-006       Barang tidak ditemukan. Periksa ejaan atau pindai ulang barcode.                         POS-02, hasil kosong
+
+ MSG-007       Belum ada barang. Pindai barcode atau ketuk barang.                                      POS-02, bill kosong
+
+ MSG-008       Bill B-0003 ditahan.                                                                     POS-02, toast
+
+ MSG-009       Biaya tersimpan.                                                                         POS-07, toast
+
+ MSG-010       Pelanggan tersimpan.                                                                     POS-08, toast
+
+ MSG-011       Barang tersimpan.                                                                        BO-03, toast
+
+ MSG-012       Mutasi M-0002 tersimpan.                                                                 BO-06, toast
+
+ MSG-013       Surat jalan SJ-0001 tersimpan.                                                           BO-12, toast
+
+ MSG-014       Beban tersimpan.                                                                         BO-19, toast
+
+ MSG-015       Hapus item ini dari bill?                                                                POS-03, konfirmasi
+
+ MSG-016       Hapus bill B-0003? Bill yang dihapus tidak dapat dikembalikan.                           POS-05, konfirmasi
+
+ MSG-017       Struk draf: STRUK DRAF, BUKAN BUKTI BAYAR                                                POS-05, judul cetak
+
+ MSG-018       Struk belum tercetak. Periksa printer lalu tekan Cetak Ulang.                            POS-04, error cetak
+
+ MSG-019       Semua transaksi sudah terkirim.                                                          POS-09, kosong
+
+ MSG-020       Akun Anda tidak aktif. Hubungi Owner.                                                    POS-01 dan BO-01, BO-01
+
+ MSG-021       Pilih nama kasir terlebih dahulu.                                                        POS-01
+
+ MSG-022       Masukkan PIN 4 sampai 6 angka.                                                           POS-01
+
+ MSG-023       PIN salah. Sisa percobaan: 2.                                                            POS-01
+
+ MSG-024       Akun dikunci 5 menit. Hubungi Owner jika perlu bantuan.                                  POS-01
+
+ MSG-025       Bill masih kosong. Tambahkan barang terlebih dahulu.                                     POS-02
+
+ MSG-026       Barcode 8990000000001 tidak ditemukan.                                                   POS-02
+
+ MSG-027       Satu bill dibatasi 200 baris. Pisahkan menjadi bill baru.                                POS-02
+
+ MSG-028       Bill saat ini belum selesai. Tahan dahulu agar tidak hilang.                             POS-02, POS-05
+
+ MSG-029       Jumlah harus lebih dari 0.                                                               POS-03, POS-07, BO-06, BO-
+                                                                                                        11, BO-19
+
+ MSG-030       Masukkan angka yang valid.                                                               POS-03, POS-04
+
+ MSG-031       Maksimal 3 angka di belakang koma.                                                       POS-03
+
+ MSG-032       Barang ini hanya dijual dalam jumlah bulat.                                              POS-03
+
+ MSG-033       Pembayaran kurang Rp 120.000. Tambah pembayaran atau pilih Piutang.                      POS-04
+
+ MSG-034       Piutang hanya untuk pelanggan terdaftar. Pilih atau daftarkan pelanggan.                 POS-04
+
+ MSG-035       Transaksi piutang ditolak: jumlah piutang Rp 1.200.000 melebihi sisa limit Rp 500.000.   POS-04
+
+ MSG-036       Transaksi piutang ditolak: pelanggan memiliki tagihan melewati jatuh tempo.              POS-04
+
+ MSG-037       Konfirmasi diperlukan untuk menghapus bill.                                              POS-05
+
+ MSG-038       Bill ini sedang dipakai di perangkat lain.                                               POS-05
+
+ MSG-039       Tanggal akhir tidak boleh sebelum tanggal awal.                                          POS-06, BO-09, BO-16, BO-17,
+                                                                                                        BO-21, OWN-04
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                       Halaman 103 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+
+ Kode          Pesan                                                                                   Layar atau konteks
+
+ MSG-040       Struk belum tercetak. Periksa printer lalu coba lagi.                                   POS-06
+
+ MSG-041       Jumlah melebihi saldo kas Rp 800.000.                                                   POS-07
+
+ MSG-042       Keterangan wajib diisi untuk jenis Lainnya.                                             POS-07
+
+ MSG-043       Nama pelanggan wajib diisi.                                                             POS-08
+
+ MSG-044       Nomor telepon tidak valid. Gunakan 9 sampai 14 angka.                                   POS-08
+
+ MSG-045       Pelanggan dengan nama dan telepon ini sudah terdaftar.                                  POS-08, BO-11
+
+ MSG-046       Limit piutang hanya dapat diatur oleh Supervisor atau Owner.                            POS-08
+
+ MSG-047       Tidak ada koneksi internet. Sinkronisasi akan berjalan otomatis saat koneksi pulih.     POS-09
+
+ MSG-048       Alasan wajib diisi minimal 5 karakter.                                                  POS-10
+
+ MSG-049       PIN Owner salah. Sisa percobaan: 2.                                                     POS-10
+
+ MSG-050       PIN ini bukan milik Owner.                                                              POS-10
+
+ MSG-051       Otorisasi dikunci 5 menit.                                                              POS-10
+
+ MSG-052       Nama pengguna wajib diisi.                                                              BO-01, OWN-01
+
+ MSG-053       Kata sandi wajib diisi.                                                                 BO-01, OWN-01
+
+ MSG-054       Nama pengguna atau kata sandi salah.                                                    BO-01, OWN-01
+
+ MSG-055       Akun dikunci 15 menit. Hubungi Owner.                                                   BO-01
+
+ MSG-056       Peran Kasir tidak memiliki akses ke Back-Office. Gunakan aplikasi POS.                  BO-01
+
+ MSG-057       Dashboard masih dimuat. Anda dapat membuka menu lain.                                   BO-02
+
+ MSG-058       Kode barang wajib diisi.                                                                BO-03
+
+ MSG-059       Kode barang sudah dipakai.                                                              BO-03, BO-15
+
+ MSG-060       Nama barang wajib diisi.                                                                BO-03
+
+ MSG-061       Satuan dasar wajib dipilih.                                                             BO-03
+
+ MSG-062       Stok minimum tidak boleh negatif.                                                       BO-03
+
+ MSG-063       Ukuran foto maksimal 2 MB.                                                              BO-03
+
+ MSG-064       Isi satuan harus lebih dari 0.                                                          BO-04
+
+ MSG-065       Nama satuan sudah dipakai pada barang ini.                                              BO-04
+
+ MSG-066       Harga wajib diisi dan lebih dari 0.                                                     BO-04
+
+ MSG-067       Harga Grosir lebih tinggi dari Eceran. Periksa kembali.                                 BO-04
+
+ MSG-068       Harga di bawah HPP satuan ini. Simpan tetap diperbolehkan setelah Anda mengonfirmasi.   BO-04
+
+ MSG-069       Tidak ada data untuk diekspor.                                                          BO-05, BO-18
+
+ MSG-070       Stok masih negatif. Lakukan opname atau penerimaan barang terlebih dahulu.              BO-05
+
+ MSG-071       Gudang asal dan tujuan tidak boleh sama.                                                BO-06
+
+ MSG-072       Jumlah melebihi stok gudang asal (40,0 Sak).                                            BO-06
+
+ MSG-073       Tambahkan minimal satu barang.                                                          BO-06
+
+ MSG-074       Isi stok fisik atau hapus baris ini.                                                    BO-07
+
+ MSG-075       Stok fisik tidak boleh negatif.                                                         BO-07
+
+ MSG-076       Tidak ada selisih untuk diterapkan.                                                     BO-07
+
+ MSG-077       Opname yang sudah diterapkan tidak dapat diubah.                                        BO-07
+
+ MSG-078       Pilih pemasok terlebih dahulu.                                                          BO-08
+
+ MSG-079       Jumlah terima melebihi jumlah pesan (20,0).                                             BO-08
+
+ MSG-080       Harga beli wajib diisi dan lebih dari 0.                                                BO-08
+
+ MSG-081       Pilih gudang penerima.                                                                  BO-08
+
+ MSG-082       Alasan koreksi wajib diisi minimal 5 karakter.                                          BO-09
+
+ MSG-083       Invoice ini sudah memiliki surat jalan SJ-0001.                                         BO-09, BO-12
+
+ MSG-084       Pilih minimal satu barang untuk diretur.                                                BO-10
+
+ MSG-085       Jumlah retur melebihi jumlah yang dibeli (1,5 Sak).                                     BO-10
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                     Halaman 104 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                   Lampiran Kontrak
+
+
+
+
+ Kode          Pesan                                                                           Layar atau konteks
+
+ MSG-086       Alasan retur wajib diisi.                                                       BO-10
+
+ MSG-087       Pembayaran melebihi saldo piutang Rp 837.000.                                   BO-11
+
+ MSG-088       Limit tidak boleh negatif.                                                      BO-11
+
+ MSG-089       Masukkan nomor invoice.                                                         BO-12
+
+ MSG-090       Masih ada 3 item yang belum masuk koli.                                         BO-12
+
+ MSG-091       Koli 2 tidak berisi barang. Hapus koli atau isi barangnya.                      BO-12
+
+ MSG-092       Pilih minimal satu barang.                                                      BO-13
+
+ MSG-093       Jumlah label harus lebih dari 0.                                                BO-13
+
+ MSG-094       Barang B0003 belum punya barcode. Isi barcode di Satuan dan Harga Bertingkat.   BO-13
+
+ MSG-095       Pilih ukuran label.                                                             BO-13
+
+ MSG-096       Penerima komisi wajib dipilih.                                                  BO-14
+
+ MSG-097       Persentase tidak boleh lebih dari 100.                                          BO-14
+
+ MSG-098       Nilai komisi harus lebih dari 0.                                                BO-14
+
+ MSG-099       Sudah ada aturan aktif untuk penerima dan barang ini.                           BO-14
+
+ MSG-100       Format berkas harus .xlsx.                                                      BO-15
+
+ MSG-101       Judul kolom tidak sesuai templat. Unduh templat terbaru.                        BO-15
+
+ MSG-102       Satuan dasar wajib diisi.                                                       BO-15
+
+ MSG-103       Ukuran berkas maksimal 10 MB.                                                   BO-15
+
+ MSG-104       Rentang laporan maksimal 366 hari.                                              BO-16, BO-21, OWN-04
+
+ MSG-105       Pilih barang untuk Kartu Stok.                                                  BO-16
+
+ MSG-106       Neraca tidak seimbang. Hubungi pengembang dengan kode laporan N-001.            BO-17
+
+ MSG-107       Pilih tier harga.                                                               BO-18
+
+ MSG-108       Pilih kategori beban.                                                           BO-19
+
+ MSG-109       Tanggal tidak boleh melewati hari ini.                                          BO-19
+
+ MSG-110       Nama wajib diisi.                                                               BO-20
+
+ MSG-111       Username sudah dipakai.                                                         BO-20
+
+ MSG-112       Kata sandi minimal 8 karakter.                                                  BO-20
+
+ MSG-113       Tidak dapat menonaktifkan satu-satunya Owner.                                   BO-20
+
+ MSG-114       PIN harus 4 sampai 6 angka.                                                     BO-20
+
+ MSG-115       Alamat IP wajib diisi untuk koneksi LAN.                                        BO-22
+
+ MSG-116       Alamat IP tidak valid. Contoh: 192.168.1.50.                                    BO-22
+
+ MSG-117       Halaman uji belum tercetak. Periksa kabel atau jaringan printer.                BO-22
+
+ MSG-118       Aplikasi ini hanya untuk peran Owner.                                           OWN-01
+
+ MSG-119       Pembaruan gagal. Data ditampilkan dari 14:32.                                   OWN-02, OWN-05
+
+ MSG-120       Ketik minimal 2 karakter untuk mencari.                                         OWN-03
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                             Halaman 105 dari 107
+

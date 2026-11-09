@@ -46,7 +46,10 @@ export default defineConfig([
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: safetyRules,
+    rules: {
+      ...safetyRules,
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+    },
   },
   {
     files: ['tests/**/*.ts'],

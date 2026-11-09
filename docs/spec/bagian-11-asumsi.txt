@@ -1,0 +1,144 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                                       Lampiran Kontrak
+
+
+
+
+11. Asumsi dan pertanyaan terbuka
+Setiap baris adalah keputusan yang belum ada di dokumen klien. Kolom Rekomendasi dipakai sebagai [Asumsi] bila tidak
+dijawab sebelum tanda tangan. Pemilik keputusan adalah klien; tenggat dinyatakan relatif terhadap tonggak, bukan tanggal
+karena jadwal kerja belum ditetapkan [Belum diketahui].
+
+ ID      Pertanyaan                   Opsi                          Rekomendasi            Dampak bila           Pemilik        Tenggat
+                                                                                           keliru
+
+ A-01    Ukuran layar baku            Tablet 1280 x 800             Pakai ukuran di kiri   Tata letak bisa       Owner          Sebelum tanda
+         perangkat apa saja?          landscape; PC 1366 x          sebagai acuan          terpotong atau                       tangan
+                                      768; HP 360 x 800. Opsi       desain responsif;      terlalu lega pada
+                                      lain: ukuran model tablet     verifikasi dengan      perangkat nyata.
+                                      yang dimiliki toko.           model perangkat
+                                                                    nyata.
+
+ A-02    Lebar kertas printer         58 mm; 80 mm;                 Dukung keduanya        Tata letak struk      Owner          Sebelum Rilis 1
+         thermal: 58 mm atau 80       keduanya (pilihan di BO-      lewat pilihan di BO-   dan struk draf                       dimulai
+         mm?                          22).                          22; tata letak struk   berubah.
+                                                                    dikunci setelah
+                                                                    lebar diketahui.
+
+ A-03    Ukuran label barcode dan     Printer thermal yang          Tanyakan model         Pratinjau dan tata    Owner          Sebelum Rilis 2
+         label harga rak, serta       sama; printer label           printer dan ukuran     letak label di BO-                   dimulai
+         printer label yang           khusus; cetak di kertas       stiker; sementara      13 berubah.
+         dipakai?                     A4 stiker.                    siapkan dua ukuran
+                                                                    bawaan.
+
+ A-04    DP berarti uang muka         (a) uang muka transaksi,      (a) di POS-04;         Alur pembayaran       Owner          Sebelum tanda
+         transaksi berjalan atau      sisanya piutang; (b)          deposit saldo          dan kartu piutang                    tangan
+         deposit saldo pelanggan?     deposit saldo yang            dicatat sebagai        berbeda.
+                                      dipotong pada transaksi       kredit di kartu
+                                      nanti; (c) keduanya.          piutang BO-11.
+
+ A-05    Bolehkah kasir login saat    Boleh, memakai data           Boleh, dengan PIN      Kasir tidak bisa      Owner          Sebelum tanda
+         internet mati?               pengguna di perangkat;        yang tersimpan         bekerja saat                         tangan
+                                      tidak boleh.                  terenkripsi di         internet mati.
+                                                                    perangkat.
+
+ A-06    Piutang ditolak jika         (a) tolak bila melebihi       (a), sesuai maksud     Pelanggan bisa        Owner          Sebelum tanda
+         melebihi sisa limit, atau    sisa; (b) tolak hanya bila    pengendalian           berutang melebihi                    tangan
+         hanya jika sisa limit        sisa nol.                     kredit.                plafon.
+         sudah nol?
+
+ A-07    Pelanggan "Umum"             Eceran; pilihan tier          Eceran.                Harga salah pada      Owner          Sebelum tanda
+         memakai tier harga apa?      manual.                                              pembeli tanpa                        tangan
+                                                                                           kartu pelanggan.
+
+ A-08    Apakah stok minimum          Per gudang; satu angka        Per gudang             Peringatan stok       Owner          Sebelum Rilis 2
+         ditetapkan per gudang        total.                        (Display dan           minimum bisa                         dimulai
+         atau satu angka per                                        Besar).                terlalu sering atau
+         barang?                                                                           terlambat.
+
+ A-09    Pemeriksaan limit            Ya, ditandai "Perlu           Ya, dengan             Risiko piutang        Owner          Sebelum tanda
+         piutang saat offline         ditinjau" saat sinkron;       penandaan.             melebihi limit saat                  tangan
+         memakai data terakhir        tidak, piutang ditolak saat                          offline.
+         yang tersinkron. Dapat       offline.
+         diterima?
+
+ A-10    Saat offline, riwayat dan    Ya; tidak (perlu berbagi      Ya.                    Kasir tidak           Owner          Sebelum tanda
+         bill gantung hanya tampil    antarperangkat saat                                  melihat transaksi                    tangan
+         dari perangkat itu. Dapat    offline, yang bergantung                             dari perangkat
+         diterima?                    pada jaringan lokal).                                lain saat offline.
+
+ A-11    Siapa yang boleh mengisi     Hanya Supervisor atau         Hanya Supervisor       Kasir bisa            Owner          Sebelum tanda
+         limit piutang di atas Rp 0   Owner; semua peran.           atau Owner.            memberi kredit                       tangan
+         saat mendaftarkan                                                                 tanpa
+         pelanggan baru?                                                                   persetujuan.
+
+ A-12    Bolehkah otorisasi Owner     Ya dengan PIN                 Ya, tercatat dan       Transaksi piutang     Owner          Sebelum tanda
+         dilakukan saat offline?      tersimpan; tidak, harus       ditinjau saat          tertahan saat                        tangan
+                                      online.                       sinkron.               internet mati.
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                                    Halaman 95 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                                 Lampiran Kontrak
+
+
+
+
+ ID      Pertanyaan                 Opsi                        Rekomendasi           Dampak bila          Pemilik        Tenggat
+                                                                                      keliru
+
+ A-13    Bolehkah Supervisor        Boleh; hanya Owner.         Boleh, tercatat di    Penyesuaian stok     Owner          Sebelum Rilis 2
+         menerapkan hasil                                       Log Aktivitas.        bergantung pada                     dimulai
+         opname ke stok?                                                              Owner.
+
+ A-14    Apakah perlu layar kartu   Tidak perlu; saldo utang    Tab Pemasok           Utang pemasok        Owner          Sebelum tanda
+         utang ke pemasok?          tampil di tab Pemasok       menampilkan saldo     tidak bisa dilacak                  tangan
+         Dokumen klien menyebut     BO-08; layar baru           utang saja.           rinci.
+         saldo utang awal, tetapi   (menjadi Change
+         hanya "kartu piutang".     Request).
+
+ A-15    Dari mana foto 3.500       Diunggah bertahap oleh      Foto bertahap;        Tampilan POS         Owner          Sebelum Rilis 1
+         barang dan siapa yang      toko; foto massal dari      barang tanpa foto     kurang bergambar                    dimulai
+         mengunggah?                klien.                      tampil kotak "Foto    pada awalnya.
+                                                                produk".
+
+ A-16    Berapa lama sesi Owner     30 hari; setiap kali buka   30 hari pada HP       Sering diminta       Owner          Sebelum Rilis 3
+         di HP tetap masuk?         aplikasi.                   yang sama.            login atau risiko                   dimulai
+                                                                                      HP hilang.
+
+ A-17    Bagaimana membatalkan      Lewat Koreksi (dengan       Koreksi atau Retur;   Riwayat transaksi    Owner          Sebelum tanda
+         transaksi selesai?         otorisasi Owner) atau       tidak ada hapus.      tidak utuh bila                     tangan
+                                    Retur; tidak ada tombol                           ada hapus.
+                                    hapus.
+
+ A-18    Apakah Kasir boleh         Tidak; sebagian layar       Tidak.                Kasir bisa melihat   Owner          Sebelum tanda
+         membuka Back-Office?       hanya lihat.                                      data di luar                        tangan
+                                                                                      tugasnya.
+
+ A-19    Siapa yang boleh           Hanya Owner; Owner dan      Hanya Owner.          Harga bisa           Owner          Sebelum tanda
+         mengubah harga jual?       Supervisor.                                       berubah tanpa                       tangan
+                                                                                      sepengetahuan
+                                                                                      Owner.
+
+ A-20    Siapa yang boleh           Hanya Owner; Owner dan      Hanya Owner.          Supervisor           Owner          Sebelum tanda
+         membuka Laporan            Supervisor.                                       melihat data                        tangan
+         Keuangan (Laba Rugi,                                                         keuangan sensitif.
+         Neraca, Arus Kas)?
+
+ A-21    Siapa yang boleh           Hanya Owner; Owner dan      Hanya Owner;          Komisi bisa          Owner          Sebelum tanda
+         mengatur aturan komisi?    Supervisor.                 Supervisor melihat.   diubah tanpa                        tangan
+                                                                                      Owner.
+
+ A-22    Apakah Log Aktivitas       Hanya Owner; Supervisor     Supervisor hanya      Supervisor tidak     Owner          Sebelum tanda
+         boleh dibuka dan           hanya baca.                 baca dan ekspor.      bisa membantu                       tangan
+         diekspor Supervisor?                                                         pemeriksaan.
+
+ A-23    Siapa yang mengubah        Hanya Owner; Supervisor     Hanya Owner;          Printer bisa         Owner          Sebelum tanda
+         Pengaturan printer dan     juga.                       Supervisor melihat.   berubah tanpa                       tangan
+         toko?                                                                        pengawasan.
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                              Halaman 96 dari 107
+

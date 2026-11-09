@@ -37,6 +37,31 @@ export interface Product {
   readonly incoming?: number | undefined;
   readonly photoUrl?: string | undefined;
   readonly pinned?: boolean | undefined;
+  readonly rak?: string | undefined;
+  readonly weight?: number | undefined;
+  readonly salesCommission?: { readonly percent: number; readonly nominal: number } | undefined;
+  readonly promo?: { readonly percent: number; readonly nominal: number } | undefined;
+  readonly notes?: string | undefined;
+  readonly supplierName?: string | undefined;
+  readonly lastPurchaseDate?: string | undefined;
+  readonly lastPurchasePrice?: number | undefined;
+  readonly hppAvg?: number | undefined;
+  readonly initialStock?:
+    | {
+        readonly date?: string;
+        readonly quantity?: number;
+        readonly unit?: string;
+        readonly unitPrice?: number;
+        readonly warehouse?: string;
+      }
+    | undefined;
+}
+
+// Catatan pembayaran invoice (piutang atau hutang) yang dibuat saat aplikasi berjalan.
+export interface InvoicePayment {
+  readonly at: string;
+  readonly amount: number;
+  readonly method: 'tunai' | 'transfer' | 'qris';
 }
 
 export interface ReceivableInvoice {
@@ -45,6 +70,7 @@ export interface ReceivableInvoice {
   readonly dueAt: string;
   readonly amount: number;
   readonly paid: number;
+  readonly payments?: readonly InvoicePayment[] | undefined;
 }
 
 export interface Customer {
@@ -58,6 +84,10 @@ export interface Customer {
   readonly address?: string | undefined;
   readonly dueDays?: number | undefined;
   readonly pinned?: boolean | undefined;
+  // Master Pelanggan: false berarti dinonaktifkan (disembunyikan dari daftar master, data tetap).
+  readonly active?: boolean | undefined;
+  // Saldo deposit pelanggan (uang titipan yang dapat dipakai melunasi piutang); kosong berarti 0.
+  readonly deposit?: number | undefined;
 }
 
 export interface AppUser {
@@ -168,11 +198,27 @@ export interface DailyRevenue {
   readonly count: number;
 }
 
+// Faktur pembelian dari supplier. Sisa = amount dikurangi paid; lines berjumlah sama dengan amount.
+export interface PayableInvoice {
+  readonly id: string;
+  readonly issuedAt: string;
+  readonly dueAt: string;
+  readonly amount: number;
+  readonly paid: number;
+  readonly lines: readonly BillLine[];
+  readonly payments?: readonly InvoicePayment[] | undefined;
+}
+
 export interface Supplier {
   readonly id: string;
   readonly name: string;
   readonly phone: string;
   readonly payable: number;
+  readonly invoices?: readonly PayableInvoice[] | undefined;
+  // Master Pemasok: kode, alamat, dan status aktif (false berarti dinonaktifkan).
+  readonly code?: string | undefined;
+  readonly address?: string | undefined;
+  readonly active?: boolean | undefined;
 }
 
 export interface ExpenseRecord {
@@ -235,6 +281,58 @@ export interface PurchaseOrder {
   readonly lines: readonly PurchaseOrderLine[];
   readonly total: number;
   readonly status: 'draf' | 'dipesan' | 'diterima-sebagian' | 'diterima';
+}
+
+// Retur yang dicatat di Back-Office (BO-10). Penjualan: barang kembali dari pelanggan; pembelian:
+// barang dikembalikan ke pemasok. `applied` memotong piutang atau hutang, `toDeposit` menambah
+// deposit pelanggan, `cash` adalah uang tunai atau transfer yang dikembalikan atau diterima.
+export type ReturnNoteKind = 'penjualan' | 'pembelian';
+export type ReturnNoteSettlement = 'tunai' | 'transfer' | 'potong' | 'deposit';
+export type ReturnNoteStatus = 'selesai' | 'menunggu';
+
+export interface ReturnNoteLine {
+  readonly index: number;
+  readonly productId: string;
+  readonly unit: string;
+  readonly quantity: number;
+  readonly value: number;
+}
+
+export interface ReturnNote {
+  readonly id: string;
+  readonly number: string;
+  readonly kind: ReturnNoteKind;
+  readonly at: string;
+  readonly userId: string;
+  readonly sourceNumber: string;
+  readonly partyId: string | undefined;
+  readonly partyName: string;
+  readonly lines: readonly ReturnNoteLine[];
+  readonly total: number;
+  readonly settlement: ReturnNoteSettlement;
+  readonly warehouse: WarehouseId;
+  readonly applied: number;
+  readonly toDeposit: number;
+  readonly cash: number;
+  readonly reason: string;
+  readonly status: ReturnNoteStatus;
+}
+
+// Mutasi saldo deposit pelanggan: setoran, pemakaian untuk piutang, atau kredit dari retur.
+export type DepositEntryKind = 'setor' | 'pakai' | 'retur';
+
+export interface DepositEntry {
+  readonly id: string;
+  readonly number: string;
+  readonly kind: DepositEntryKind;
+  readonly at: string;
+  readonly userId: string;
+  readonly customerId: string;
+  readonly amount: number;
+  readonly balanceAfter: number;
+  readonly method: 'tunai' | 'transfer' | undefined;
+  readonly reference: string;
+  readonly note: string;
 }
 
 export interface Dataset {

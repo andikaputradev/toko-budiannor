@@ -8,16 +8,15 @@ import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
 import { createBanner } from '../../shared/ui/banner';
 import { createButton } from '../../shared/ui/button';
+import { closeAllModals } from '../../shared/ui/modal';
+import { applyAppearance, loadMode, loadTheme, prefersDark, watchScheme } from '../../shared/theme';
 import { createBoSession, type BoSession } from './bo-session';
+import { entryFor } from './domain/menu';
 import { renderDashboard } from './screens/dashboard';
 import { renderLogin, type ScreenHandle } from './screens/login';
-import { renderOpname } from './screens/opname';
-import { renderSales } from './screens/sales';
-import { renderProducts } from './screens/products';
-import { renderStock } from './screens/stock';
-import { renderTransfer } from './screens/transfer';
-import { renderUnits } from './screens/units';
+import { renderPlaceholder } from './screens/placeholder';
 import { createShell, type Shell } from './shell';
+import '../../styles/bo-polish.css';
 
 export interface AppContext {
   readonly store: Store;
@@ -29,14 +28,368 @@ type Renderer = (
   query: URLSearchParams,
 ) => ScreenHandle;
 
-const ROUTES: Readonly<Record<string, { readonly id: string; readonly render: Renderer }>> = {
+interface RouteEntry {
+  readonly id: string;
+  readonly render?: Renderer;
+  readonly load?: () => Promise<Renderer>;
+}
+
+const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/bo/dashboard': { id: 'BO-02', render: (session, go) => renderDashboard(session, go) },
-  '/bo/barang': { id: 'BO-03', render: (session, go) => renderProducts(session, go) },
-  '/bo/harga': { id: 'BO-04', render: (session, _go, query) => renderUnits(session, query) },
-  '/bo/stok': { id: 'BO-05', render: (session, go, query) => renderStock(session, go, query) },
-  '/bo/mutasi': { id: 'BO-06', render: (session) => renderTransfer(session) },
-  '/bo/opname': { id: 'BO-07', render: (session) => renderOpname(session) },
-  '/bo/penjualan': { id: 'BO-09', render: (session) => renderSales(session) },
+  '/bo/barang': {
+    id: 'BO-03',
+    load: async () => {
+      const { renderProducts } = await import('./screens/products');
+      return (session, go) => renderProducts(session, go);
+    },
+  },
+  '/bo/harga': {
+    id: 'BO-04',
+    load: async () => {
+      const { renderUnits } = await import('./screens/units');
+      return (session, _go, query) => renderUnits(session, query);
+    },
+  },
+  '/bo/stok': {
+    id: 'BO-05',
+    load: async () => {
+      const { renderStock } = await import('./screens/stock');
+      return (session, go, query) => renderStock(session, go, query);
+    },
+  },
+  '/bo/mutasi': {
+    id: 'BO-06',
+    load: async () => {
+      const { renderTransfer } = await import('./screens/transfer');
+      return (session) => renderTransfer(session);
+    },
+  },
+  '/bo/mutasi/koreksi': {
+    id: 'BO-06',
+    load: async () => {
+      const { renderStockCorrection } = await import('./screens/stock-correction');
+      return (session) => renderStockCorrection(session);
+    },
+  },
+  '/bo/laporan/stok': {
+    id: 'BO-16',
+    load: async () => {
+      const { renderStockReport } = await import('./screens/stock-report');
+      return (session, go, query) => renderStockReport(session, go, query);
+    },
+  },
+  '/bo/pengaturan/tema': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderThemeSettings } = await import('./screens/theme-settings');
+      return (session) => renderThemeSettings(session);
+    },
+  },
+  '/bo/opname': {
+    id: 'BO-07',
+    load: async () => {
+      const { renderOpname } = await import('./screens/opname');
+      return (session) => renderOpname(session);
+    },
+  },
+  '/bo/penjualan': {
+    id: 'BO-09',
+    load: async () => {
+      const { renderSalesForm } = await import('./screens/sales-form');
+      return (session, go, query) => renderSalesForm(session, go, query.get('so') ?? undefined);
+    },
+  },
+  '/bo/pembelian': {
+    id: 'BO-08',
+    load: async () => {
+      const { renderPurchaseForm } = await import('./screens/purchase-form');
+      return (session, go, query) => renderPurchaseForm(session, go, query.get('po') ?? undefined);
+    },
+  },
+  '/bo/transaksi/surat-jalan': {
+    id: 'BO-12',
+    load: async () => {
+      const { renderExpeditionForm } = await import('./screens/expedition-form');
+      return (session, go, query) =>
+        renderExpeditionForm(session, go, query.get('inv') ?? undefined);
+    },
+  },
+  '/bo/transaksi/retur-penjualan': {
+    id: 'BO-10',
+    load: async () => {
+      const { renderReturnForm } = await import('./screens/return-form');
+      return (session, go) => renderReturnForm(session, go, 'penjualan');
+    },
+  },
+  '/bo/transaksi/retur-pembelian': {
+    id: 'BO-10',
+    load: async () => {
+      const { renderReturnForm } = await import('./screens/return-form');
+      return (session, go) => renderReturnForm(session, go, 'pembelian');
+    },
+  },
+  '/bo/transaksi/deposit-pelanggan': {
+    id: 'BO-11',
+    load: async () => {
+      const { renderDeposit } = await import('./screens/deposit');
+      return (session) => renderDeposit(session);
+    },
+  },
+  '/bo/transaksi/daftar-nota': {
+    id: 'BO-09',
+    load: async () => {
+      const { renderTransactionList } = await import('./screens/transaction-list');
+      return (session, go, query) =>
+        renderTransactionList(
+          session,
+          go,
+          query.get('tab') === 'pembelian' ? 'pembelian' : 'penjualan',
+        );
+    },
+  },
+  '/bo/transaksi/so-penjualan': {
+    id: 'BO-09',
+    load: async () => {
+      const { renderSalesForm } = await import('./screens/sales-form');
+      return (session, go, query) => renderSalesForm(session, go, query.get('so') ?? undefined);
+    },
+  },
+  '/bo/transaksi/po-pembelian': {
+    id: 'BO-08',
+    load: async () => {
+      const { renderPurchaseForm } = await import('./screens/purchase-form');
+      return (session, go, query) => renderPurchaseForm(session, go, query.get('po') ?? undefined);
+    },
+  },
+  '/bo/laporan/penjualan': {
+    id: 'BO-16',
+    load: async () => {
+      const { renderTransactionList } = await import('./screens/transaction-list');
+      return (session, go) => renderTransactionList(session, go, 'penjualan');
+    },
+  },
+  '/bo/laporan/pembelian': {
+    id: 'BO-16',
+    load: async () => {
+      const { renderTransactionList } = await import('./screens/transaction-list');
+      return (session, go) => renderTransactionList(session, go, 'pembelian');
+    },
+  },
+  '/bo/hutang-piutang/saldo-hutang': {
+    id: 'BO-11',
+    load: async () => {
+      const { renderReceivablePayable } = await import('./screens/receivable-payable');
+      return (session, go) => renderReceivablePayable(session, go, 'pemasok');
+    },
+  },
+  '/bo/hutang-piutang/bayar-hutang': {
+    id: 'BO-11',
+    load: async () => {
+      const { renderReceivablePayable } = await import('./screens/receivable-payable');
+      return (session, go) => renderReceivablePayable(session, go, 'pemasok');
+    },
+  },
+  '/bo/hutang-piutang/saldo-piutang': {
+    id: 'BO-11',
+    load: async () => {
+      const { renderReceivablePayable } = await import('./screens/receivable-payable');
+      return (session, go) => renderReceivablePayable(session, go, 'pelanggan');
+    },
+  },
+  '/bo/hutang-piutang/bayar-piutang': {
+    id: 'BO-11',
+    load: async () => {
+      const { renderReceivablePayable } = await import('./screens/receivable-payable');
+      return (session, go) => renderReceivablePayable(session, go, 'pelanggan');
+    },
+  },
+  '/bo/laporan/hutang-piutang': {
+    id: 'BO-16',
+    load: async () => {
+      const { renderReceivablePayable } = await import('./screens/receivable-payable');
+      return (session, go, query) =>
+        renderReceivablePayable(
+          session,
+          go,
+          query.get('tab') === 'pemasok' ? 'pemasok' : 'pelanggan',
+        );
+    },
+  },
+  '/bo/akuntansi/jurnal': {
+    id: 'BO-18',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'jurnal');
+    },
+  },
+  '/bo/akuntansi/beban': {
+    id: 'BO-19',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'beban');
+    },
+  },
+  '/bo/akuntansi/arus-kas': {
+    id: 'BO-18',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'arus-kas');
+    },
+  },
+  '/bo/akuntansi/laba-rugi': {
+    id: 'BO-17',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'laba-rugi');
+    },
+  },
+  '/bo/akuntansi/neraca': {
+    id: 'BO-18',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'neraca');
+    },
+  },
+  '/bo/laporan/laba-rugi': {
+    id: 'BO-17',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'laba-rugi');
+    },
+  },
+  '/bo/laporan/arus-kas': {
+    id: 'BO-18',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'arus-kas');
+    },
+  },
+  '/bo/laporan/neraca': {
+    id: 'BO-18',
+    load: async () => {
+      const { renderAccountingScreen } = await import('./screens/accounting');
+      return (session, go) => renderAccountingScreen(session, go, 'neraca');
+    },
+  },
+  '/bo/pengaturan/barcode': {
+    id: 'BO-13',
+    load: async () => {
+      const { renderBarcodeScreen } = await import('./screens/barcode');
+      return (session, go) => renderBarcodeScreen(session, go);
+    },
+  },
+  '/bo/master/kategori': {
+    id: 'BO-03',
+    load: async () => {
+      const { renderMasterData } = await import('./screens/master-data');
+      return (session, go) => renderMasterData(session, go, 'kategori');
+    },
+  },
+  '/bo/master/merk': {
+    id: 'BO-03',
+    load: async () => {
+      const { renderMasterData } = await import('./screens/master-data');
+      return (session, go) => renderMasterData(session, go, 'merk');
+    },
+  },
+  '/bo/master/pemasok': {
+    id: 'BO-08',
+    load: async () => {
+      const { renderMasterData } = await import('./screens/master-data');
+      return (session, go) => renderMasterData(session, go, 'pemasok');
+    },
+  },
+  '/bo/master/pelanggan': {
+    id: 'BO-11',
+    load: async () => {
+      const { renderMasterData } = await import('./screens/master-data');
+      return (session, go) => renderMasterData(session, go, 'pelanggan');
+    },
+  },
+  '/bo/master/sales': {
+    id: 'BO-14',
+    load: async () => {
+      const { renderMasterData } = await import('./screens/master-data');
+      return (session, go) => renderMasterData(session, go, 'sales');
+    },
+  },
+  '/bo/master/ekspedisi': {
+    id: 'BO-12',
+    load: async () => {
+      const { renderMasterData } = await import('./screens/master-data');
+      return (session, go) => renderMasterData(session, go, 'ekspedisi');
+    },
+  },
+  '/bo/master/cetak-barcode': {
+    id: 'BO-13',
+    load: async () => {
+      const { renderBarcodeScreen } = await import('./screens/barcode');
+      return (session, go) => renderBarcodeScreen(session, go);
+    },
+  },
+  '/bo/pengaturan/profil': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderSettingsScreen } = await import('./screens/settings');
+      return (session, go) => renderSettingsScreen(session, go, 'profil');
+    },
+  },
+  '/bo/pengaturan/rekening': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderSettingsScreen } = await import('./screens/settings');
+      return (session, go) => renderSettingsScreen(session, go, 'rekening');
+    },
+  },
+  '/bo/master/rekening': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderSettingsScreen } = await import('./screens/settings');
+      return (session, go) => renderSettingsScreen(session, go, 'rekening');
+    },
+  },
+  '/bo/pengaturan/printer': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderSettingsScreen } = await import('./screens/settings');
+      return (session, go) => renderSettingsScreen(session, go, 'printer');
+    },
+  },
+  '/bo/pengaturan/backup': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderSettingsScreen } = await import('./screens/settings');
+      return (session, go) => renderSettingsScreen(session, go, 'backup');
+    },
+  },
+  '/bo/pengaturan/lainnya': {
+    id: 'BO-22',
+    load: async () => {
+      const { renderSettingsScreen } = await import('./screens/settings');
+      return (session, go) => renderSettingsScreen(session, go, 'profil');
+    },
+  },
+  '/bo/pengaturan/pengguna': {
+    id: 'BO-20',
+    load: async () => {
+      const { renderRbacScreen } = await import('./screens/rbac');
+      return (session, go) => renderRbacScreen(session, go, 'pengguna');
+    },
+  },
+  '/bo/pengaturan/hak-akses': {
+    id: 'BO-20',
+    load: async () => {
+      const { renderRbacScreen } = await import('./screens/rbac');
+      return (session, go) => renderRbacScreen(session, go, 'matriks');
+    },
+  },
+  '/bo/pengaturan/audit-log': {
+    id: 'BO-21',
+    load: async () => {
+      const { renderAuditLogScreen } = await import('./screens/audit-log');
+      return (session, go) => renderAuditLogScreen(session, go);
+    },
+  },
 };
 
 let session: BoSession | undefined;
@@ -44,6 +397,8 @@ let screen: ScreenHandle | undefined;
 let shell: Shell | undefined;
 let watched: Store | undefined;
 let latest: { root: HTMLElement; path: string; context: AppContext } | undefined;
+let stopWatchingTheme: (() => void) | undefined;
+let mountToken = 0;
 
 function sessionFor(store: Store): BoSession {
   if (session?.store !== store) {
@@ -79,6 +434,16 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   const query = new URLSearchParams(search);
   const active = sessionFor(context.store);
   document.documentElement.dataset['app'] = 'bo';
+
+  // Sinkronisasi tema POS ke Back-Office
+  const currentTheme = loadTheme();
+  const currentMode = loadMode();
+  applyAppearance(document.documentElement, currentTheme, currentMode, prefersDark());
+
+  stopWatchingTheme ??= watchScheme((dark) => {
+    applyAppearance(document.documentElement, loadTheme(), loadMode(), dark);
+  });
+
   if (watched !== context.store) {
     watched = context.store;
     context.store.bus.on('role', () => {
@@ -95,6 +460,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   shell?.destroy();
   screen = undefined;
   shell = undefined;
+  closeAllModals();
 
   if (path === '/bo') {
     screen = renderLogin(active, go);
@@ -109,15 +475,45 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     navigate('/bo');
     return;
   }
-  const route = ROUTES[path];
-  if (route === undefined) {
+
+  const explicitRoute = ROUTES[path];
+  const menuEntry = entryFor(path);
+
+  if (explicitRoute === undefined && menuEntry === undefined) {
     navigate('/bo/dashboard');
     return;
   }
+
+  const screenId = explicitRoute ? explicitRoute.id : (menuEntry?.screenId ?? 'BO-02');
+  mountToken += 1;
+  const token = mountToken;
+
   shell = createShell(active, path, go);
-  if (canOpenScreen(context.store.getState().role, route.id)) {
-    screen = route.render(active, go, query);
-    shell.content.replaceChildren(screen.element);
+  if (canOpenScreen(context.store.getState().role, screenId)) {
+    if (explicitRoute?.render !== undefined) {
+      screen = explicitRoute.render(active, go, query);
+      shell.content.replaceChildren(screen.element);
+    } else if (explicitRoute?.load !== undefined) {
+      shell.content.replaceChildren(
+        el(
+          'div',
+          {
+            className: 'bo-panel',
+            attrs: { role: 'status', style: 'padding: 40px; text-align: center;' },
+          },
+          label('memuatData'),
+        ),
+      );
+      void explicitRoute.load().then((r) => {
+        if (token === mountToken && shell !== undefined) {
+          screen = r(active, go, query);
+          shell.content.replaceChildren(screen.element);
+        }
+      });
+    } else {
+      screen = renderPlaceholder(path, go);
+      shell.content.replaceChildren(screen.element);
+    }
   } else {
     shell.content.replaceChildren(denied(active, go));
   }

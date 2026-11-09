@@ -143,13 +143,29 @@ test.describe('foto kartu barang', () => {
       .toBe(true);
   });
 
-  test('barang bangkitan tanpa foto kategori tetap memakai kotak placeholder', async ({ page }) => {
-    await loginPos(page);
-    await search(page, 'Stop Kontak');
-    const card = page.locator('.pos-card', { hasText: /STOP KONTAK/i }).first();
-    await expect(card.locator('span.pos-photo')).toBeVisible();
-    await expect(card.locator('img.pos-photo--img')).toHaveCount(0);
-  });
+  const BARU: readonly (readonly [string, RegExp, string])[] = [
+    ['Pasir', /PASIR/i, 'bahan-dasar'],
+    ['Stop Kontak', /STOP KONTAK/i, 'listrik'],
+    ['Seng Gelombang', /SENG GELOMBANG/i, 'atap'],
+  ];
+
+  for (const [kata, pola, slug] of BARU) {
+    test(`barang bangkitan kategori ${slug} memakai foto kategori, bukan kotak placeholder`, async ({
+      page,
+    }) => {
+      await loginPos(page);
+      await search(page, kata);
+      const card = page.locator('.pos-card', { hasText: pola }).first();
+      const photo = card.locator('img.pos-photo--img');
+      await expect(photo).toHaveAttribute('src', new RegExp(`kategori/${slug}\\.webp$`));
+      await expect(card.locator('span.pos-photo')).toHaveCount(0);
+      await expect
+        .poll(() =>
+          photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
+        )
+        .toBe(true);
+    });
+  }
 
   test('barang proposal tetap memakai fotonya sendiri, bukan foto kategori', async ({ page }) => {
     await loginPos(page);

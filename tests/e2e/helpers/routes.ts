@@ -295,8 +295,14 @@ export const OVERLAYS: readonly OverlayCase[] = [
       await picker.fill('B0001');
       await picker.press('Enter');
       await page.getByLabel('Pelanggan').selectOption('C-003');
-      await page.getByLabel('Cara bayar').selectOption('piutang');
-      await page.locator('[data-line="0"]').fill('5000');
+      await page
+        .getByRole('group', { name: 'Cara bayar' })
+        .getByRole('button', { name: 'Piutang', exact: true })
+        .click();
+      await page
+        .locator('[data-line="0"]')
+        .getByRole('textbox', { name: /^Jumlah/ })
+        .fill('5000');
       await page.getByRole('button', { name: 'Simpan Sales Order' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
     },

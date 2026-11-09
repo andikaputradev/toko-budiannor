@@ -16,8 +16,11 @@ export function categoriesOf(products: readonly Product[]): string[] {
 }
 
 // Foto kategori hanya untuk barang bangkitan tanpa foto sendiri. Daftar ini eksplisit dan sesuai
-// berkas di public/kategori; tiga kategori (Bahan Dasar, Listrik, Atap) tidak punya foto layak.
+// berkas di public/kategori; kategori tanpa slug di sini memakai kotak placeholder.
 const CATEGORY_PHOTOS: ReadonlySet<string> = new Set([
+  'bahan-dasar',
+  'listrik',
+  'atap',
   'besi-dan-baja',
   'pengikat',
   'pipa-dan-fitting',

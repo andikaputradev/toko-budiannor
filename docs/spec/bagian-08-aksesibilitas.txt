@@ -1,0 +1,38 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                      Lampiran Kontrak
+
+
+
+
+8. Aksesibilitas dan ergonomi
+Batas minimum: WCAG 2.2 level AA. Nomor kriteria (SC) berikut diverifikasi pengembang terhadap teks resmi W3C
+sebelum rilis.
+
+ Topik                             Aturan yang diuji                                               Acuan
+ Target sentuh POS                 Minimal 48 x 48 px [Usulan]; jarak antar target minimal 8 px.   WCAG 2.2 SC 2.5.8
+                                   Tombol Bayar 72 px tinggi.                                      (minimum 24 px, kita lebih
+                                                                                                   ketat)
+ Target sentuh Owner (HP)          Minimal 48 x 48 px [Usulan].                                    SC 2.5.8
+ Navigasi papan ketik (PC)         Semua tombol dan kolom dapat dijangkau dengan Tab dalam         SC 2.1.1, 2.4.3
+                                   urutan tampilan; modal mengunci fokus; Esc menutup modal;
+                                   pintasan tercantum pada tiap layar.
+ Fokus terlihat                    Cincin fokus 3 px #1C2024 dengan jarak 2 px, tidak tertutup     SC 2.4.7, 2.4.11
+                                   bilah atas atau modal.
+ Status tidak hanya warna          Setiap status memakai ikon dan teks (Lunas, Pending, Di         SC 1.4.1
+                                   bawah minimum, Ditinjau (negatif), Offline).
+ Kontras                           Teks biasa minimal 4,5 : 1; komponen dan batas input            SC 1.4.3, 1.4.11
+                                   minimal 3 : 1; teks utama POS 7 : 1.
+ Pesan error                       Pesan tampil di dekat kolom dengan ikon dan teks, dan kolom     SC 3.3.1, 3.3.3
+                                   diberi garis 2 px.
+ Autentikasi                       PIN dan kata sandi mendukung tempel (paste) dan tombol          SC 3.3.8
+                                   "Tampilkan"; tidak ada teka-teki atau CAPTCHA.
+ Perbesar teks                     Back-Office tetap berfungsi pada zoom 200% tanpa                SC 1.4.4
+                                   kehilangan fungsi.
+ Gerak                             Dengan pengaturan prefers-reduced-motion aktif semua            Praktik CSS prefers-
+                                   transisi dihapus; selain itu transisi maksimal 150 ms dan tidak reduced-motion
+                                   ada animasi berulang.
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                  Halaman 91 dari 107
+

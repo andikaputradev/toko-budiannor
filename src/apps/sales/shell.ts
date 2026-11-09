@@ -2,7 +2,9 @@ import { el } from '../../shared/dom';
 import { formatDate, formatTime } from '../../shared/format';
 import { icon, type IconName } from '../../shared/icons';
 import { label, type LabelKey } from '../../shared/messages';
+import { createAppearancePicker } from '../../shared/ui/appearance';
 import { createBanner } from '../../shared/ui/banner';
+import { createAvatar, initialsOf } from '../../shared/ui/mobile-card';
 import { openModal } from '../../shared/ui/modal';
 import type { SalesSession } from './sales-session';
 
@@ -14,13 +16,20 @@ export interface NavEntry {
 
 export const NAV: readonly NavEntry[] = [
   { path: '/sales/katalog', label: 'navKatalog', icon: 'package' },
-  { path: '/sales/order', label: 'navOrder', icon: 'clipboard-list' },
-  { path: '/sales/riwayat', label: 'navRiwayat', icon: 'file-text' },
+  { path: '/sales/order', label: 'navOrder', icon: 'shopping-cart' },
+  { path: '/sales/riwayat', label: 'navRiwayat', icon: 'history' },
 ];
+
+export interface SalesShellOptions {
+  /** Rute tujuan tombol kembali pada layar detail. */
+  readonly back?: string | undefined;
+}
 
 export interface SalesShell {
   readonly element: HTMLElement;
   readonly content: HTMLElement;
+  setTitle(text: string): void;
+  setBack(path: string | undefined): void;
   destroy(): void;
 }
 
@@ -29,8 +38,11 @@ export function createSalesShell(
   activePath: string,
   title: LabelKey,
   go: (path: string) => void,
+  options: SalesShellOptions = {},
 ): SalesShell {
   const store = session.store;
+  const userName = session.userName();
+  const initials = initialsOf(userName);
   const chip = el('button', { className: 'own-chip', attrs: { type: 'button' } });
   const banner = el('div', { className: 'own-banner' });
   const content = el('div', { className: 'own-content' });
@@ -56,6 +68,24 @@ export function createSalesShell(
     { className: 'own-nav own-nav--three', attrs: { 'aria-label': label('navUtama') } },
     ...links.map((item) => item.link),
   );
+  const titleNode = el('h1', { className: 'own-top__title', text: label(title) });
+  const backLink = el('a', { className: 'mob-back', attrs: { 'aria-label': label('kembali') } });
+  backLink.append(icon('chevron-left'));
+  const setBack = (path: string | undefined): void => {
+    backLink.hidden = path === undefined;
+    if (path !== undefined) {
+      backLink.setAttribute('href', `#${path}`);
+    }
+  };
+  setBack(options.back);
+  // Nama tombol lewat teks tersembunyi (bukan aria-label): inisial yang tampak tidak ada di dalam
+  // aria-label sehingga aturan axe "label-content-name-mismatch" (WCAG 2.5.3) gagal.
+  const avatarButton = el(
+    'button',
+    { className: 'own-icon-button', attrs: { type: 'button' } },
+    createAvatar(initials),
+    el('span', { className: 'visually-hidden', text: label('akunDanTampilan') }),
+  );
   const element = el(
     'div',
     { className: 'own' },
@@ -63,15 +93,16 @@ export function createSalesShell(
     el(
       'header',
       { className: 'own-top' },
-      el('h1', { className: 'own-top__title', text: label(title) }),
-      el('div', { className: 'own-top__tools' }, chip),
+      backLink,
+      titleNode,
+      el('div', { className: 'own-top__tools' }, chip, avatarButton),
     ),
     banner,
     main,
     nav,
   );
 
-  const openStatus = (): void => {
+  const openAccount = (): void => {
     const state = session.state();
     const printer = el('select', {
       className: 'input',
@@ -86,36 +117,51 @@ export function createSalesShell(
       session.setPrinter(printer.value === '' ? undefined : printer.value);
     });
     openModal({
-      title: label('statusSinkron'),
+      title: label('akunDanTampilan'),
       body: el(
         'div',
-        { className: 'own-sheet own-form' },
-        el('p', { text: label('aplikasiMobile') }),
-        el('p', { className: 't-label', text: session.userName() }),
-        el('p', {
-          className: 't-label',
-          text: label('terakhirSinkron', {
-            waktu: `${formatDate(new Date(state.lastSync))}, ${formatTime(new Date(state.lastSync))}`,
+        { className: 'mob-account' },
+        el(
+          'div',
+          { className: 'mob-account__who' },
+          createAvatar(initials),
+          el(
+            'div',
+            {},
+            el('p', { className: 'mob-account__name', text: userName }),
+            el('p', { className: 't-label', text: label('peranSales') }),
+          ),
+        ),
+        el(
+          'div',
+          { className: 'own-sheet own-form' },
+          el('p', { text: label('aplikasiMobile') }),
+          el('p', {
+            className: 't-label',
+            text: label('terakhirSinkron', {
+              waktu: `${formatDate(new Date(state.lastSync))}, ${formatTime(new Date(state.lastSync))}`,
+            }),
           }),
-        }),
-        state.queue.length === 0
-          ? el('p', { text: label('antreanKosong') })
-          : el(
-              'ul',
-              { className: 'own-list' },
-              ...state.queue.map((item) =>
-                el('li', {
-                  text: `${item.text}: ${label(item.status === 'menunggu' ? 'statusMenunggu' : item.status === 'mengirim' ? 'statusMengirim' : 'statusTerkirim')}`,
-                }),
+          state.queue.length === 0
+            ? el('p', { text: label('antreanKosong') })
+            : el(
+                'ul',
+                { className: 'own-list' },
+                ...state.queue.map((item) =>
+                  el('li', {
+                    text: `${item.text}: ${label(item.status === 'menunggu' ? 'statusMenunggu' : item.status === 'mengirim' ? 'statusMengirim' : 'statusTerkirim')}`,
+                  }),
+                ),
               ),
-            ),
-        el('label', {
-          className: 'field__label',
-          text: label('printerBluetooth'),
-          attrs: { for: 'sal-printer' },
-        }),
-        printer,
-        el('p', { className: 't-label', text: label('simulasiPrinter') }),
+          el('label', {
+            className: 'field__label',
+            text: label('printerBluetooth'),
+            attrs: { for: 'sal-printer' },
+          }),
+          printer,
+          el('p', { className: 't-label', text: label('simulasiPrinter') }),
+        ),
+        createAppearancePicker(),
       ),
       actions: [
         { text: label('tutup'), variant: 'secondary' },
@@ -130,7 +176,8 @@ export function createSalesShell(
       ],
     });
   };
-  chip.addEventListener('click', openStatus);
+  chip.addEventListener('click', openAccount);
+  avatarButton.addEventListener('click', openAccount);
 
   const paint = (): void => {
     const online = store.getState().online;
@@ -175,6 +222,10 @@ export function createSalesShell(
   return {
     element,
     content,
+    setTitle: (text) => {
+      titleNode.textContent = text;
+    },
+    setBack,
     destroy: () => {
       for (const stop of stops) {
         stop();

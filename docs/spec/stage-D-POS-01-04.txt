@@ -1,0 +1,522 @@
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                              Lampiran Kontrak
+
+
+
+
+POS-01 Login dan Pilih Kasir
+ Tujuan                  Kasir memilih namanya lalu memasukkan PIN agar setiap transaksi tercatat atas nama yang benar.
+ Aplikasi                POS                                         Prioritas rilis     Rilis 1
+ Perangkat               Tablet Android (landscape), PC Windows;     Hak akses           Kasir, Supervisor, Owner
+                         Landscape
+ Fitur RAB               1 Aplikasi Kasir POS Multi-Platform; 13 RBAC Berjenjang dan Log Audit Trail
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe POS-01. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                         Ukuran dan posisi
+   1      Bilah atas                                   tinggi 56 px (7%)
+   2      Daftar kasir                                 3 kolom x 2 baris, kartu 240 x 92 px, mulai 140 px dari atas
+   3      Kolom PIN                                    lebar 240 px, tinggi 48 px
+   4      Papan angka                                  4 baris x 3 kolom, tombol 64 x 52 px, jarak 8 px
+   5      Tombol Masuk                                 lebar 240 px, tinggi 54 px
+   6      Area pesan error PIN                         tinggi 28 px, di bawah tombol Masuk
+
+KOMPONEN DAN DATA
+
+ Komponen                      Format dan perilaku                                                 Sumber data
+ Kartu kasir                   Foto 58 px bulat, nama maksimal 20 karakter, satu kartu             Daftar pengguna aktif berperan
+                               terpilih bergaris tebal                                             Kasir, Supervisor, atau Owner;
+                                                                                                   salinan tersimpan di perangkat
+ PIN                           4 sampai 6 angka, tampil sebagai titik                              Masukan kasir
+ Status koneksi                Chip "Online" atau "Offline" di bilah atas                          Status jaringan perangkat
+ Jam                           Format 24 jam WIB, contoh 14:32                                     Jam perangkat
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 17 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                             Lampiran Kontrak
+
+
+
+AKSI
+
+ Label persis                        Hasil                                               Pintasan papan ketik        Peran O S K
+                                                                                         (PC)
+ Kartu kasir                         Menandai kasir dan memindahkan fokus ke             Panah kiri dan kanan,           OSK
+                                     kolom PIN                                           lalu Enter
+ Angka 0 sampai 9                    Menambah satu digit PIN                             Papan angka fisik               OSK
+ Hapus                               Menghapus satu digit PIN terakhir                   Backspace                       OSK
+ Masuk                               Memeriksa PIN, lalu membuka POS-02                  Enter                           OSK
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Kartu kasir pertama terpilih otomatis jika hanya satu kasir aktif; jika lebih, belum ada yang terpilih dan
+                      tombol Masuk nonaktif.
+ Memuat               Kartu kasir diganti 6 kerangka abu-abu selama maksimal 2 detik; PIN tidak bisa diisi.
+ Kosong               Belum ada pengguna aktif: kartu pesan "Belum ada kasir terdaftar. Hubungi Owner untuk menambah
+                      pengguna di Back-Office."
+ Error                PIN salah: pesan merah pada area 6 dan kolom PIN dikosongkan.
+ Offline              Login tetap bisa dengan data pengguna yang tersimpan di perangkat; chip menjadi "Offline" [Asumsi A-
+                      05].
+
+ Hak akses            Layar ini dapat dibuka oleh semua peran POS. Jika akun dinonaktifkan: "Akun Anda tidak aktif. Hubungi
+ ditolak              Owner." dan kembali ke POS-01.
+ Data banyak          Lebih dari 6 kasir: daftar bergulir ke samping dalam halaman 6 kartu, dengan penunjuk "Halaman 1 dari
+                      2".
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                             Pesan yang tampil
+ Kasir belum dipilih saat Masuk ditekan              Pilih nama kasir terlebih dahulu.
+ PIN kosong atau kurang dari 4 digit                 Masukkan PIN 4 sampai 6 angka.
+ PIN tidak cocok                                     PIN salah. Sisa percobaan: 2.
+ PIN salah 3 kali berturut-turut [Usulan]            Akun dikunci 5 menit. Hubungi Owner jika perlu bantuan.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Scanner tidak dipakai di layar ini; jika terpindai, masukan diabaikan.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                     When                                   Then
+ K-1     Kasir aktif ada di daftar                 Kasir mengetuk kartunya dan            POS-02 terbuka, nama kasir tampil di
+                                                   memasukkan PIN yang benar lalu         bilah atas, dan tindakan tercatat di Log
+                                                   menekan Masuk                          Aktivitas
+ K-2     Kasir memasukkan PIN yang salah           Kasir menekan Masuk                    Pesan "PIN salah. Sisa percobaan: 2."
+                                                                                          tampil, kolom PIN kosong, POS-02 tidak
+                                                                                          terbuka
+ K-3     Perangkat tidak punya internet            Kasir memasukkan PIN yang benar        POS-02 terbuka dengan chip "Offline"
+                                                                                          dan transaksi bisa dimulai
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                          Halaman 18 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                                         Lampiran Kontrak
+
+
+
+
+POS-02 Jual Utama
+ Tujuan                   Layar kerja utama kasir: mencari barang, membangun bill, dan menuju pembayaran dalam sesedikit
+                          mungkin ketukan.
+ Aplikasi                 POS                                               Prioritas rilis       Rilis 1
+ Perangkat                Tablet Android (landscape), PC Windows;           Hak akses             Kasir, Supervisor, Owner
+                          Landscape
+ Fitur RAB                1 Aplikasi Kasir POS Multi-Platform; 2 Mode Kasir Offline-First; 5 Multi Opsi Bayar dan Limit Piutang; 7
+                          Manajemen Multi-Gudang 2 Lokasi; 8 Multi-Satuan Desimal dan HPP Average
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe POS-02 (default). Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK                                                                       STATE PENTING
+
+ No    Zona                       Ukuran dan posisi
+
+  1    Bilah atas                 tinggi 56 px (7%)
+
+  2    Kolom cari                 tinggi 48 px, lebar 52% layar
+
+  3    Baris kategori             tinggi 40 px, chip 36 px
+
+  4    Grid produk                4 kolom x 3 baris, kartu 168 x 186 px, jarak 12
+                                  px, lebar 55% layar
+
+  5    Pemilih pelanggan          tinggi 48 px, panel kanan
+
+  6    Daftar item bill           baris 44 px, bergulir di dalam panel
+
+  7    Total dan jumlah item      tinggi 80 px, angka total 32 px tebal
+                                                                                      Wireframe POS-02, state offline
+  8    Tombol aksi                Tahan Bill, Panggil Bill, Pelanggan tinggi 52 px;
+                                  Bayar tinggi 72 px
+
+  9    Banner offline (hanya      tinggi 28 px di bawah bilah atas
+       state offline)
+
+ 10    Panel Pilih Pelanggan      menggantikan panel kanan: kolom cari 52 px,
+       (tidak digambar            tabel Nama, Kategori, Sisa limit, tombol
+       terpisah)                  Pelanggan Baru 56 px
+
+KOMPONEN DAN DATA
+
+ Komponen                       Format dan perilaku                                                         Sumber data
+
+ Kartu produk                   Foto produk 147 x 93 px; nama maksimal 2 baris; harga "Rp                   Master barang, tier harga pelanggan
+                                1.337.000 / Sak"; stok "Stok D 12 | B 40" (D = Gudang Display, B =          terpilih, stok per gudang
+                                Gudang Besar)
+
+ Pelanggan                      "Pelanggan: Umum (Eceran)"; Umum memakai tier Eceran [Asumsi                Master pelanggan
+                                A-07]
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                                    Halaman 19 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                                        Lampiran Kontrak
+
+
+
+
+ Komponen                       Format dan perilaku                                                      Sumber data
+
+ Baris item dan total           Nama barang, jumlah desimal berkoma ("25,5"), satuan, subtotal           Bill berjalan
+                                "Rp 1.337.000"; "TOTAL" dan jumlah jenis barang
+
+ Stok negatif                   Item yang membuat stok kurang dari 0 diberi ikon dan teks "Stok          Stok per gudang, aturan offline-first
+                                kurang", tetap bisa dijual
+
+AKSI
+
+ Label persis                        Hasil                                                      Pintasan papan ketik             Peran O S K
+                                                                                                (PC)
+
+ Kartu produk (ketuk)                Menambah 1 satuan jual bawaan ke bill; ketuk lagi          Enter pada kartu terfokus            OSK
+                                     menambah 1
+
+ Kartu produk (tahan 0,5 detik)      Membuka POS-03 untuk memilih satuan dan jumlah             Shift + Enter                        OSK
+
+ Baris item (ketuk)                  Membuka POS-03 mode ubah                                   F3 pada baris terpilih               OSK
+
+ Cari                                Menjalankan pencarian instan 3.500 barang                  F2 memfokuskan kolom                 OSK
+                                                                                                cari
+
+ Ganti, Pelanggan, Pelanggan         Membuka panel Pilih Pelanggan; "Pelanggan Baru" di         F9; Ctrl + N                         OSK
+ Baru                                panel membuka POS-08
+
+ Tahan Bill                          Menyimpan bill sebagai bill gantung, mengosongkan          F6                                   OSK
+                                     layar, toast "Bill B-0003 ditahan."
+
+ Panggil Bill                        Membuka POS-05                                             F7                                   OSK
+
+ Bayar                               Membuka POS-04                                             F4                                   OSK
+
+STATE
+
+ State                   Tampilan dan perilaku
+
+ Default                 Bill kosong, kolom cari berfokus, kategori "Semua", pelanggan "Umum (Eceran)", tombol Bayar nonaktif.
+
+ Memuat                  Kartu produk diganti 12 kerangka abu-abu; muat awal dari penyimpanan lokal maksimal 1 detik [Usulan].
+
+ Kosong                  Pencarian tanpa hasil: kartu pesan "Barang tidak ditemukan. Periksa ejaan atau pindai ulang barcode." Bill kosong:
+                         "Belum ada barang. Pindai barcode atau ketuk barang."
+
+ Error                   Gagal membaca data lokal: banner bahaya "Data barang tidak dapat dibaca. Mulai ulang aplikasi." dengan tombol
+                         "Muat Ulang".
+
+ Offline                 Banner area 9: "Mode offline: transaksi tetap berjalan dan akan dikirim otomatis saat internet pulih. Antrean: 3
+                         transaksi." Stok yang tampil adalah stok terakhir yang tersinkron.
+
+ Hak akses ditolak       Harga modal (HPP) dan laba tidak pernah tampil di layar ini untuk peran apa pun.
+
+ Data banyak             Lebih dari 12 hasil: grid bergulir vertikal, pencarian membatasi 60 hasil dengan teks "Menampilkan 60 hasil pertama.
+                         Perjelas kata kunci."
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                                Pesan yang tampil
+
+ Bayar ditekan saat bill kosong                         Bill masih kosong. Tambahkan barang terlebih dahulu.
+
+ Barcode tidak ada di master                            Barcode 8990000000001 tidak ditemukan.
+
+ Jumlah item melebihi 200 baris [Usulan]                Satu bill dibatasi 200 baris. Pisahkan menjadi bill baru.
+
+ Panggil Bill saat bill berjalan tidak kosong           Bill saat ini belum selesai. Tahan dahulu agar tidak hilang.
+
+PERILAKU SCANNER BARCODE
+Kolom cari selalu berfokus. Pindai kode lalu Enter: barang masuk bill 1 satuan sesuai barcode (barcode satuan Dus menambah
+1 Dus); pindai berulang menambah 1 setiap pindai. Kode tidak ditemukan: pesan validasi tampil dan fokus tetap di kolom cari.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No       Given                                      When                                        Then
+
+ K-1       Bill kosong dan barang punya satuan        Kasir mengetuk kartu barang satu kali       Bill berisi 1 Sak barang itu dengan harga tier
+           bawaan Sak                                                                             pelanggan dan total terhitung
+
+ K-2       Scanner terpasang dan barang sudah         Kasir memindai barcode yang sama dua        Jumlah menjadi 3 tanpa baris baru dan tanpa
+           ada di bill dengan jumlah 1                kali                                        dialog
+
+ K-3       Perangkat kehilangan internet di tengah    Kasir terus menambah barang lalu            Banner offline tampil, pembayaran tetap
+           bill                                       menekan Bayar                               berjalan, dan transaksi masuk antrean POS-09
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                                   Halaman 20 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+POS-03 Pilih Satuan dan Jumlah
+ Tujuan               Kasir menentukan satuan dan jumlah pecahan untuk satu barang sebelum masuk bill.
+ Aplikasi             POS                                            Prioritas rilis   Rilis 1
+ Perangkat            Tablet Android (landscape), PC Windows;        Hak akses         Kasir, Supervisor, Owner
+                      Landscape, modal tengah 500 x 420 px
+ Fitur RAB            1 Aplikasi Kasir POS Multi-Platform; 7 Manajemen Multi-Gudang 2 Lokasi; 8 Multi-Satuan Desimal dan
+                      HPP Average
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe POS-03. Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK
+
+  No      Zona                                      Ukuran dan posisi
+   1      Kepala barang                             foto 176 x 144 px, nama 20 px tebal, stok per gudang
+   2      Pilihan satuan                            tombol 144 x 54 px, maksimal 4 per baris
+   3      Harga satuan terpilih                     teks 22 px tebal
+   4      Kolom jumlah                              lebar 272 px, tinggi 58 px
+   5      Papan angka                               4 baris x 3 kolom, tombol 84 x 60 px
+   6      Subtotal                                  tinggi 80 px
+   7      Tombol Batal dan Tambahkan ke Bill        tinggi 60 px
+   8      Tombol Hapus Item                         hanya pada mode ubah, tinggi 60 px
+
+KOMPONEN DAN DATA
+
+ Komponen                   Format dan perilaku                                                  Sumber data
+ Satuan                     Daftar dari master barang, contoh Sak, Kg, Dus; satu terpilih        Satuan dan konversi barang
+ Harga satuan               "Rp 1.337.000 / Sak" sesuai tier pelanggan                           Matriks harga bertingkat
+ Jumlah                     Desimal berkoma, maksimal 3 angka di belakang koma,                  Masukan kasir
+                            contoh "1,5"
+ Stok per gudang            "Gudang Display: 12,0 Gudang Besar: 40,0" dalam satuan               Stok per gudang, dikonversi
+                            terpilih
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                        Halaman 21 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                            Lampiran Kontrak
+
+
+
+
+ Komponen                    Format dan perilaku                                              Sumber data
+ Subtotal                    "Rp 2.005.500" = jumlah x harga                                  Perhitungan
+
+AKSI
+
+ Label persis                     Hasil                                              Pintasan papan ketik        Peran O S K
+                                                                                     (PC)
+ Pilihan satuan                   Mengganti satuan; jumlah dan harga dihitung        Tab, panah, Enter                  OSK
+                                  ulang
+ Papan angka                      Mengisi jumlah, koma untuk pecahan                 Papan angka fisik                  OSK
+ Batal                            Menutup tanpa mengubah bill                        Esc                                OSK
+ Tambahkan ke Bill (mode          Menambah atau memperbarui item lalu kembali        Enter                              OSK
+ ubah: Simpan Perubahan)          ke POS-02
+ Hapus Item (mode ubah)           Menghapus item setelah konfirmasi "Hapus item      Delete                             OSK
+                                  ini dari bill?"
+
+STATE
+
+ State                Tampilan dan perilaku
+ Default              Satuan bawaan terpilih, jumlah "1", fokus pada kolom jumlah.
+ Memuat               Stok per gudang tampil kerangka 1 baris sampai terbaca; tombol Tambahkan nonaktif.
+ Kosong               Barang tanpa satuan terdaftar tidak bisa dibuka: toast "Barang ini belum punya satuan jual. Hubungi
+                      Supervisor."
+ Error                Konversi stok gagal: stok ditulis "Stok tidak tersedia" dan penjualan tetap bisa diteruskan.
+ Offline              Tidak ada perbedaan tampilan; stok yang tampil adalah stok tersinkron terakhir.
+ Hak akses            Tombol Hapus Item hanya tampil pada mode ubah; harga modal tidak pernah tampil.
+ ditolak
+ Data banyak          Barang dengan lebih dari 4 satuan: pilihan satuan membungkus ke baris kedua.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                          Pesan yang tampil
+ Jumlah kosong atau 0                             Jumlah harus lebih dari 0.
+ Jumlah bukan angka                               Masukkan angka yang valid.
+ Lebih dari 3 angka di belakang koma              Maksimal 3 angka di belakang koma.
+ Barang bertanda tidak boleh pecahan diisi        Barang ini hanya dijual dalam jumlah bulat.
+ pecahan
+
+PERILAKU SCANNER BARCODE
+Fokus tetap di kolom jumlah. Memindai barcode barang yang sama menambah 1 pada jumlah; memindai barang lain menutup
+modal ini, menyimpan item, lalu menambah barang baru.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No     Given                                  When                                  Then
+ K-1     Barang bersatuan Sak dan Kg            Kasir memilih Kg dan mengetik         Subtotal terhitung dari harga per Kg dan
+         terbuka di modal                       12,5                                  stok tampil dalam Kg
+ K-2     Kasir mengisi jumlah 0                 Kasir menekan Tambahkan ke Bill       Pesan "Jumlah harus lebih dari 0." tampil
+                                                                                      dan modal tetap terbuka
+ K-3     Modal dibuka dari baris item di bill   Kasir menekan Hapus Item lalu         Item hilang dari bill dan total dihitung
+                                                mengonfirmasi                         ulang
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                     Halaman 22 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                                       Lampiran Kontrak
+
+
+
+
+POS-04 Pembayaran
+ Tujuan                 Kasir menerima pembayaran (tunai, QRIS, transfer, DP, piutang), memeriksa limit piutang, lalu mencetak
+                        struk.
+ Aplikasi               POS                                                Prioritas rilis       Rilis 1
+ Perangkat              Tablet Android (landscape), PC Windows;            Hak akses             Kasir, Supervisor, Owner
+                        Landscape
+ Fitur RAB              2 Mode Kasir Offline-First; 5 Multi Opsi Bayar dan Limit Piutang; 6 Cetak Struk ESC/POS (USB dan LAN)
+
+WIREFRAME LOW-FIDELITY
+
+
+
+
+Wireframe POS-04 (default). Angka dalam lingkaran hitam menunjuk nomor zona.
+
+ZONA TATA LETAK                                                                      STATE PENTING
+
+ No    Zona                     Ukuran dan posisi
+
+  1    Ringkasan bill           lebar 37% layar, daftar item hanya baca
+
+  2    Total tagihan            angka 32 px tebal, dasar panel kiri
+
+  3    Pilihan cara bayar       5 tombol 140 x 64 px
+
+  4    Kolom jumlah diterima    lebar 320 px, tinggi 54 px
+
+  5    Kembalian                angka 32 px tebal
+
+  6    Rincian pembayaran       tinggi 144 px, daftar baris pembayaran
+
+  7    Tombol Kembali dan       tinggi 64 px
+       Selesaikan dan Cetak
+       Struk                                                                         Wireframe POS-04, state limit piutang ditolak
+
+  8    Banner penolakan         state limit, tinggi 118 px, garis tebal
+       limit
+
+  9    Tombol Minta             state limit, tinggi 54 px
+       Otorisasi Owner dan
+       Ganti Cara Bayar
+
+KOMPONEN DAN DATA
+
+ Komponen                      Format dan perilaku                                                         Sumber data
+
+ Cara bayar                    Tunai, QRIS, Transfer, DP, Piutang; boleh lebih dari satu pada satu         Pilihan kasir
+                               transaksi
+
+ Jumlah diterima               "Rp 0", format ribuan titik                                                 Masukan kasir
+
+ Tombol cepat uang             "Uang Pas", "50.000", "100.000", "200.000"                                  Tetap
+
+ Kembalian                     "Rp 0" = diterima tunai dikurangi tagihan                                   Perhitungan
+
+ Catatan pembayaran            Untuk QRIS dan transfer: kolom "Nomor referensi" opsional, dicatat          Masukan kasir
+                               manual
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                                    Halaman 23 dari 107
+Spesifikasi Desain UI/UX | Sistem POS Toko Bahan Bangunan                                                                       Lampiran Kontrak
+
+
+
+
+ Komponen                         Format dan perilaku                                                      Sumber data
+
+ Sisa limit piutang               "Sisa limit piutang: Rp 5.000.000" hanya jika pelanggan terdaftar        Master pelanggan dan kartu piutang
+
+ Struk                            Cetak ke printer thermal USB atau LAN yang dipilih di Pengaturan         BO-22
+
+AKSI
+
+ Label persis                         Hasil                                                     Pintasan papan ketik             Peran O S K
+                                                                                                (PC)
+
+ Tunai, QRIS, Transfer, DP,           Menambah baris pembayaran dengan cara itu; QRIS           Tombol 1 sampai 5                   OSK
+ Piutang                              dan transfer tidak terhubung ke bank, kasir
+                                      memastikan sendiri dana masuk
+
+ Uang Pas dan nominal cepat           Mengisi jumlah diterima                                   Tab lalu Enter                      OSK
+
+ Kembali                              Kembali ke POS-02 tanpa menyimpan pembayaran              Esc                                 OSK
+
+ Selesaikan dan Cetak Struk           Menyimpan transaksi, mencetak struk, lalu membuka         Enter atau F4                       OSK
+                                      bill baru di POS-02
+
+ Minta Otorisasi Owner atau           Otorisasi membuka POS-10; Ganti Cara Bayar menutup        F10; Esc                            OSK
+ Ganti Cara Bayar (state limit)       banner dan kembali memilih cara bayar
+
+STATE
+
+ State                   Tampilan dan perilaku
+
+ Default                 Cara bayar "Tunai" aktif, jumlah diterima kosong, tombol Selesaikan nonaktif sampai total terpenuhi atau sisa menjadi
+                         piutang yang sah.
+
+ Memuat                  Setelah menekan Selesaikan: tombol berubah "Menyimpan..." dan nonaktif maksimal 3 detik; bill tidak bisa diubah.
+
+ Kosong                  Bill kosong tidak bisa mencapai layar ini (lihat validasi POS-02).
+
+ Error                   Printer tidak terhubung: transaksi tetap tersimpan, banner "Struk belum tercetak. Periksa printer lalu tekan Cetak
+                         Ulang." dengan tombol "Cetak Ulang".
+
+ Offline                 Pembayaran tetap selesai; transaksi masuk antrean; limit piutang diperiksa dengan data tersinkron terakhir dan
+                         ditandai "Perlu ditinjau" saat sinkron bila berubah [Asumsi A-09].
+
+ Hak akses ditolak       Piutang ditolak otomatis bila melewati limit atau ada tagihan lewat jatuh tempo; hanya Owner yang dapat menyetujui
+                         lewat POS-10.
+
+ Data banyak             Lebih dari 6 baris pembayaran: panel rincian bergulir.
+
+ATURAN VALIDASI DAN PESAN ERROR PERSIS
+
+ Kondisi                                                 Pesan yang tampil
+
+ Jumlah diterima kurang dari tagihan tanpa piutang       Pembayaran kurang Rp 120.000. Tambah pembayaran atau pilih Piutang.
+ atau DP
+
+ Piutang atau DP dipilih untuk pelanggan Umum            Piutang hanya untuk pelanggan terdaftar. Pilih atau daftarkan pelanggan.
+
+ Piutang melebihi sisa limit                             Transaksi piutang ditolak: jumlah piutang Rp 1.200.000 melebihi sisa limit Rp 500.000.
+
+ Pelanggan punya tagihan lewat jatuh tempo               Transaksi piutang ditolak: pelanggan memiliki tagihan melewati jatuh tempo.
+
+ Jumlah diterima bukan angka                             Masukkan angka yang valid.
+
+PERILAKU SCANNER BARCODE
+Tidak berlaku. Fokus ada pada kolom jumlah diterima; masukan scanner diabaikan.
+
+KRITERIA PENERIMAAN (GIVEN, WHEN, THEN)
+
+  No       Given                                       When                                       Then
+
+ K-1       Tagihan Rp 1.337.000 dan kasir memilih      Kasir menekan "Uang Pas" lalu              Transaksi tersimpan lunas, struk tercetak, dan
+           Tunai                                       "Selesaikan dan Cetak Struk"               POS-02 terbuka dengan bill kosong
+
+ K-2       Pelanggan punya sisa limit Rp 500.000       Kasir memilih Piutang                      Banner "Transaksi piutang ditolak: jumlah
+           dan tagihan Rp 1.200.000                                                               piutang Rp 1.200.000 melebihi sisa limit Rp
+                                                                                                  500.000." tampil dan tombol Selesaikan tetap
+                                                                                                  nonaktif
+
+ K-3       Banner penolakan limit tampil               Kasir menekan "Minta Otorisasi Owner"      POS-10 terbuka dengan ringkasan transaksi
+                                                                                                  terisi
+
+
+
+
+Versi 1.0 | 18 Okt 2026                                                                                                   Halaman 24 dari 107
+
