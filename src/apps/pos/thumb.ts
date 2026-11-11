@@ -1,7 +1,6 @@
 import { el } from '../../shared/dom';
 import type { Product } from '../../shared/data/types';
-import { label } from '../../shared/messages';
-import { categoryPhoto } from './domain/catalog-view';
+import { initialsOf } from './domain/catalog-view';
 
 export type ThumbSize = 'sm' | 'md' | 'lg';
 
@@ -18,14 +17,27 @@ export function avatarUrl(userId: string): string | undefined {
   return AVATAR_USERS.has(userId) ? `avatar/${userId}.svg` : undefined;
 }
 
-// Foto barang: foto sendiri (barang proposal), lalu foto kategori, lalu kotak placeholder.
+const TONES = 6;
+
+// Warna kotak inisial dipilih dari nama (stabil antar tampilan) lewat kelas, bukan gaya inline.
+function toneOf(name: string): number {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 31 + name.charCodeAt(index)) % 9973;
+  }
+  return hash % TONES;
+}
+
+// Foto barang: foto sendiri bila ada; barang tanpa foto menampilkan huruf awal nama (mis. SG untuk
+// Semen Gresik).
 export function createProductThumb(product: Product, size: ThumbSize): HTMLElement {
-  const url = product.photoUrl ?? categoryPhoto(product.category);
+  const url = product.photoUrl;
   const { width, height } = SIZES[size];
   if (url === undefined) {
     return el('span', {
-      className: `pos-photo pos-photo--${size}`,
-      text: size === 'sm' ? '' : label('fotoProduk'),
+      className: `pos-photo pos-photo--initials pos-photo--${size} pos-tone-${String(toneOf(product.name))}`,
+      text: initialsOf(product.name),
+      attrs: { 'aria-hidden': 'true' },
     });
   }
   return el('img', {

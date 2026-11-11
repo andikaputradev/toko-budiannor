@@ -12,9 +12,12 @@ import {
   categoriesOf,
   categoryPhoto,
   categorySlug,
+  clipName,
   customerLabel,
   initialsOf,
+  isPromo,
   proposalFirst,
+  rackOf,
   stockLines,
 } from '../../../src/apps/pos/domain/catalog-view';
 
@@ -59,28 +62,60 @@ describe('categoriesOf', () => {
 });
 
 describe('stockLines', () => {
-  it('memberi toko, gudang, dan PO dalam satuan dasar', () => {
+  it('memberi hanya toko dan gudang dalam satuan dasar; stok PO tidak ditampilkan', () => {
     expect(stockLines(named('SEMEN GRESIK 40KG'))).toEqual([
       { key: 'toko', quantity: 28, unit: 'SAK' },
       { key: 'gudang', quantity: 800, unit: 'SAK' },
-      { key: 'po', quantity: undefined, unit: 'SAK' },
     ]);
     expect(stockLines(named('GEMBOK KODAI 30MM'))).toEqual([
       { key: 'toko', quantity: 0, unit: 'PCS' },
       { key: 'gudang', quantity: 0, unit: 'PCS' },
-      { key: 'po', quantity: 240, unit: 'PCS' },
     ]);
+  });
+
+  it('No Rak mengganti stok PO dan memakai tanda hubung bila belum diisi', () => {
+    expect(rackOf(named('SEMEN GRESIK 40KG'))).toBe('257B');
+    expect(rackOf(named('LEM FOX 70 GRAM'))).toBe('118A');
+    expect(rackOf({ ...named('SEMEN GRESIK 40KG'), rak: undefined })).toBe('-');
+    expect(rackOf({ ...named('SEMEN GRESIK 40KG'), rak: '  ' })).toBe('-');
+    for (const product of PROPOSAL_PRODUCTS) {
+      expect(rackOf(product), product.name).not.toBe('-');
+    }
+  });
+});
+
+describe('promo dan nama barang', () => {
+  it('menandai barang promo hanya bila persen atau nominal promo lebih dari nol', () => {
+    expect(isPromo(named('CAT SPRAY PYLOX 109 BLACK'))).toBe(true);
+    expect(isPromo(named('SEMEN GRESIK 40KG'))).toBe(false);
+    expect(isPromo({ ...named('SEMEN GRESIK 40KG'), promo: { percent: 0, nominal: 0 } })).toBe(
+      false,
+    );
+    expect(isPromo({ ...named('SEMEN GRESIK 40KG'), promo: { percent: 0, nominal: 500 } })).toBe(
+      true,
+    );
+  });
+
+  it('clipName memotong nama panjang menjadi satu baris dengan elipsis', () => {
+    expect(clipName('CAT SPRAY PYLOX 109 BLACK')).toBe('CAT SPRAY PYLOX 109 BLACK');
+    const long = 'SEMEN TIGA RODA PORTLAND COMPOSITE CEMENT 40KG PREMIUM';
+    const clipped = clipName(long);
+    expect(clipped.length).toBeLessThanOrEqual(32);
+    expect(clipped.endsWith('…')).toBe(true);
+    expect(long.startsWith(clipped.slice(0, -1))).toBe(true);
+    expect(clipName('ABCDEFGHIJ', 5)).toBe('ABCD…');
+    expect(clipName('  ABC  ')).toBe('ABC');
   });
 });
 
 describe('customerLabel dan initialsOf', () => {
   it('menulis KODE - NAMA (TIER) seperti sketsa proposal', () => {
     const kevin = PROPOSAL_CUSTOMERS.find((item) => item.code === 'PL387');
-    expect(customerLabel(kevin)).toBe('PL387 - KEVIN WAHYUDI (RETAIL)');
+    expect(customerLabel(kevin)).toBe('PL387 - KEVIN WAHYUDI (ECERAN)');
   });
 
   it('memakai Pelanggan Umum tanpa pelanggan', () => {
-    expect(customerLabel(undefined)).toBe(label('pelangganUmum'));
+    expect(customerLabel(undefined)).toBe(`${label('pelangganUmum').toUpperCase()} (ECERAN)`);
   });
 
   it('menulis tier Grosir dan Kontraktor dengan huruf besar', () => {

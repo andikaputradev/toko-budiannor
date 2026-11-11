@@ -50,8 +50,17 @@ function fakeQuery(matches: boolean) {
 }
 
 describe('tema POS', () => {
-  it('POS_THEMES berisi enam palet dalam urutan Oranye, Terakota, Teal, Biru, Hijau, Ungu', () => {
-    expect(POS_THEMES).toEqual(['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu']);
+  it('POS_THEMES berisi delapan palet: enam awal lalu Merah dan Kuning', () => {
+    expect(POS_THEMES).toEqual([
+      'oranye',
+      'terakota',
+      'teal',
+      'biru',
+      'hijau',
+      'ungu',
+      'merah',
+      'kuning',
+    ]);
     expect(DEFAULT_THEME).toBe('oranye');
     expect(POS_MODES).toEqual(['otomatis', 'terang', 'gelap']);
   });

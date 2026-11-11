@@ -20,6 +20,8 @@ export const THEME_LABELS: Readonly<Record<PosTheme, LabelKey>> = {
   biru: 'temaBiru',
   hijau: 'temaHijau',
   ungu: 'temaUngu',
+  merah: 'temaMerah',
+  kuning: 'temaKuning',
 };
 
 export const MODE_LABELS: Readonly<Record<PosMode, LabelKey>> = {

@@ -135,7 +135,7 @@ describe('struk dengan diskon dan perubahan harga', () => {
     change: 38000,
   };
 
-  it('memuat baris Diskon dan harga asli bila ada, dengan harga setelah ubah pada baris jumlah', () => {
+  it('memuat baris Diskon tanpa harga asli, dengan harga setelah ubah pada baris jumlah', () => {
     const lines = buildReceipt({
       ...base,
       items: [
@@ -146,7 +146,6 @@ describe('struk dengan diskon dan perubahan harga', () => {
           unitPrice: 65000,
           subtotal: 195000,
           discount: 19500,
-          listPrice: 70000,
         },
       ],
       total: 175500,
@@ -156,7 +155,8 @@ describe('struk dengan diskon dan perubahan harga', () => {
     const text = lines.join('\n');
     expect(text).toContain('3 Sak x Rp 65.000');
     expect(text).toContain('Rp 195.000');
-    expect(text).toContain('Harga asli Rp 70.000');
+    expect(text).not.toContain('Harga asli');
+    expect(text).not.toContain('70.000');
     expect(lines.some((line) => /^\s*Diskon\s+-Rp 19\.500$/.test(line))).toBe(true);
     expect(text).toContain('Rp 175.500');
     for (const line of lines) {
@@ -168,7 +168,7 @@ describe('struk dengan diskon dan perubahan harga', () => {
     const legacy = buildReceipt(base);
     const withUndefined = buildReceipt({
       ...base,
-      items: plainItems.map((item) => ({ ...item, discount: undefined, listPrice: undefined })),
+      items: plainItems.map((item) => ({ ...item, discount: undefined })),
     });
     const withZero = buildReceipt({
       ...base,
@@ -218,7 +218,7 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
     return { session, sale };
   }
 
-  it('saleReceipt memuat jumlah kotor, diskon, harga asli, dan total setelah diskon', () => {
+  it('saleReceipt memuat jumlah kotor, diskon, dan total setelah diskon tanpa harga asli', () => {
     const { session, sale } = sellDiscounted();
     const receipt = saleReceipt(session, sale, 'sale', 58);
     expect(sale.total).toBe(175500);
@@ -227,8 +227,8 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
       unitPrice: 65000,
       subtotal: 195000,
       discount: 19500,
-      listPrice: 70000,
     });
+    expect(receipt.items[0]).not.toHaveProperty('listPrice');
   });
 
   it('saleBreakdown cocok dengan baris: subtotal kotor, diskon dari baris, dan grand total', () => {
@@ -258,7 +258,12 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
       throw new Error('penjualan gagal');
     }
     const breakdown = saleBreakdown(sale);
-    expect(breakdown).toEqual({ subtotal: 140000, discount: 0, grandTotal: 140000 });
+    expect(breakdown).toEqual({
+      subtotal: 140000,
+      discount: 0,
+      transactionDiscount: 0,
+      grandTotal: 140000,
+    });
     expect(saleReceipt(session, sale, 'sale', 58).items[0]).not.toHaveProperty('discount');
   });
 
@@ -278,5 +283,52 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
     const receipt = returnReceipt(session, record, 58);
     expect(receipt.items[0]?.subtotal).toBe(58500);
     expect(receipt.total).toBe(58500);
+  });
+});
+
+describe('struk: Diskon Transaksi dan catatan', () => {
+  const base: ReceiptInput = {
+    kind: 'sale',
+    width: 58,
+    number: 'T-000150',
+    at: new Date('2026-10-19T03:00:00Z'),
+    cashier: 'Dewi',
+    customer: 'Umum',
+    items: [
+      { name: 'Semen Gresik 40kg', quantity: 2, unit: 'Sak', unitPrice: 70000, subtotal: 140000 },
+    ],
+    total: 126000,
+    payments: [{ method: 'Tunai', amount: 150000 }],
+    change: 24000,
+  };
+
+  it('mencetak Diskon Transaksi sebelum total dan catatan setelah kembalian', () => {
+    const lines = buildReceipt({ ...base, transactionDiscount: 14000, note: 'Titip di satpam' });
+    const text = lines.join('\n');
+    expect(lines.some((line) => /^Diskon Transaksi\s+-Rp 14\.000$/.test(line))).toBe(true);
+    expect(text.indexOf('Diskon Transaksi')).toBeLessThan(text.indexOf('TOTAL'));
+    expect(text).toContain('Catatan: Titip di satpam');
+    expect(text.indexOf('Kembalian')).toBeLessThan(text.indexOf('Catatan:'));
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[58]);
+    }
+  });
+
+  it('tanpa diskon transaksi dan catatan struk sama dengan sebelumnya', () => {
+    const plain = buildReceipt(base);
+    expect(buildReceipt({ ...base, transactionDiscount: 0, note: '  ' })).toEqual(plain);
+    expect(plain.join('\n')).not.toContain('Diskon Transaksi');
+    expect(plain.join('\n')).not.toContain('Catatan');
+  });
+
+  it('catatan panjang dibungkus dan tidak melebihi lebar kertas', () => {
+    const lines = buildReceipt({
+      ...base,
+      note: 'Barang diantar sore hari ke gudang belakang lewat pintu samping',
+    });
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[58]);
+    }
+    expect(lines.filter((line) => /Catatan|gudang|samping/.test(line)).length).toBeGreaterThan(1);
   });
 });

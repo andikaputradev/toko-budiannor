@@ -23,8 +23,12 @@ export function partOf(row: PaymentRow | undefined): SavedPart | undefined {
   return { method: row.method, channel: row.channel, amount: row.amount };
 }
 
+// Split Payment dibatasi tiga pembayaran (Pembayaran 1, 2, dan 3).
+export const MAX_SPLIT_PARTS = 3;
+
 export type PartCheck =
-  { readonly ok: true } | { readonly ok: false; readonly reason: 'nominal' | 'kanal' | 'duplikat' };
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: 'nominal' | 'kanal' | 'duplikat' | 'maksimal' };
 
 function rowOf(part: PaymentPart): PaymentRow {
   return part.channel === undefined
@@ -54,6 +58,9 @@ export function checkPart(
   index: number,
   part: PaymentPart,
 ): PartCheck {
+  if (index < 0 || index >= MAX_SPLIT_PARTS) {
+    return { ok: false, reason: 'maksimal' };
+  }
   if (!Number.isInteger(part.amount) || part.amount <= 0) {
     return { ok: false, reason: 'nominal' };
   }

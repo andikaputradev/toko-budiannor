@@ -16,7 +16,9 @@ async function login(page: Page, name: string): Promise<void> {
 async function addLargeQuantity(page: Page): Promise<void> {
   await page.locator('.pos-card__main').first().click();
   await page.locator('.pos-bill__name').first().click();
-  await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
+  // Jumlah dibatasi stok toko (Semen Gresik 28 sak); 10 sak (Rp 700.000) sudah melebihi sisa limit
+  // UD Maju Jaya (Rp 435.000).
+  await page.getByRole('textbox', { name: 'Jumlah' }).fill('10');
   await page.getByRole('button', { name: 'Simpan', exact: true }).click();
 }
 
@@ -50,7 +52,7 @@ test.describe('POS-01 sampai POS-04', () => {
   }) => {
     await login(page, 'Dewi');
     await page.locator('.pos-card__main').first().click();
-    await page.locator('.pos-card__main').nth(3).click();
+    await page.locator('.pos-card__name').nth(3).click();
     await page.evaluate(() => {
       Object.assign(window, { taps: 0 });
       document.addEventListener(
@@ -75,8 +77,10 @@ test.describe('POS-01 sampai POS-04', () => {
 
   test('P-06: tombol Bayar 72 px selalu terlihat walau bill panjang', async ({ page }) => {
     await login(page, 'Dewi');
+    // Hanya kartu bertoko ada stok yang bisa masuk keranjang.
+    const stocked = page.locator('.pos-card:not(.pos-card--empty) .pos-card__name');
     for (let index = 0; index < 12; index += 1) {
-      await page.locator('.pos-card__main').nth(index).click();
+      await stocked.nth(index).click();
     }
     const pay = page.getByRole('button', { name: /^Bayar/ });
     await expect(pay).toBeInViewport();

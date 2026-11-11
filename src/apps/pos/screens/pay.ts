@@ -8,16 +8,13 @@ import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import { createAmountEntry } from '../amount-entry';
-import { rowKey } from '../domain/channels';
 import { DEFAULT_DUE_DAYS } from '../domain/forms';
-import { CASH_METHODS, QUICK_AMOUNTS } from '../domain/payment';
-import { qrReference } from '../domain/qr';
-import { partOf, type SavedPart } from '../domain/split';
+import { cashSuggestions } from '../domain/payment';
+import { MAX_SPLIT_PARTS, partOf } from '../domain/split';
 import { dueDateOf, parseTermDays, TERM_CHOICES } from '../domain/terms';
-import type { PosSession } from '../pos-session';
+import { PAYMENT_NOTE_MAX, type PosSession } from '../pos-session';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
-import { createChannelCards, type ChannelCard } from './channel-cards';
 import { openPaymentDone } from './payment-done';
 import { createPaySummary } from './pay-summary';
 import type { ScreenHandle } from './login';
@@ -39,6 +36,10 @@ const METHOD_LABELS: Readonly<Record<PaymentMethod, LabelKey>> = {
   dp: 'metodeDp',
   piutang: 'metodePiutang',
 };
+
+// Non-tunai hanya tiga pilihan, tanpa kanal dan tanpa kode QR: QRIS dikonfirmasi manual oleh kasir.
+const NON_CASH: readonly PaidMethod[] = ['qris', 'transfer', 'edc'];
+const DP_METHODS: readonly PaidMethod[] = ['tunai', 'qris', 'edc', 'transfer'];
 
 function plain(value: number): string {
   return formatRupiah(value).replace('Rp ', '');
@@ -71,11 +72,8 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const summaryPane = createPaySummary(session);
   const dpId = nextId('dp');
   const daysId = nextId('hari');
+  const noteId = nextId('catatan-bayar');
   let tab: PayTab = initialTab(session);
-  let requestedSlots = 2;
-  // Status QR diterima hanya disimulasikan di layar ini (A-3): pasangan metode dan kanal ke
-  // nominal yang sudah dikonfirmasi, sehingga mengubah nominal membuat statusnya batal.
-  const qrPaid = new Map<string, number>();
   let destroyed = false;
   let dpVia: PaidMethod = session.state().rows.find((row) => row.method === 'dp')?.via ?? 'tunai';
 
@@ -104,33 +102,6 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     }
     return group;
   };
-  const referenceField = (): HTMLElement => {
-    const id = nextId('referensi');
-    return el(
-      'div',
-      { className: 'pos-pay__reference' },
-      el('label', {
-        className: 'field__label',
-        text: label('nomorReferensi'),
-        attrs: { for: id },
-      }),
-      el('input', { className: 'input', attrs: { id, autocomplete: 'off' } }),
-    );
-  };
-  const quickRow = (onExact: () => void, onAmount: (amount: number) => void): HTMLElement => {
-    const row = el('div', { className: 'pos-pay__quick' });
-    const quickButton = (text: string, onClick: () => void): HTMLButtonElement =>
-      createButton({ text, variant: 'secondary', onClick });
-    row.append(
-      quickButton(label('uangPas'), onExact),
-      ...QUICK_AMOUNTS.map((amount) =>
-        quickButton(plain(amount), () => {
-          onAmount(amount);
-        }),
-      ),
-    );
-    return row;
-  };
 
   const messageBox = el('div', { className: 'pos-pay__message', attrs: { 'aria-live': 'polite' } });
   const finish = createButton({
@@ -146,7 +117,32 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     },
   });
 
-  // Tab Tunai: papan angka di halaman; OK mengisi Uang Pas hanya bila nominal masih kosong.
+  // Catatan opsional dipakai bersama semua tab pembayaran dan ikut tersimpan pada penjualan.
+  const noteInput = el('input', {
+    className: 'input pos-pay__note-input',
+    attrs: {
+      id: noteId,
+      type: 'text',
+      maxlength: String(PAYMENT_NOTE_MAX),
+      autocomplete: 'off',
+    },
+  });
+  noteInput.value = session.state().paymentNote;
+  noteInput.addEventListener('input', () => {
+    session.setPaymentNote(noteInput.value);
+  });
+  const noteField = el(
+    'div',
+    { className: 'pos-pay__note' },
+    el('label', {
+      className: 'field__label',
+      text: label('catatanPembayaran'),
+      attrs: { for: noteId },
+    }),
+    noteInput,
+  );
+
+  // Tab Tunai: papan angka di halaman; Uang Pas dan dua pecahan di atas total.
   const entry = createAmountEntry({
     labelText: label('jumlahDiterima'),
     value: session.state().rows.find((row) => row.method === 'tunai')?.amount ?? 0,
@@ -160,82 +156,63 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
         finish.focus();
       }
     },
-    enabled: () => tab === 'tunai' && document.querySelector('.modal-overlay') === null,
+    enabled: () =>
+      tab === 'tunai' &&
+      document.querySelector('.modal-overlay') === null &&
+      document.activeElement !== noteInput,
   });
-  const tunaiPanel = el(
-    'div',
-    { className: 'pos-pay__mode' },
-    entry.element,
-    quickRow(
-      () => {
-        session.exactAmount();
-      },
-      (amount) => {
-        session.quickAmount(amount);
-      },
-    ),
-  );
-
-  // Tab Non-Tunai: kartu kanal. QRIS dan dompet digital membuka layar Scan QR Code; EDC dan
-  // Transfer meminta nomor referensi.
-  const openQr = (choice: { channel: string | undefined; amount: number }): void => {
-    const key = rowKey({ method: 'qris', channel: choice.channel });
-    void import('./qr-modal').then(({ openQrModal }) => {
-      if (destroyed) {
-        return;
-      }
-      openQrModal({
-        session,
-        channel: choice.channel,
-        amount: choice.amount,
-        reference: qrReference(`${session.nextSaleNumber()}|${key}|${String(choice.amount)}`),
-        onPaid: () => {
-          qrPaid.set(key, choice.amount);
-          paint();
-        },
-        onChangeMethod: () => {
-          qrPaid.delete(key);
-          if (tab === 'nontunai') {
-            session.resetPayment();
-          }
-        },
-      });
-    });
-  };
-  const chooseCard = (card: ChannelCard): void => {
-    session.chooseSingle(card.method, card.channel);
-    if (card.method !== 'qris') {
+  const quickLabelId = nextId('nominal-penerimaan');
+  const quickLabel = el('p', {
+    className: 't-label pos-pay__quick-label',
+    text: label('nominalPenerimaan'),
+    attrs: { id: quickLabelId },
+  });
+  const quick = el('div', {
+    className: 'pos-pay__quick',
+    attrs: { role: 'group', 'aria-labelledby': quickLabelId },
+  });
+  let quickFor = -1;
+  const paintQuick = (total: number): void => {
+    if (quickFor === total) {
       return;
     }
-    const key = rowKey(card);
-    if (qrPaid.get(key) !== session.total()) {
-      qrPaid.delete(key);
-      openQr({ channel: card.channel, amount: session.total() });
-    }
+    quickFor = total;
+    const quickButton = (text: string, onClick: () => void): HTMLButtonElement =>
+      createButton({ text, variant: 'secondary', onClick });
+    quick.replaceChildren(
+      quickButton(label('uangPas'), () => {
+        session.exactAmount();
+      }),
+      ...cashSuggestions(total).map((amount) =>
+        quickButton(plain(amount), () => {
+          session.quickAmount(amount);
+        }),
+      ),
+    );
   };
-  const cards = createChannelCards(chooseCard);
-  const nonCashReference = referenceField();
-  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, cards.element, nonCashReference);
+  const tunaiPanel = el(
+    'div',
+    { className: 'pos-pay__mode pos-pay__cash' },
+    entry.element,
+    quickLabel,
+    quick,
+  );
 
-  // Tab Split: daftar Pembayaran 1, 2, dan seterusnya; masing-masing membuka modal Pembayaran N.
-  const afterPartSaved = (saved: SavedPart): void => {
-    const key = rowKey(saved);
-    qrPaid.delete(key);
-    if (saved.method === 'qris' && saved.amount > 0) {
-      openQr({ channel: saved.channel, amount: saved.amount });
-    }
-  };
-  const parts = el('ul', { className: 'pos-pay__parts' });
-  const addPart = createButton({
-    text: label('tambahPembayaran'),
-    variant: 'secondary',
-    icon: 'plus',
-    onClick: () => {
-      requestedSlots = Math.max(requestedSlots, session.state().rows.length) + 1;
-      paint();
+  // Tab Non-Tunai: tiga pilihan saja (QRIS, Transfer, EDC).
+  const nonCash = methodGroup(
+    (method) => {
+      session.chooseSingle(method);
     },
-  });
-  const splitPanel = el('div', { className: 'pos-pay__mode' }, parts, addPart);
+    'kanalPembayaran',
+    NON_CASH,
+  );
+  nonCash.classList.add('pos-pay__noncash');
+  const nonCashNote = el('div', { className: 'pos-pay__noncash-note' });
+  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, nonCash, nonCashNote);
+
+  // Tab Split: tiga slot tetap (Pembayaran 1 sampai 3); masing-masing membuka modal Pembayaran N.
+  const parts = el('ul', { className: 'pos-pay__parts' });
+  const splitPanel = el('div', { className: 'pos-pay__mode' }, parts);
 
   const sisa = el('output', { className: 't-total pos-pay__sisa' });
   const change = el('output', { className: 't-total pos-pay__change' });
@@ -284,7 +261,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       paint();
     },
     'caraBayarDp',
-    CASH_METHODS,
+    DP_METHODS,
   );
   const daysInput = el('input', {
     className: 'input pos-pay__days',
@@ -297,7 +274,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const dpOutput = el('output', { className: 'pos-pay__dp' });
   const dueAmount = el('output', { className: 't-total pos-pay__due-amount' });
   const dueDate = el('output', { className: 'pos-pay__due' });
-  const limitText = el('p', { className: 't-label' });
+  const limitText = el('p', { className: 't-label pos-pay__limit' });
   const figure = (key: LabelKey, output: HTMLElement): HTMLElement =>
     el(
       'div',
@@ -312,12 +289,18 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       el('label', { className: 'field__label', text: label(key), attrs: { for: id } }),
       input,
     );
+  // Piutang dua kolom: tempo di kiri, uang muka di kanan, lalu tiga angka ringkasan.
   const piutangPanel = el(
     'div',
-    { className: 'pos-pay__mode' },
-    el('div', { className: 'pos-pay__inline' }, termChips, field('hariLainnya', daysId, daysInput)),
-    daysError,
-    el('div', { className: 'pos-pay__inline' }, field('dpLabel', dpId, dpInput), dpMethods),
+    { className: 'pos-pay__mode pos-pay__credit' },
+    el(
+      'div',
+      { className: 'pos-pay__credit-col' },
+      termChips,
+      field('hariLainnya', daysId, daysInput),
+      daysError,
+    ),
+    el('div', { className: 'pos-pay__credit-col' }, field('dpLabel', dpId, dpInput), dpMethods),
     el(
       'div',
       { className: 'pos-pay__figures' },
@@ -388,7 +371,6 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       return;
     }
     tab = next;
-    qrPaid.clear();
     daysError.textContent = '';
     if (next === 'tunai') {
       session.chooseSingle('tunai');
@@ -403,11 +385,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const partItem = (position: number): HTMLElement => {
     const saved = partOf(session.state().rows[position]);
     const summaryText =
-      saved === undefined
-        ? label('pilihPembayaran')
-        : `${label(METHOD_LABELS[saved.method])}${saved.channel === undefined ? '' : ` ${saved.channel}`}`;
-    const waiting = saved?.method === 'qris';
-    const received = saved !== undefined && qrPaid.get(rowKey(saved)) === saved.amount;
+      saved === undefined ? label('pilihPembayaran') : label(METHOD_LABELS[saved.method]);
     const button = el(
       'button',
       {
@@ -423,25 +401,19 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
         className: 'pos-pay__part-amount',
         text: saved === undefined ? '' : formatRupiah(saved.amount),
       }),
-      waiting
-        ? el('span', {
-            className: 'pos-pay__part-status',
-            text: label(received ? 'pembayaranDiterima' : 'menungguPembayaran'),
-          })
-        : false,
       icon('chevron-right'),
     );
     button.addEventListener('click', () => {
       void import('./payment-part').then(({ openPaymentPart }) => {
         if (!destroyed) {
-          openPaymentPart({ session, index: position, onSaved: afterPartSaved });
+          openPaymentPart({ session, index: position });
         }
       });
     });
     return el('li', {}, button);
   };
 
-  const paintMethods = (group: HTMLElement, method: PaidMethod): void => {
+  const paintMethods = (group: HTMLElement, method: PaidMethod | undefined): void => {
     for (const button of group.querySelectorAll<HTMLButtonElement>('button')) {
       button.setAttribute('aria-pressed', button.dataset['method'] === method ? 'true' : 'false');
     }
@@ -462,6 +434,23 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       panels[item.id].hidden = !selected;
     }
     result.hidden = tab === 'piutang';
+    // Catatan satu kolom bersama: di bawah pilihan pada tab Non-Tunai, di baris bawah pada tab lain.
+    const noteHome = tab === 'nontunai' ? nonCashNote : footer;
+    if (noteField.parentElement !== noteHome) {
+      const hadFocus = document.activeElement === noteInput;
+      if (noteHome === footer) {
+        footer.insertBefore(noteField, finish);
+      } else {
+        noteHome.append(noteField);
+      }
+      noteField.classList.toggle('pos-pay__note--inline', noteHome === nonCashNote);
+      if (hadFocus) {
+        noteInput.focus();
+      }
+    }
+    if (document.activeElement !== noteInput && noteInput.value !== state.paymentNote) {
+      noteInput.value = state.paymentNote;
+    }
 
     if (tab === 'piutang') {
       const days = state.terms?.dueDays ?? current?.dueDays ?? DEFAULT_DUE_DAYS;
@@ -487,13 +476,13 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
             });
     } else if (tab === 'tunai') {
       entry.setValue(state.rows.find((row) => row.method === 'tunai')?.amount ?? 0);
+      paintQuick(summary.total);
     } else if (tab === 'nontunai') {
-      cards.select(method, state.channel);
-      nonCashReference.hidden = method !== 'edc' && method !== 'transfer';
+      paintMethods(nonCash, state.rows.some((row) => row.amount > 0) ? method : undefined);
     } else {
-      const count = Math.max(2, requestedSlots, state.rows.length);
-      requestedSlots = count;
-      parts.replaceChildren(...Array.from({ length: count }, (_, position) => partItem(position)));
+      parts.replaceChildren(
+        ...Array.from({ length: MAX_SPLIT_PARTS }, (_, position) => partItem(position)),
+      );
     }
     sisa.textContent = formatRupiah(summary.shortfall);
     change.textContent = formatRupiah(summary.change);
@@ -539,12 +528,13 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
           : [createBanner('info', label('disetujuiDariHp', { alasan: approved.note ?? '' }))]),
       );
     }
-    const qrRows =
-      tab === 'nontunai' || tab === 'split'
-        ? state.rows.filter((row) => row.method === 'qris')
-        : [];
-    const qrOk = qrRows.every((row) => qrPaid.get(rowKey(row)) === row.amount);
-    const ready = summary.status === 'ready' && qrOk;
+    // Open Bill lama bisa memuat barang yang stok tokonya sudah terjual: kasir diberi peringatan,
+    // pembayaran tidak ditahan (stok negatif ditinjau di Back-Office).
+    const stockIssue = session.stockIssue();
+    if (stockIssue !== undefined) {
+      messageBox.append(createBanner('warning', stockIssue));
+    }
+    const ready = summary.status === 'ready';
     finish.toggleAttribute('data-inactive', !ready);
     finish.setAttribute('aria-disabled', ready ? 'false' : 'true');
   };
@@ -592,6 +582,20 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   const stopKeys = entry.listenOn(document);
   const stop = session.subscribe(paint);
 
+  const footer = el(
+    'div',
+    { className: 'pos-pay__footer' },
+    createButton({
+      text: label('kembali'),
+      variant: 'secondary',
+      icon: 'chevron-down',
+      onClick: () => {
+        go('/pos/jual');
+      },
+    }),
+    noteField,
+    finish,
+  );
   const element = el(
     'div',
     { className: 'pos' },
@@ -617,19 +621,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
         tablist,
         ...TABS.map((item) => panels[item.id]),
         messageBox,
-        el(
-          'div',
-          { className: 'pos-pay__footer' },
-          createButton({
-            text: label('kembali'),
-            variant: 'secondary',
-            icon: 'chevron-down',
-            onClick: () => {
-              go('/pos/jual');
-            },
-          }),
-          finish,
-        ),
+        footer,
       ),
     ),
   );

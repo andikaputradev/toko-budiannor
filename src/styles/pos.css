@@ -9,7 +9,7 @@
 
 .pos-topbar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   height: var(--topbar-height);
   padding: 0 var(--space-screen-margin);
@@ -92,10 +92,61 @@ a.pos-chip {
   font-size: 12px;
 }
 
+.pos-photo--img {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  object-fit: contain;
+}
+
 .pos-photo--large {
   width: 176px;
   max-width: none;
   height: 144px;
+}
+
+/* Barang tanpa foto: huruf awal nama pada kotak bergaris (kartu) atau kotak berwarna (daftar). */
+.pos-photo--initials {
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-accent-default);
+  font-size: 40px;
+  font-weight: var(--primitive-font-weight-bold);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  user-select: none;
+}
+
+.pos-photo--initials.pos-photo--sm {
+  border-color: transparent;
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--tone, var(--color-accent-default)) 20%,
+    var(--color-bg-surface)
+  );
+  color: var(--color-text-primary);
+  font-size: 17px;
+}
+
+.pos-tone-1 {
+  --tone: var(--color-status-success-fg);
+}
+
+.pos-tone-2 {
+  --tone: var(--color-status-warning-fg);
+}
+
+.pos-tone-3 {
+  --tone: var(--color-status-danger-fg);
+}
+
+.pos-tone-4 {
+  --tone: var(--color-text-secondary);
+}
+
+.pos-tone-5 {
+  --tone: var(--color-accent-pressed);
 }
 
 .pos-login {
@@ -429,7 +480,7 @@ a.pos-chip {
 }
 
 .modal:has(.pos-unit) {
-  width: min(720px, 94vw);
+  width: min(760px, 96vw);
   max-width: none;
 }
 
@@ -439,11 +490,11 @@ a.pos-chip {
 
 .pos-unit {
   display: grid;
-  grid-template-columns: 1fr 272px;
+  grid-template-columns: minmax(0, 1fr) 272px;
   gap: var(--primitive-space-4);
+  align-items: start;
 }
 
-.pos-unit__head,
 .pos-unit__entry,
 .pos-unit__info {
   display: flex;
@@ -451,9 +502,28 @@ a.pos-chip {
   gap: var(--primitive-space-2);
 }
 
+.pos-unit__head {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: var(--primitive-space-3);
+  align-items: center;
+}
+
+.pos-unit__stock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.pos-unit__stock-item {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
 .pos-unit__units {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--primitive-space-2);
 }
 
@@ -474,14 +544,30 @@ a.pos-chip {
   color: var(--chip-selected-text);
 }
 
-.pos-unit__price,
+.pos-unit__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--primitive-space-3);
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 var(--primitive-space-3);
+  text-align: left;
+}
+
+.pos-unit__code {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
 .pos-unit__subtotal,
 .pos-unit__info p {
   margin: 0;
 }
 
 .pos-unit__subtotal {
-  min-height: 80px;
+  min-height: 0;
+  font-size: 18px;
 }
 
 .pos-unit__actions {
@@ -492,7 +578,7 @@ a.pos-chip {
 }
 
 .pos-unit__actions .btn {
-  height: 60px;
+  height: 56px;
 }
 
 .pos-numpad {
@@ -502,7 +588,7 @@ a.pos-chip {
 }
 
 .pos-numpad__key {
-  height: 60px;
+  height: 52px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-control);
   background: var(--color-bg-surface);
@@ -654,7 +740,7 @@ a.pos-chip {
 }
 
 .pos-pay__footer .btn {
-  height: 64px;
+  height: 56px;
 }
 
 .pos-pay__footer .btn--pay {
@@ -752,8 +838,18 @@ a.pos-chip {
   height: 60px;
 }
 
-.pos-moneypad__wide {
-  grid-column: span 2;
+/* Di dalam modal papan nominal sedikit lebih rapat supaya seluruh modal muat satu layar. */
+.modal .pos-moneypad {
+  gap: 6px;
+}
+
+.modal .pos-moneypad .pos-numpad__key {
+  height: 48px;
+}
+
+.modal .pos-amount__value {
+  min-height: 52px;
+  padding: 6px var(--primitive-space-4);
 }
 
 .pos-shiftsum {
@@ -781,9 +877,10 @@ a.pos-chip {
   gap: var(--primitive-space-3);
 }
 
-.pos-topbar__center {
-  display: flex;
-  justify-content: center;
+.pos-topbar__clock {
+  color: var(--color-text-primary);
+  font-weight: var(--primitive-font-weight-medium);
+  white-space: nowrap;
 }
 
 .pos-menu {
@@ -800,7 +897,6 @@ a.pos-chip {
 }
 
 .pos-menu[hidden],
-.pos-shiftchip[hidden],
 .pos-billlink[hidden] {
   display: none;
 }
@@ -808,17 +904,6 @@ a.pos-chip {
 .pos-menu .icon {
   width: 28px;
   height: 28px;
-}
-
-.pos-shiftchip {
-  display: inline-flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 var(--primitive-space-4);
-  border-radius: var(--radius-chip);
-  background: var(--color-accent-soft);
-  color: var(--color-text-primary);
-  font-weight: var(--primitive-font-weight-semibold);
 }
 
 .pos-billlink {

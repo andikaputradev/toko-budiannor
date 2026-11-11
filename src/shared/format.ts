@@ -1,4 +1,19 @@
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const MONTHS_FULL = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 export type DocumentKind =
@@ -58,6 +73,14 @@ export function formatDate(date: Date): string {
   const wib = toWib(date);
   const month = MONTHS[wib.getUTCMonth()] ?? '';
   return `${String(wib.getUTCDate())} ${month} ${String(wib.getUTCFullYear())}`;
+}
+
+// Hari dan tanggal lengkap WIB untuk header POS, mis. "Selasa, 10 November 2026".
+export function formatDayDate(date: Date): string {
+  const wib = toWib(date);
+  const day = DAYS[wib.getUTCDay()] ?? '';
+  const month = MONTHS_FULL[wib.getUTCMonth()] ?? '';
+  return `${day}, ${String(wib.getUTCDate())} ${month} ${String(wib.getUTCFullYear())}`;
 }
 
 export function formatTime(date: Date): string {

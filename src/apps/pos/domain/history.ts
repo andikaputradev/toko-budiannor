@@ -1,6 +1,7 @@
 import { wibDate } from '../../../shared/data/receivable';
 import { lineGross } from './bill';
 import type { PaymentMethod, Sale, SalePayment, SyncItem } from '../../../shared/data/types';
+import type { ReturnRecord } from '../pos-session';
 
 export type StatusFilter = 'semua' | 'lunas' | 'pending';
 
@@ -163,19 +164,151 @@ export function visibleReceipts(
   return { shown: rows.slice(0, VISIBLE_RECEIPTS), hidden: extra, extra };
 }
 
-// Subtotal baris sebelum diskon, diskon (selisihnya terhadap total tersimpan), dan grand total.
+// Subtotal baris sebelum diskon, diskon baris (selisih terhadap total tersimpan di luar Diskon
+// Transaksi), Diskon Transaksi, dan grand total.
 export function saleBreakdown(sale: Sale): {
   readonly subtotal: number;
   readonly discount: number;
+  readonly transactionDiscount: number;
   readonly grandTotal: number;
 } {
   const gross =
     sale.lines.length === 0
       ? sale.total
       : sale.lines.reduce((sum, line) => sum + lineGross(line), 0);
+  const transactionDiscount = Math.max(0, sale.discount ?? 0);
   return {
     subtotal: gross,
-    discount: Math.max(0, gross - sale.total),
+    discount: Math.max(0, gross - sale.total - transactionDiscount),
+    transactionDiscount,
     grandTotal: sale.total,
   };
+}
+
+// ---------- Retur terposting di Riwayat Penjualan ----------
+
+export type HistoryEntry =
+  | {
+      readonly kind: 'sale';
+      readonly number: string;
+      readonly createdAt: string;
+      readonly sale: Sale;
+    }
+  | {
+      readonly kind: 'retur';
+      readonly number: string;
+      readonly createdAt: string;
+      readonly record: ReturnRecord;
+      // Penjualan asal; kosong bila nomornya tidak lagi ada di data.
+      readonly sale: Sale | undefined;
+    };
+
+export type ReturnEntry = Extract<HistoryEntry, { readonly kind: 'retur' }>;
+
+// Nomor retur pada Riwayat: nomor penjualan asal diikuti urutan retur pada penjualan itu, mis.
+// T-0101.1 dan T-0101.2. Nomor internal R-... tetap dipakai di log aktivitas.
+export function returnDisplayNumbers(
+  returns: readonly ReturnRecord[],
+): ReadonlyMap<string, string> {
+  const counts = new Map<string, number>();
+  const result = new Map<string, string>();
+  for (const record of returns) {
+    const next = (counts.get(record.saleNumber) ?? 0) + 1;
+    counts.set(record.saleNumber, next);
+    result.set(record.number, `${record.saleNumber}.${String(next)}`);
+  }
+  return result;
+}
+
+export function returnsOfSale(
+  returns: readonly ReturnRecord[],
+  saleNumber: string,
+): readonly ReturnEntry[] {
+  const numbers = returnDisplayNumbers(returns);
+  return returns
+    .filter((record) => record.saleNumber === saleNumber)
+    .map((record) => ({
+      kind: 'retur' as const,
+      number: numbers.get(record.number) ?? record.number,
+      createdAt: record.at,
+      record,
+      sale: undefined,
+    }));
+}
+
+function matchesReturnMethod(record: ReturnRecord, method: MethodFilter | undefined): boolean {
+  if (method === undefined || method === 'semua') {
+    return true;
+  }
+  return record.refund?.method === method;
+}
+
+export function filterHistory(
+  sales: readonly Sale[],
+  returns: readonly ReturnRecord[],
+  queue: readonly SyncItem[],
+  filter: HistoryFilter,
+  customerName: (id: string | undefined) => string,
+): HistoryEntry[] {
+  const needle = filter.query.trim().toLowerCase();
+  const numbers = returnDisplayNumbers(returns);
+  const saleEntries: HistoryEntry[] = filterSales(sales, queue, filter, customerName).map(
+    (sale) => ({ kind: 'sale', number: sale.number, createdAt: sale.createdAt, sale }),
+  );
+  const returnEntries: HistoryEntry[] = returns
+    .map((record): HistoryEntry => {
+      const sale = sales.find((item) => item.number === record.saleNumber);
+      return {
+        kind: 'retur',
+        number: numbers.get(record.number) ?? record.number,
+        createdAt: record.at,
+        record,
+        sale,
+      };
+    })
+    .filter((entry) => {
+      if (entry.kind !== 'retur') {
+        return false;
+      }
+      const day = dayOf(entry.createdAt);
+      if (filter.start !== '' && day < filter.start) {
+        return false;
+      }
+      if (filter.end !== '' && day > filter.end) {
+        return false;
+      }
+      if (filter.status === 'pending' || !matchesReturnMethod(entry.record, filter.method)) {
+        return false;
+      }
+      return (
+        needle === '' ||
+        entry.number.toLowerCase().includes(needle) ||
+        entry.record.saleNumber.toLowerCase().includes(needle) ||
+        customerName(entry.sale?.customerId).toLowerCase().includes(needle)
+      );
+    });
+  // Terbaru lebih dulu; pada waktu yang sama retur tampil di atas penjualannya.
+  const rank = (entry: HistoryEntry): number => (entry.kind === 'retur' ? 1 : 0);
+  return [...saleEntries, ...returnEntries].sort(
+    (first, second) =>
+      second.createdAt.localeCompare(first.createdAt) ||
+      rank(second) - rank(first) ||
+      second.number.localeCompare(first.number),
+  );
+}
+
+export interface EntryGroup {
+  readonly day: string;
+  readonly entries: readonly HistoryEntry[];
+}
+
+export function groupEntriesByDay(entries: readonly HistoryEntry[]): EntryGroup[] {
+  const groups = new Map<string, HistoryEntry[]>();
+  for (const entry of entries) {
+    const day = dayOf(entry.createdAt);
+    const list = groups.get(day) ?? [];
+    list.push(entry);
+    groups.set(day, list);
+  }
+  return [...groups].map(([day, items]) => ({ day, entries: items }));
 }

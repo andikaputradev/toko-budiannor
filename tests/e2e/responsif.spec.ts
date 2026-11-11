@@ -247,6 +247,19 @@ test.describe('jual pada tablet potret 768 x 1024', () => {
     await expect(bar).toBeFocused();
   });
 
+  test('header memuat hari dan tanggal pada 768 px, hanya jam di bawah 700 px', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await expect(page.locator('.pos-topbar__day')).toBeVisible();
+    await expect(page.locator('.pos-topbar__day')).toContainText(
+      /^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu), \d{1,2} \w+ \d{4}/,
+    );
+    await page.setViewportSize({ width: 600, height: 900 });
+    await expect(page.locator('.pos-topbar__day')).toBeHidden();
+    await expect(page.locator('.pos-topbar__clock')).toContainText(/\d{2}[.:]\d{2}/);
+  });
+
   test('Escape menutup lembar pesanan', async ({ page }) => {
     await loginPos(page);
     await addFirstProduct(page);
@@ -301,7 +314,7 @@ test.describe('jual pada ponsel 360 x 800', () => {
     await chooseCustomer(page, 'CV Laut Mas');
     await addFirstProduct(page);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-    const customer = await page.locator('.pos-customer-btn').boundingBox();
+    const customer = await page.locator('.pos-customer-compact').boundingBox();
     expect((customer?.x ?? 0) + (customer?.width ?? 0)).toBeLessThanOrEqual(360);
     const clipped = await page
       .locator('.pos-card')
@@ -325,6 +338,24 @@ test.describe('jual pada ponsel 360 x 800', () => {
       await expectNoAxeViolations(page);
       await page.getByRole('button', { name: 'Tutup Pesanan' }).click();
     }
+  });
+
+  test('modal satuan (tekan lama atau Shift+Enter) satu kolom dan tidak meluap pada 360 px', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await page.locator('.pos-card__main').nth(1).focus();
+    await page.keyboard.press('Shift+Enter');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const overflow = await dialog.evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    // Info barang di atas, papan angka di bawah: kedua kolom tidak berdampingan di ponsel.
+    const info = await dialog.locator('.pos-unit__info').boundingBox();
+    const entry = await dialog.locator('.pos-unit__entry').boundingBox();
+    expect(entry?.y ?? 0).toBeGreaterThanOrEqual((info?.y ?? 0) + (info?.height ?? 0) - 1);
+    const keys = await dialog.getByRole('button', { name: 'Tambahkan ke Bill' }).boundingBox();
+    expect((keys?.x ?? 0) + (keys?.width ?? 0)).toBeLessThanOrEqual(360);
   });
 });
 
@@ -428,33 +459,13 @@ test.describe('bayar pada tablet lanskap 1280 x 800', () => {
 test.describe('Non-Tunai pada ponsel 360 x 800', () => {
   test.use({ viewport: { width: 360, height: 800 } });
 
-  test('modal Scan QR Code layar penuh, tanpa meluap, dengan tombol terjangkau', async ({
-    page,
-  }) => {
-    await openPayScreen(page);
-    await page.getByRole('tab', { name: 'Non-Tunai' }).click();
-    await page
-      .getByRole('group', { name: 'Kanal pembayaran' })
-      .getByRole('button', { name: 'Gopay', exact: true })
-      .click();
-    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
-    await expect(dialog).toBeVisible();
-    const box = await dialog.boundingBox();
-    expect(box?.width).toBeCloseTo(360, 0);
-    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-    await expect(dialog.getByRole('button', { name: 'Cek Status Pembayaran' })).toBeInViewport();
-    await dialog.getByRole('button', { name: 'Ubah Metode Pembayaran' }).scrollIntoViewIfNeeded();
-    await expect(dialog.getByRole('button', { name: 'Ubah Metode Pembayaran' })).toBeInViewport();
-    expect(await controlsUnderLauncher(page, '.modal')).toEqual([]);
-  });
-
-  test('kartu kanal Non-Tunai muat di 360 px tanpa meluap', async ({ page }) => {
+  test('tiga pilihan Non-Tunai muat di 360 px tanpa meluap dan tanpa kode QR', async ({ page }) => {
     await openPayScreen(page);
     await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     await expect(
       page.getByRole('group', { name: 'Kanal pembayaran' }).getByRole('button'),
-    ).toHaveCount(8);
+    ).toHaveCount(3);
     for (const cardButton of await page
       .getByRole('group', { name: 'Kanal pembayaran' })
       .getByRole('button')
@@ -501,7 +512,7 @@ test.describe('Split pada ponsel 360 x 800', () => {
   test('HP 360: tab Split dan baris Pembayaran tidak meluap', async ({ page }) => {
     await openPayScreen(page);
     await page.getByRole('tab', { name: 'Split', exact: true }).click();
-    await expect(page.getByRole('button', { name: /^Pembayaran \d/ })).toHaveCount(2);
+    await expect(page.getByRole('button', { name: /^Pembayaran \d/ })).toHaveCount(3);
     for (const part of await page.getByRole('button', { name: /^Pembayaran \d/ }).all()) {
       const partBox = await part.boundingBox();
       expect(partBox?.height ?? 0).toBeGreaterThanOrEqual(47.5);
@@ -643,7 +654,7 @@ test.describe('Biaya pada ponsel 360 x 800', () => {
     expect(box?.width).toBeCloseTo(360, 0);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     await form.locator('.dropdown__button').click();
-    await form.getByRole('option', { name: 'Parkir', exact: true }).click();
+    await form.getByRole('option', { name: 'Uang Makan Karyawan', exact: true }).click();
     await typeAmount(page, '5000');
     await expect(form.getByRole('button', { name: 'Simpan', exact: true })).toBeInViewport();
     await form.getByRole('button', { name: 'Simpan', exact: true }).click();
@@ -729,7 +740,7 @@ test.describe('Kartu barang pada ponsel 360 x 800', () => {
     const name = await cards.nth(0).locator('.pos-card__name').boundingBox();
     expect((photo?.y ?? 0) + (photo?.height ?? 0)).toBeLessThanOrEqual((name?.y ?? 0) + 1);
     expect(photo?.width ?? 0).toBeGreaterThan((one?.width ?? 0) * 0.7);
-    expect(photo?.height ?? 0).toBeGreaterThanOrEqual(120);
+    expect(photo?.height ?? 0).toBeGreaterThanOrEqual(90);
     expect(photo?.height ?? 0).toBeLessThanOrEqual(150);
     expect(one?.height ?? 999).toBeLessThan(420);
   });

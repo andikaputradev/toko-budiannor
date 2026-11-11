@@ -5,8 +5,9 @@ import { createStore } from '../../../src/shared/store/store';
 import { expenseNumber } from '../../../src/apps/pos/domain/forms';
 import { createPosSession } from '../../../src/apps/pos/pos-session';
 import { formatDocumentNumber } from '../../../src/shared/format';
+import { withAmpleStock } from './support';
 
-const dataset = generateDataset();
+const dataset = withAmpleStock(generateDataset());
 
 function setup(userId = 'U-3', online = true) {
   const store = createStore({ dataset });
@@ -73,9 +74,9 @@ describe('biaya kasir', () => {
   it('memvalidasi jumlah, keterangan Lainnya, dan saldo kas', () => {
     const { session } = setup();
     session.startShift(1337000);
-    expect(session.saveExpense('parkir', '', 0)).toMatchObject({ messageId: 'MSG-029' });
+    expect(session.saveExpense('makan', '', 0)).toMatchObject({ messageId: 'MSG-029' });
     expect(session.saveExpense('lainnya', ' ', 5000)).toMatchObject({ messageId: 'MSG-042' });
-    expect(session.saveExpense('parkir', '', 2000000)).toMatchObject({
+    expect(session.saveExpense('makan', '', 2000000)).toMatchObject({
       messageId: 'MSG-041',
       values: { saldo: 'Rp 1.337.000' },
     });
@@ -85,7 +86,7 @@ describe('biaya kasir', () => {
     const { session } = setup();
     session.startShift(1337000);
     expect(session.cashBalance()).toBe(1337000);
-    expect(session.saveExpense('parkir', '', 5000)).toEqual({ ok: true });
+    expect(session.saveExpense('makan', '', 5000)).toEqual({ ok: true });
     expect(session.cashBalance()).toBe(1332000);
     expect(session.state().expenses).toHaveLength(1);
     expect(session.saveExpense('bensin', '', 1332000)).toEqual({ ok: true });
@@ -96,9 +97,9 @@ describe('biaya kasir', () => {
     const { session } = setup();
     session.startShift(1337000);
     const attachment = { name: 'nota.png', size: 2048 };
-    expect(session.saveExpense('parkir', 'Parkir gudang', 5000, attachment)).toEqual({ ok: true });
+    expect(session.saveExpense('makan', 'Parkir gudang', 5000, attachment)).toEqual({ ok: true });
     expect(session.state().expenses[0]).toMatchObject({
-      kind: 'parkir',
+      kind: 'makan',
       note: 'Parkir gudang',
       amount: 5000,
       attachment,
@@ -112,12 +113,12 @@ describe('biaya kasir', () => {
   it('menolak catatan lebih dari 144 karakter dan menomori biaya berurutan', () => {
     const { session } = setup();
     session.startShift(1337000);
-    expect(session.saveExpense('parkir', 'x'.repeat(145), 5000)).toMatchObject({
+    expect(session.saveExpense('makan', 'x'.repeat(145), 5000)).toMatchObject({
       ok: false,
       labelKey: 'catatanBiayaTerlaluPanjang',
     });
     expect(session.state().expenses).toHaveLength(0);
-    expect(session.saveExpense('parkir', 'x'.repeat(144), 5000)).toEqual({ ok: true });
+    expect(session.saveExpense('makan', 'x'.repeat(144), 5000)).toEqual({ ok: true });
     expect(session.saveExpense('bensin', '', 1000)).toEqual({ ok: true });
     const [one, two] = session.state().expenses;
     expect(expenseNumber(one?.id ?? '')).toBe(formatDocumentNumber('BY', 1));
@@ -127,11 +128,11 @@ describe('biaya kasir', () => {
   it('memasukkan biaya ke antrean hanya saat offline', () => {
     const online = setup('U-3', true);
     online.session.startShift(1337000);
-    online.session.saveExpense('parkir', '', 5000);
+    online.session.saveExpense('makan', '', 5000);
     expect(online.session.pendingQueue()).toBe(3);
     const offline = setup('U-3', false);
     offline.session.startShift(1337000);
-    offline.session.saveExpense('parkir', '', 5000);
+    offline.session.saveExpense('makan', '', 5000);
     expect(offline.session.pendingQueue()).toBe(4);
     expect(offline.session.state().queue.at(-1)).toMatchObject({ kind: 'biaya', total: 5000 });
   });
@@ -223,14 +224,13 @@ describe('antrean sinkronisasi', () => {
 });
 
 describe('stok negatif, printer, dan otorisasi offline', () => {
-  it('menandai Ditinjau (negatif) saat stok total kurang dari 0', () => {
+  it('tidak menandai Ditinjau (negatif) karena POS menolak jumlah melebihi stok toko', () => {
     const { session, store } = setup('U-3', false);
-    session.addProduct(first(), 'Sak', 9999);
-    session.exactAmount();
-    session.finish();
-    const product = store.getState().data.products[0];
-    expect(totalStock(product ?? first())).toBeLessThan(0);
-    expect(store.getState().negativeReview).toContain(first().id);
+    const over = session.addProduct(first(), 'Sak', 99_999_999);
+    expect(over).toMatchObject({ ok: false, reason: 'over-stock' });
+    expect(session.state().lines).toHaveLength(0);
+    expect(store.getState().negativeReview).toEqual([]);
+    expect(totalStock(store.getState().data.products[0] ?? first())).toBeGreaterThan(0);
   });
 
   it('tidak menandai barang yang stoknya masih cukup', () => {
@@ -720,23 +720,24 @@ describe('ubah PIN', () => {
 });
 
 describe('diskon nominal yang terbawa', () => {
-  it('setLineDetail menolak jumlah baru yang membuat diskon nominal terbawa melebihi jumlah barang', () => {
+  it('setLineDetail menolak harga baru yang membuat diskon nominal per satuan melebihi harga satuan', () => {
     const { session } = setup('U-2');
     session.addProduct(first(), undefined, 3);
     const line = session.state().lines[0];
     if (line === undefined) {
       throw new Error('baris tidak ada');
     }
-    const gross = Math.round(line.quantity * line.unitPrice);
-    const value = Math.round(gross * 0.75);
+    const value = Math.round(line.unitPrice * 0.75);
     expect(session.setLineDetail(0, { discount: { kind: 'nominal', value } }, true).ok).toBe(true);
-    expect(session.setLineDetail(0, { quantity: 1 }, true)).toEqual({
+    // Diskon per satuan: mengubah jumlah tidak pernah membuatnya melebihi harga satuan.
+    expect(session.setLineDetail(0, { quantity: 1 }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { quantity: 3 }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { price: value - 1 }, true)).toEqual({
       ok: false,
       labelKey: 'diskonMelebihi',
     });
-    expect(session.state().lines[0]?.quantity).toBe(3);
-    expect(session.setLineDetail(0, { quantity: 3 }, true).ok).toBe(true);
+    expect(session.state().lines[0]?.unitPrice).toBe(line.unitPrice);
     expect(session.setLineDetail(0, { discount: null }, true).ok).toBe(true);
-    expect(session.setLineDetail(0, { quantity: 1 }, true).ok).toBe(true);
+    expect(session.setLineDetail(0, { price: value - 1 }, true).ok).toBe(true);
   });
 });

@@ -60,7 +60,7 @@ export function openDrawer(session: PosSession, go: (path: string) => void): voi
         onClick: () => {
           close();
           openShiftSummary(session, () => {
-            go('/pos/jual');
+            go('/pos');
           });
         },
       }),

@@ -140,7 +140,8 @@
   border-color: var(--color-accent-default);
 }
 
-/* Tampilan katalog Daftar: satu baris kompak per barang pada elemen .pos-grid yang sama. */
+/* Tampilan katalog Daftar (gambar 9): foto, nama dan kode, chip harga per satuan, lalu kotak stok
+   Toko, Gudang, No Rak di kanan, pada elemen .pos-grid yang sama dengan tampilan kartu. */
 .pos-grid--daftar {
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: auto;
@@ -149,68 +150,124 @@
 
 .pos-grid--daftar .pos-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: var(--primitive-space-3);
-  align-items: center;
-  padding: var(--primitive-space-2);
+  grid-template-columns: minmax(0, 1fr) 210px;
+  align-items: stretch;
 }
 
 .pos-grid--daftar .pos-card__main {
-  flex-direction: row;
-  gap: var(--primitive-space-3);
+  display: grid;
+  grid-template-areas:
+    'photo head'
+    'photo prices';
+  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: var(--primitive-space-2) var(--primitive-space-3);
+  align-content: center;
   align-items: center;
-  padding: 0;
+  padding: var(--primitive-space-2) var(--primitive-space-3);
 }
 
 .pos-grid--daftar .pos-card__main .pos-photo {
-  flex: none;
-  width: 56px;
-  height: 56px;
+  grid-area: photo;
+  align-self: center;
+  width: 72px;
+  height: 72px;
+}
+
+.pos-grid--daftar .pos-card__main .pos-photo--initials {
+  font-size: 26px;
+}
+
+.pos-grid--daftar .pos-card__head {
+  grid-area: head;
+  flex-direction: row;
+  gap: var(--primitive-space-2);
+  align-items: baseline;
 }
 
 .pos-grid--daftar .pos-card__name {
-  min-height: 0;
+  font-size: 15px;
 }
 
-.pos-grid--daftar .pos-card__table {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: var(--primitive-space-2);
-  align-items: center;
-  margin: 0;
+.pos-grid--daftar .pos-card__code {
+  flex: none;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.pos-grid--daftar .pos-card__code::before {
+  content: '(';
+}
+
+.pos-grid--daftar .pos-card__code::after {
+  content: ')';
 }
 
 .pos-grid--daftar .pos-card__prices {
+  grid-area: prices;
   flex-flow: row wrap;
-  gap: var(--primitive-space-1);
-  padding: 0;
+  gap: var(--primitive-space-2);
+  margin: 0;
 }
 
 .pos-grid--daftar .pos-card__price {
-  flex: 1 1 140px;
-  padding: 0 var(--primitive-space-2);
+  flex: 0 1 auto;
+  gap: var(--primitive-space-3);
+  min-height: 36px;
+  padding: 0 var(--primitive-space-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-control);
   background: var(--color-accent-soft);
 }
 
+.pos-grid--daftar .pos-card__amount {
+  color: var(--color-accent-pressed);
+  font-size: 15px;
+}
+
 .pos-grid--daftar .pos-card__stock {
   flex-direction: column;
-  margin: 0;
-  padding: var(--primitive-space-1) var(--primitive-space-2);
+  gap: 2px;
+  margin: var(--primitive-space-2);
+  padding: var(--primitive-space-2) var(--primitive-space-3);
   border: 0;
   border-radius: var(--radius-control);
+  font-size: 13px;
 }
 
 .pos-grid--daftar .pos-card__stockrow {
+  flex: none;
   flex-direction: row;
+  gap: var(--primitive-space-3);
   justify-content: space-between;
 }
 
+.pos-grid--daftar .pos-card__promo {
+  top: 0;
+}
+
+.pos-grid--daftar .pos-card__soldout {
+  top: auto;
+  right: auto;
+  bottom: 8px;
+  left: 8px;
+}
+
 @media (max-width: 899px) {
-  .pos-grid--daftar .pos-card,
-  .pos-grid--daftar .pos-card__table {
+  .pos-grid--daftar .pos-card {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-grid--daftar .pos-card__stock {
+    flex-direction: row;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .pos-grid--daftar .pos-card__stockrow {
+    flex: 1 1 0;
+    flex-direction: column;
   }
 }
 

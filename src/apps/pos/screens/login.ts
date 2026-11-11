@@ -33,11 +33,12 @@ export function renderLogin(session: PosSession, go: (path: string) => void): Sc
     }
     submit.toggleAttribute('data-inactive', selected === undefined);
   };
+  // Fokus tetap di kartu kasir (bukan dipindah ke tombol angka) supaya Enter setelah PIN lengkap
+  // langsung masuk tanpa mouse; angka dari papan ketik diterima di mana pun fokusnya.
   const choose = (user: AppUser): void => {
     selected = user.id;
     error.textContent = '';
     paint();
-    pad.element.querySelector<HTMLElement>('.pinpad__key')?.focus();
   };
 
   const list = el('div', {
@@ -94,7 +95,15 @@ export function renderLogin(session: PosSession, go: (path: string) => void): Sc
       pad.press(event.key);
     } else if (event.key === 'Backspace') {
       pad.backspace();
-    } else if (event.key === 'Enter' && document.activeElement?.tagName !== 'BUTTON') {
+    } else if (event.key === 'Enter') {
+      // Enter selalu mengirim PIN, juga saat fokus ada di tombol angka atau tombol Masuk; satu-satunya
+      // pengecualian: PIN masih kosong dan fokus di kartu kasir (Enter memilih kartu itu).
+      const active = document.activeElement;
+      const onCard = active instanceof HTMLElement && active.classList.contains('pos-login__card');
+      if (pad.value() === '' && onCard) {
+        return;
+      }
+      event.preventDefault();
       submit.click();
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       const index = users.findIndex((user) => user.id === selected);

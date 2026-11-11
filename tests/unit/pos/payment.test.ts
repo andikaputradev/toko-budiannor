@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Customer } from '../../../src/shared/data/types';
 import { message } from '../../../src/shared/messages';
 import {
+  cashSuggestions,
   evaluatePayment,
   remainingDue,
   syncReceivableRow,
@@ -200,5 +201,47 @@ describe('baris pembayaran berkanal', () => {
     expect(remainingDue(100000, rows)).toBe(50000);
     expect(remainingDue(100000, rows, { method: 'transfer', channel: 'BRI' })).toBe(70000);
     expect(remainingDue(100000, rows, { method: 'transfer', channel: 'BCA' })).toBe(80000);
+  });
+});
+
+describe('cashSuggestions (Uang Pas dan dua pecahan di atasnya)', () => {
+  it('mengikuti contoh klien: 3.500, 8.000, dan 141.000', () => {
+    expect(cashSuggestions(3500)).toEqual([5000, 50000]);
+    expect(cashSuggestions(8000)).toEqual([10000, 50000]);
+    expect(cashSuggestions(141000)).toEqual([150000, 200000]);
+    expect(cashSuggestions(110000)).toEqual([150000, 200000]);
+  });
+
+  it('memakai lembar tunggal terkecil di atas total untuk total di bawah 100.000', () => {
+    expect(cashSuggestions(1)).toEqual([1000, 50000]);
+    expect(cashSuggestions(1000)).toEqual([2000, 50000]);
+    expect(cashSuggestions(4999)).toEqual([5000, 50000]);
+    expect(cashSuggestions(5000)).toEqual([10000, 50000]);
+    expect(cashSuggestions(19999)).toEqual([20000, 50000]);
+    expect(cashSuggestions(20000)).toEqual([50000, 100000]);
+    expect(cashSuggestions(45000)).toEqual([50000, 100000]);
+    expect(cashSuggestions(50000)).toEqual([100000, 150000]);
+    expect(cashSuggestions(99999)).toEqual([100000, 150000]);
+  });
+
+  it('memakai kelipatan 50.000 berikutnya mulai 100.000', () => {
+    expect(cashSuggestions(100000)).toEqual([150000, 200000]);
+    expect(cashSuggestions(149999)).toEqual([150000, 200000]);
+    expect(cashSuggestions(150000)).toEqual([200000, 250000]);
+    expect(cashSuggestions(1234567)).toEqual([1250000, 1300000]);
+  });
+
+  it('selalu memberi dua pecahan yang lebih besar dari total dan saling berbeda', () => {
+    for (const total of [1, 999, 1500, 9999, 25000, 48500, 75000, 99000, 101000, 987654]) {
+      const [first, second] = cashSuggestions(total);
+      expect(first, String(total)).toBeGreaterThan(total);
+      expect(second, String(total)).toBeGreaterThan(first ?? 0);
+    }
+  });
+
+  it('tidak memberi saran untuk total nol, negatif, atau bukan angka', () => {
+    expect(cashSuggestions(0)).toEqual([]);
+    expect(cashSuggestions(-5)).toEqual([]);
+    expect(cashSuggestions(Number.NaN)).toEqual([]);
   });
 });

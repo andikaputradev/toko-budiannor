@@ -11,13 +11,17 @@ import {
   lineGross,
   lineSubtotal,
   MAX_BILL_LINES,
+  netTotal,
   removeLine,
   mergeLines,
   repriceLines,
   splitLines,
+  maxTransactionDiscount,
+  transactionDiscountAmount,
   validateDiscount,
+  validateTransactionDiscount,
 } from '../../../src/apps/pos/domain/bill';
-import { isShort } from '../../../src/apps/pos/domain/stock';
+import { availableBase, isOutOfStock, isShort } from '../../../src/apps/pos/domain/stock';
 
 const dataset = generateDataset();
 
@@ -113,12 +117,20 @@ describe('baris bill', () => {
     expect(defaultUnitOf(bata).code).toBe('Pcs');
   });
 
-  it('menandai stok kurang bila jumlah bill melebihi stok dikurangi yang terjual', () => {
-    const total = semen.stock.display + semen.stock.besar;
-    const ok = [line(semen, 'Kg', Math.floor(total))];
+  it('menandai stok kurang bila jumlah bill melebihi stok toko dikurangi yang terjual', () => {
+    const stock = semen.stock.display;
+    const ok = [line(semen, 'Kg', Math.floor(stock))];
     expect(isShort(ok, semen, 0)).toBe(false);
     expect(isShort(ok, semen, 5)).toBe(true);
-    expect(isShort([line(semen, 'Sak', Math.ceil(total / 40) + 1)], semen, 0)).toBe(true);
+    expect(isShort([line(semen, 'Sak', Math.ceil(stock / 40) + 1)], semen, 0)).toBe(true);
+  });
+
+  it('hanya menghitung stok toko: stok gudang dan PO tidak ikut menjadi batas jual', () => {
+    expect(availableBase(semen, 0)).toBe(semen.stock.display);
+    expect(semen.stock.besar).toBeGreaterThan(0);
+    expect(isShort([line(semen, 'Kg', semen.stock.display + 1)], semen, 0)).toBe(true);
+    expect(isOutOfStock({ ...semen, stock: { display: 0, besar: 500 } })).toBe(true);
+    expect(isOutOfStock({ ...semen, stock: { display: 1, besar: 0 } })).toBe(false);
   });
 });
 
@@ -129,7 +141,11 @@ describe('diskon baris', () => {
     expect(lineGross(base)).toBe(210000);
     expect(lineSubtotal(base)).toBe(210000);
     expect(lineSubtotal({ ...base, discount: { kind: 'persen', value: 10 } })).toBe(189000);
-    expect(lineSubtotal({ ...base, discount: { kind: 'nominal', value: 5000 } })).toBe(205000);
+    // Diskon nominal per satuan: Rp 5.000 dikali 3 satuan.
+    expect(lineSubtotal({ ...base, discount: { kind: 'nominal', value: 5000 } })).toBe(195000);
+    expect(
+      discountAmount({ ...base, quantity: 2.5, discount: { kind: 'nominal', value: 3 } }),
+    ).toBe(8);
     const odd: BillLine = { productId: 'x', unit: 'Sak', quantity: 1, unitPrice: 33333 };
     expect(discountAmount({ ...odd, discount: { kind: 'persen', value: 15 } })).toBe(5000);
     expect(lineSubtotal({ ...odd, discount: { kind: 'persen', value: 15 } })).toBe(28333);
@@ -144,7 +160,7 @@ describe('diskon baris', () => {
     expect(discountAmount(base)).toBe(0);
   });
 
-  it('validateDiscount menolak negatif, persen di atas 100, dan nominal melebihi jumlah baris', () => {
+  it('validateDiscount menolak negatif, persen di atas 100, dan nominal melebihi harga satuan', () => {
     expect(validateDiscount('persen', -1, 210000)).toBe('negatif');
     expect(validateDiscount('nominal', -1, 210000)).toBe('negatif');
     expect(validateDiscount('persen', Number.NaN, 210000)).toBe('negatif');
@@ -279,9 +295,15 @@ describe('split dan merge baris bill', () => {
     });
     const movedNominal = result.moved[1]?.discount;
     const keptNominal = result.kept[1]?.discount;
-    expect(movedNominal).toEqual({ kind: 'nominal', value: 333 });
-    expect(keptNominal).toEqual({ kind: 'nominal', value: 667 });
-    expect((movedNominal?.value ?? 0) + (keptNominal?.value ?? 0)).toBe(1000);
+    // Diskon nominal berlaku per satuan, jadi kedua bagian membawa potongan per satuan yang sama.
+    expect(movedNominal).toEqual({ kind: 'nominal', value: 1000 });
+    expect(keptNominal).toEqual({ kind: 'nominal', value: 1000 });
+    const whole = lineSubtotal(nominal);
+    const parts = [result.moved[1], result.kept[1]].reduce(
+      (sum, part) => sum + (part === undefined ? 0 : lineSubtotal(part)),
+      0,
+    );
+    expect(parts).toBe(whole);
   });
 
   it('mergeLines menjumlahkan barang dan satuan sama dan mempertahankan harga bill target', () => {
@@ -308,14 +330,19 @@ describe('split dan merge baris bill', () => {
 describe('diskon dan harga ubahan pada gabungan dan perubahan harga tier', () => {
   const base: BillLine = { productId: semen.id, unit: 'Sak', quantity: 2, unitPrice: 70000 };
 
-  it('mergeLines menjumlahkan diskon nominal dan mempertahankan diskon persen yang sama', () => {
+  it('mergeLines menyatukan diskon yang sama persis dan memisahkan nilai per satuan yang berbeda', () => {
     const nominal = mergeLines(
+      [{ ...base, discount: { kind: 'nominal', value: 10000 } }],
+      [{ ...base, quantity: 1, discount: { kind: 'nominal', value: 10000 } }],
+    );
+    expect(nominal).toEqual([
+      { ...base, quantity: 3, discount: { kind: 'nominal', value: 10000 } },
+    ]);
+    const different = mergeLines(
       [{ ...base, discount: { kind: 'nominal', value: 10000 } }],
       [{ ...base, quantity: 1, discount: { kind: 'nominal', value: 5000 } }],
     );
-    expect(nominal).toEqual([
-      { ...base, quantity: 3, discount: { kind: 'nominal', value: 15000 } },
-    ]);
+    expect(different).toHaveLength(2);
     const percent = mergeLines(
       [{ ...base, discount: { kind: 'persen', value: 10 } }],
       [{ ...base, quantity: 1, discount: { kind: 'persen', value: 10 } }],
@@ -361,5 +388,46 @@ describe('diskon dan harga ubahan pada gabungan dan perubahan harga tier', () =>
     expect(first?.discount).toBeUndefined();
     expect(second?.discount).toEqual({ kind: 'nominal', value: 100 });
     expect(third?.discount).toEqual({ kind: 'persen', value: 10 });
+  });
+});
+
+describe('Diskon Transaksi', () => {
+  const lines: BillLine[] = [
+    { productId: 'a', unit: 'Sak', quantity: 2, unitPrice: 70000 },
+    {
+      productId: 'b',
+      unit: 'Klg',
+      quantity: 1,
+      unitPrice: 10000,
+      discount: { kind: 'persen', value: 10 },
+    },
+  ];
+
+  it('menghitung persen dari subtotal setelah diskon baris dan menjepit nominal pada subtotal', () => {
+    expect(billTotal(lines)).toBe(149000);
+    expect(transactionDiscountAmount(149000, { kind: 'persen', value: 10 })).toBe(14900);
+    expect(transactionDiscountAmount(149000, { kind: 'nominal', value: 9000 })).toBe(9000);
+    expect(transactionDiscountAmount(149000, { kind: 'nominal', value: 999999 })).toBe(149000);
+    expect(transactionDiscountAmount(149000, undefined)).toBe(0);
+    expect(transactionDiscountAmount(149000, { kind: 'persen', value: Number.NaN })).toBe(0);
+    expect(transactionDiscountAmount(149000, { kind: 'nominal', value: -5 })).toBe(0);
+  });
+
+  it('netTotal mengurangi diskon transaksi dari subtotal', () => {
+    expect(netTotal(lines, undefined)).toBe(149000);
+    expect(netTotal(lines, { kind: 'nominal', value: 9000 })).toBe(140000);
+    expect(netTotal(lines, { kind: 'persen', value: 100 })).toBe(0);
+  });
+
+  it('validateTransactionDiscount menolak negatif dan diskon yang menghabiskan total', () => {
+    expect(validateTransactionDiscount('persen', -1, 149000)).toBe('negatif');
+    expect(validateTransactionDiscount('persen', 101, 149000)).toBe('melebihi');
+    expect(validateTransactionDiscount('persen', 100, 149000)).toBe('melebihi');
+    expect(validateTransactionDiscount('persen', 99, 149000)).toBe('ok');
+    expect(validateTransactionDiscount('nominal', 149000, 149000)).toBe('melebihi');
+    expect(validateTransactionDiscount('nominal', 148999, 149000)).toBe('ok');
+    expect(maxTransactionDiscount('persen', 149000)).toBe(99);
+    expect(maxTransactionDiscount('nominal', 149000)).toBe(148999);
+    expect(maxTransactionDiscount('nominal', 0)).toBe(0);
   });
 });

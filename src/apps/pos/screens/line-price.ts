@@ -1,5 +1,4 @@
 import type { BillLine } from '../../../shared/data/types';
-import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 import { discountAmount } from '../domain/bill';
@@ -10,22 +9,16 @@ export function discountTag(line: BillLine): string | undefined {
   if (discount === undefined || discountAmount(line) === 0) {
     return undefined;
   }
+  // Diskon nominal berlaku per satuan, jadi tanda memuat satuannya, mis. "-Rp 5.000/SAK".
   return discount.kind === 'persen'
     ? label('diskonTandaPersen', { nilai: discount.value })
-    : label('diskonTandaNominal', { nilai: formatRupiah(discount.value) });
+    : label('diskonTandaNominalSatuan', { nilai: formatRupiah(discount.value), satuan: line.unit });
 }
 
 const plain = (value: number): string => formatRupiah(value).replace('Rp ', '');
 
-// Harga satuan pada baris: harga asli dicoret (bila diubah) diikuti harga yang berlaku.
+// Harga satuan pada baris: hanya harga yang berlaku. Harga asli dan coretannya tidak ditampilkan
+// walau kasir mengubah harga.
 export function priceNodes(line: BillLine): Node[] {
-  return [
-    ...(line.listPrice === undefined
-      ? []
-      : [
-          el('s', { className: 'pos-order__list', text: plain(line.listPrice) }),
-          document.createTextNode(' '),
-        ]),
-    document.createTextNode(plain(line.unitPrice)),
-  ];
+  return [document.createTextNode(plain(line.unitPrice))];
 }

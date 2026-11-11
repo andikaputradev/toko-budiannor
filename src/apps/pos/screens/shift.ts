@@ -4,6 +4,7 @@ import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { createIllustration } from '../../../shared/ui/illustration';
 import { openModal } from '../../../shared/ui/modal';
+import { showToast } from '../../../shared/ui/toast';
 import { createAmountEntry } from '../amount-entry';
 import { needsShift } from '../domain/shift';
 import { failureText } from '../failure';
@@ -50,6 +51,7 @@ export function openOpeningCashModal(session: PosSession, onStarted: () => void)
   );
 }
 
+// Akhiri Shift menutup shift lalu langsung keluar (log off): kasir kembali ke layar PIN.
 export function openShiftSummary(session: PosSession, onEnded: () => void): void {
   const summary = session.shiftSummary();
   if (summary === undefined) {
@@ -121,7 +123,9 @@ export function openShiftSummary(session: PosSession, onEnded: () => void): void
         text: label('akhiriShift'),
         onClick: () => {
           session.endShift(entry.hasValue() ? entry.value() : undefined);
+          session.logout();
           handle.close();
+          showToast({ kind: 'success', text: label('shiftSelesaiKeluar') });
           onEnded();
         },
       }),

@@ -24,6 +24,8 @@ const THEME_NAMES: Readonly<Record<PosTheme, LabelKey>> = {
   biru: 'temaBiru',
   hijau: 'temaHijau',
   ungu: 'temaUngu',
+  merah: 'temaMerah',
+  kuning: 'temaKuning',
 };
 
 const MODE_NAMES: Readonly<Record<PosMode, LabelKey>> = {

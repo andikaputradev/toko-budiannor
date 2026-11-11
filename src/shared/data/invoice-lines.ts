@@ -117,35 +117,55 @@ export function buildInvoiceLines(
     remaining -= quantity * pick.price;
   }
 
-  // Baris terakhir menutup selisih: potongan nominal kecil membuat jumlah tepat sama dengan invoice.
-  let best:
-    { readonly pick: Pick; readonly quantity: number; readonly discount: number } | undefined;
-  let bestRatio = Number.POSITIVE_INFINITY;
-  for (let attempt = 0; attempt < LAST_LINE_CANDIDATES; attempt += 1) {
-    const pick = pickBetween(products, random, priceOf, remaining);
-    if (pick === undefined) {
-      continue;
+  // Baris penutup menutup selisih: potongan nominal kecil membuat jumlah tepat sama dengan invoice.
+  // Diskon nominal berlaku per satuan, jadi selisih pembulatan (selalu kurang dari satu harga
+  // satuan) dipotong dari satu satuan saja dan sisa jumlahnya tetap harga penuh pada baris lain.
+  const closing = (target: number): BillLine[] => {
+    let best:
+      { readonly pick: Pick; readonly quantity: number; readonly discount: number } | undefined;
+    let bestRatio = Number.POSITIVE_INFINITY;
+    for (let attempt = 0; attempt < LAST_LINE_CANDIDATES; attempt += 1) {
+      const pick = pickBetween(products, random, priceOf, target);
+      if (pick === undefined) {
+        continue;
+      }
+      const quantity = Math.ceil(target / pick.price);
+      const gross = quantity * pick.price;
+      const discount = gross - target;
+      const ratio = discount / gross;
+      if (ratio < bestRatio) {
+        best = { pick, quantity, discount };
+        bestRatio = ratio;
+      }
     }
-    const quantity = Math.ceil(remaining / pick.price);
-    const gross = quantity * pick.price;
-    const discount = gross - remaining;
-    const ratio = discount / gross;
-    if (ratio < bestRatio) {
-      best = { pick, quantity, discount };
-      bestRatio = ratio;
+    if (best === undefined) {
+      return [];
     }
+    const { pick, quantity, discount } = best;
+    const base = { productId: pick.product.id, unit: pick.unit.code, unitPrice: pick.price };
+    if (discount === 0 || quantity === 1) {
+      return [
+        {
+          ...base,
+          quantity,
+          ...(discount > 0 ? { discount: { kind: 'nominal' as const, value: discount } } : {}),
+        },
+      ];
+    }
+    return [
+      { ...base, quantity: quantity - 1 },
+      { ...base, quantity: 1, discount: { kind: 'nominal' as const, value: discount } },
+    ];
+  };
+  let tail = closing(remaining);
+  const dropped = lines[lines.length - 1];
+  if (lines.length + tail.length > MAX_LINES && dropped !== undefined) {
+    // Dua baris penutup melebihi batas: baris sebelumnya dilebur ke dalam selisih yang ditutup.
+    lines.pop();
+    remaining += Math.round(dropped.quantity * dropped.unitPrice);
+    tail = closing(remaining);
   }
-  if (best !== undefined) {
-    lines.push({
-      productId: best.pick.product.id,
-      unit: best.pick.unit.code,
-      quantity: best.quantity,
-      unitPrice: best.pick.price,
-      ...(best.discount > 0
-        ? { discount: { kind: 'nominal' as const, value: best.discount } }
-        : {}),
-    });
-  }
+  lines.push(...tail);
   return lines;
 }
 
@@ -158,7 +178,7 @@ export function linesTotal(lines: readonly BillLine[]): number {
         ? 0
         : discount.kind === 'persen'
           ? Math.round((gross * discount.value) / 100)
-          : Math.round(discount.value);
+          : Math.round(discount.value * line.quantity);
     return sum + gross - Math.min(gross, Math.max(0, off));
   }, 0);
 }

@@ -84,10 +84,11 @@ describe('rentang tanggal', () => {
 describe('jumlah baris dengan diskon', () => {
   const line = { productId: 'P', unit: 'Pcs', quantity: 2, unitPrice: 50_000 };
 
-  it('mengurangi diskon persen dan nominal, tidak pernah negatif', () => {
+  it('mengurangi diskon persen dan nominal per satuan, tidak pernah negatif', () => {
     expect(lineAmount(line)).toBe(100_000);
     expect(lineAmount({ ...line, discount: { kind: 'persen', value: 10 } })).toBe(90_000);
-    expect(lineAmount({ ...line, discount: { kind: 'nominal', value: 30_000 } })).toBe(70_000);
+    // Nominal per satuan: Rp 15.000 dikali 2 satuan.
+    expect(lineAmount({ ...line, discount: { kind: 'nominal', value: 15_000 } })).toBe(70_000);
     expect(lineAmount({ ...line, discount: { kind: 'nominal', value: 500_000 } })).toBe(0);
     expect(lineAmount({ ...line, discount: { kind: 'persen', value: -5 } })).toBe(100_000);
   });

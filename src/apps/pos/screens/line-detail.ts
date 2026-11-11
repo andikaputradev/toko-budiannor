@@ -10,6 +10,7 @@ import { createTextField } from '../../../shared/ui/field';
 import { openModal } from '../../../shared/ui/modal';
 import { createAmountEntry } from '../amount-entry';
 import { lineSubtotal } from '../domain/bill';
+import { clipName } from '../domain/catalog-view';
 import { failureText } from '../failure';
 import type { LineDetailPatch, PosSession } from '../pos-session';
 import { createProductThumb } from '../thumb';
@@ -24,7 +25,8 @@ export interface LineDetailOptions {
 
 type Section = 'diskon' | 'harga';
 
-// Modal Detail Barang: satuan, jumlah, tenaga penjual, diskon, ubah harga, catatan, dan Cek Stok.
+// Modal Detail Barang: satuan, jumlah, diskon per satuan, dan ubah harga. Tenaga Penjual, Cek Stok,
+// dan Catatan tidak ada lagi. Dua kolom dengan tinggi tetap supaya muat satu layar tanpa scroll bar.
 export function openLineDetail(options: LineDetailOptions): void {
   const { session, product, lineIndex } = options;
   const line = session.state().lines[lineIndex];
@@ -40,7 +42,6 @@ export function openLineDetail(options: LineDetailOptions): void {
 
   // Draf yang belum disimpan. Kasir membuka kunci diskon dan harga lewat PIN Supervisor atau Owner.
   let unit = line.unit;
-  let sellerId = line.sellerId;
   let kind: LineDiscount['kind'] = line.discount?.kind ?? 'persen';
   let discountTouched = false;
   let priceTouched = false;
@@ -59,6 +60,7 @@ export function openLineDetail(options: LineDetailOptions): void {
   const discountEntry = createAmountEntry({
     labelText: label('nilaiDiskon'),
     value: line.discount?.value ?? 0,
+    max: line.discount?.kind === 'persen' || line.discount === undefined ? 100 : line.unitPrice,
     onChange: () => {
       discountTouched = true;
       paint();
@@ -141,26 +143,6 @@ export function openLineDetail(options: LineDetailOptions): void {
     return button;
   };
 
-  const sellerFieldId = nextId('penjual');
-  const sellerSelect = el('select', { className: 'input', attrs: { id: sellerFieldId } });
-  sellerSelect.append(el('option', { text: label('pilihTenagaPenjual'), attrs: { value: '' } }));
-  for (const user of session.store.getState().data.users) {
-    if (user.active && (user.role === 'frontliner' || user.role === 'sales')) {
-      sellerSelect.append(el('option', { text: user.name, attrs: { value: user.id } }));
-    }
-  }
-  sellerSelect.value = line.sellerId ?? '';
-  sellerSelect.addEventListener('change', () => {
-    sellerId = sellerSelect.value === '' ? undefined : sellerSelect.value;
-  });
-
-  const noteId = nextId('catatan');
-  const note = el('textarea', {
-    className: 'input pos-line__note',
-    attrs: { id: noteId, rows: '2', maxlength: '200' },
-  });
-  note.value = line.note ?? '';
-
   const kindButtons = new Map<LineDiscount['kind'], HTMLButtonElement>();
   const kindGroup = el('div', {
     className: 'pos-line__kinds',
@@ -186,7 +168,6 @@ export function openLineDetail(options: LineDetailOptions): void {
     kindButtons.set(value, button);
     kindGroup.append(button);
   }
-  const originalText = el('p', { className: 'pos-line__original t-label' });
   const restore = createButton({
     text: label('pulihkanHarga'),
     variant: 'secondary',
@@ -200,6 +181,10 @@ export function openLineDetail(options: LineDetailOptions): void {
   const toggles = new Map<Section, HTMLButtonElement>();
   const hints = new Map<Section, HTMLElement>();
   const panels = new Map<Section, HTMLElement>();
+  const empty = el('p', {
+    className: 'pos-line__empty t-label',
+    text: label('pilihDiskonAtauHarga'),
+  });
   const toggleSection = (which: Section): void => {
     if (open === which) {
       open = undefined;
@@ -223,7 +208,12 @@ export function openLineDetail(options: LineDetailOptions): void {
     open = which;
     paint();
   };
-  const buildSection = (which: Section, text: string, content: readonly HTMLElement[]) => {
+  const tabs = el('div', {
+    className: 'pos-line__tabs',
+    attrs: { role: 'group', 'aria-label': label('detailBarang') },
+  });
+  const panelHost = el('div', { className: 'pos-line__panels' }, empty);
+  const buildSection = (which: Section, text: string, content: readonly HTMLElement[]): void => {
     const panelId = nextId('bagian-detail');
     const hint = el('span', { className: 'pos-line__hint' });
     const toggle = el(
@@ -234,7 +224,6 @@ export function openLineDetail(options: LineDetailOptions): void {
       },
       el('span', { text }),
       hint,
-      icon('chevron-down'),
     );
     toggle.addEventListener('click', () => {
       toggleSection(which);
@@ -247,18 +236,14 @@ export function openLineDetail(options: LineDetailOptions): void {
     toggles.set(which, toggle);
     hints.set(which, hint);
     panels.set(which, panel);
-    return el('div', { className: 'pos-line__section' }, toggle, panel);
+    tabs.append(toggle);
+    panelHost.append(panel);
   };
-  const sections: HTMLElement[] = [];
   if (canDiscount) {
-    sections.push(
-      buildSection('diskon', label('berikanDiskon'), [kindGroup, discountEntry.element]),
-    );
+    buildSection('diskon', label('berikanDiskon'), [kindGroup, discountEntry.element]);
   }
   if (canPrice) {
-    sections.push(
-      buildSection('harga', label('ubahHarga'), [priceEntry.element, originalText, restore]),
-    );
+    buildSection('harga', label('ubahHarga'), [priceEntry.element, restore]);
   }
 
   const paint = (): void => {
@@ -281,10 +266,10 @@ export function openLineDetail(options: LineDetailOptions): void {
     if (!priceTouched) {
       priceEntry.setValue(price);
     }
-    const original = originalPrice();
-    originalText.hidden = price === original;
-    originalText.textContent = label('hargaAsli', { harga: formatRupiah(original) });
-    restore.hidden = price === original;
+    // Diskon nominal paling banyak harga satu satuan; persen paling banyak 100.
+    discountEntry.setMax(kind === 'persen' ? 100 : price);
+    discountEntry.setLabel(label(kind === 'nominal' ? 'diskonPerSatuanLabel' : 'nilaiDiskon'));
+    restore.hidden = price === originalPrice();
     hints
       .get('diskon')
       ?.replaceChildren(
@@ -298,33 +283,31 @@ export function openLineDetail(options: LineDetailOptions): void {
       );
     hints
       .get('harga')
-      ?.replaceChildren(document.createTextNode(price === original ? '' : formatRupiah(price)));
+      ?.replaceChildren(
+        document.createTextNode(price === originalPrice() ? '' : formatRupiah(price)),
+      );
     for (const [which, toggle] of toggles) {
       const expanded = open === which;
       toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      toggle.setAttribute('aria-pressed', expanded ? 'true' : 'false');
       const panel = panels.get(which);
       if (panel !== undefined) {
         panel.hidden = !expanded;
       }
     }
+    empty.hidden = open !== undefined;
   };
 
   const save = (): void => {
     const amount = quantity();
     const issue = amount === undefined ? 'invalid' : validateQuantity(product, amount);
     if (amount === undefined || issue !== 'ok') {
-      const empty = quantityField.input.value.trim() === '';
-      const key = empty ? 'not-positive' : issue === 'ok' ? 'invalid' : issue;
+      const emptyField = quantityField.input.value.trim() === '';
+      const key = emptyField ? 'not-positive' : issue === 'ok' ? 'invalid' : issue;
       error.textContent = message(QUANTITY_MESSAGES[key]);
       return;
     }
     const patch: LineDetailPatch = { unit, quantity: amount };
-    if (note.value.trim() !== (line.note ?? '')) {
-      patch.note = note.value;
-    }
-    if (sellerId !== line.sellerId) {
-      patch.sellerId = sellerId ?? null;
-    }
     if (priceTouched && canPrice) {
       const price = priceEntry.value();
       patch.price = price === tierPrice(unit) ? null : price;
@@ -371,67 +354,54 @@ export function openLineDetail(options: LineDetailOptions): void {
   );
   remove.addEventListener('click', confirmDelete);
 
-  const stock = createButton({
-    text: label('cekStokBarang'),
-    variant: 'secondary',
-    icon: 'package',
-    onClick: () => {
-      void import('./stock-sheet').then(({ openStockSheet }) => {
-        openStockSheet(product);
-      });
-    },
-  });
-
   const handle = openModal({
     title: label('detailBarang'),
     body: el(
       'div',
-      { className: 'pos-line' },
+      { className: canDiscount || canPrice ? 'pos-line' : 'pos-line pos-line--single' },
       el(
         'div',
-        { className: 'pos-line__head' },
-        createProductThumb(product, 'md'),
+        { className: 'pos-line__main' },
         el(
           'div',
-          { className: 'pos-line__info' },
-          el('p', { className: 'pos-line__name t-section-title', text: product.name }),
+          { className: 'pos-line__head' },
+          createProductThumb(product, 'sm'),
           el(
-            'p',
-            { className: 't-label' },
-            el('span', { text: label('kodeBarangJudul') }),
-            document.createTextNode(': '),
-            el('span', { className: 'pos-line__code', text: product.code }),
+            'div',
+            { className: 'pos-line__info' },
+            el('p', {
+              className: 'pos-line__name t-section-title',
+              text: clipName(product.name),
+              attrs: { title: product.name },
+            }),
+            el(
+              'p',
+              { className: 't-label' },
+              el('span', { text: label('kodeBarangJudul') }),
+              document.createTextNode(': '),
+              el('span', { className: 'pos-line__code', text: product.code }),
+            ),
+            priceText,
           ),
-          priceText,
         ),
         el(
           'div',
-          { className: 'pos-line__total' },
-          el('p', { className: 't-label', text: label('kolomSubtotal') }),
+          { className: 'pos-line__qty' },
+          stepButton(-1),
+          quantityField.root,
+          stepButton(1),
+        ),
+        unitGroup,
+        el(
+          'p',
+          { className: 'pos-line__sum' },
+          el('span', { className: 't-label', text: label('kolomSubtotal') }),
           subtotal,
         ),
+        error,
       ),
-      unitGroup,
-      el('div', { className: 'pos-line__qty' }, stepButton(-1), quantityField.root, stepButton(1)),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', {
-          className: 'field__label',
-          text: label('tenagaPenjual'),
-          attrs: { for: sellerFieldId },
-        }),
-        sellerSelect,
-      ),
-      ...sections,
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: label('catatan'), attrs: { for: noteId } }),
-        note,
-      ),
-      stock,
-      error,
+      // Peran tanpa hak diskon dan ubah harga (Frontliner) hanya mengatur jumlah dan satuan.
+      canDiscount || canPrice ? el('div', { className: 'pos-line__side' }, tabs, panelHost) : false,
     ),
     actions: [],
   });

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(new URL('../../../src/styles/tokens.css', import.meta.url), 'utf8');
-const THEMES = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu'] as const;
+const THEMES = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu', 'merah', 'kuning'] as const;
 const APPS = ['owner', 'sales'] as const;
 
 describe('token tema untuk aplikasi mobile', () => {

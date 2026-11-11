@@ -1,5 +1,5 @@
 import { el } from '../../shared/dom';
-import { formatTime } from '../../shared/format';
+import { formatDayDate, formatTime } from '../../shared/format';
 import { icon } from '../../shared/icons';
 import { label, type LabelKey } from '../../shared/messages';
 import { canOpenScreen } from '../../shared/permissions';
@@ -24,7 +24,6 @@ export function createTopbar(session: PosSession, title: LabelKey): Topbar {
   menu.addEventListener('click', () => {
     openDrawer(session, navigate);
   });
-  const shiftChip = el('span', { className: 'pos-shiftchip' });
   const chip = el('a', { className: 'pos-chip', attrs: { href: '#/pos/status' } });
   const badge = el('span', { className: 'pos-badge' });
   const bills = el(
@@ -34,7 +33,15 @@ export function createTopbar(session: PosSession, title: LabelKey): Topbar {
     badge,
   );
   const cashier = el('span', { className: 'pos-topbar__cashier' });
-  const clock = el('span', { className: 'pos-topbar__clock' });
+  // Hari dan tanggal diikuti jam; di bawah 700 px hanya jam yang tampil.
+  const day = el('span', { className: 'pos-topbar__day' });
+  const separator = el('span', {
+    className: 'pos-topbar__sep',
+    text: ' - ',
+    attrs: { 'aria-hidden': 'true' },
+  });
+  const time = document.createTextNode('');
+  const clock = el('span', { className: 'pos-topbar__clock' }, day, separator, time);
   const element = el(
     'header',
     { className: 'pos-topbar' },
@@ -44,8 +51,7 @@ export function createTopbar(session: PosSession, title: LabelKey): Topbar {
       menu,
       el('h1', { className: 'pos-topbar__title t-screen-title', text: label(title) }),
     ),
-    el('div', { className: 'pos-topbar__center' }, shiftChip),
-    el('div', { className: 'pos-topbar__status' }, chip, bills, cashier, clock),
+    el('div', { className: 'pos-topbar__status' }, clock, chip, bills, cashier),
   );
   const render = (): void => {
     const state = session.store.getState();
@@ -60,15 +66,9 @@ export function createTopbar(session: PosSession, title: LabelKey): Topbar {
     );
     const user = state.data.users.find((item) => item.id === state.userId);
     cashier.textContent = loggedIn && user !== undefined ? user.name : '';
-    clock.textContent = formatTime(session.now());
-    const shift = session.state().shift;
-    shiftChip.hidden = !loggedIn || shift === undefined;
-    shiftChip.textContent =
-      shift === undefined
-        ? ''
-        : shift.userId === state.userId
-          ? label('shiftDimulai')
-          : label('shiftDimulaiOleh', { nama: session.userName(shift.userId) });
+    const now = session.now();
+    day.textContent = formatDayDate(now);
+    time.data = formatTime(now);
     const count = session.state().heldBills.length;
     bills.hidden = !loggedIn || !canOpenScreen(state.role, 'POS-05');
     badge.textContent = String(count);

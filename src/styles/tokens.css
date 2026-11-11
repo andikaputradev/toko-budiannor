@@ -669,6 +669,112 @@
   --color-accent-soft: #2A2340;
 }
 
+[data-pos-theme='merah'][data-app='pos'],
+:where([data-pos-theme='merah']) [data-app='pos'] {
+  --color-accent-default: #C62828;
+  --color-accent-pressed: #991B1B;
+  --color-accent-soft: #FDE8E8;
+}
+
+[data-pos-theme='merah'][data-app='bo'],
+:where([data-pos-theme='merah']) [data-app='bo'] {
+  --color-accent-default: #C62828;
+  --color-accent-pressed: #991B1B;
+  --color-accent-soft: #FDE8E8;
+}
+
+[data-pos-theme='merah'][data-app='owner'],
+:where([data-pos-theme='merah']) [data-app='owner'] {
+  --color-accent-default: #C62828;
+  --color-accent-pressed: #991B1B;
+  --color-accent-soft: #FDE8E8;
+}
+
+[data-pos-theme='merah'][data-app='sales'],
+:where([data-pos-theme='merah']) [data-app='sales'] {
+  --color-accent-default: #C62828;
+  --color-accent-pressed: #991B1B;
+  --color-accent-soft: #FDE8E8;
+}
+
+:where([data-pos-theme='merah']) [data-app='pos'][data-pos-surface='dark'],
+[data-pos-theme='merah'][data-app='pos'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FF8A80;
+  --color-accent-pressed: #FF8A80;
+  --color-accent-soft: #3A1F1F;
+}
+
+[data-pos-theme='merah'][data-app='bo'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FF8A80;
+  --color-accent-pressed: #FF8A80;
+  --color-accent-soft: #3A1F1F;
+}
+
+[data-pos-theme='merah'][data-app='owner'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FF8A80;
+  --color-accent-pressed: #FF8A80;
+  --color-accent-soft: #3A1F1F;
+}
+
+[data-pos-theme='merah'][data-app='sales'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FF8A80;
+  --color-accent-pressed: #FF8A80;
+  --color-accent-soft: #3A1F1F;
+}
+
+[data-pos-theme='kuning'][data-app='pos'],
+:where([data-pos-theme='kuning']) [data-app='pos'] {
+  --color-accent-default: #966400;
+  --color-accent-pressed: #7A5200;
+  --color-accent-soft: #FEF3C7;
+}
+
+[data-pos-theme='kuning'][data-app='bo'],
+:where([data-pos-theme='kuning']) [data-app='bo'] {
+  --color-accent-default: #966400;
+  --color-accent-pressed: #7A5200;
+  --color-accent-soft: #FEF3C7;
+}
+
+[data-pos-theme='kuning'][data-app='owner'],
+:where([data-pos-theme='kuning']) [data-app='owner'] {
+  --color-accent-default: #966400;
+  --color-accent-pressed: #7A5200;
+  --color-accent-soft: #FEF3C7;
+}
+
+[data-pos-theme='kuning'][data-app='sales'],
+:where([data-pos-theme='kuning']) [data-app='sales'] {
+  --color-accent-default: #966400;
+  --color-accent-pressed: #7A5200;
+  --color-accent-soft: #FEF3C7;
+}
+
+:where([data-pos-theme='kuning']) [data-app='pos'][data-pos-surface='dark'],
+[data-pos-theme='kuning'][data-app='pos'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FACC15;
+  --color-accent-pressed: #FACC15;
+  --color-accent-soft: #3A3115;
+}
+
+[data-pos-theme='kuning'][data-app='bo'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FACC15;
+  --color-accent-pressed: #FACC15;
+  --color-accent-soft: #3A3115;
+}
+
+[data-pos-theme='kuning'][data-app='owner'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FACC15;
+  --color-accent-pressed: #FACC15;
+  --color-accent-soft: #3A3115;
+}
+
+[data-pos-theme='kuning'][data-app='sales'][data-pos-scheme='gelap'] {
+  --color-accent-default: #FACC15;
+  --color-accent-pressed: #FACC15;
+  --color-accent-soft: #3A3115;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root,
   [data-app] {

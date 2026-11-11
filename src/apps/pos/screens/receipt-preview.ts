@@ -45,7 +45,6 @@ function itemsOf(session: PosSession, lines: Sale['lines']): ReceiptItem[] {
       unitPrice: line.unitPrice,
       subtotal: lineGross(line),
       ...(discount > 0 ? { discount } : {}),
-      ...(line.listPrice === undefined ? {} : { listPrice: line.listPrice }),
     };
   });
 }
@@ -91,6 +90,10 @@ export function saleReceipt(
     total: sale.total,
     payments: paymentsOf(sale),
     change: changeOf(sale),
+    ...(sale.discount === undefined || sale.discount <= 0
+      ? {}
+      : { transactionDiscount: sale.discount }),
+    ...(sale.note === undefined ? {} : { note: sale.note }),
   };
 }
 

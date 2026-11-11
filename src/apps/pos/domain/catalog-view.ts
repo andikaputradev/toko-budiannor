@@ -46,7 +46,7 @@ export function categoryPhoto(category: string): string | undefined {
   return CATEGORY_PHOTOS.has(slug) ? `kategori/${slug}.webp` : undefined;
 }
 
-export type StockKey = 'toko' | 'gudang' | 'po';
+export type StockKey = 'toko' | 'gudang';
 
 export interface StockLine {
   readonly key: StockKey;
@@ -54,25 +54,44 @@ export interface StockLine {
   readonly unit: string;
 }
 
-// Stok pada kartu mengikuti proposal: dalam satuan dasar, bukan dikonversi ke satuan jual.
-export function stockLines(product: Product): readonly [StockLine, StockLine, StockLine] {
+// Stok pada kartu mengikuti proposal: dalam satuan dasar, bukan dikonversi ke satuan jual. POS
+// hanya menampilkan stok Toko dan Gudang; stok PO tidak ditampilkan dan diganti No Rak.
+export function stockLines(product: Product): readonly [StockLine, StockLine] {
   const unit = product.baseUnit;
   return [
     { key: 'toko', quantity: product.stock.display, unit },
     { key: 'gudang', quantity: product.stock.besar, unit },
-    { key: 'po', quantity: product.incoming, unit },
   ];
 }
 
+export function rackOf(product: Product): string {
+  const rak = product.rak?.trim();
+  return rak === undefined || rak === '' ? '-' : rak;
+}
+
+// Barang promo: nilai promo persen atau nominal lebih dari nol (kolom Promo pada Data Barang).
+export function isPromo(product: Product): boolean {
+  return (product.promo?.percent ?? 0) > 0 || (product.promo?.nominal ?? 0) > 0;
+}
+
+export const NAME_MAX = 32;
+
+// Nama barang satu baris: lebih dari batas dipotong dan diakhiri elipsis agar tidak turun baris.
+export function clipName(name: string, max: number = NAME_MAX): string {
+  const clean = name.trim();
+  return clean.length <= max ? clean : `${clean.slice(0, max - 1).trimEnd()}…`;
+}
+
 const TIER_TEXT: Readonly<Record<Tier, string>> = {
-  eceran: 'RETAIL',
+  eceran: 'ECERAN',
   grosir: 'GROSIR',
   kontraktor: 'KONTRAKTOR',
 };
 
+// Pelanggan terpilih tampil "KODE - NAMA (KATEGORI)"; pelanggan Umum tidak punya kode.
 export function customerLabel(customer: Customer | undefined): string {
   return customer === undefined
-    ? label('pelangganUmum')
+    ? `${label('pelangganUmum').toUpperCase()} (${TIER_TEXT.eceran})`
     : `${customer.code} - ${customer.name.toUpperCase()} (${TIER_TEXT[customer.tier]})`;
 }
 

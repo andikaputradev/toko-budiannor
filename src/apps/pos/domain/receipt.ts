@@ -15,7 +15,6 @@ export interface ReceiptItem {
   // Jumlah kotor baris, sebelum diskon.
   readonly subtotal: number;
   readonly discount?: number | undefined;
-  readonly listPrice?: number | undefined;
 }
 
 export interface ReceiptPayment {
@@ -34,6 +33,9 @@ export interface ReceiptInput {
   readonly total: number;
   readonly payments: readonly ReceiptPayment[];
   readonly change: number;
+  // Diskon Transaksi (di luar diskon baris) dan catatan kasir pada struk penjualan.
+  readonly transactionDiscount?: number | undefined;
+  readonly note?: string | undefined;
 }
 
 // Kembalian = jumlah baris terbayar dikurangi total; 0 untuk penjualan lama tanpa rincian.
@@ -110,12 +112,8 @@ export function buildReceipt(input: ReceiptInput): string[] {
             width,
           )),
     );
+    // Harga asli (sebelum ubah harga) tidak dicetak; hanya harga yang berlaku.
     if (input.kind !== 'draft') {
-      if (item.listPrice !== undefined) {
-        lines.push(
-          `  ${label('hargaAsli', { harga: formatRupiah(item.listPrice) })}`.slice(0, width),
-        );
-      }
       if (item.discount !== undefined && item.discount > 0) {
         lines.push(...pair(`  ${label('diskon')}`, `-${formatRupiah(item.discount)}`, width));
       }
@@ -126,12 +124,24 @@ export function buildReceipt(input: ReceiptInput): string[] {
     lines.push(...pair(label('jumlahItem'), String(input.items.length), width));
     return lines;
   }
+  if ((input.transactionDiscount ?? 0) > 0) {
+    lines.push(
+      ...pair(
+        label('diskonTransaksiBaris'),
+        `-${formatRupiah(input.transactionDiscount ?? 0)}`,
+        width,
+      ),
+    );
+  }
   lines.push(...pair(label('totalHuruf'), formatRupiah(input.total), width));
   for (const payment of input.payments) {
     lines.push(...pair(payment.method, formatRupiah(payment.amount), width));
   }
   if (input.change > 0) {
     lines.push(...pair(label('kembalian'), formatRupiah(input.change), width));
+  }
+  if (input.note !== undefined && input.note.trim() !== '') {
+    lines.push(...wrapText(`${label('catatan')}: ${input.note.trim()}`, width));
   }
   lines.push(rule('-'), center(label('strukTerimaKasih'), width));
   return lines;

@@ -168,7 +168,7 @@
 
 .pos-amount {
   display: grid;
-  gap: var(--primitive-space-3);
+  gap: var(--primitive-space-2);
 }
 
 .pos-amount > p {
@@ -177,8 +177,8 @@
 
 .pos-amount__value {
   display: block;
-  min-height: 64px;
-  padding: var(--primitive-space-3) var(--primitive-space-4);
+  min-height: 56px;
+  padding: var(--primitive-space-2) var(--primitive-space-4);
   border-radius: var(--radius-control);
   background: var(--color-bg-page);
   color: var(--color-text-primary);
@@ -359,96 +359,6 @@
   line-height: 28px;
 }
 
-.pos-pay__cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
-  gap: var(--primitive-space-2);
-}
-
-.pos-pay__card {
-  width: 100%;
-}
-
-.modal:has(.pos-qr) {
-  width: min(420px, 94vw);
-}
-
-.pos-qr {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--primitive-space-3);
-  text-align: center;
-}
-
-.pos-qr__frame {
-  margin: 0;
-  padding: var(--primitive-space-2);
-  border-radius: var(--radius-card);
-  background: var(--primitive-color-white);
-  color: var(--primitive-color-night-950);
-}
-
-.pos-qr__code {
-  display: block;
-  width: 200px;
-  max-width: 100%;
-  height: auto;
-}
-
-.pos-qr__channel {
-  margin: 0;
-}
-
-.pos-qr__facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--primitive-space-2);
-  width: 100%;
-  margin: 0;
-}
-
-.pos-qr__facts > div {
-  display: flex;
-  flex-direction: column;
-  padding: var(--primitive-space-2) var(--primitive-space-3);
-  border-radius: var(--radius-control);
-  background: var(--color-bg-page);
-}
-
-.pos-qr__facts dt,
-.pos-qr__facts dd {
-  margin: 0;
-}
-
-.pos-qr__reference {
-  font-weight: var(--primitive-font-weight-semibold);
-  overflow-wrap: anywhere;
-}
-
-.pos-qr__amount {
-  display: block;
-  color: var(--color-accent-default);
-}
-
-.pos-qr__status {
-  min-height: 24px;
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.pos-qr__actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-2);
-  margin-top: var(--primitive-space-3);
-}
-
-.pos-qr__actions .btn {
-  width: 100%;
-  height: 56px;
-}
-
 .pos-pay__parts {
   display: flex;
   flex-direction: column;
@@ -468,7 +378,7 @@
   gap: 0 var(--primitive-space-3);
   align-items: center;
   width: 100%;
-  min-height: 72px;
+  min-height: 64px;
   padding: var(--primitive-space-2) var(--primitive-space-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-control);
@@ -511,7 +421,8 @@
 .modal:has(.pos-part) {
   display: flex;
   flex-direction: column;
-  width: min(520px, 94vw);
+  width: min(680px, 96vw);
+  padding: var(--primitive-space-4) var(--primitive-space-6);
   overflow: hidden;
 }
 
@@ -521,9 +432,39 @@
   overflow: auto;
 }
 
+/* Pembayaran N: pilihan, sisa, dan nominal di kiri; papan angka di kanan. Satu layar tanpa scroll. */
 .pos-part {
   display: grid;
-  gap: var(--primitive-space-3);
+  grid-template-areas:
+    'tabs pad'
+    'methods pad'
+    'remain pad'
+    'cap pad'
+    'disp pad'
+    'error pad';
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: repeat(5, auto) 1fr;
+  gap: var(--primitive-space-2) var(--primitive-space-4);
+  align-items: start;
+}
+
+.pos-part > .pos-pay__tabs {
+  grid-area: tabs;
+}
+
+.pos-part__methods {
+  grid-area: methods;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pos-part__methods[hidden] {
+  display: none;
+}
+
+.pos-part__methods .pos-pay__method {
+  height: 48px;
+  padding-inline: var(--primitive-space-1);
+  font-size: 14px;
 }
 
 .pos-part__tabs {
@@ -532,6 +473,7 @@
 
 .pos-part__remain {
   display: flex;
+  grid-area: remain;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--primitive-space-3);
@@ -543,6 +485,29 @@
 
 .pos-part__sisa {
   display: block;
+}
+
+.pos-part .pos-amount {
+  display: contents;
+}
+
+.pos-part .pos-amount > p {
+  grid-area: cap;
+  margin: 0;
+}
+
+.pos-part .pos-amount__value {
+  grid-area: disp;
+}
+
+.pos-part .pos-moneypad {
+  grid-area: pad;
+}
+
+.pos-part__error {
+  grid-area: error;
+  min-height: 0;
+  margin: 0;
 }
 
 .pos-part__actions {
@@ -557,28 +522,25 @@
 
 .pos-part__actions .btn {
   min-width: 120px;
-  height: 56px;
-}
-
-.pos-part .pos-pay__cards {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.pos-part .pos-pay__card {
-  height: 52px;
-  padding-inline: var(--primitive-space-1);
-  font-size: 14px;
+  height: 48px;
 }
 
 @media (max-width: 599px) {
-  .pos-part .pos-pay__cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .pos-qr__facts {
+  .pos-part {
+    grid-template-areas:
+      'tabs'
+      'methods'
+      'remain'
+      'cap'
+      'disp'
+      'error'
+      'pad';
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
   }
+}
 
+@media (max-width: 599px) {
   .pos-pay__result {
     flex: 1 1 100%;
   }
@@ -591,4 +553,246 @@
 
 .pos-pay__item-price {
   grid-column: 1 / -1;
+}
+
+/* Tab Tunai: tampilan nominal dan tombol pecahan di kiri, papan angka di kanan. */
+.pos-pay__cash {
+  display: grid;
+  grid-template-areas:
+    'cap pad'
+    'disp pad'
+    'qlabel pad'
+    'quick pad';
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  gap: var(--primitive-space-2) var(--primitive-space-4);
+  align-items: start;
+}
+
+.pos-pay__cash .pos-amount {
+  display: contents;
+}
+
+.pos-pay__cash .pos-amount > p {
+  grid-area: cap;
+  margin: 0;
+}
+
+.pos-pay__cash .pos-amount__value {
+  grid-area: disp;
+}
+
+.pos-pay__cash .pos-moneypad {
+  grid-area: pad;
+  gap: 6px;
+}
+
+.pos-pay__cash .pos-moneypad .pos-numpad__key {
+  height: 48px;
+}
+
+.pos-pay__cash .pos-pay__quick-label {
+  grid-area: qlabel;
+  margin: var(--primitive-space-1) 0 0;
+}
+
+.pos-pay__cash .pos-pay__quick {
+  display: grid;
+  grid-area: quick;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__cash .pos-moneypad .pos-moneypad__enter,
+.modal .pos-moneypad .pos-moneypad__enter {
+  height: auto;
+}
+
+.pos-pay__quick .btn {
+  min-width: 0;
+  height: 52px;
+  padding-inline: var(--primitive-space-1);
+  font-size: 15px;
+}
+
+/* Tab Non-Tunai: tiga pilihan besar. */
+.pos-pay__noncash {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__noncash .pos-pay__method {
+  height: 72px;
+  font-size: 18px;
+}
+
+/* Tab Piutang: dua kolom (tempo, uang muka) lalu angka ringkasan. */
+.pos-pay__credit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--primitive-space-2) var(--primitive-space-4);
+  align-items: start;
+}
+
+.pos-pay__credit-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__credit .pos-pay__terms {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pos-pay__credit .pos-pay__methods {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pos-pay__credit .pos-pay__method {
+  height: 48px;
+  padding-inline: var(--primitive-space-1);
+  font-size: 14px;
+}
+
+.pos-pay__credit .pos-pay__days,
+.pos-pay__credit .pos-pay__amount {
+  width: 100%;
+  height: 48px;
+}
+
+.pos-pay__credit .pos-pay__error {
+  min-height: 0;
+}
+
+.pos-pay__credit .pos-pay__figures,
+.pos-pay__credit .pos-pay__limit {
+  grid-column: 1 / -1;
+}
+
+.pos-pay__credit .pos-pay__figure {
+  padding: var(--primitive-space-1) var(--primitive-space-3);
+}
+
+.pos-pay__credit .pos-pay__limit {
+  margin: 0;
+}
+
+.pos-pay__credit .pos-pay__figure .pos-pay__due,
+.pos-pay__credit .pos-pay__due-amount {
+  font-size: 20px;
+  line-height: 28px;
+}
+
+/* Catatan pembayaran ada di baris bawah bersama tombol Kembali dan Bayar, untuk semua tab. */
+.pos-pay__footer {
+  align-items: flex-end;
+}
+
+.pos-pay__note {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pos-pay__note .field__label {
+  font-size: 12px;
+}
+
+.pos-pay__note-input {
+  height: 48px;
+}
+
+/* Di tab Non-Tunai catatan berada tepat di bawah pilihan, seperti contoh gambar 4. */
+.pos-pay__noncash-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+  margin-top: var(--primitive-space-2);
+}
+
+.pos-pay__noncash-note .pos-pay__note {
+  flex: none;
+}
+
+.pos-pay__noncash-note .field__label {
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-pay__noncash-note .pos-pay__note-input {
+  height: 56px;
+}
+
+.pos-pay__footer .btn--pay {
+  flex: 1 1 0;
+}
+
+/* Pesan kurang bayar atau piutang ditolak: satu baris dengan tombol aksinya. */
+.pos-pay__message:not(:empty) {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  align-items: center;
+}
+
+.pos-pay__message > :first-child {
+  flex: 1 1 280px;
+}
+
+.pos-pay__message .pos-pay__limit-actions {
+  flex: none;
+}
+
+.pos-pay__limit-actions .btn {
+  height: 48px;
+}
+
+@media (max-width: 899px) {
+  .pos-pay__cash {
+    grid-template-areas:
+      'cap'
+      'disp'
+      'qlabel'
+      'quick'
+      'pad';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .pos-pay__credit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-pay__footer {
+    flex-wrap: wrap;
+  }
+
+  .pos-pay__note {
+    flex: 1 1 100%;
+    order: -1;
+  }
+}
+
+/* Layar pendek (mis. 1366 x 640): rapatkan agar semua tab muat tanpa scroll bar. */
+@media (min-width: 900px) and (max-height: 700px) {
+  .pos-pay__panel {
+    gap: 6px;
+  }
+
+  .pos-pay__tab {
+    min-height: 44px;
+  }
+
+  .pos-pay__grand {
+    font-size: 30px;
+    line-height: 36px;
+  }
+
+  .pos-pay__footer .btn {
+    height: 52px;
+  }
 }

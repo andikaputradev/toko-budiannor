@@ -289,3 +289,51 @@ img.pos-photo--sm {
 .pos-history__row--grand .pos-history__value {
   color: var(--color-accent-default);
 }
+
+/* Retur terposting di Riwayat (gambar 8): lencana Retur, tautan, dan kotak foto bukti. */
+.pos-status--retur {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-fg);
+}
+
+.pos-history__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-touch-target-min);
+  padding: 0 var(--primitive-space-2);
+  border: 0;
+  background: none;
+  color: var(--color-accent-default);
+  font: inherit;
+  font-weight: var(--primitive-font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pos-history__photo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-1);
+  align-items: center;
+  justify-content: center;
+  width: 144px;
+  height: 120px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-page);
+  text-align: center;
+}
+
+.pos-history__photo-icon .icon {
+  width: 40px;
+  height: 40px;
+}
+
+.pos-history__returnlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

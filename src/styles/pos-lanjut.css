@@ -198,6 +198,7 @@
 
 .pos-status--lunas,
 .pos-status--pending,
+.pos-status--retur,
 .pos-sync {
   display: inline-block;
   padding: 0 var(--primitive-space-2);

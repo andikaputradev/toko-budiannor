@@ -26,14 +26,19 @@ import {
   defaultUnitOf,
   MAX_BILL_LINES,
   mergeLines,
+  netTotal,
   removeLine,
   repriceLines,
   replaceLine,
   splitLines,
+  splitTransactionDiscount,
+  transactionDiscountAmount,
   validateDiscount,
+  validateTransactionDiscount,
   type AddResult,
   type SplitPick,
 } from './domain/bill';
+import { billBaseQuantity, storeStock } from './domain/stock';
 import {
   DEFAULT_DUE_DAYS,
   EXPENSE_NOTE_MAX,
@@ -68,6 +73,7 @@ import { checkPin, INITIAL_GUARD, PIN_PATTERN, type PinGuard } from './domain/pi
 import type { ReceiptKind } from './domain/receipt';
 
 export const SYNC_STEP_MS = 400;
+export const PAYMENT_NOTE_MAX = 144;
 export const INITIAL_SYNC_AT = '2026-10-17T07:20:00.000Z';
 
 export interface AuditEntry {
@@ -104,6 +110,8 @@ export interface ReturnRecord {
   readonly value: number;
   readonly lines: readonly { readonly index: number; readonly quantity: number }[];
   readonly reasonKind?: ReturReason | undefined;
+  // Kasir yang memproses retur (nama pengguna pada saat retur).
+  readonly userId?: string | undefined;
   readonly refund?:
     | {
         readonly method: RefundMethod;
@@ -118,6 +126,10 @@ export interface PosState {
   readonly loggedIn: boolean;
   readonly customerId: string | undefined;
   readonly lines: readonly BillLine[];
+  // Diskon Transaksi atas seluruh pesanan (persen atau nominal); kosong bila tidak ada.
+  readonly billDiscount: LineDiscount | undefined;
+  // Catatan opsional di layar pembayaran; ikut tersimpan pada penjualan.
+  readonly paymentNote: string;
   readonly rows: readonly PaymentRow[];
   readonly method: PaymentMethod;
   readonly ownerApproved: boolean;
@@ -158,6 +170,16 @@ export type RegisterResult =
       readonly messageId: SystemMessageId;
     };
 
+// Penambahan barang ke keranjang: selain batas baris, jumlah dibatasi stok toko (rak display).
+export type AddProductResult =
+  | AddResult
+  | {
+      readonly ok: false;
+      readonly reason: 'out-of-stock' | 'over-stock';
+      // Sisa stok toko dalam satuan dasar.
+      readonly available: number;
+    };
+
 export type ReturnResult =
   { readonly ok: true; readonly number: string; readonly value: number } | Failure;
 
@@ -188,12 +210,18 @@ export interface PosSession {
   now(): Date;
   state(): PosState;
   subscribe(listener: (state: PosState) => void): () => void;
+  // Pemberitahuan singkat dari sesi untuk kasir (mis. Diskon Transaksi dibuang otomatis).
+  onNotice(listener: (text: string) => void): () => void;
   product(id: string): Product | undefined;
   customer(): Customer | undefined;
   customerName(id: string | undefined): string;
   userName(id: string): string;
   total(): number;
   summary(): PaymentSummary;
+  // Pesan peringatan bila ada barang di keranjang yang melebihi stok toko (mis. Open Bill lama yang
+  // dipanggil setelah stoknya terjual). Hanya peringatan: pembayaran tidak ditolak, karena stok
+  // negatif sudah punya alur Ditinjau di Back-Office dan bill contoh memang melebihi stok toko.
+  stockIssue(): string | undefined;
   pendingQueue(): number;
   cashBalance(): number;
   startShift(openingCash: number | undefined): ShiftResult;
@@ -205,11 +233,18 @@ export interface PosSession {
   attemptLogin(userId: string | undefined, pin: string): FlowResult;
   changePin(userId: string, oldPin: string, newPin: string): FlowResult;
   logout(): void;
-  addProduct(product: Product, unit?: string, quantity?: number): AddResult;
+  addProduct(product: Product, unit?: string, quantity?: number): AddProductResult;
   setLine(index: number, unit: string, quantity: number): void;
   setLineDetail(index: number, patch: LineDetailPatch, authorized?: boolean): FlowResult;
   deleteLine(index: number): void;
   setCustomer(customerId: string | undefined): void;
+  // Subtotal baris sebelum Diskon Transaksi dan jumlah Diskon Transaksi dalam rupiah.
+  subtotal(): number;
+  billDiscountAmount(): number;
+  setBillDiscount(discount: LineDiscount | undefined, authorized?: boolean): FlowResult;
+  setPaymentNote(note: string): void;
+  // Mengosongkan keranjang, pelanggan, diskon transaksi, dan pembayaran untuk pesanan baru.
+  startNewOrder(): void;
   holdBill(): HeldBill | undefined;
   recallBill(id: string): FlowResult;
   deleteHeldBill(id: string): FlowResult;
@@ -267,6 +302,15 @@ const EMPTY_PAYMENT = {
   terms: undefined as { readonly dueDays: number } | undefined,
 };
 
+// Keadaan pesanan kosong: dipakai saat keluar, menahan bill, selesai bayar, dan Pesanan Baru.
+const EMPTY_ORDER = {
+  lines: [] as readonly BillLine[],
+  customerId: undefined as string | undefined,
+  billDiscount: undefined as LineDiscount | undefined,
+  paymentNote: '',
+  ...EMPTY_PAYMENT,
+};
+
 export function createPosSession(store: Store, options: PosSessionOptions = {}): PosSession {
   const clock = options.clock ?? (() => Date.now());
   const schedule =
@@ -274,7 +318,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     ((run: () => void, delayMs: number): void => {
       window.setTimeout(run, delayMs);
     });
-  const bus = createEventBus<{ change: PosState }>();
+  const bus = createEventBus<{ change: PosState; notice: string }>();
   const startedAt = clock();
   const baseMs = Date.parse(store.getState().data.referenceDate);
   const now = (): Date => new Date(baseMs + (clock() - startedAt));
@@ -286,6 +330,8 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       loggedIn,
       customerId: undefined,
       lines: [],
+      billDiscount: undefined,
+      paymentNote: '',
       ...EMPTY_PAYMENT,
       heldBills: data.bills,
       sales: data.sales,
@@ -323,21 +369,41 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     store.getState().data.customers.find((item) => item.id === state.customerId);
   const tier = (): Tier => customer()?.tier ?? 'eceran';
   const demoNow = (): Date => new Date(store.getState().data.referenceDate);
-  const total = (): number => billTotal(state.lines);
+  const total = (): number => netTotal(state.lines, state.billDiscount);
   const userName = (id: string): string =>
     store.getState().data.users.find((user) => user.id === id)?.name ?? id;
   const currentUser = (): string => userName(store.getState().userId);
 
   const commit = (next: Partial<PosState>): void => {
     state = { ...state, ...next };
-    const lines = next.lines ?? state.lines;
-    if (next.lines !== undefined || next.rows !== undefined) {
-      state = { ...state, rows: syncReceivableRow(state.rows, billTotal(lines)) };
+    // Diskon Transaksi tidak boleh tertinggal bila pesanan berubah sehingga diskon itu tidak sah lagi
+    // (keranjang kosong, atau diskon menghabiskan subtotal): diskon dibuang agar total tetap bisa
+    // dibayar, dan kasir diberi tahu bila pesanan masih berisi barang.
+    let discountDropped = false;
+    if (state.billDiscount !== undefined && next.lines !== undefined) {
+      const subtotal = billTotal(state.lines);
+      if (
+        state.lines.length === 0 ||
+        validateTransactionDiscount(state.billDiscount.kind, state.billDiscount.value, subtotal) !==
+          'ok'
+      ) {
+        discountDropped = state.lines.length > 0;
+        state = { ...state, billDiscount: undefined };
+      }
+    }
+    if (next.lines !== undefined || next.rows !== undefined || 'billDiscount' in next) {
+      state = {
+        ...state,
+        rows: syncReceivableRow(state.rows, netTotal(state.lines, state.billDiscount)),
+      };
     }
     store.reportQueue(
       state.queue.filter((item) => item.status === 'menunggu' || item.status === 'mengirim').length,
     );
     bus.emit('change', state);
+    if (discountDropped) {
+      bus.emit('notice', label('diskonTransaksiDibuang'));
+    }
   };
 
   const MAX_NOTE = 200;
@@ -378,6 +444,14 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     if (!Number.isFinite(quantity) || !(quantity > 0)) {
       return fail('MSG-029');
     }
+    // Jumlah di keranjang tidak boleh melebihi stok toko; baris lama yang sudah melebihi stok
+    // (mis. dari bill yang dipanggil) boleh disimpan selama jumlahnya tidak bertambah.
+    const newBase = toBase(product, unit, quantity);
+    const lineBase = toBase(product, line.unit, line.quantity);
+    const otherBase = billBaseQuantity(state.lines, product) - lineBase;
+    if (newBase > lineBase && otherBase + newBase > storeStock(product)) {
+      return failLabel('jumlahMelebihiStokToko');
+    }
     const unitChanged = unit !== line.unit;
     const tierPrice = unitPrice(product, unit, tier());
     let price = unitChanged ? tierPrice : line.unitPrice;
@@ -396,11 +470,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     if (patch.discount === null) {
       discount = undefined;
     } else if (patch.discount !== undefined) {
-      const check = validateDiscount(
-        patch.discount.kind,
-        patch.discount.value,
-        Math.round(quantity * price),
-      );
+      const check = validateDiscount(patch.discount.kind, patch.discount.value, price);
       if (check === 'negatif') {
         return failLabel('diskonNegatif');
       }
@@ -410,9 +480,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       discount = patch.discount.value > 0 ? patch.discount : undefined;
     } else if (
       discount !== undefined &&
-      validateDiscount(discount.kind, discount.value, Math.round(quantity * price)) === 'melebihi'
+      validateDiscount(discount.kind, discount.value, price) === 'melebihi'
     ) {
-      // Diskon lama tidak boleh melebihi jumlah barang yang baru (jumlah, satuan, atau harga berubah).
+      // Diskon lama tidak boleh melebihi harga satuan yang baru (satuan atau harga berubah).
       return failLabel('diskonMelebihi');
     }
     let note = line.note;
@@ -482,6 +552,25 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       now: demoNow(),
       ownerApproved: state.ownerApproved || mobileApproval() !== undefined,
     });
+
+  const stockIssue = (): string | undefined => {
+    for (const productId of new Set(state.lines.map((line) => line.productId))) {
+      const product = products().get(productId);
+      if (product === undefined) {
+        continue;
+      }
+      const available = storeStock(product);
+      if (billBaseQuantity(state.lines, product) > available) {
+        return available > 0
+          ? label('stokTokoTerbatas', {
+              nama: product.name,
+              jumlah: `${formatDecimal(available, 3, 0)} ${product.baseUnit}`,
+            })
+          : label('stokBarangKosong', { nama: product.name });
+      }
+    }
+    return undefined;
+  };
 
   const userOf = (userId: string | undefined): AppUser | undefined =>
     store.getState().data.users.find((user) => user.id === userId);
@@ -667,6 +756,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
           value,
           lines: input.items.map((item) => ({ index: item.index, quantity: item.quantity })),
           reasonKind: input.reason,
+          userId: store.getState().userId,
           refund,
           photoName: input.photoName,
         },
@@ -689,6 +779,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     now,
     state: () => state,
     subscribe: (listener) => bus.on('change', listener),
+    onNotice: (listener) => bus.on('notice', listener),
     product: (id) => products().get(id),
     customer,
     customerName: (id) =>
@@ -697,6 +788,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     userName,
     total,
     summary,
+    stockIssue,
     pendingQueue: () =>
       state.queue.filter((item) => item.status === 'menunggu' || item.status === 'mengirim').length,
     cashBalance: () => currentSummary()?.closingCash ?? 0,
@@ -840,10 +932,21 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       return { ok: true };
     },
     logout: () => {
-      commit({ loggedIn: false, lines: [], customerId: undefined, ...EMPTY_PAYMENT });
+      commit({ loggedIn: false, ...EMPTY_ORDER });
     },
     addProduct: (product, unit, quantity = 1) => {
       const code = unit ?? defaultUnitOf(product).code;
+      const available = storeStock(product);
+      if (!(available > 0)) {
+        return { ok: false, reason: 'out-of-stock', available: 0 };
+      }
+      if (billBaseQuantity(state.lines, product) + toBase(product, code, quantity) > available) {
+        return {
+          ok: false,
+          reason: 'over-stock',
+          available: available - billBaseQuantity(state.lines, product),
+        };
+      }
       const result = addLine(state.lines, {
         productId: product.id,
         unit: code,
@@ -872,6 +975,43 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
           state.terms === undefined ? undefined : { dueDays: target?.dueDays ?? DEFAULT_DUE_DAYS },
       });
     },
+    subtotal: () => billTotal(state.lines),
+    billDiscountAmount: () => transactionDiscountAmount(billTotal(state.lines), state.billDiscount),
+    setBillDiscount: (discount, authorized = false) => {
+      const access = accessFor(store.getState().role, 'POS-03', 'Diskon');
+      if (access === 'tidak') {
+        return fail('MSG-003');
+      }
+      if (discount === undefined || discount.value === 0) {
+        commit({ billDiscount: undefined, ownerApproved: false });
+        return { ok: true };
+      }
+      if (access === 'otorisasi' && !authorized) {
+        return failLabel('butuhOtorisasiHarga');
+      }
+      if (state.lines.length === 0) {
+        return fail('MSG-025');
+      }
+      const check = validateTransactionDiscount(
+        discount.kind,
+        discount.value,
+        billTotal(state.lines),
+      );
+      if (check === 'negatif') {
+        return failLabel('diskonNegatif');
+      }
+      if (check === 'melebihi') {
+        return failLabel('diskonMelebihi');
+      }
+      commit({ billDiscount: discount, ownerApproved: false });
+      return { ok: true };
+    },
+    setPaymentNote: (note) => {
+      commit({ paymentNote: note.slice(0, PAYMENT_NOTE_MAX) });
+    },
+    startNewOrder: () => {
+      commit({ ...EMPTY_ORDER });
+    },
     holdBill: () => {
       if (state.lines.length === 0) {
         return undefined;
@@ -884,13 +1024,9 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         userId: store.getState().userId,
         customerId: state.customerId,
         lines: state.lines,
+        ...(state.billDiscount === undefined ? {} : { discount: state.billDiscount }),
       };
-      commit({
-        heldBills: [...state.heldBills, held],
-        lines: [],
-        customerId: undefined,
-        ...EMPTY_PAYMENT,
-      });
+      commit({ heldBills: [...state.heldBills, held], ...EMPTY_ORDER });
       return held;
     },
     recallBill: (id) => {
@@ -903,9 +1039,10 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       }
       commit({
         heldBills: state.heldBills.filter((item) => item.id !== id),
+        ...EMPTY_ORDER,
         lines: bill.lines,
         customerId: bill.customerId,
-        ...EMPTY_PAYMENT,
+        billDiscount: bill.discount,
         billRef: bill.number,
       });
       return { ok: true };
@@ -943,6 +1080,13 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         );
       }
       const sequence = nextBillSequence();
+      // Diskon Transaksi ikut terbagi ke kedua bill agar potongannya tidak hilang dan tidak ada bill
+      // yang totalnya menjadi Rp 0.
+      const shared = splitTransactionDiscount(
+        bill.discount,
+        billTotal(result.kept),
+        billTotal(result.moved),
+      );
       const created: HeldBill = {
         id: `H-${String(sequence)}`,
         number: formatDocumentNumber('B', sequence),
@@ -950,11 +1094,12 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         userId: store.getState().userId,
         customerId: bill.customerId,
         lines: result.moved,
+        ...(shared.moved === undefined ? {} : { discount: shared.moved }),
       };
       commit({
         heldBills: [
           ...state.heldBills.map((item) =>
-            item.id === id ? { ...item, lines: result.kept } : item,
+            item.id === id ? { ...item, lines: result.kept, discount: shared.kept } : item,
           ),
           created,
         ],
@@ -1132,6 +1277,10 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         .filter((row) => row.method === 'dp')
         .reduce((sum, row) => sum + row.amount, 0);
       const owed = state.rows.find((row) => row.method === 'piutang');
+      const transactionDiscount = transactionDiscountAmount(
+        billTotal(state.lines),
+        state.billDiscount,
+      );
       const days = state.terms?.dueDays ?? customer()?.dueDays ?? DEFAULT_DUE_DAYS;
       const sale: Sale = {
         id: `S-${String(state.sales.length + 1)}`,
@@ -1154,6 +1303,8 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
           owed !== undefined && owed.amount > 0
             ? { dueDays: days, dueDate: dueDateOf(now(), days) }
             : undefined,
+        ...(transactionDiscount > 0 ? { discount: transactionDiscount } : {}),
+        ...(state.paymentNote.trim() === '' ? {} : { note: state.paymentNote.trim() }),
       };
       const deductions: Record<string, number> = {};
       for (const line of state.lines) {
@@ -1180,10 +1331,8 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
                   `${sale.number} disetujui Owner: ${fromMobile.note ?? ''}`,
                 ),
               ],
-        lines: [],
-        customerId: undefined,
         printPending: store.getState().printerConnected ? undefined : sale.number,
-        ...EMPTY_PAYMENT,
+        ...EMPTY_ORDER,
       });
       store.applyStockChange(deductions);
       return sale;

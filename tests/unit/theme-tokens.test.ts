@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(new URL('../../src/styles/tokens.css', import.meta.url), 'utf8');
-const THEMES = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu'] as const;
+const THEMES = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu', 'merah', 'kuning'] as const;
 
 function themedRows(): string[][] {
   const output = execFileSync('node', ['scripts/check-contrast.mjs'], { encoding: 'utf8' });
@@ -31,7 +31,7 @@ describe('kontras tema POS', () => {
 });
 
 describe('token CSS tema POS', () => {
-  it('tokens.css memuat blok akar untuk enam palet', () => {
+  it('tokens.css memuat blok akar untuk delapan palet', () => {
     for (const theme of THEMES) {
       expect(css).toContain(`[data-pos-theme='${theme}'][data-app='pos']`);
       expect(css).toContain(`:where([data-pos-theme='${theme}']) [data-app='pos']`);

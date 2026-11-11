@@ -27,6 +27,8 @@ interface ProductSpec {
   readonly gudang: number;
   readonly po: number | undefined;
   readonly photo: string;
+  readonly rak?: string;
+  readonly promo?: { readonly percent: number; readonly nominal: number };
   readonly hpp?: number;
   readonly minStock?: number;
   readonly minByWarehouse?: { readonly display: number; readonly besar: number };
@@ -51,6 +53,8 @@ function product(spec: ProductSpec): Product {
     incoming: spec.po,
     photoUrl: `produk/${spec.photo}`,
     pinned: true,
+    ...(spec.rak === undefined ? {} : { rak: spec.rak }),
+    ...(spec.promo === undefined ? {} : { promo: spec.promo }),
     ...(spec.minByWarehouse === undefined ? {} : { minByWarehouse: spec.minByWarehouse }),
   };
 }
@@ -68,6 +72,7 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 800,
     po: undefined,
     photo: 'semen-gresik-40kg.webp',
+    rak: '257B',
   }),
   product({
     id: 'P-02',
@@ -84,6 +89,7 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 144,
     po: 72,
     photo: 'lem-fox-70gr.webp',
+    rak: '118A',
   }),
   product({
     id: 'P-03',
@@ -99,6 +105,8 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 48,
     po: undefined,
     photo: 'cat-spray-pylox-109.webp',
+    rak: '120A',
+    promo: { percent: 10, nominal: 3000 },
   }),
   product({
     id: 'P-04',
@@ -114,6 +122,7 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 0,
     po: 300,
     photo: 'knee-pvc-3-4.webp',
+    rak: '305C',
   }),
   product({
     id: 'P-05',
@@ -130,6 +139,7 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 0,
     po: undefined,
     photo: 'kabel-nym-2x1-5.webp',
+    rak: '210D',
   }),
   product({
     id: 'P-06',
@@ -146,6 +156,7 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 0,
     po: 240,
     photo: 'gembok-kodai-30.webp',
+    rak: '112B',
   }),
   product({
     id: 'P-07',
@@ -163,6 +174,7 @@ export const PROPOSAL_PRODUCTS: readonly Product[] = [
     gudang: 0,
     po: 0,
     photo: 'engsel-bellucci-sn5.webp',
+    rak: '115B',
     hpp: 45550,
     minStock: 24,
     minByWarehouse: { display: 12, besar: 12 },

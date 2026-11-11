@@ -21,7 +21,7 @@ describe('buildBackup', () => {
   it('memuat penjualan, biaya, retur, bill tertahan, dan shift tertutup sebagai JSON sah', () => {
     const { session } = setup();
     session.startShift(500000);
-    expect(session.saveExpense('parkir', 'Parkir gudang', 5000)).toEqual({ ok: true });
+    expect(session.saveExpense('makan', 'Parkir gudang', 5000)).toEqual({ ok: true });
     session.endShift(495000);
     const state = session.state();
     const text = buildBackup(state, '2026-10-19T03:05:00.000Z');

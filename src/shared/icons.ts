@@ -20,6 +20,7 @@ export const ICON_NAMES = [
   'pencil',
   'inbox',
   'chevron-down',
+  'chevron-up',
   'bell',
   'refresh-cw',
   'phone',

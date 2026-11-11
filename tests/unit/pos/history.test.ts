@@ -234,13 +234,27 @@ describe('ringkasan metode dan penerimaan', () => {
     expect(saleBreakdown(discounted)).toEqual({
       subtotal: 100000,
       discount: 10000,
+      transactionDiscount: 0,
       grandTotal: 90000,
     });
+    // Diskon Transaksi dipisahkan dari diskon baris.
+    expect(saleBreakdown({ ...discounted, total: 85000, discount: 5000 })).toEqual({
+      subtotal: 100000,
+      discount: 10000,
+      transactionDiscount: 5000,
+      grandTotal: 85000,
+    });
     const full: Sale = { ...discounted, total: 100000 };
-    expect(saleBreakdown(full)).toEqual({ subtotal: 100000, discount: 0, grandTotal: 100000 });
+    expect(saleBreakdown(full)).toEqual({
+      subtotal: 100000,
+      discount: 0,
+      transactionDiscount: 0,
+      grandTotal: 100000,
+    });
     expect(saleBreakdown(sale('T-6', '2026-10-19T03:00:00Z', 'tunai', 100000))).toEqual({
       subtotal: 100000,
       discount: 0,
+      transactionDiscount: 0,
       grandTotal: 100000,
     });
   });
