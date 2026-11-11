@@ -1,5 +1,6 @@
 import { el, nextId } from '../../../shared/dom';
-import { formatDate, formatDecimal, formatTime } from '../../../shared/format';
+import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { icon, type IconName } from '../../../shared/icons';
 import type { HeldBill } from '../../../shared/data/types';
 import { label, message } from '../../../shared/messages';
 import { isAllowed } from '../../../shared/permissions';
@@ -9,18 +10,25 @@ import { createMenuButton, type MenuItem } from '../../../shared/ui/menu';
 import { openModal } from '../../../shared/ui/modal';
 import { createStepper, type Stepper } from '../../../shared/ui/stepper';
 import { showToast } from '../../../shared/ui/toast';
+import { billTotal, lineSubtotal, netTotal, transactionDiscountAmount } from '../domain/bill';
 import type { SplitPick } from '../domain/bill';
+import { clipName } from '../domain/catalog-view';
+import { needsShift } from '../domain/shift';
 import { failureText } from '../failure';
 import type { PosSession } from '../pos-session';
+import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
 import type { ScreenHandle } from './login';
 import { billReceipt, openReceiptPreview } from './receipt-preview';
 
-const VISIBLE_LINES = 2;
+// Daftar Open Bill hanya memperlihatkan satu barang; sisanya lewat "+N Barang Lainnya".
+const VISIBLE_LINES = 1;
 
 export function renderBills(session: PosSession, go: (path: string) => void): ScreenHandle {
   const topbar = createTopbar(session, 'judulBill');
   let query = '';
+  // Bill yang barang lainnya sedang dibuka (bertahan antar penggambaran ulang).
+  const expanded = new Set<string>();
 
   const search = el('input', {
     className: 'input pos-bills__search',
@@ -237,11 +245,70 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
             handle.close();
             showToast({
               kind: 'success',
-              text: label('billDigabung', { sumber: source?.number ?? '', tujuan: target.number }),
+              text: label(
+                source?.discount === undefined ? 'billDigabung' : 'billDigabungTanpaDiskon',
+                {
+                  sumber: source?.number ?? '',
+                  tujuan: target.number,
+                },
+              ),
             });
           },
         }),
       ),
+    );
+  };
+
+  // Bayar langsung dari daftar: bill dipanggil ke keranjang lalu layar bayar dibuka.
+  const pay = (bill: HeldBill): void => {
+    if (needsShift(session.store.getState().role, session.state().shift)) {
+      showToast({ kind: 'error', text: label('butuhShift') });
+      return;
+    }
+    const result = session.recallBill(bill.id);
+    if (result.ok) {
+      go('/pos/bayar');
+    } else {
+      showToast({ kind: 'error', text: failureText(result) });
+    }
+  };
+
+  const infoItem = (iconName: IconName, name: string, value: string): HTMLElement =>
+    el(
+      'div',
+      { className: 'pos-bill-card__info' },
+      el(
+        'span',
+        { className: 'pos-bill-card__icon', attrs: { 'aria-hidden': 'true' } },
+        icon(iconName),
+      ),
+      el(
+        'span',
+        { className: 'pos-bill-card__infotext' },
+        el('span', { className: 't-label', text: name }),
+        el('strong', { text: value }),
+      ),
+    );
+
+  const lineItem = (line: HeldBill['lines'][number]): HTMLElement => {
+    const product = session.product(line.productId);
+    const name = productName(line.productId);
+    return el(
+      'li',
+      { className: 'pos-bill-card__line' },
+      product === undefined
+        ? el('span', { className: 'pos-photo pos-photo--sm' })
+        : createProductThumb(product, 'sm'),
+      el(
+        'span',
+        { className: 'pos-bill-card__linebody' },
+        el('strong', { text: clipName(name), attrs: { title: name } }),
+        el('span', {
+          className: 't-label',
+          text: `${formatDecimal(line.quantity)} ${line.unit}${product === undefined ? '' : `, ${product.code}`}`,
+        }),
+      ),
+      el('output', { className: 'pos-bill-card__amount', text: formatRupiah(lineSubtotal(line)) }),
     );
   };
 
@@ -280,63 +347,114 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
       });
     }
     const created = new Date(bill.createdAt);
-    const shown = bill.lines.slice(0, VISIBLE_LINES);
-    const more = bill.lines.length - shown.length;
+    const open = expanded.has(bill.id);
+    const shown = open ? bill.lines : bill.lines.slice(0, VISIBLE_LINES);
+    const more = bill.lines.length - Math.min(bill.lines.length, VISIBLE_LINES);
+    const subtotal = billTotal(bill.lines);
+    const discount = transactionDiscountAmount(subtotal, bill.discount);
+    const total = netTotal(bill.lines, bill.discount);
+    const moreButton =
+      more > 0
+        ? el(
+            'button',
+            {
+              className: 'pos-bill-card__more',
+              attrs: { type: 'button', 'aria-expanded': open ? 'true' : 'false' },
+            },
+            el('span', { text: open ? label('tutup') : label('barangLainnya', { n: more }) }),
+            icon(open ? 'chevron-up' : 'chevron-down'),
+          )
+        : false;
+    if (moreButton !== false) {
+      moreButton.addEventListener('click', () => {
+        if (open) {
+          expanded.delete(bill.id);
+        } else {
+          expanded.add(bill.id);
+        }
+        render();
+        grid.querySelector<HTMLElement>(`[data-bill="${bill.id}"] .pos-bill-card__more`)?.focus();
+      });
+    }
+    const side = el(
+      'div',
+      { className: 'pos-bill-card__side' },
+      el(
+        'p',
+        { className: 'pos-bill-card__sum' },
+        el('span', { text: label('kolomSubtotal') }),
+        el('output', { text: formatRupiah(subtotal) }),
+      ),
+      discount > 0
+        ? el(
+            'p',
+            { className: 'pos-bill-card__sum' },
+            el('span', { text: label('diskonTransaksiBaris') }),
+            el('output', { text: `-${formatRupiah(discount)}` }),
+          )
+        : false,
+      el(
+        'p',
+        { className: 'pos-bill-card__sum pos-bill-card__sum--total' },
+        el('span', { text: label('kolomTotal') }),
+        el('output', { text: formatRupiah(total) }),
+      ),
+      el(
+        'div',
+        { className: 'pos-bill-card__actions' },
+        el(
+          'button',
+          {
+            className: 'pos-bill-card__print',
+            attrs: { type: 'button', 'aria-label': label('cetakStrukDraf') },
+          },
+          icon('printer'),
+        ),
+        isAllowed(role, 'POS-02', 'Bayar')
+          ? createButton({
+              text: label('bayarJumlah', { jumlah: formatRupiah(total) }),
+              pay: true,
+              onClick: () => {
+                pay(bill);
+              },
+            })
+          : false,
+      ),
+    );
+    side.querySelector('.pos-bill-card__print')?.addEventListener('click', () => {
+      print(bill);
+    });
     return el(
       'li',
-      { className: 'pos-bill-card' },
+      { className: 'pos-bill-card', attrs: { 'data-bill': bill.id } },
       el(
         'div',
         { className: 'pos-bill-card__head' },
-        el(
-          'div',
-          {},
-          el('p', { className: 'pos-bill-card__number t-section-title', text: bill.number }),
-          el('p', {
-            className: 'pos-bill-card__customer',
-            text: session.customerName(bill.customerId),
-          }),
+        infoItem('receipt', label('nomorOpenBill'), bill.number),
+        infoItem('users', label('namaPelanggan'), session.customerName(bill.customerId)),
+        infoItem('user-round', label('dibuatOleh'), session.userName(bill.userId)),
+        infoItem(
+          'calendar',
+          label('waktuOpenBill'),
+          `${formatDate(created)} ${formatTime(created)}`,
         ),
         createMenuButton({ labelText: label('opsiBill', { nomor: bill.number }), items }),
       ),
       el(
-        'p',
-        { className: 'pos-bill-card__meta t-label' },
-        el('span', { text: label('dibuatOlehNama', { nama: session.userName(bill.userId) }) }),
-        el('span', {
-          className: 'pos-bill-card__time',
-          text: `${formatDate(created)} ${formatTime(created)}`,
-        }),
-      ),
-      el(
-        'ul',
-        { className: 'pos-bill-card__lines' },
-        ...shown.map((line) =>
-          el(
-            'li',
-            {},
-            el('span', { text: productName(line.productId) }),
-            el('span', {
-              className: 't-label',
-              text: `${formatDecimal(line.quantity)} ${line.unit}`,
-            }),
-          ),
+        'div',
+        { className: 'pos-bill-card__body' },
+        el(
+          'div',
+          { className: 'pos-bill-card__items' },
+          el('h2', {
+            className: 'pos-bill-card__title t-section-title',
+            text: label('pesananJumlah', { jumlah: bill.lines.length }),
+          }),
+          el('ul', { className: 'pos-bill-card__lines' }, ...shown.map(lineItem)),
+          moreButton,
         ),
+        side,
       ),
-      more > 0
-        ? el('p', {
-            className: 'pos-bill-card__more t-label',
-            text: label('barangLainnya', { n: more }),
-          })
-        : false,
-      createButton({
-        text: label('cetakStrukDraf'),
-        variant: 'secondary',
-        icon: 'printer',
-        onClick: () => {
-          print(bill);
-        },
-      }),
     );
   };
 

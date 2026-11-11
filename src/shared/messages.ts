@@ -4,6 +4,7 @@ import { boStokLabels } from './labels/bo-stok';
 import { mobileLabels } from './labels/mobile';
 import { ownerDashboardLabels } from './labels/owner-dashboard';
 import { ownerTransaksiLabels } from './labels/owner-transaksi';
+import { posRevisi3Labels } from './labels/pos-revisi3';
 import { salesLabels } from './labels/sales';
 
 export const systemMessages = {
@@ -170,6 +171,7 @@ export const labels = {
   ...boStokLabels,
   ...ownerDashboardLabels,
   ...ownerTransaksiLabels,
+  ...posRevisi3Labels,
   ...salesLabels,
   bayar: 'Bayar',
   tahanBill: 'Tahan Bill',
@@ -499,6 +501,8 @@ export const labels = {
   temaBiru: 'Biru',
   temaHijau: 'Hijau',
   temaUngu: 'Ungu',
+  temaMerah: 'Merah',
+  temaKuning: 'Kuning',
   modeTampilan: 'Mode Tampilan',
   modeOtomatis: 'Otomatis',
   modeTerang: 'Terang',
@@ -657,7 +661,7 @@ export const labels = {
   pilihPembayaran: 'Pilih pembayaran',
   isiNominalPembayaran: 'Isi nominal pembayaran lebih dari nol.',
   pilihKanalDulu: 'Pilih kanal pembayaran terlebih dahulu.',
-  pembayaranSudahAda: 'Cara bayar dan kanal ini sudah dipakai pada pembayaran lain.',
+  pembayaranSudahAda: 'Cara bayar ini sudah dipakai pada pembayaran lain.',
   hargaTidakSah: 'Harga harus bilangan bulat lebih dari nol.',
   diskonNegatif: 'Diskon tidak boleh negatif.',
   diskonMelebihi: 'Diskon tidak boleh melebihi jumlah barang.',
@@ -846,7 +850,7 @@ export const labels = {
   strukTercetak: 'Struk tercetak.',
   strukDrafGagal: 'Struk draf belum tercetak. Periksa printer lalu coba lagi.',
   cetakUlang: 'Cetak Ulang',
-  judulBill: 'Bill Gantung',
+  judulBill: 'Open Bill',
   cariBill: 'Cari bill',
   kolomNoBill: 'No. Bill',
   kolomWaktu: 'Waktu',
@@ -896,10 +900,11 @@ export const labels = {
   simpanRetur: 'Simpan Retur',
   returTersimpan: 'Retur {nomor} tersimpan. Nilai retur {nilai}.',
   judulBiaya: 'Biaya Kasir',
-  biayaBensin: 'Bensin armada',
-  biayaParkir: 'Parkir',
-  biayaEkspedisi: 'Bayar ekspedisi',
-  biayaLainnya: 'Lainnya',
+  biayaBensin: 'Bensin Armada',
+  biayaEkspedisi: 'Bayar Ekspedisi',
+  biayaMakan: 'Uang Makan Karyawan',
+  biayaBongkar: 'Upah Bongkar Muat',
+  biayaLainnya: 'Biaya Lainnya',
   jenisBiaya: 'Jenis biaya',
   keterangan: 'Keterangan',
   saldoSebelum: 'Saldo kas sebelum',

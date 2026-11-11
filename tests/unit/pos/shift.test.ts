@@ -154,7 +154,7 @@ describe('selesai shift', () => {
     sell(session, () => {
       session.exactAmount();
     });
-    session.saveExpense('parkir', '', 5000);
+    session.saveExpense('makan', '', 5000);
     expect(session.shiftSummary()).toEqual({
       openingCash: 100000,
       cashSales: 70000,

@@ -1,6 +1,8 @@
 import { formatDocumentNumber } from '../../../shared/format';
 
-export const EXPENSE_KINDS = ['bensin', 'parkir', 'ekspedisi', 'lainnya'] as const;
+// Urutan pilihan Biaya di POS: Bensin Armada, Bayar Ekspedisi, Uang Makan Karyawan, Upah Bongkar
+// Muat, dan Biaya Lainnya.
+export const EXPENSE_KINDS = ['bensin', 'ekspedisi', 'makan', 'bongkar', 'lainnya'] as const;
 export type ExpenseKind = (typeof EXPENSE_KINDS)[number];
 
 // Catatan biaya opsional dibatasi 144 karakter (penghitung 0/144 pada Catat Biaya).

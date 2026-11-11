@@ -7,8 +7,9 @@ import type { Expense, PosSession } from './pos-session';
 
 export const EXPENSE_KIND_LABELS: Readonly<Record<ExpenseKind, LabelKey>> = {
   bensin: 'biayaBensin',
-  parkir: 'biayaParkir',
   ekspedisi: 'biayaEkspedisi',
+  makan: 'biayaMakan',
+  bongkar: 'biayaBongkar',
   lainnya: 'biayaLainnya',
 };
 

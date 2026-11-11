@@ -1,4 +1,13 @@
-export const POS_THEMES = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu'] as const;
+export const POS_THEMES = [
+  'oranye',
+  'terakota',
+  'teal',
+  'biru',
+  'hijau',
+  'ungu',
+  'merah',
+  'kuning',
+] as const;
 export type PosTheme = (typeof POS_THEMES)[number];
 
 export const POS_MODES = ['otomatis', 'terang', 'gelap'] as const;

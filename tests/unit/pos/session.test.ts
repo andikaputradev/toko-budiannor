@@ -3,8 +3,9 @@ import { generateDataset } from '../../../src/shared/data/generator';
 import { failureText } from '../../../src/apps/pos/failure';
 import { createStore } from '../../../src/shared/store/store';
 import { createPosSession } from '../../../src/apps/pos/pos-session';
+import { withAmpleStock } from './support';
 
-const dataset = generateDataset();
+const dataset = withAmpleStock(generateDataset());
 
 function setup(online = true) {
   const store = createStore({ dataset });

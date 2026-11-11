@@ -15,7 +15,7 @@ export interface ShiftSummary {
 }
 
 export type MoneyKey =
-  '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '000' | 'C' | 'Backspace';
+  '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '00' | '000' | 'C' | 'Backspace';
 
 export const REVIEW_OPENING_CASH = 500_000;
 

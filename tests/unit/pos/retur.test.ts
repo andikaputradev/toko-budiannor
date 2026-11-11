@@ -393,14 +393,15 @@ describe('nilai retur atas baris berdiskon', () => {
     const value = itemsValue(odd, [{ index: 0, quantity: 3 }]);
     expect(value).toBe(100002);
     expect(itemsValue(odd, [{ index: 0, quantity: 1 }])).toBe(33334);
+    // Diskon nominal per satuan: Rp 1 dikali 3 satuan = Rp 3, jadi subtotal 99.999.
     const withNominal: Sale = {
       ...odd,
       lines: [{ ...oddLine, discount: { kind: 'nominal', value: 1 } }],
-      total: 100001,
-      paid: 100001,
+      total: 99999,
+      paid: 99999,
     };
-    expect(itemsValue(withNominal, [{ index: 0, quantity: 3 }])).toBe(100001);
-    expect(itemsValue(withNominal, [{ index: 0, quantity: 1 }])).toBe(33334);
+    expect(itemsValue(withNominal, [{ index: 0, quantity: 3 }])).toBe(99999);
+    expect(itemsValue(withNominal, [{ index: 0, quantity: 1 }])).toBe(33333);
   });
 
   it('baris tanpa diskon tetap jumlah kali harga dan baris yang tidak ada dilewati', () => {

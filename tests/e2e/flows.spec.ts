@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { loginPos as loginPosShared, openOrderMenu } from './helpers/routes';
+import { loginPos as loginPosShared, openDrawerItem } from './helpers/routes';
 
 test.beforeEach(({ page }) => {
   const size = page.viewportSize();
@@ -37,7 +37,7 @@ async function simulate(page: Page, action: string): Promise<void> {
 }
 
 async function recallBill(page: Page, number: string): Promise<void> {
-  await openOrderMenu(page, 'Panggil Bill');
+  await openDrawerItem(page, 'Open Bill');
   await expect(page).toHaveURL(/#\/pos\/bill$/);
   await page.getByRole('button', { name: `Opsi bill ${number}` }).click();
   await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();

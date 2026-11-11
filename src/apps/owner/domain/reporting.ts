@@ -85,7 +85,7 @@ function salesIn(data: Dataset, range: DateRange): Sale[] {
   return data.sales.filter((sale) => inRange(saleDay(sale), range));
 }
 
-// Jumlah baris setelah diskon baris (persen atau nominal), tidak pernah negatif.
+// Jumlah baris setelah diskon baris (persen atau nominal per satuan), tidak pernah negatif.
 export function lineAmount(line: BillLine): number {
   const gross = Math.round(line.quantity * line.unitPrice);
   const discount = line.discount;
@@ -95,7 +95,7 @@ export function lineAmount(line: BillLine): number {
   const raw =
     discount.kind === 'persen'
       ? Math.round((gross * discount.value) / 100)
-      : Math.round(discount.value);
+      : Math.round(discount.value * line.quantity);
   return gross - Math.min(gross, Math.max(0, raw));
 }
 

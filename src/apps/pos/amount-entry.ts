@@ -9,6 +9,8 @@ export interface AmountEntry {
   hasValue(): boolean;
   setValue(value: number): void;
   setMax(max: number | undefined): void;
+  // Mengganti teks label di atas tampilan (mis. "per satuan" saat jenis diskon berganti).
+  setLabel(text: string): void;
   focus(): void;
   // Ketikan papan ketik fisik juga diterima dari target ini (mis. dialog atau dokumen).
   // Mengembalikan fungsi pelepas.
@@ -56,13 +58,8 @@ export function createAmountEntry(options: AmountEntryOptions): AmountEntry {
     },
     options.onEnter === undefined ? undefined : (options.enterText ?? label('tombolOk')),
   );
-  const element = el(
-    'div',
-    { className: 'pos-amount' },
-    el('p', { className: 't-label', text: options.labelText }),
-    display,
-    pad.element,
-  );
+  const caption = el('p', { className: 't-label', text: options.labelText });
+  const element = el('div', { className: 'pos-amount' }, caption, display, pad.element);
   // Satu ketikan ditangani sekali walau dua target (entri dan dialog) sama-sama mendengar.
   const onKeydown = (event: KeyboardEvent): void => {
     if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
@@ -97,6 +94,10 @@ export function createAmountEntry(options: AmountEntryOptions): AmountEntry {
     },
     setMax(max) {
       model.setMax(max);
+    },
+    setLabel(text) {
+      caption.textContent = text;
+      display.setAttribute('aria-label', text);
     },
     focus() {
       pad.element.querySelector('button')?.focus();

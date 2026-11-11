@@ -11,8 +11,8 @@ import { lineGross } from '../domain/bill';
 import { isRangeValid } from '../domain/forms';
 import {
   dayOf,
-  filterSales,
-  groupByDay,
+  filterHistory,
+  groupEntriesByDay,
   isPending,
   isUnsynced,
   methodSummary,
@@ -20,14 +20,18 @@ import {
   pageSlice,
   paymentRowsOf,
   receivableInfo,
+  returnsOfSale,
   saleBreakdown,
   saleDate,
   visibleReceipts,
+  type HistoryEntry,
   type MethodFilter,
+  type ReturnEntry,
   type StatusFilter,
 } from '../domain/history';
 import { changeOf } from '../domain/receipt';
-import type { PosSession } from '../pos-session';
+import { itemsValue } from '../domain/retur';
+import type { PosSession, ReturnRecord } from '../pos-session';
 import { ROLE_LABELS } from '../roles';
 import { discountTag, priceNodes } from './line-price';
 import { createSplitPane, type SplitPane } from '../split';
@@ -35,7 +39,7 @@ import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
 import { openAuthorizeModal } from './authorize';
 import type { ScreenHandle } from './login';
-import { openReceiptPreview, saleReceipt } from './receipt-preview';
+import { openReceiptPreview, returnReceipt, saleReceipt } from './receipt-preview';
 import { openReturnModal } from './retur-modal';
 import { openShareReceipt } from './share-receipt';
 
@@ -172,11 +176,12 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
   const pager = el('div', { className: 'pos-history__pager' });
   const detail = el('section', { className: 'pos-history__detail' });
 
-  const results = (): Sale[] => {
+  const results = (): HistoryEntry[] => {
     const online = session.store.getState().online;
     const state = session.state();
-    return filterSales(
+    return filterHistory(
       state.sales,
+      state.returns,
       state.queue,
       {
         start,
@@ -189,8 +194,8 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
       (id) => session.customerName(id),
     );
   };
-  const selected = (rows: readonly Sale[]): Sale | undefined =>
-    rows.find((sale) => sale.number === selectedNumber) ?? rows[0];
+  const selected = (rows: readonly HistoryEntry[]): HistoryEntry | undefined =>
+    rows.find((entry) => entry.number === selectedNumber) ?? rows[0];
 
   const chips = <T extends string>(
     items: readonly (readonly [T, LabelKey])[],
@@ -224,7 +229,51 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     );
   };
 
-  const renderList = (rows: readonly Sale[]): void => {
+  // Baris retur pada daftar: nomor penjualan asal diikuti urutan retur, lencana Retur, dan cara kembali.
+  const returnRow = (entry: ReturnEntry): HTMLElement => {
+    const record = entry.record;
+    const pick = el(
+      'button',
+      {
+        className: 'pos-history__item pos-history__item--retur',
+        attrs: {
+          type: 'button',
+          'aria-pressed': entry.number === selectedNumber ? 'true' : 'false',
+        },
+      },
+      el(
+        'span',
+        { className: 'pos-history__icon', attrs: { 'aria-hidden': 'true' } },
+        icon('history'),
+      ),
+      el('strong', { className: 'pos-history__no', text: entry.number }),
+      el('span', {
+        className: 'pos-history__time t-label',
+        text: formatTime(new Date(record.at)),
+      }),
+      el('span', {
+        className: 'pos-history__who',
+        text: session.customerName(entry.sale?.customerId),
+      }),
+      el('span', { className: 'pos-history__total', text: formatRupiah(record.value) }),
+      el('span', { className: 'pos-status pos-status--retur', text: label('retur') }),
+      el('span', {
+        className: 'pos-history__meta t-label',
+        text:
+          record.refund === undefined
+            ? label('tanpaPengembalianUang')
+            : label(METHOD_LABELS[record.refund.method]),
+      }),
+    );
+    pick.addEventListener('click', () => {
+      selectedNumber = entry.number;
+      render();
+      paneRef.current?.showDetail();
+    });
+    return el('li', {}, pick);
+  };
+
+  const renderList = (rows: readonly HistoryEntry[]): void => {
     if (rows.length === 0) {
       listBox.replaceChildren(createEmptyState({ icon: 'inbox', title: label('riwayatKosong') }));
       pager.replaceChildren();
@@ -232,7 +281,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     }
     const queue = session.state().queue;
     listBox.replaceChildren(
-      ...groupByDay(pageSlice(rows, page)).map((group) =>
+      ...groupEntriesByDay(pageSlice(rows, page)).map((group) =>
         el(
           'section',
           { className: 'pos-history__group' },
@@ -246,7 +295,11 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
           el(
             'ul',
             { className: 'pos-history__items' },
-            ...group.sales.map((sale) => {
+            ...group.entries.map((entry) => {
+              if (entry.kind === 'retur') {
+                return returnRow(entry);
+              }
+              const sale = entry.sale;
               const pending = isPending(sale, queue);
               const kind = methodSummary(sale).kind;
               const pick = el(
@@ -327,12 +380,184 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     );
   };
 
-  const renderDetail = (sale: Sale | undefined): void => {
-    if (sale === undefined) {
+  // Detail retur (gambar 8): informasi retur, foto bukti, barang yang dikembalikan, dan total uang.
+  const renderReturnDetail = (entry: ReturnEntry): void => {
+    const record: ReturnRecord = entry.record;
+    const sale = entry.sale;
+    const at = new Date(record.at);
+    const customer = session.store
+      .getState()
+      .data.customers.find((item) => item.id === sale?.customerId);
+    const iconRow = (iconName: IconName, name: string, value: HTMLElement | string): HTMLElement =>
+      el(
+        'p',
+        { className: 'pos-history__row' },
+        el(
+          'span',
+          { className: 'pos-history__rowicon', attrs: { 'aria-hidden': 'true' } },
+          icon(iconName),
+        ),
+        el('span', { className: 't-label', text: name }),
+        typeof value === 'string'
+          ? el('span', { className: 'pos-history__value', text: value })
+          : value,
+      );
+    const amount = record.refund?.amount ?? 0;
+    const origin =
+      sale === undefined
+        ? el('span', { className: 'pos-history__value', text: record.saleNumber })
+        : el('button', {
+            className: 'pos-history__link',
+            text: record.saleNumber,
+            attrs: { type: 'button', 'data-row': 'penjualan-asal' },
+          });
+    origin.addEventListener('click', () => {
+      selectedNumber = record.saleNumber;
+      render();
+    });
+    const actions = el(
+      'div',
+      { className: 'pos-history__actions' },
+      createButton({
+        text: label('kirimBuktiRetur'),
+        variant: 'secondary',
+        icon: 'send',
+        onClick: () => {
+          openShareReceipt({
+            title: label('kirimBuktiRetur'),
+            reference: entry.number,
+            amountText: formatRupiah(amount > 0 ? amount : record.value),
+            customerName: session.customerName(sale?.customerId),
+            phone: customer?.phone ?? '',
+            sentLabel: 'buktiReturTerkirimWa',
+            sentEmailLabel: 'buktiReturTerkirimEmail',
+          });
+        },
+      }),
+      createButton({
+        text: label('cetakBuktiRetur'),
+        icon: 'printer',
+        onClick: () => {
+          openReceiptPreview({
+            session,
+            kind: 'retur',
+            reference: record.number,
+            build: (width) => returnReceipt(session, record, width),
+          });
+        },
+      }),
+    );
+    detail.replaceChildren();
+    append(detail, [
+      actions,
+      el('h2', { className: 't-section-title', text: label('infoRetur') }),
+      iconRow('history', label('nomorRetur'), entry.number),
+      iconRow('file-text', label('penjualanAsal'), origin),
+      iconRow('calendar', label('tanggalRetur'), `${formatDate(at)} ${formatTime(at)}`),
+      iconRow('users', label('namaPelanggan'), session.customerName(sale?.customerId)),
+      iconRow('clipboard-list', label('alasanRetur'), record.reason),
+      record.userId === undefined
+        ? false
+        : iconRow('user-round', label('dibuatOleh'), session.userName(record.userId)),
+      el('h2', { className: 't-section-title', text: label('fotoBuktiReturBarang') }),
+      el(
+        'div',
+        { className: 'pos-history__photo', attrs: { 'data-row': 'foto-retur' } },
+        el(
+          'span',
+          { className: 'pos-history__photo-icon', attrs: { 'aria-hidden': 'true' } },
+          icon('package'),
+        ),
+        el('span', {
+          className: 't-label',
+          text: record.photoName ?? label('tanpaFoto'),
+        }),
+      ),
+      el('h2', { className: 't-section-title', text: label('barangJasa') }),
+      el('p', {
+        className: 'pos-history__sub t-label',
+        text: label('pesananJumlah', { jumlah: record.lines.length }),
+      }),
+      el(
+        'ul',
+        {
+          className: 'pos-bills__lines pos-history__lines',
+          attrs: { tabindex: '0', 'aria-label': label('daftarBarang') },
+        },
+        ...record.lines.map((entryLine) => {
+          const line = sale?.lines[entryLine.index];
+          const product = line === undefined ? undefined : session.product(line.productId);
+          return el(
+            'li',
+            {},
+            product === undefined
+              ? el('span', { className: 'pos-photo pos-photo--sm' })
+              : createProductThumb(product, 'sm'),
+            el(
+              'span',
+              { className: 'pos-history__linebody' },
+              el('strong', { text: product?.name ?? line?.productId ?? '' }),
+              el('span', {
+                className: 't-label',
+                text: `${formatDecimal(entryLine.quantity)} ${line?.unit ?? ''}`,
+              }),
+            ),
+            el('output', {
+              className: 'is-end',
+              // Nilai per baris mengikuti diskon baris dan Diskon Transaksi, sama seperti nilai retur.
+              text: formatRupiah(
+                sale === undefined || line === undefined ? 0 : itemsValue(sale, [entryLine]),
+              ),
+            }),
+          );
+        }),
+      ),
+      el(
+        'div',
+        { className: 'pos-history__totals' },
+        el(
+          'p',
+          { className: 'pos-history__row pos-history__row--plain' },
+          el('span', { className: 't-label', text: label('nilaiBarangRetur') }),
+          el('output', { className: 'pos-history__value', text: formatRupiah(record.value) }),
+        ),
+        record.refund === undefined
+          ? false
+          : el(
+              'p',
+              { className: 'pos-history__row pos-history__row--plain' },
+              el('span', { className: 't-label', text: label('caraPengembalian') }),
+              el('span', {
+                className: 'pos-history__value',
+                text: `${label(METHOD_LABELS[record.refund.method])}${record.refund.channel === undefined ? '' : ` ${record.refund.channel}`}`,
+              }),
+            ),
+        el(
+          'p',
+          { className: 'pos-history__row pos-history__row--grand' },
+          el('span', { text: label('totalUangDikembalikan') }),
+          el('output', {
+            className: 'pos-history__value',
+            attrs: { 'data-row': 'total-dikembalikan' },
+            text: formatRupiah(amount),
+          }),
+        ),
+      ),
+    ]);
+  };
+
+  const renderDetail = (entry: HistoryEntry | undefined): void => {
+    if (entry === undefined) {
       detail.replaceChildren();
       shownNumber = undefined;
       return;
     }
+    if (entry.kind === 'retur') {
+      shownNumber = entry.number;
+      renderReturnDetail(entry);
+      return;
+    }
+    const sale = entry.sale;
     if (sale.number !== shownNumber) {
       shownNumber = sale.number;
       receiptsExpanded = false;
@@ -376,6 +601,9 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         text: label('retur'),
         variant: 'secondary',
         onClick: () => {
+          // Setelah retur, detail tetap pada penjualan ini (retur baru muncul di daftar dan di
+          // bagian Riwayat Retur), bukan berpindah ke baris retur yang paling baru.
+          selectedNumber = sale.number;
           openReturnModal(session, sale, render, () => {
             detail.querySelector<HTMLElement>('.pos-history__retur')?.focus();
           });
@@ -451,11 +679,12 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
     if (moreButton !== false) {
       moreButton.addEventListener('click', () => {
         receiptsExpanded = !receiptsExpanded;
-        renderDetail(sale);
+        renderDetail(entry);
         detail.querySelector<HTMLElement>('.pos-history__more')?.focus();
       });
     }
     const breakdown = saleBreakdown(sale);
+    const saleReturns = returnsOfSale(session.state().returns, sale.number);
     const roleText = cashier === undefined ? '' : label(ROLE_LABELS[cashier.role]);
     const enteredBy =
       roleText === ''
@@ -503,6 +732,32 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
               ? false
               : row(label('jatuhTempo'), formatDate(new Date(owed.dueDate))),
             row(label('sisaTagihan'), formatRupiah(owed.sisa)),
+          ),
+      sale.note === undefined
+        ? false
+        : el('div', { className: 'pos-history__note' }, row(label('catatan'), sale.note)),
+      saleReturns.length === 0
+        ? false
+        : el(
+            'div',
+            { className: 'pos-history__returns' },
+            el('h2', { className: 't-section-title', text: label('riwayatRetur') }),
+            el(
+              'ul',
+              { className: 'pos-history__returnlist' },
+              ...saleReturns.map((item) => {
+                const open = el('button', {
+                  className: 'pos-history__link',
+                  text: `${item.number} (${formatRupiah(item.record.value)})`,
+                  attrs: { type: 'button' },
+                });
+                open.addEventListener('click', () => {
+                  selectedNumber = item.number;
+                  render();
+                });
+                return el('li', {}, open);
+              }),
+            ),
           ),
       el('h2', { className: 't-section-title', text: label('barangJasa') }),
       el('p', {
@@ -563,6 +818,9 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         row(label('kolomSubtotal'), formatRupiah(breakdown.subtotal)),
         breakdown.discount > 0
           ? row(label('diskon'), `-${formatRupiah(breakdown.discount)}`)
+          : false,
+        breakdown.transactionDiscount > 0
+          ? row(label('diskonTransaksiBaris'), `-${formatRupiah(breakdown.transactionDiscount)}`)
           : false,
         el(
           'p',

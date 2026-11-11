@@ -124,6 +124,8 @@ export interface HeldBill {
   readonly userId: string;
   readonly customerId: string | undefined;
   readonly lines: readonly BillLine[];
+  // Diskon Transaksi yang ikut ditahan bersama bill (persen atau nominal atas total).
+  readonly discount?: LineDiscount | undefined;
 }
 
 export type PaymentMethod = 'tunai' | 'qris' | 'edc' | 'transfer' | 'dp' | 'piutang';
@@ -156,6 +158,10 @@ export interface Sale {
   readonly payments?: readonly SalePayment[] | undefined;
   readonly terms?: SaleTerms | undefined;
   readonly dp?: number | undefined;
+  // Diskon Transaksi dalam rupiah (di luar diskon baris); total sudah dikurangi diskon ini.
+  readonly discount?: number | undefined;
+  // Catatan opsional yang diisi kasir di layar pembayaran.
+  readonly note?: string | undefined;
 }
 
 export type SyncStatus = 'menunggu' | 'mengirim' | 'gagal' | 'terkirim';

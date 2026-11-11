@@ -2,7 +2,7 @@ import { el, nextId } from '../../../shared/dom';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
-import { canOpenScreen, isAllowed } from '../../../shared/permissions';
+import { accessFor, canOpenScreen, isAllowed } from '../../../shared/permissions';
 import { createSearchIndex, type SearchIndex } from '../../../shared/data/search-index';
 import type { BillLine, Product, Role, UnitDef } from '../../../shared/data/types';
 import { unitPrice } from '../../../shared/data/units';
@@ -12,29 +12,30 @@ import { createDropdown } from '../../../shared/ui/dropdown';
 import { createEmptyState } from '../../../shared/ui/empty';
 import { createIllustration } from '../../../shared/ui/illustration';
 import { createMenuButton, type MenuItem } from '../../../shared/ui/menu';
+import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
-import { billTotal, lineSubtotal } from '../domain/bill';
+import { lineSubtotal } from '../domain/bill';
 import {
   categoriesOf,
+  clipName,
   customerLabel,
   initialsOf,
+  isPromo,
   proposalFirst,
+  rackOf,
   stockLines,
   type StockKey,
 } from '../domain/catalog-view';
-import { isShort } from '../domain/stock';
+import { isOutOfStock, isShort } from '../domain/stock';
 import { failureText } from '../failure';
 import type { PosSession } from '../pos-session';
 import { createProductThumb } from '../thumb';
 import { createTopbar } from '../topbar';
-import { openCustomerPicker } from './customer-picker';
 import type { ScreenHandle } from './login';
-import { openDraftPreview } from './receipt-preview';
 import { needsShift } from '../domain/shift';
 import { loadCatalogView } from '../settings';
 import { guardWithShift } from './shift';
-import { discountTag, priceNodes } from './line-price';
-import { openUnitModal } from './unit-modal';
+import { discountTag } from './line-price';
 
 const RESULT_LIMIT = 60;
 const LONG_PRESS_MS = 500;
@@ -42,7 +43,6 @@ const LONG_PRESS_MS = 500;
 const STOCK_LABELS = {
   toko: 'stokToko',
   gudang: 'stokGudang',
-  po: 'stokPo',
 } as const satisfies Record<StockKey, string>;
 
 let cache: { readonly products: readonly Product[]; readonly index: SearchIndex } | undefined;
@@ -132,6 +132,12 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     className: 'pos-customer-btn',
     attrs: { type: 'button' },
   });
+  // Di bawah 900 px panel pesanan menjadi lembar yang tertutup; tombol pelanggan ringkas di bilah alat
+  // tetap menjangkau pemilih pelanggan (CSS menyembunyikannya pada layar lebar).
+  const customerCompact = el('button', {
+    className: 'pos-customer-compact',
+    attrs: { type: 'button' },
+  });
 
   const role = (): Role => store.getState().role;
   const refocus = (): void => {
@@ -143,21 +149,82 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     showToast({ kind: 'error', text });
   };
 
+  // Hanya stok toko yang boleh dijual: stok kosong atau jumlah melebihi stok memunculkan peringatan
+  // dan barang tidak masuk keranjang.
   const addProduct = (product: Product, unit?: string): void => {
     const result = session.addProduct(product, unit);
     if (!result.ok) {
-      fail(message('MSG-027'));
+      if (result.reason === 'max-lines') {
+        fail(message('MSG-027'));
+      } else if (result.reason === 'out-of-stock') {
+        fail(label('stokBarangKosong', { nama: product.name }));
+      } else {
+        fail(
+          label('stokTokoTerbatas', {
+            nama: product.name,
+            jumlah: `${formatDecimal(result.available, 3, 0)} ${product.baseUnit}`,
+          }),
+        );
+      }
     }
     refocus();
   };
 
+  const openUnits = (product: Product): void => {
+    if (isOutOfStock(product)) {
+      fail(label('stokBarangKosong', { nama: product.name }));
+      return;
+    }
+    void import('./unit-modal').then(({ openUnitModal }) => {
+      openUnitModal({ session, product, onDone: refocus });
+    });
+  };
+
   const createCard = (product: Product): HTMLElement => {
     const tier = session.customer()?.tier ?? 'eceran';
+    const empty = isOutOfStock(product);
+    const soldOutId = nextId('stok-kosong');
+    // Daftar harga ada di dalam tombol kartu, jadi tanpa role atau label sendiri (tidak dibaca di sana).
+    const prices = el(
+      'span',
+      { className: 'pos-card__prices' },
+      ...product.units.map((unit) =>
+        el(
+          'span',
+          { className: 'pos-card__price', attrs: { 'data-unit': unit.code } },
+          el('span', { className: 'pos-card__unit', text: unitText(unit) }),
+          el('span', {
+            className: 'pos-card__amount t-value',
+            text: formatRupiah(unitPrice(product, unit.code, tier)),
+          }),
+        ),
+      ),
+    );
     const main = el(
       'button',
-      { className: 'pos-card__main', attrs: { type: 'button' } },
+      {
+        className: 'pos-card__main',
+        attrs: {
+          type: 'button',
+          'aria-disabled': empty ? 'true' : false,
+          'aria-describedby': empty ? soldOutId : false,
+        },
+      },
+      isPromo(product)
+        ? el('span', { className: 'pos-card__promo', text: label('promoTanda') })
+        : false,
       createProductThumb(product, 'md'),
-      el('span', { className: 'pos-card__name', text: product.name }),
+      el(
+        'span',
+        { className: 'pos-card__head' },
+        el('span', {
+          className: 'pos-card__name',
+          text: clipName(product.name),
+          attrs: { title: product.name },
+        }),
+        el('span', { className: 'pos-card__code t-label', text: product.code }),
+      ),
+      prices,
     );
     let timer: number | undefined;
     let pressed = false;
@@ -165,7 +232,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       pressed = false;
       timer = window.setTimeout(() => {
         pressed = true;
-        openUnitModal({ session, product, onDone: refocus });
+        openUnits(product);
       }, LONG_PRESS_MS);
     });
     for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
@@ -173,61 +240,58 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
         window.clearTimeout(timer);
       });
     }
-    main.addEventListener('click', () => {
+    // Ketukan pada baris harga menambah satuan itu; ketukan di bagian lain menambah satuan bawaan.
+    main.addEventListener('click', (event) => {
       if (pressed) {
         pressed = false;
         return;
       }
-      addProduct(product);
+      const row = event.target instanceof Element ? event.target.closest('[data-unit]') : null;
+      addProduct(product, row?.getAttribute('data-unit') ?? undefined);
     });
     main.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && event.shiftKey) {
         event.preventDefault();
-        openUnitModal({ session, product, onDone: refocus });
+        openUnits(product);
       }
     });
 
-    const prices = el(
-      'div',
-      { className: 'pos-card__prices', attrs: { role: 'group', 'aria-label': label('blokHarga') } },
-      ...product.units.map((unit) => {
-        const row = el(
-          'button',
-          { className: 'pos-card__price', attrs: { type: 'button' } },
-          el('span', { className: 'pos-card__unit', text: unitText(unit) }),
-          el('span', {
-            className: 'pos-card__amount t-value',
-            text: formatRupiah(unitPrice(product, unit.code, tier)),
-          }),
-        );
-        row.addEventListener('click', () => {
-          addProduct(product, unit.code);
-        });
-        return row;
-      }),
+    const stockRows = stockLines(product).map((line) =>
+      el(
+        'div',
+        { className: 'pos-card__stockrow' },
+        el('dt', { text: label(STOCK_LABELS[line.key]) }),
+        el('dd', {
+          text:
+            line.quantity === undefined
+              ? '-'
+              : `${formatDecimal(line.quantity, 1, 0)} ${line.unit}`,
+        }),
+      ),
     );
     const stock = el(
       'dl',
       { className: 'pos-card__stock', attrs: { 'aria-label': label('blokStok') } },
-      ...stockLines(product).map((line) =>
-        el(
-          'div',
-          { className: 'pos-card__stockrow' },
-          el('dt', { text: label(STOCK_LABELS[line.key]) }),
-          el('dd', {
-            text:
-              line.quantity === undefined
-                ? '-'
-                : `${formatDecimal(line.quantity, 1, 0)} ${line.unit}`,
-          }),
-        ),
+      ...stockRows,
+      el(
+        'div',
+        { className: 'pos-card__stockrow' },
+        el('dt', { text: label('stokNoRak') }),
+        el('dd', { text: rackOf(product) }),
       ),
     );
     return el(
       'article',
-      { className: 'pos-card' },
+      { className: empty ? 'pos-card pos-card--empty' : 'pos-card' },
       main,
-      el('div', { className: 'pos-card__table' }, prices, stock),
+      empty
+        ? el('span', {
+            className: 'pos-card__soldout',
+            text: label('stokKosongTanda'),
+            attrs: { id: soldOutId },
+          })
+        : false,
+      stock,
     );
   };
 
@@ -268,7 +332,9 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       fail(message('MSG-025'));
       return;
     }
-    openDraftPreview(session);
+    void import('./receipt-preview').then(({ openDraftPreview }) => {
+      openDraftPreview(session);
+    });
   };
 
   const hold = (): void => {
@@ -290,43 +356,76 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     }
     go('/pos/bayar');
   };
-  const recall = (): void => {
-    if (session.state().lines.length > 0) {
-      fail(message('MSG-028'));
+  const openDiscount = (): void => {
+    if (session.state().lines.length === 0) {
+      fail(message('MSG-025'));
       return;
     }
-    go('/pos/bill');
+    const open = (authorized: boolean): void => {
+      void import('./bill-discount').then(({ openBillDiscount }) => {
+        openBillDiscount({ session, authorized, onDone: refocus });
+      });
+    };
+    if (accessFor(role(), 'POS-03', 'Diskon') === 'otorisasi') {
+      void import('./authorize').then(({ openAuthorizeModal }) => {
+        openAuthorizeModal({
+          session,
+          purpose: 'harga',
+          subject: label('menuDiskonTransaksi'),
+          onApproved: () => {
+            open(true);
+          },
+        });
+      });
+      return;
+    }
+    open(false);
+  };
+
+  // Mulai Pesanan Baru menghapus seluruh keranjang; konfirmasi lebih dulu karena tidak tersimpan.
+  const startNew = (): void => {
+    openModal({
+      title: label('pesananBaruJudul'),
+      body: label('pesananBaruIsi'),
+      actions: [
+        { text: label('batal'), variant: 'secondary' },
+        {
+          text: label('pesananBaruLanjut'),
+          variant: 'danger',
+          onClick: () => {
+            session.startNewOrder();
+            showToast({ kind: 'success', text: label('pesananBaruDimulai') });
+          },
+        },
+      ],
+    });
   };
 
   const renderCustomerButton = (): void => {
     const current = session.customer();
-    customerButton.replaceChildren(
-      el(
-        'span',
-        { className: 'pos-customer-btn__avatar', attrs: { 'aria-hidden': 'true' } },
-        current === undefined ? icon('user-round') : initialsOf(current.name),
-      ),
-      el('span', { className: 'pos-customer-btn__text', text: customerLabel(current) }),
-    );
+    for (const button of [customerButton, customerCompact]) {
+      button.replaceChildren(
+        el(
+          'span',
+          { className: 'pos-customer-btn__avatar', attrs: { 'aria-hidden': 'true' } },
+          current === undefined ? icon('user-round') : initialsOf(current.name),
+        ),
+        el('span', { className: 'pos-customer-btn__text', text: customerLabel(current) }),
+      );
+    }
   };
 
   const orderQuantity = (line: BillLine): HTMLElement => {
-    const quantityText = formatDecimal(line.quantity, 3, 0);
     const tag = discountTag(line);
-    if (line.listPrice === undefined && tag === undefined) {
-      return el('span', {
-        className: 'pos-order__qty',
-        text: label('qtyBaris', {
-          jumlah: quantityText,
-          harga: formatRupiah(line.unitPrice).replace('Rp ', ''),
-        }),
-      });
-    }
     return el(
       'span',
       { className: 'pos-order__qty' },
-      document.createTextNode(`${label('qtyBarisAwal', { jumlah: quantityText })} `),
-      ...priceNodes(line),
+      document.createTextNode(
+        label('qtyBaris', {
+          jumlah: formatDecimal(line.quantity, 3, 0),
+          harga: formatRupiah(line.unitPrice).replace('Rp ', ''),
+        }),
+      ),
       tag === undefined ? false : el('span', { className: 'pos-order__flag', text: ` ${tag}` }),
     );
   };
@@ -334,14 +433,24 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
   const renderOrder = (): void => {
     const state = session.state();
     const frontliner = role() === 'frontliner';
-    const total = billTotal(state.lines);
+    const subtotal = session.subtotal();
+    const discount = session.billDiscountAmount();
+    const total = session.total();
     const items = state.lines.map((line, position) => {
       const product = session.product(line.productId);
       const short = product !== undefined && isShort(state.lines, product, 0);
+      const fullName = product?.name ?? line.productId;
       const open = el(
         'button',
         { className: 'pos-bill__name', attrs: { type: 'button' } },
-        el('span', { text: product?.name ?? line.productId }),
+        el('span', {
+          className: 'pos-bill__text',
+          text: clipName(fullName),
+          attrs: { title: fullName },
+        }),
+        product === undefined
+          ? false
+          : el('span', { className: 'pos-bill__code t-label', text: product.code }),
         short &&
           el(
             'span',
@@ -367,10 +476,19 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       );
     });
 
+    // Tiga pilihan di titik tiga: Open Bill (sama dengan Tahan Bill), Diskon Transaksi, dan Mulai
+    // Pesanan Baru. Frontliner tidak boleh memberi diskon dan memakai Cetak Struk Draf sebagai tambahan.
     const menuItems: MenuItem[] = [
-      { text: label('tahanBill'), icon: 'pause', onSelect: hold },
-      { text: label('panggilBill'), icon: 'clipboard-list', onSelect: recall },
+      { text: label('menuOpenBill'), icon: 'clipboard-list', onSelect: hold },
     ];
+    if (accessFor(role(), 'POS-03', 'Diskon') !== 'tidak') {
+      menuItems.push({
+        text: label('menuDiskonTransaksi'),
+        icon: 'badge-percent',
+        onSelect: openDiscount,
+      });
+    }
+    menuItems.push({ text: label('menuPesananBaru'), icon: 'plus', onSelect: startNew });
     if (frontliner) {
       menuItems.push({ text: label('cetakStrukDraf'), icon: 'printer', onSelect: draftReceipt });
     }
@@ -401,8 +519,39 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       el('span', { text: label('pesananJumlah', { jumlah: state.lines.length }) }),
       el('strong', { className: 'pos-order-bar__total', text: formatRupiah(total) }),
     );
+    const summary =
+      discount === 0
+        ? [
+            el(
+              'p',
+              { className: 'pos-order__subtotal' },
+              el('span', { className: 't-section-title', text: label('kolomSubtotal') }),
+              el('output', { className: 't-total pos-totals__value', text: formatRupiah(total) }),
+            ),
+          ]
+        : [
+            el(
+              'p',
+              { className: 'pos-order__line' },
+              el('span', { text: label('kolomSubtotal') }),
+              el('output', { text: formatRupiah(subtotal) }),
+            ),
+            el(
+              'p',
+              { className: 'pos-order__line pos-order__line--discount' },
+              el('span', { text: label('diskonTransaksiBaris') }),
+              el('output', { text: `-${formatRupiah(discount)}` }),
+            ),
+            el(
+              'p',
+              { className: 'pos-order__subtotal' },
+              el('span', { className: 't-section-title', text: label('kolomTotal') }),
+              el('output', { className: 't-total pos-totals__value', text: formatRupiah(total) }),
+            ),
+          ];
     order.replaceChildren(
       closeSheet,
+      customerButton,
       el('h2', {
         className: 'pos-order__title t-section-title',
         text: label('pesananJumlah', { jumlah: state.lines.length }),
@@ -419,12 +568,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
             { className: 'pos-order', attrs: { 'aria-label': label('daftarBarang') } },
             ...items,
           ),
-      el(
-        'p',
-        { className: 'pos-order__subtotal' },
-        el('span', { className: 't-section-title', text: label('kolomSubtotal') }),
-        el('output', { className: 't-total pos-totals__value', text: formatRupiah(total) }),
-      ),
+      ...summary,
       footer,
     );
   };
@@ -464,16 +608,18 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
   };
 
   const pickCustomer = (): void => {
-    openCustomerPicker(
-      session,
-      () => {
-        renderCustomerButton();
-        renderOrder();
-        renderGrid();
-        refocus();
-      },
-      go,
-    );
+    void import('./customer-picker').then(({ openCustomerPicker }) => {
+      openCustomerPicker(
+        session,
+        () => {
+          renderCustomerButton();
+          renderOrder();
+          renderGrid();
+          refocus();
+        },
+        go,
+      );
+    });
   };
 
   const onKey = (event: KeyboardEvent): void => {
@@ -534,6 +680,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     }
   });
   customerButton.addEventListener('click', pickCustomer);
+  customerCompact.addEventListener('click', pickCustomer);
 
   const unsubscribers = [
     session.subscribe(() => {
@@ -545,6 +692,9 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     store.subscribe(() => {
       renderOrder();
       renderBanner();
+    }),
+    session.onNotice((text) => {
+      showToast({ kind: 'info', text });
     }),
   ];
 
@@ -572,7 +722,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     el(
       'section',
       { className: 'pos-catalog' },
-      el('div', { className: 'pos-toolbar' }, dropdown.element, form, scan, customerButton),
+      el('div', { className: 'pos-toolbar' }, dropdown.element, form, scan, customerCompact),
       searchError,
       grid,
       note,

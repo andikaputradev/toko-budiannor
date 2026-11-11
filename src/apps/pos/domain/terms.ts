@@ -1,6 +1,6 @@
 import { MAX_DUE_DAYS } from './forms';
 
-export const TERM_CHOICES = [7, 30, 45] as const;
+export const TERM_CHOICES = [7, 14, 30] as const;
 
 const DAY_MS = 86_400_000;
 

@@ -118,7 +118,9 @@ export async function openOrderMenu(page: Page, item: string): Promise<void> {
 }
 
 export async function chooseCustomer(page: Page, name: string): Promise<void> {
-  await page.locator('.pos-customer-btn').click();
+  // Tombol pelanggan ada di panel pesanan; di bawah 900 px panel itu tertutup dan tombol ringkas
+  // di bilah alat yang terlihat.
+  await page.locator('.pos-customer-btn:visible, .pos-customer-compact:visible').first().click();
   await page.locator('.pos-customers__row', { hasText: name }).click();
 }
 
@@ -179,14 +181,12 @@ export async function sellFirstProduct(
   await page.locator('.pos-card__main').first().click();
   await clickPay(page);
   if (method === 'qris') {
+    // QRIS dikonfirmasi manual oleh kasir: tidak ada kode QR atau dialog tambahan.
     await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     await page
       .getByRole('group', { name: 'Kanal pembayaran' })
       .getByRole('button', { name: 'QRIS', exact: true })
       .click();
-    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
-    await dialog.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
-    await expect(dialog).toBeHidden();
   } else {
     await page.getByRole('button', { name: 'Uang Pas' }).click();
   }
@@ -201,13 +201,12 @@ export async function sellSplitThree(page: Page): Promise<void> {
   await page.getByRole('tab', { name: 'Split', exact: true }).click();
   await savePart(page, 1, { digits: '30000' });
   await savePart(page, 2, { channel: 'QRIS', digits: '20000' });
-  await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
   await savePart(page, 3, { channel: 'EDC', digits: '20000' });
   await page.getByRole('button', { name: 'Bayar', exact: true }).click();
   await finishPaymentDialog(page);
 }
 
-// Mengisi satu Pembayaran N pada tab Split lewat modalnya. Kanal QR langsung dikonfirmasi.
+// Mengisi satu Pembayaran N pada tab Split lewat modalnya. Non-tunai hanya QRIS, Transfer, atau EDC.
 export async function savePart(
   page: Page,
   number: number,
@@ -227,11 +226,6 @@ export async function savePart(
   }
   await dialog.getByRole('button', { name: 'Simpan' }).click();
   await expect(dialog).toBeHidden();
-  if (['QRIS', 'Gopay', 'OVO', 'Shopee Pay'].includes(options.channel ?? '')) {
-    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
-    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
-    await expect(qr).toBeHidden();
-  }
 }
 
 // Mengetik nominal lewat papan angka di halaman (tab Tunai).
@@ -277,7 +271,8 @@ export const OVERLAYS: readonly OverlayCase[] = [
     open: async (page) => {
       await page.locator('.pos-card__main').first().click();
       await page.locator('.pos-bill__name').first().click();
-      await page.getByRole('textbox', { name: 'Jumlah' }).fill('100');
+      // Stok toko Semen Gresik 28 SAK: 10 SAK (Rp 700.000) tetap melebihi sisa limit UD Maju Jaya.
+      await page.getByRole('textbox', { name: 'Jumlah' }).fill('10');
       await page.getByRole('button', { name: 'Simpan', exact: true }).click();
       await chooseCustomer(page, 'UD Maju Jaya');
       await clickPay(page);

@@ -147,13 +147,32 @@
   }
 }
 
+/* Di bawah 700 px header hanya memuat jam (hari dan tanggal disembunyikan) dan bilah alat membungkus. */
+@media (max-width: 699px) {
+  .pos-topbar__day,
+  .pos-topbar__sep {
+    display: none;
+  }
+
+  .pos-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .pos-toolbar .dropdown {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .pos-toolbar .pos-search {
+    flex: 1 1 160px;
+  }
+}
+
 @media (max-width: 599px) {
   .pos-topbar {
-    grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--primitive-space-2);
   }
 
-  .pos-topbar__center,
   .pos-topbar__cashier,
   .pos-topbar .pos-chip span {
     display: none;
@@ -172,19 +191,6 @@
 
   .pos-topbar__status {
     gap: var(--primitive-space-2);
-  }
-
-  .pos-toolbar {
-    flex-wrap: wrap;
-  }
-
-  .pos-toolbar .dropdown {
-    flex: 1 1 100%;
-    width: auto;
-  }
-
-  .pos-toolbar .pos-search {
-    flex: 1 1 160px;
   }
 
   .pos-login__cards {
@@ -218,6 +224,15 @@
 
   .pos main:not(.pos-login) {
     padding-left: calc(var(--space-screen-margin) + 32px);
+  }
+
+  /* Modal satuan: dua kolom tidak muat di ponsel, jadi info dan papan angka ditumpuk. */
+  .pos-unit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-unit__head {
+    grid-template-columns: 96px minmax(0, 1fr);
   }
 }
 

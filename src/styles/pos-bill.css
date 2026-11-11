@@ -24,7 +24,7 @@
 
 .pos-bills__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--primitive-space-3);
   align-items: start;
   margin: 0;
@@ -36,19 +36,15 @@
   display: none;
 }
 
+/* Kartu Open Bill lebar (gambar 7): baris info, lalu daftar barang di kiri dan total di kanan. */
 .pos-bill-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--primitive-space-2);
   min-width: 0;
-  padding: var(--primitive-space-3);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
-}
-
-.pos-bill-card {
-  position: relative;
 }
 
 .pos-bill-card:has(.menu__button[aria-expanded='true']) {
@@ -61,50 +57,187 @@
 }
 
 .pos-bill-card__head {
-  display: flex;
-  gap: var(--primitive-space-2);
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
-.pos-bill-card__head p,
-.pos-bill-card__meta,
-.pos-bill-card__more {
+.pos-bill-card__info {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.pos-bill-card__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+.pos-bill-card__infotext {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-bill-card__infotext strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-bill-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.pos-bill-card__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  min-width: 0;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+  border-right: 1px solid var(--color-border-default);
+}
+
+.pos-bill-card__title {
   margin: 0;
 }
 
-.pos-bill-card__customer {
-  overflow-wrap: anywhere;
-}
-
-.pos-bill-card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--primitive-space-3);
-  justify-content: space-between;
-}
-
 .pos-bill-card__lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.pos-bill-card__lines li {
+.pos-bill-card__line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--primitive-space-3);
+  align-items: center;
+}
+
+.pos-bill-card__linebody {
   display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pos-bill-card__linebody strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-bill-card__amount {
+  color: var(--color-accent-default);
+  font-weight: var(--primitive-font-weight-semibold);
+  white-space: nowrap;
+}
+
+.pos-bill-card__more {
+  display: inline-flex;
   gap: var(--primitive-space-2);
+  align-items: center;
+  align-self: center;
+  min-height: var(--size-touch-target-min);
+  padding: 0 var(--primitive-space-3);
+  border: 0;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pos-bill-card__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  padding: var(--primitive-space-3) var(--primitive-space-4);
+}
+
+.pos-bill-card__sum {
+  display: flex;
   justify-content: space-between;
-  padding: var(--primitive-space-1) 0;
+  margin: 0;
+  padding-bottom: var(--primitive-space-2);
   border-bottom: 1px solid var(--color-border-default);
 }
 
-.pos-bill-card__lines li span:first-child {
-  min-width: 0;
-  overflow-wrap: anywhere;
+.pos-bill-card__sum--total output {
+  color: var(--color-accent-default);
+  font-weight: var(--primitive-font-weight-semibold);
 }
 
-.pos-bill-card .btn {
+.pos-bill-card__actions {
+  display: flex;
+  gap: var(--primitive-space-2);
+  margin-top: auto;
+}
+
+.pos-bill-card__actions .btn--pay {
+  flex: 1;
+  height: 56px;
+}
+
+.pos-bill-card__print {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-touch-target-min);
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.pos-bill-card .menu__button {
   height: var(--size-touch-target-min);
+}
+
+@media (max-width: 899px) {
+  .pos-bill-card__head {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+
+  .pos-bill-card__head > :nth-child(3),
+  .pos-bill-card__head > :nth-child(4) {
+    grid-row: 2;
+  }
+
+  .pos-bill-card__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-bill-card__items {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+}
+
+@media (max-width: 599px) {
+  .pos-bill-card__head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .pos-bill-card__head > :nth-child(n + 2):nth-child(-n + 4) {
+    grid-row: auto;
+  }
 }
 
 .pos-split-bill,
@@ -168,13 +301,4 @@
 .pos-merge-bill__text {
   display: flex;
   flex-direction: column;
-}
-
-.pos-bill-card__lines li span:last-child {
-  flex: none;
-  white-space: nowrap;
-}
-
-.pos-bill-card .menu__button {
-  height: var(--size-touch-target-min);
 }

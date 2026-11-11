@@ -34,6 +34,16 @@ function isRefundMethod(method: string): method is RefundMethod {
 // Nilai barang yang diretur: jumlah kali harga transaksi asal, dibulatkan per baris. Baris
 // berdiskon dihitung proporsional dari subtotal setelah diskon dan tidak melebihi subtotal itu.
 export function itemsValue(sale: Sale, items: ReturnInput['items']): number {
+  const raw = itemsLineValue(sale, items);
+  // Diskon Transaksi (di luar diskon baris) ikut dibagi rata menurut nilai baris yang diretur.
+  const lineTotal = sale.lines.reduce((sum, line) => sum + lineSubtotal(line), 0);
+  if ((sale.discount ?? 0) > 0 && lineTotal > 0) {
+    return Math.min(raw, Math.round((raw * sale.total) / lineTotal));
+  }
+  return raw;
+}
+
+function itemsLineValue(sale: Sale, items: ReturnInput['items']): number {
   return items.reduce((sum, item) => {
     const line = sale.lines[item.index];
     if (line === undefined) {

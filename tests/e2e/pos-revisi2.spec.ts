@@ -130,50 +130,44 @@ test.describe('foto kartu barang', () => {
     await page.locator('#pos-search').press('Enter');
   }
 
-  test('barang bangkitan memakai foto kategori yang ada dan memuat gambarnya', async ({ page }) => {
+  // Revisi ketiga: barang tanpa foto sendiri menampilkan huruf awal nama, bukan foto kategori.
+  test('barang bangkitan tanpa foto sendiri menampilkan huruf awal nama', async ({ page }) => {
     await loginPos(page);
     await search(page, 'Cat Tembok');
     const card = page.locator('.pos-card', { hasText: /CAT TEMBOK/i }).first();
-    const photo = card.locator('img.pos-photo--img');
-    await expect(photo).toHaveAttribute('src', /kategori\/cat\.webp$/);
-    await expect
-      .poll(() =>
-        photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
-      )
-      .toBe(true);
+    await expect(card.locator('img.pos-photo--img')).toHaveCount(0);
+    const tile = card.locator('.pos-photo--initials');
+    await expect(tile).toHaveText('CT');
   });
 
   const BARU: readonly (readonly [string, RegExp, string])[] = [
-    ['Pasir', /PASIR/i, 'bahan-dasar'],
-    ['Stop Kontak', /STOP KONTAK/i, 'listrik'],
-    ['Seng Gelombang', /SENG GELOMBANG/i, 'atap'],
+    ['Pasir', /PASIR/i, 'P'],
+    ['Stop Kontak', /STOP KONTAK/i, 'SK'],
+    ['Seng Gelombang', /SENG GELOMBANG/i, 'SG'],
   ];
 
-  for (const [kata, pola, slug] of BARU) {
-    test(`barang bangkitan kategori ${slug} memakai foto kategori, bukan kotak placeholder`, async ({
+  for (const [kata, pola, inisial] of BARU) {
+    test(`barang bangkitan ${kata} memakai huruf awal ${inisial}, bukan foto atau kotak kosong`, async ({
       page,
     }) => {
       await loginPos(page);
       await search(page, kata);
       const card = page.locator('.pos-card', { hasText: pola }).first();
-      const photo = card.locator('img.pos-photo--img');
-      await expect(photo).toHaveAttribute('src', new RegExp(`kategori/${slug}\\.webp$`));
-      await expect(card.locator('span.pos-photo')).toHaveCount(0);
-      await expect
-        .poll(() =>
-          photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0),
-        )
-        .toBe(true);
+      const tile = card.locator('.pos-photo--initials');
+      await expect(tile).toHaveText(new RegExp(`^${inisial}`));
+      await expect(card.locator('img.pos-photo--img')).toHaveCount(0);
+      await expect(card.locator('span.pos-photo:not(.pos-photo--initials)')).toHaveCount(0);
     });
   }
 
-  test('barang proposal tetap memakai fotonya sendiri, bukan foto kategori', async ({ page }) => {
+  test('barang proposal tetap memakai fotonya sendiri, bukan huruf awal', async ({ page }) => {
     await loginPos(page);
     const semen = page.locator('.pos-card', { hasText: /SEMEN GRESIK/i }).first();
     await expect(semen.locator('img.pos-photo--img')).toHaveAttribute(
       'src',
       /produk\/semen-gresik-40kg\.webp$/,
     );
+    await expect(semen.locator('.pos-photo--initials')).toHaveCount(0);
   });
 });
 
@@ -590,8 +584,8 @@ test.describe('layar bayar', () => {
     await page.getByLabel('DP', { exact: true }).fill('20000');
     await expect(page.locator('.pos-pay__due-amount')).toContainText('Rp 50.000');
     await expect(page.locator('.pos-pay__dp')).toContainText('Rp 20.000');
-    await page.getByRole('button', { name: '45 hari' }).click();
-    await expect(page.locator('.pos-pay__due')).toContainText('3 Des 2026');
+    await page.getByRole('button', { name: '14 hari' }).click();
+    await expect(page.locator('.pos-pay__due')).toContainText('2 Nov 2026');
     await pay(page).click();
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
   });
@@ -635,7 +629,7 @@ test.describe('layar bayar', () => {
   });
 });
 
-test.describe('Non-Tunai dan QR', () => {
+test.describe('Non-Tunai tiga pilihan tanpa QR', () => {
   async function toNonCash(page: Page): Promise<void> {
     await loginPos(page);
     await page.locator('.pos-card__main').first().click();
@@ -648,115 +642,50 @@ test.describe('Non-Tunai dan QR', () => {
     page
       .getByRole('group', { name: 'Kanal pembayaran' })
       .getByRole('button', { name, exact: true });
-  const qrDialog = (page: Page) => page.getByRole('dialog', { name: 'Scan QR Code' });
 
-  test('Non-Tunai menampilkan kartu QRIS, Gopay, OVO, Shopee Pay, EDC, Transfer BCA, BRI, Mandiri', async ({
-    page,
-  }) => {
+  test('Non-Tunai hanya menampilkan QRIS, Transfer, dan EDC', async ({ page }) => {
     await toNonCash(page);
     await expect(
       page.getByRole('group', { name: 'Kanal pembayaran' }).getByRole('button'),
-    ).toHaveText([
-      'QRIS',
-      'Gopay',
-      'OVO',
-      'Shopee Pay',
-      'EDC',
-      'Transfer BCA',
-      'Transfer BRI',
-      'Transfer Mandiri',
-    ]);
+    ).toHaveText(['QRIS', 'Transfer', 'EDC']);
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
   });
 
-  test('memilih Gopay membuka Scan QR Code dengan Tagihan sama dengan total', async ({ page }) => {
-    await toNonCash(page);
-    await card(page, 'Gopay').click();
-    const dialog = qrDialog(page);
-    await expect(dialog).toBeVisible();
-    await expect(dialog.locator('.pos-qr__amount')).toHaveText('Rp 70.000');
-    await expect(dialog.getByText('Tagihan', { exact: true })).toBeVisible();
-    await expect(dialog.getByText('Reference ID', { exact: true })).toBeVisible();
-    await expect(dialog.locator('.pos-qr__reference')).toHaveText(/^QR\d{10}$/);
-    await expect(dialog.locator('svg.pos-qr__code')).toBeVisible();
-    await expect(dialog.locator('svg.pos-qr__code path')).toHaveCount(1);
-  });
-
-  test('Bayar tetap nonaktif untuk kanal QR sebelum Cek Status', async ({ page }) => {
+  test('memilih QRIS tidak membuka kode QR dan langsung melunasi total', async ({ page }) => {
     await toNonCash(page);
     await card(page, 'QRIS').click();
-    await expect(qrDialog(page)).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(qrDialog(page)).toBeHidden();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.pos-qr')).toHaveCount(0);
     await expect(card(page, 'QRIS')).toHaveAttribute('aria-pressed', 'true');
-    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  test('Cek Status Pembayaran menandai diterima sekali lalu Bayar aktif', async ({ page }) => {
-    await toNonCash(page);
-    await card(page, 'Gopay').click();
-    const dialog = qrDialog(page);
-    const check = dialog.getByRole('button', { name: 'Cek Status Pembayaran' });
-    await check.click();
-    await check.dispatchEvent('click');
-    await check.dispatchEvent('click');
-    await expect(dialog).toBeHidden({ timeout: 5000 });
-    await expect(page.getByText('Pembayaran diterima', { exact: true })).toBeVisible();
+    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
     await pay(page).click();
     await finishPaymentDialog(page);
     await openDrawerItem(page, 'Riwayat Penjualan');
     const detail = page.locator('.pos-history__detail');
-    await expect(detail).toContainText('QRIS Gopay');
+    await expect(detail).toContainText('QRIS');
     await expect(detail.locator('.pos-history__pay li')).toHaveCount(1);
   });
 
-  test('Ubah metode menutup modal dan kembali ke daftar kanal', async ({ page }) => {
+  test('Transfer dan EDC langsung memilih tanpa modal dan tanpa Nomor Referensi', async ({
+    page,
+  }) => {
     await toNonCash(page);
-    await card(page, 'OVO').click();
-    await qrDialog(page).getByRole('button', { name: 'Ubah Metode Pembayaran' }).click();
-    await expect(qrDialog(page)).toBeHidden();
-    await expect(page.getByRole('tab', { name: 'Non-Tunai' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await expect(card(page, 'OVO')).toHaveAttribute('aria-pressed', 'false');
-    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  test('Cetak Kode QR membuka pratinjau', async ({ page }) => {
-    await toNonCash(page);
-    await card(page, 'Shopee Pay').click();
-    await qrDialog(page).getByRole('button', { name: 'Cetak Kode QR' }).click();
-    await expect(page.getByRole('dialog', { name: 'Pratinjau Struk' })).toBeVisible();
-    await expect(page.locator('.pos-receipt')).toContainText('STRUK DRAF');
-  });
-
-  test('Transfer BCA meminta Nomor Referensi dan kanal BCA tampil di riwayat', async ({ page }) => {
-    await toNonCash(page);
-    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toBeHidden();
-    await card(page, 'Transfer BCA').click();
-    await expect(qrDialog(page)).toHaveCount(0);
-    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toBeVisible();
+    await card(page, 'Transfer').click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(card(page, 'Transfer')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toHaveCount(0);
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
+    await card(page, 'EDC').click();
+    await expect(card(page, 'EDC')).toHaveAttribute('aria-pressed', 'true');
+    await expect(card(page, 'Transfer')).toHaveAttribute('aria-pressed', 'false');
     await pay(page).click();
     await finishPaymentDialog(page);
     await openDrawerItem(page, 'Riwayat Penjualan');
-    await expect(page.locator('.pos-history__detail')).toContainText('Transfer BCA');
+    await expect(page.locator('.pos-history__detail')).toContainText('EDC');
   });
 
-  test('EDC langsung memilih tanpa modal QR dan meminta Nomor Referensi', async ({ page }) => {
-    await toNonCash(page);
-    await card(page, 'EDC').click();
-    await expect(qrDialog(page)).toHaveCount(0);
-    await expect(card(page, 'EDC')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('textbox', { name: 'Nomor Referensi' })).toBeVisible();
-    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
-  });
-
-  test('Non-Tunai dan modal QR lolos axe dan target 48 px pada mode terang dan gelap', async ({
-    page,
-  }) => {
+  test('Non-Tunai lolos axe dan target 48 px pada mode terang dan gelap', async ({ page }) => {
     await toNonCash(page);
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
@@ -764,19 +693,17 @@ test.describe('Non-Tunai dan QR', () => {
       await settle(page);
       const tab = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
       expect(tab.violations, `${scheme} tab`).toEqual([]);
-      await card(page, 'Gopay').click();
-      await expect(qrDialog(page)).toBeVisible();
+      await card(page, 'QRIS').click();
       await settle(page);
-      const modal = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
-      expect(modal.violations, `${scheme} modal`).toEqual([]);
-      const heights = await qrDialog(page)
+      const chosen = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+      expect(chosen.violations, `${scheme} dipilih`).toEqual([]);
+      const heights = await page
+        .getByRole('group', { name: 'Kanal pembayaran' })
         .locator('button')
         .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
       for (const height of heights) {
         expect(height, scheme).toBeGreaterThanOrEqual(47.5);
       }
-      await page.keyboard.press('Escape');
-      await expect(qrDialog(page)).toBeHidden();
     }
   });
 });
@@ -818,20 +745,21 @@ test.describe('Split', () => {
     await expect(dialog).toBeHidden();
   }
 
-  test('Split menampilkan Pembayaran 1 dan Pembayaran 2 dan tombol + Tambah Pembayaran', async ({
+  test('Split menampilkan tiga slot Pembayaran 1 sampai 3 tanpa tombol Tambah Pembayaran', async ({
     page,
   }) => {
     await toSplit(page);
     await expect(slot(page, 1)).toBeVisible();
     await expect(slot(page, 2)).toBeVisible();
-    await expect(slot(page, 3)).toHaveCount(0);
+    await expect(slot(page, 3)).toBeVisible();
+    await expect(slot(page, 4)).toHaveCount(0);
     await expect(slot(page, 1)).toContainText('Pilih pembayaran');
-    await expect(page.getByRole('button', { name: 'Tambah Pembayaran' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tambah Pembayaran' })).toHaveCount(0);
     await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 70.000');
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
   });
 
-  test('dua pembayaran Tunai dan Transfer BCA menjumlah sampai total lalu Bayar aktif', async ({
+  test('dua pembayaran Tunai dan Transfer menjumlah sampai total lalu Bayar aktif', async ({
     page,
   }) => {
     await toSplit(page);
@@ -840,26 +768,28 @@ test.describe('Split', () => {
     await expect(slot(page, 1)).toContainText('Rp 30.000');
     await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 40.000');
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
-    await savePart(page, 2, { channel: 'Transfer BCA', digits: '40000' });
-    await expect(slot(page, 2)).toContainText('Transfer BCA');
+    await savePart(page, 2, { channel: 'Transfer', digits: '40000' });
+    await expect(slot(page, 2)).toContainText('Transfer');
     await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
     await pay(page).click();
     await finishPaymentDialog(page);
     await openDrawerItem(page, 'Riwayat Penjualan');
     const detail = page.locator('.pos-history__detail');
-    await expect(detail).toContainText('Transfer BCA');
+    await expect(detail).toContainText('Transfer');
     await expect(detail).toContainText('Rp 40.000');
     await expect(detail).toContainText('Rp 30.000');
   });
 
-  test('Tambah Pembayaran menambah baris ketiga', async ({ page }) => {
+  test('maksimal tiga pembayaran: slot ketiga ada dan tidak ada slot keempat', async ({ page }) => {
     await toSplit(page);
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
-    await expect(slot(page, 3)).toBeVisible();
     await expect(slot(page, 3)).toContainText('Pilih pembayaran');
-    await page.getByRole('button', { name: 'Tambah Pembayaran' }).click();
-    await expect(slot(page, 4)).toBeVisible();
+    await expect(slot(page, 4)).toHaveCount(0);
+    await savePart(page, 1, { digits: '10000' });
+    await savePart(page, 2, { channel: 'EDC', digits: '10000' });
+    await savePart(page, 3, { channel: 'Transfer', digits: '10000' });
+    await expect(slot(page, 4)).toHaveCount(0);
+    await expect(page.locator('.pos-pay__part')).toHaveCount(3);
   });
 
   test('Simpan menolak nominal nol dan modal tetap terbuka', async ({ page }) => {
@@ -881,39 +811,39 @@ test.describe('Split', () => {
     await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
     await padIn(dialog, '1000');
     await dialog.getByRole('button', { name: 'Simpan' }).click();
-    await expect(dialog.getByRole('alert')).toHaveText('Pilih kanal pembayaran terlebih dahulu.');
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Pilih QRIS, Transfer, atau EDC terlebih dahulu.',
+    );
   });
 
-  test('dua baris Transfer beda kanal tersimpan terpisah dan tampil di riwayat', async ({
-    page,
-  }) => {
+  test('Transfer dan EDC tersimpan terpisah dan tampil di riwayat', async ({ page }) => {
     await toSplit(page);
-    await savePart(page, 1, { channel: 'Transfer BCA', digits: '30000' });
-    await savePart(page, 2, { channel: 'Transfer BRI', digits: '40000' });
+    await savePart(page, 1, { channel: 'Transfer', digits: '30000' });
+    await savePart(page, 2, { channel: 'EDC', digits: '40000' });
     await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
     await pay(page).click();
     await finishPaymentDialog(page);
     await openDrawerItem(page, 'Riwayat Penjualan');
     const detail = page.locator('.pos-history__detail');
     await expect(detail.locator('.pos-history__pay li')).toHaveCount(2);
-    await expect(detail).toContainText('Transfer BCA');
-    await expect(detail).toContainText('Transfer BRI');
+    await expect(detail).toContainText('Transfer');
+    await expect(detail).toContainText('EDC');
   });
 
-  test('pasangan metode dan kanal yang sama ditolak pada pembayaran lain', async ({ page }) => {
+  test('cara bayar yang sama ditolak pada pembayaran lain', async ({ page }) => {
     await toSplit(page);
-    await savePart(page, 1, { channel: 'Transfer BCA', digits: '30000' });
+    await savePart(page, 1, { channel: 'Transfer', digits: '30000' });
     await slot(page, 2).click();
     const dialog = partDialog(page, 2);
     await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
     await dialog
       .getByRole('group', { name: 'Kanal pembayaran' })
-      .getByRole('button', { name: 'Transfer BCA', exact: true })
+      .getByRole('button', { name: 'Transfer', exact: true })
       .click();
     await padIn(dialog, '1000');
     await dialog.getByRole('button', { name: 'Simpan' }).click();
     await expect(dialog.getByRole('alert')).toHaveText(
-      'Cara bayar dan kanal ini sudah dipakai pada pembayaran lain.',
+      'Cara bayar ini sudah dipakai pada pembayaran lain.',
     );
   });
 
@@ -921,7 +851,7 @@ test.describe('Split', () => {
     page,
   }) => {
     await toSplit(page);
-    await savePart(page, 1, { channel: 'Transfer BCA', digits: '30000' });
+    await savePart(page, 1, { channel: 'Transfer', digits: '30000' });
     await slot(page, 2).click();
     const dialog = partDialog(page, 2);
     await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
@@ -955,35 +885,6 @@ test.describe('Split', () => {
     await expect(slot(page, 1)).toContainText('Rp 10.000');
     await expect(slot(page, 2)).toContainText('EDC');
     await expect(slot(page, 2)).toContainText('Rp 20.000');
-  });
-
-  test('kanal QR pada Split meminta Cek Status sebelum Bayar aktif', async ({ page }) => {
-    await toSplit(page);
-    await savePart(page, 1, { digits: '30000' });
-    await slot(page, 2).click();
-    const dialog = partDialog(page, 2);
-    await dialog.getByRole('tab', { name: 'Non-Tunai' }).click();
-    await dialog
-      .getByRole('group', { name: 'Kanal pembayaran' })
-      .getByRole('button', { name: 'Gopay', exact: true })
-      .click();
-    await padIn(dialog, '40000');
-    await dialog.getByRole('button', { name: 'Simpan' }).click();
-    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
-    await expect(qr).toBeVisible();
-    await expect(qr.locator('.pos-qr__amount')).toHaveText('Rp 40.000');
-    await page.keyboard.press('Escape');
-    await expect(qr).toBeHidden();
-    await expect(slot(page, 2)).toContainText('Menunggu pembayaran');
-    await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
-    await expect(pay(page)).toHaveAttribute('aria-disabled', 'true');
-    await slot(page, 2).click();
-    await partDialog(page, 2).getByRole('button', { name: 'Simpan' }).click();
-    await expect(qr).toBeVisible();
-    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
-    await expect(qr).toBeHidden({ timeout: 5000 });
-    await expect(slot(page, 2)).toContainText('Pembayaran diterima');
-    await expect(pay(page)).toHaveAttribute('aria-disabled', 'false');
   });
 
   test('Split dan modal Pembayaran lolos axe dan target 48 px pada mode terang dan gelap', async ({
@@ -1020,7 +921,7 @@ test.describe('Split', () => {
   });
 });
 
-test.describe('Detail Barang dan Cek Stok', () => {
+test.describe('Detail Barang (diskon per satuan dan ubah harga)', () => {
   async function openDetail(page: Page, user = 'Ibu Sinta') {
     await loginPos(page, user);
     await page.locator('.pos-card__main').first().click();
@@ -1036,18 +937,19 @@ test.describe('Detail Barang dan Cek Stok', () => {
   };
   const save = (dialog: Locator) => dialog.getByRole('button', { name: 'Simpan', exact: true });
 
-  test('ketuk baris pesanan membuka Detail Barang dengan Kode Barang, Subtotal, Tenaga Penjual, Diskon, Ubah Harga, Catatan, dan Cek Stok', async ({
+  test('ketuk baris pesanan membuka Detail Barang dengan Kode Barang, Subtotal, Diskon, dan Ubah Harga saja', async ({
     page,
   }) => {
     const dialog = await openDetail(page);
     await expect(dialog.getByText('Kode Barang', { exact: true })).toBeVisible();
     await expect(dialog.locator('.pos-line__code')).toHaveText('P001');
     await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 70.000');
-    await expect(dialog.getByLabel('Tenaga Penjual')).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Berikan Diskon' })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Ubah Harga' })).toBeVisible();
-    await expect(dialog.getByRole('textbox', { name: 'Catatan' })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Cek Stok Barang' })).toBeVisible();
+    // Revisi ketiga: Tenaga Penjual, Catatan, dan Cek Stok dihilangkan.
+    await expect(dialog.getByLabel('Tenaga Penjual')).toHaveCount(0);
+    await expect(dialog.getByRole('textbox', { name: 'Catatan' })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Cek Stok Barang' })).toHaveCount(0);
     await expect(save(dialog)).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Hapus Item' })).toBeVisible();
     await expect(dialog.getByRole('radio', { name: 'SAK' })).toHaveAttribute(
@@ -1105,76 +1007,30 @@ test.describe('Detail Barang dan Cek Stok', () => {
     );
   });
 
-  test('Ubah Harga memunculkan harga asli dicoret pada baris pesanan', async ({ page }) => {
+  test('Ubah Harga tidak menampilkan harga asli maupun harga dicoret', async ({ page }) => {
     const dialog = await openDetail(page);
     await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
     await dialog.getByRole('button', { name: 'C', exact: true }).click();
     await padIn(dialog, '65000');
     await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 65.000');
+    await expect(dialog).not.toContainText('Harga asli');
     await save(dialog).click();
     await expect(dialog).toBeHidden();
     const row = page.locator('.pos-order__item').first();
-    await expect(row.locator('s')).toHaveText('70.000');
+    await expect(row.locator('s')).toHaveCount(0);
+    await expect(row.locator('.pos-order__qty')).toHaveText('QTY : 1 X 65.000');
     await expect(row.locator('.pos-order__amount')).toHaveText('Rp 65.000');
     await page.locator('.pos-bill__name').first().click();
     const again = page.getByRole('dialog', { name: 'Detail Barang' });
     await again.getByRole('button', { name: 'Ubah Harga' }).click();
-    await expect(again.getByText('Harga asli Rp 70.000')).toBeVisible();
+    await expect(again).not.toContainText('Harga asli');
+    await expect(again).not.toContainText('70.000');
     await again.getByRole('button', { name: 'Pulihkan harga asli' }).click();
     await save(again).click();
     await expect(page.locator('.pos-order__item s')).toHaveCount(0);
     await expect(page.locator('.pos-order__item .pos-order__amount').first()).toHaveText(
       'Rp 70.000',
     );
-  });
-
-  test('Cek Stok menampilkan stok Toko, Gudang, PO per satuan', async ({ page }) => {
-    await loginPos(page, 'Ibu Sinta');
-    await page
-      .locator('.pos-card', { hasText: 'LEM FOX' })
-      .locator('.pos-card__main')
-      .first()
-      .click();
-    await page.locator('.pos-bill__name').first().click();
-    const dialog = page.getByRole('dialog', { name: 'Detail Barang' });
-    await dialog.getByRole('button', { name: 'Cek Stok Barang' }).click();
-    const sheet = page.getByRole('dialog', { name: 'Cek Stok Barang' });
-    await expect(sheet).toBeVisible();
-    for (const location of ['Toko', 'Gudang', 'PO']) {
-      await expect(sheet.getByRole('rowheader', { name: location, exact: true })).toBeVisible();
-    }
-    for (const unit of ['KLG', 'LSN', 'DOS']) {
-      await expect(sheet.getByRole('columnheader', { name: unit, exact: true })).toBeVisible();
-    }
-    await expect(sheet.getByRole('row', { name: /^Toko/ }).getByRole('cell').first()).toHaveText(
-      '78,0',
-    );
-    await expect(sheet.getByRole('row', { name: /^PO/ }).getByRole('cell').first()).toHaveText(
-      '72,0',
-    );
-    await sheet.getByRole('button', { name: 'Tutup' }).click();
-    await expect(sheet).toBeHidden();
-    await expect(dialog).toBeVisible();
-  });
-
-  test('Tenaga Penjual dipilih dari frontliner dan sales dan tersimpan pada baris', async ({
-    page,
-  }) => {
-    const dialog = await openDetail(page, 'Dewi');
-    const select = dialog.getByLabel('Tenaga Penjual');
-    await expect(select.locator('option')).toHaveText([
-      'Pilih tenaga penjual',
-      'Agus',
-      'Budi Lapangan',
-    ]);
-    await select.selectOption({ label: 'Agus' });
-    await dialog.getByRole('textbox', { name: 'Catatan' }).fill('Antar sore');
-    await save(dialog).click();
-    await expect(dialog).toBeHidden();
-    await page.locator('.pos-bill__name').first().click();
-    const again = page.getByRole('dialog', { name: 'Detail Barang' });
-    await expect(again.getByLabel('Tenaga Penjual')).toHaveValue('U-5');
-    await expect(again.getByRole('textbox', { name: 'Catatan' })).toHaveValue('Antar sore');
   });
 
   test('ikon hapus membuang baris setelah konfirmasi', async ({ page }) => {
@@ -1189,17 +1045,15 @@ test.describe('Detail Barang dan Cek Stok', () => {
     await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
   });
 
-  test('diskon melebihi jumlah baris menampilkan galat dan modal tetap terbuka', async ({
-    page,
-  }) => {
+  test('diskon nominal per satuan dijepit pada harga satu satuan', async ({ page }) => {
     const dialog = await openDetail(page);
     await dialog.getByRole('button', { name: 'Berikan Diskon' }).click();
     await dialog.getByRole('radio', { name: 'Nominal' }).click();
     await padIn(dialog, '999999');
-    await save(dialog).click();
-    await expect(dialog.getByRole('alert')).toHaveText(
-      'Diskon tidak boleh melebihi jumlah barang.',
+    await expect(dialog.locator('.pos-line__panel:not([hidden]) .pos-amount__value')).toHaveText(
+      'Rp 70.000',
     );
+    await expect(dialog.locator('.pos-line__subtotal')).toHaveText('Rp 0');
     await expect(dialog).toBeVisible();
   });
 
@@ -1217,14 +1071,15 @@ test.describe('Detail Barang dan Cek Stok', () => {
     await expect(dialog.getByRole('alert')).toHaveText('Jumlah harus lebih dari 0.');
   });
 
-  test('Frontliner melihat catatan dan stok tetapi tidak diskon atau ubah harga', async ({
+  test('Frontliner hanya mengatur jumlah dan satuan: tanpa diskon, ubah harga, catatan, atau stok', async ({
     page,
   }) => {
     const dialog = await openDetail(page, 'Agus');
-    await expect(dialog.getByRole('textbox', { name: 'Catatan' })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Cek Stok Barang' })).toBeVisible();
+    await expect(dialog.getByRole('textbox', { name: 'Catatan' })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Cek Stok Barang' })).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Berikan Diskon' })).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Ubah Harga' })).toHaveCount(0);
+    await expect(dialog.getByRole('textbox', { name: 'Jumlah' })).toBeVisible();
   });
 
   test('Detail Barang lolos axe dan target 48 px pada mode terang dan gelap', async ({ page }) => {
@@ -1267,7 +1122,9 @@ test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () 
   }
   const save = (dialog: Locator) => dialog.getByRole('button', { name: 'Simpan', exact: true });
 
-  test('baris pesanan menampilkan harga dicoret dan tanda diskon', async ({ page }) => {
+  test('baris pesanan menampilkan harga berlaku (tanpa coretan) dan tanda diskon', async ({
+    page,
+  }) => {
     const dialog = await openDetail(page);
     await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
     await dialog.getByRole('button', { name: 'C', exact: true }).click();
@@ -1278,8 +1135,9 @@ test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () 
     await save(dialog).click();
     await expect(dialog).toBeHidden();
     const row = page.locator('.pos-order__item').first();
-    await expect(row.locator('s')).toHaveText('70.000');
+    await expect(row.locator('s')).toHaveCount(0);
     await expect(row.locator('.pos-order__qty')).toContainText('65.000');
+    await expect(row.locator('.pos-order__qty')).not.toContainText('70.000');
     await expect(row.locator('.pos-order__flag')).toHaveText('-10%');
     await expect(row.locator('.pos-order__amount')).toHaveText('Rp 58.500');
   });
@@ -1375,7 +1233,7 @@ test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () 
 test.describe('Open Bill', () => {
   async function openBills(page: Page, user = 'Dewi'): Promise<void> {
     await loginPos(page, user);
-    await openOrderMenu(page, 'Panggil Bill');
+    await openDrawerItem(page, 'Open Bill');
     await expect(page).toHaveURL(/#\/pos\/bill$/);
   }
   const card = (page: Page, number: string) => page.locator('.pos-bill-card', { hasText: number });
@@ -1392,30 +1250,39 @@ test.describe('Open Bill', () => {
     for (let index = 0; index < 3; index += 1) {
       await first.click();
     }
-    await openOrderMenu(page, 'Tahan Bill');
-    await openOrderMenu(page, 'Panggil Bill');
+    await openOrderMenu(page, 'Open Bill');
+    await openDrawerItem(page, 'Open Bill');
     await expect(page).toHaveURL(/#\/pos\/bill$/);
     await expect(card(page, 'B-0004')).toBeVisible();
   }
 
-  test('kartu bill menampilkan Nomor, Nama Pelanggan, Dibuat oleh, Waktu, dan dua barang pertama dengan + N Barang Lainnya', async ({
+  test('kartu bill menampilkan Nomor, Nama Pelanggan, Dibuat oleh, Waktu, dan satu barang dengan + N Barang Lainnya', async ({
     page,
   }) => {
     await openBills(page);
     await expect(page.locator('.pos-bill-card')).toHaveCount(3);
     const long = card(page, 'B-0003');
-    await expect(long.locator('.pos-bill-card__number')).toHaveText('B-0003');
-    await expect(long.locator('.pos-bill-card__customer')).toHaveText('Umum');
-    await expect(long).toContainText('Dibuat oleh Agus');
-    await expect(long.locator('.pos-bill-card__time')).toHaveText(/\d{2}[.:]\d{2}/);
-    await expect(long.locator('.pos-bill-card__lines li')).toHaveCount(2);
-    await expect(long).toContainText('+ 2 Barang Lainnya');
+    const info = long.locator('.pos-bill-card__info');
+    await expect(info.nth(0)).toContainText('Nomor Open Bill');
+    await expect(info.nth(0)).toContainText('B-0003');
+    await expect(info.nth(1)).toContainText('Umum');
+    await expect(info.nth(2)).toContainText('Dibuat Oleh');
+    await expect(info.nth(2)).toContainText('Agus');
+    await expect(info.nth(3)).toContainText(/\d{2}[.:]\d{2}/);
+    // Hanya satu barang yang tampak; sisanya lewat "+ N Barang Lainnya".
+    await expect(long.locator('.pos-bill-card__line')).toHaveCount(1);
+    await expect(long).toContainText('+ 3 Barang Lainnya');
     const middle = card(page, 'B-0002');
-    await expect(middle.locator('.pos-bill-card__customer')).not.toHaveText('Umum');
-    await expect(middle).toContainText('+ 1 Barang Lainnya');
+    await expect(middle.locator('.pos-bill-card__info').nth(1)).not.toContainText('Umum');
+    await expect(middle).toContainText('+ 2 Barang Lainnya');
     const short = card(page, 'B-0001');
-    await expect(short.locator('.pos-bill-card__lines li')).toHaveCount(2);
-    await expect(short).not.toContainText('Barang Lainnya');
+    await expect(short.locator('.pos-bill-card__line')).toHaveCount(1);
+    await expect(short).toContainText('+ 1 Barang Lainnya');
+    // Klik "+ N Barang Lainnya" memperlihatkan seluruh barang.
+    await long.getByRole('button', { name: /Barang Lainnya/ }).click();
+    await expect(long.locator('.pos-bill-card__line')).toHaveCount(4);
+    await long.getByRole('button', { name: 'Tutup' }).click();
+    await expect(long.locator('.pos-bill-card__line')).toHaveCount(1);
   });
 
   test('menu titik tiga berisi Ubah, Split Bill, Merge Bill, Batalkan', async ({ page }) => {
@@ -1604,6 +1471,9 @@ test.describe('Selesai Shift, Karyawan, dan laporan shift', () => {
     await sellFirstProduct(page, 'qris');
     const dialog = await endShift(page, '565000');
     await dialog.getByRole('button', { name: 'Akhiri Shift' }).click();
+    // Akhiri Shift langsung keluar; masuk lagi untuk membuka layar Karyawan.
+    await expect(page).toHaveURL(/#\/pos$/);
+    await loginPosRaw(page, 'Ibu Sinta');
     await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
   }
 
@@ -1626,7 +1496,8 @@ test.describe('Selesai Shift, Karyawan, dan laporan shift', () => {
     await expect(dialog.locator('.pos-shiftsum__diff')).toBeInViewport({ ratio: 1 });
     await expect(dialog.getByRole('button', { name: 'Akhiri Shift' })).toBeInViewport({ ratio: 1 });
     await dialog.getByRole('button', { name: 'Akhiri Shift' }).click();
-    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    await expect(page).toHaveURL(/#\/pos$/);
+    await expect(page.getByRole('radio', { name: /Ibu Sinta/ })).toBeVisible();
   });
 
   test('shift yang ditutup tanpa hitungan menampilkan Belum dihitung pada Selisih Tunai', async ({
@@ -1635,7 +1506,8 @@ test.describe('Selesai Shift, Karyawan, dan laporan shift', () => {
     await loginPos(page, 'Ibu Sinta');
     const dialog = await endShift(page);
     await dialog.getByRole('button', { name: 'Akhiri Shift' }).click();
-    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    await expect(page).toHaveURL(/#\/pos$/);
+    await loginPosRaw(page, 'Ibu Sinta');
     await toEmployees(page);
     await employee(page, 'Ibu Sinta').click();
     await page.locator('.pos-employee-shift').first().click();
@@ -1848,11 +1720,15 @@ test.describe('Biaya sesuai PDF', () => {
     await toExpenses(page);
     await expect(page.locator('.pos-expense-row')).toHaveCount(0);
     await expect(page.getByText('Belum ada biaya tercatat.')).toBeVisible();
-    await addExpense(page, { kind: 'Parkir', digits: '5000', note: 'Parkir gudang' });
-    await addExpense(page, { kind: 'Bensin armada', digits: '120000' });
+    await addExpense(page, {
+      kind: 'Uang Makan Karyawan',
+      digits: '5000',
+      note: 'Makan siang gudang',
+    });
+    await addExpense(page, { kind: 'Bensin Armada', digits: '120000' });
     const rows = page.locator('.pos-expense-row');
     await expect(rows).toHaveCount(2);
-    await expect(rows.first()).toContainText('Bensin armada');
+    await expect(rows.first()).toContainText('Bensin Armada');
     await expect(rows.first()).toContainText('Rp 120.000');
     await rows.nth(1).click();
     const detail = page.locator('.pos-split__detail');
@@ -1869,9 +1745,9 @@ test.describe('Biaya sesuai PDF', () => {
     }
     await expect(detail.locator('[data-row="nomor"]')).toContainText('BY-');
     await expect(detail.locator('[data-row="dibuat-oleh"]')).toContainText('Dewi');
-    await expect(detail.locator('[data-row="jenis"]')).toContainText('Parkir');
+    await expect(detail.locator('[data-row="jenis"]')).toContainText('Uang Makan Karyawan');
     await expect(detail.locator('[data-row="nominal"]')).toContainText('Rp 5.000');
-    await expect(detail.locator('[data-row="catatan"]')).toContainText('Parkir gudang');
+    await expect(detail.locator('[data-row="catatan"]')).toContainText('Makan siang gudang');
     await expect(detail.getByRole('button', { name: 'Cetak Struk' })).toBeVisible();
     const search = page.getByRole('searchbox', { name: 'Cari transaksi' });
     await search.fill('zzz');
@@ -1880,10 +1756,10 @@ test.describe('Biaya sesuai PDF', () => {
     await expect(rows).toHaveCount(1);
     await search.fill('gudang');
     await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toContainText('Parkir');
+    await expect(rows.first()).toContainText('Uang Makan Karyawan');
   });
 
-  test('Catat Biaya: dropdown jenis dari proposal, nominal lewat papan angka, penghitung 0/144', async ({
+  test('Catat Biaya: lima jenis dari klien, nominal lewat papan angka, penghitung 0/144', async ({
     page,
   }) => {
     await loginPos(page, 'Dewi');
@@ -1891,13 +1767,14 @@ test.describe('Biaya sesuai PDF', () => {
     const dialog = await openForm(page);
     await dialog.locator('.dropdown__button').click();
     await expect(dialog.getByRole('option')).toHaveText([
-      'Bensin armada',
-      'Parkir',
-      'Bayar ekspedisi',
-      'Lainnya',
+      'Bensin Armada',
+      'Bayar Ekspedisi',
+      'Uang Makan Karyawan',
+      'Upah Bongkar Muat',
+      'Biaya Lainnya',
     ]);
-    await dialog.getByRole('option', { name: 'Parkir', exact: true }).click();
-    await expect(dialog.locator('.dropdown__button')).toContainText('Parkir');
+    await dialog.getByRole('option', { name: 'Uang Makan Karyawan', exact: true }).click();
+    await expect(dialog.locator('.dropdown__button')).toContainText('Uang Makan Karyawan');
     await expect(dialog.locator('.pos-amount__value')).toHaveText('');
     await typeAmount(page, '25000');
     await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 25.000');
@@ -1951,7 +1828,7 @@ test.describe('Biaya sesuai PDF', () => {
     });
     await expect(dialog.locator('.pos-expense-form__file-error')).toHaveText('');
     await expect(dialog.locator('.pos-expense-form__file')).toContainText('faktur.pdf');
-    await pickKind(dialog, 'Parkir');
+    await pickKind(dialog, 'Uang Makan Karyawan');
     await typeAmount(page, '5000');
     await dialog.getByRole('button', { name: 'Simpan', exact: true }).click();
     await page
@@ -1968,12 +1845,12 @@ test.describe('Biaya sesuai PDF', () => {
     await loginPos(page, 'Dewi');
     await toExpenses(page);
     const dialog = await openForm(page);
-    await pickKind(dialog, 'Parkir');
+    await pickKind(dialog, 'Uang Makan Karyawan');
     await typeAmount(page, '5000');
     await dialog.getByRole('button', { name: 'Simpan', exact: true }).click();
     const done = page.getByRole('dialog', { name: 'Transaksi Berhasil' });
     await expect(done).toBeVisible();
-    await expect(done).toContainText('Parkir');
+    await expect(done).toContainText('Uang Makan Karyawan');
     await expect(done).toContainText('Rp 5.000');
     await expect(dialog).toBeHidden();
     await done.getByRole('button', { name: 'Cetak Struk' }).click();
@@ -1986,7 +1863,7 @@ test.describe('Biaya sesuai PDF', () => {
   test('biaya mengurangi saldo laci pada ringkasan shift', async ({ page }) => {
     await loginPos(page, 'Dewi');
     await toExpenses(page);
-    await addExpense(page, { kind: 'Parkir', digits: '5000' });
+    await addExpense(page, { kind: 'Uang Makan Karyawan', digits: '5000' });
     await page.getByRole('button', { name: 'Menu' }).click();
     await page
       .getByRole('dialog', { name: 'Toko Budiannor' })
@@ -2003,7 +1880,11 @@ test.describe('Biaya sesuai PDF', () => {
   test('Biaya lolos axe mode terang dan gelap', async ({ page }) => {
     await loginPos(page, 'Dewi');
     await toExpenses(page);
-    await addExpense(page, { kind: 'Parkir', digits: '5000', note: 'Parkir gudang' });
+    await addExpense(page, {
+      kind: 'Uang Makan Karyawan',
+      digits: '5000',
+      note: 'Makan siang gudang',
+    });
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       await page.evaluate(() => document.fonts.ready);
@@ -2457,7 +2338,7 @@ test.describe('susunan kartu barang seperti referensi', () => {
     expect((photo?.y ?? 0) + (photo?.height ?? 0)).toBeLessThanOrEqual((name?.y ?? 0) + 1);
     expect((name?.y ?? 0) + (name?.height ?? 0)).toBeLessThanOrEqual((price?.y ?? 0) + 1);
     expect(photo?.width ?? 0).toBeGreaterThan((card?.width ?? 0) * 0.75);
-    expect(photo?.height ?? 0).toBeGreaterThanOrEqual(120);
+    expect(photo?.height ?? 0).toBeGreaterThanOrEqual(100);
     // Foto berada di dalam kartu dengan jarak, bukan menempel ke tepi.
     expect((photo?.x ?? 0) - (card?.x ?? 0)).toBeGreaterThanOrEqual(8);
     // Blok stok menempel di dasar kartu pada ketiga kartu satu baris.

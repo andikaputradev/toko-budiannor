@@ -20,7 +20,16 @@ describe('Tema Back-Office', () => {
     expect(root.dataset['posScheme']).toBe('terang');
   });
 
-  it('mendukung seluruh 6 palet POS', () => {
-    expect(POS_THEMES).toEqual(['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu']);
+  it('mendukung seluruh 8 palet POS', () => {
+    expect(POS_THEMES).toEqual([
+      'oranye',
+      'terakota',
+      'teal',
+      'biru',
+      'hijau',
+      'ungu',
+      'merah',
+      'kuning',
+    ]);
   });
 });

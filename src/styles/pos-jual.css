@@ -42,7 +42,8 @@
   cursor: pointer;
 }
 
-.pos-customer-btn {
+.pos-customer-btn,
+.pos-customer-compact {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -56,6 +57,17 @@
   color: var(--color-text-primary);
   font: inherit;
   cursor: pointer;
+}
+
+/* Tombol ringkas hanya dipakai di bawah 900 px, saat panel pesanan menjadi lembar yang tertutup. */
+.pos-customer-compact {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .pos-customer-compact {
+    display: inline-flex;
+  }
 }
 
 .pos-customer-btn__avatar,
@@ -74,7 +86,7 @@
 
 .pos-customer-btn__text {
   overflow: hidden;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: var(--primitive-font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -188,16 +200,20 @@
   width: 100%;
 }
 
-/* Kartu barang: foto besar di atas, nama rata kiri, daftar harga beraksen, dan stok di dasar kartu. */
+/* Kartu barang ringkas: foto 112 px, nama satu baris dengan kode, baris harga rapat, dan stok tiga
+   kolom (Toko, Gudang, No Rak). Seluruh isi atas kartu adalah satu tombol; baris harga hanya
+   penanda satuan, jadi target sentuh kartu tetap besar. */
 /* Baris selebar isi (min-content): dengan tinggi kontainer tetap, baris auto berisi kartu overflow
    tersembunyi menyusut ke ruang bebas; overflow clip di kartu menjaga ukuran minimum berbasis isi. */
 .pos-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
   grid-auto-rows: min-content;
+  gap: var(--primitive-space-2);
   align-items: stretch;
 }
 
 .pos-card {
+  position: relative;
   gap: 0;
   padding: 0;
   overflow: clip;
@@ -211,9 +227,10 @@
 
 .pos-card__main {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--primitive-space-2);
-  padding: var(--primitive-space-3) var(--primitive-space-3) 0;
+  gap: var(--primitive-space-1);
+  padding: var(--primitive-space-2) var(--primitive-space-3) 0;
   border: 0;
   background: none;
   color: var(--color-text-primary);
@@ -222,9 +239,18 @@
   cursor: pointer;
 }
 
+.pos-card__main:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: -3px;
+}
+
 .pos-card__main .pos-photo {
-  height: 148px;
+  height: 112px;
   object-fit: contain;
+}
+
+.pos-card__main .pos-photo--initials {
+  font-size: 44px;
 }
 
 .pos-card__main .pos-photo--img {
@@ -233,26 +259,34 @@
   background: var(--color-bg-surface);
 }
 
-.pos-card__name {
-  min-height: 2.7em;
-  font-size: 15px;
-  font-weight: var(--primitive-font-weight-medium);
-  line-height: 1.35;
-  text-align: left;
-  text-transform: none;
+.pos-card__head {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.pos-card__table {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  margin-top: var(--primitive-space-2);
+.pos-card__name {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 1.3;
+  text-align: left;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.pos-card__code {
+  display: block;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .pos-card__prices {
   display: flex;
   flex-direction: column;
-  padding: 0 var(--primitive-space-3);
+  margin-top: var(--primitive-space-1);
 }
 
 .pos-card__price {
@@ -260,20 +294,13 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--primitive-space-2);
-  min-height: var(--size-touch-target-min);
-  padding: 0;
-  border: 0;
+  min-height: 34px;
   border-top: 1px solid var(--color-border-default);
-  border-radius: 0;
-  background: none;
-  color: var(--color-text-primary);
-  font: inherit;
   font-size: 13px;
-  cursor: pointer;
 }
 
-.pos-card__price:active {
-  background: var(--color-bg-pressed);
+.pos-card__price:hover {
+  background: var(--color-bg-page);
 }
 
 .pos-card__unit {
@@ -285,7 +312,7 @@
 .pos-card__amount {
   margin-left: auto;
   color: var(--color-accent-default);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: var(--primitive-font-weight-semibold);
   white-space: nowrap;
 }
@@ -294,11 +321,11 @@
   display: flex;
   flex-direction: row;
   gap: var(--primitive-space-2);
-  margin: auto 0 0;
-  padding: var(--primitive-space-2) var(--primitive-space-3);
+  margin: 0;
+  padding: 6px var(--primitive-space-3);
   border-top: 1px solid var(--color-border-default);
   background: var(--color-bg-page);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .pos-card__stockrow {
@@ -318,9 +345,51 @@
   font-weight: var(--primitive-font-weight-semibold);
 }
 
+/* Pita PROMO di pojok kiri atas kartu. */
+.pos-card__promo {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  z-index: 1;
+  padding: 2px 10px 2px 8px;
+  border-radius: 0 4px 4px 0;
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+  font-size: 11px;
+  font-weight: var(--primitive-font-weight-bold);
+  letter-spacing: 0.06em;
+}
+
+/* Stok toko kosong: foto dipudarkan, kartu tidak bisa dimasukkan ke keranjang (hanya peringatan). */
+.pos-card--empty {
+  border-style: dashed;
+}
+
+.pos-card--empty .pos-photo {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.pos-card--empty .pos-card__main {
+  cursor: not-allowed;
+}
+
+.pos-card__soldout {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: var(--radius-chip);
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-fg);
+  font-size: 11px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
 @media (max-width: 599px) {
   .pos-card__main .pos-photo {
-    height: 120px;
+    height: 96px;
   }
 }
 
@@ -391,6 +460,44 @@
   margin: 0;
 }
 
+.pos-order__line {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 14px;
+}
+
+.pos-order__line--discount {
+  color: var(--color-status-success-fg);
+}
+
+.pos-bill-panel > .pos-customer-btn {
+  flex: none;
+  width: 100%;
+  max-width: none;
+  min-height: var(--size-touch-target-min);
+}
+
+.pos-bill-panel .pos-order__title {
+  flex: none;
+}
+
+.pos-order__item .pos-bill__name {
+  flex-wrap: nowrap;
+}
+
+.pos-bill__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-bill__code {
+  flex: none;
+}
+
 .pos-order__footer {
   display: flex;
   flex: none;
@@ -448,7 +555,8 @@
 .modal:has(.pos-line) {
   display: flex;
   flex-direction: column;
-  width: min(560px, 94vw);
+  width: min(860px, 96vw);
+  padding: var(--primitive-space-4) var(--primitive-space-6);
   overflow: hidden;
 }
 
@@ -458,30 +566,55 @@
   overflow: auto;
 }
 
+/* Detail Barang: kolom kiri (barang, jumlah, satuan) dan kolom kanan (diskon atau ubah harga) pada
+   tinggi tetap sehingga tidak ada scroll bar. */
 .pos-line {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--primitive-space-4);
+  align-items: start;
+}
+
+.modal:has(.pos-line--single) {
+  width: min(480px, 96vw);
+}
+
+.pos-line--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pos-line__main,
+.pos-line__side {
+  display: grid;
   gap: var(--primitive-space-3);
+  align-content: start;
 }
 
 .pos-line__head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--primitive-space-3);
   align-items: start;
 }
 
 .pos-line__info p,
-.pos-line__total p {
+.pos-line__sum {
   margin: 0;
 }
 
-.pos-line__name {
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
+.pos-line__sum {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--primitive-space-2);
+  border-top: 1px solid var(--color-border-default);
 }
 
-.pos-line__total {
-  text-align: right;
+.pos-line__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .pos-line__subtotal {
@@ -500,6 +633,7 @@
 .pos-line__kinds .pos-unit__unit {
   flex: 1 1 96px;
   min-width: 0;
+  height: 48px;
 }
 
 .pos-line__qty {
@@ -527,60 +661,74 @@
   color: var(--color-status-danger-fg);
 }
 
-.pos-line__section {
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-control);
+.pos-line__side {
+  min-height: 336px;
+}
+
+.pos-line__tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
 }
 
 .pos-line__toggle {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: var(--primitive-space-3);
+  display: flex;
+  gap: var(--primitive-space-2);
   align-items: center;
-  width: 100%;
-  min-height: 56px;
-  padding: 0 var(--primitive-space-3);
-  border: 0;
-  background: none;
+  justify-content: center;
+  height: 48px;
+  padding: 0 var(--primitive-space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
   color: var(--color-text-primary);
   font: inherit;
   font-weight: var(--primitive-font-weight-semibold);
-  text-align: left;
   cursor: pointer;
 }
 
+.pos-line__toggle[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--chip-selected-bg);
+  color: var(--chip-selected-text);
+}
+
+.pos-line__toggle span {
+  white-space: nowrap;
+}
+
 .pos-line__hint {
-  color: var(--color-accent-default);
+  font-weight: var(--primitive-font-weight-regular);
 }
 
-.pos-line__toggle .icon {
-  transition: transform 0.15s ease;
+.pos-line__hint:empty {
+  display: none;
 }
 
-.pos-line__toggle[aria-expanded='true'] .icon {
-  transform: rotate(180deg);
+.pos-line__panels {
+  display: grid;
 }
 
 .pos-line__panel {
   display: grid;
-  gap: var(--primitive-space-3);
-  padding: 0 var(--primitive-space-3) var(--primitive-space-3);
+  gap: var(--primitive-space-2);
 }
 
 .pos-line__panel[hidden],
-.pos-line__original[hidden],
+.pos-line__empty[hidden],
+.pos-line__hint-text[hidden],
 .pos-line .btn[hidden] {
   display: none;
 }
 
-.pos-line__original {
-  margin: 0;
+.pos-line__empty {
+  align-self: center;
+  margin: var(--primitive-space-8) 0;
+  text-align: center;
 }
 
-.pos-line__note {
-  width: 100%;
-  min-height: 64px;
-  resize: vertical;
+.pos-line__hint-text {
+  margin: 0;
 }
 
 .pos-line__error {
@@ -602,45 +750,56 @@
 
 .pos-line__foot .btn {
   min-width: 120px;
-  height: 56px;
+  height: 48px;
 }
 
-.pos-stock {
+@media (max-width: 599px) {
+  .pos-line {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-line__side {
+    min-height: 0;
+  }
+}
+
+/* Modal Diskon Transaksi: pilihan jenis dan ringkasan di kiri, papan nominal di kanan. */
+.modal:has(.pos-bdisc) {
+  width: min(720px, 94vw);
+}
+
+.pos-bdisc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--primitive-space-4);
+  align-items: start;
+}
+
+.pos-bdisc__info {
   display: grid;
   gap: var(--primitive-space-3);
 }
 
-.pos-stock__name {
+.pos-bdisc__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   margin: 0;
 }
 
-.pos-stock__scroll {
-  overflow-x: auto;
+.pos-bdisc__row--total {
+  padding-top: var(--primitive-space-2);
+  border-top: 1px solid var(--color-border-default);
+  font-weight: var(--primitive-font-weight-semibold);
 }
 
-.pos-stock__table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.pos-stock__table th,
-.pos-stock__table td {
-  padding: var(--primitive-space-2) var(--primitive-space-3);
-  border-bottom: 1px solid var(--color-border-default);
-  text-align: right;
-}
-
-.pos-stock__table th:first-child {
-  text-align: left;
+.pos-bdisc__value--total {
+  color: var(--color-accent-default);
+  font-size: 20px;
 }
 
 @media (max-width: 599px) {
-  .pos-line__head {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .pos-line__info {
-    grid-column: 1 / -1;
-    order: 3;
+  .pos-bdisc {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

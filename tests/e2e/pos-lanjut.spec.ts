@@ -34,17 +34,21 @@ async function lineLengths(page: Page): Promise<number[]> {
 test.describe('POS-05 sampai POS-10', () => {
   test('F-04: tahan bill, cetak struk draf 58 dan 80 mm, lalu panggil bill', async ({ page }) => {
     await login(page, 'Dewi');
-    await page.locator('.pos-card__main').first().click();
-    await page.locator('.pos-card__main').nth(1).click();
-    await openOrderMenu(page, 'Tahan Bill');
+    await page.locator('.pos-card__name').nth(0).click();
+    await page.locator('.pos-card__name').nth(1).click();
+    await openOrderMenu(page, 'Open Bill');
     await expect(page.getByText('Bill B-0004 ditahan.')).toBeVisible();
     await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
 
-    await page.locator('.pos-card__main').nth(2).click();
-    await openOrderMenu(page, 'Panggil Bill');
+    // Pesanan berjalan belum kosong: memanggil bill dari daftar Open Bill ditolak.
+    await page.locator('.pos-card__name').nth(2).click();
+    await openDrawerItem(page, 'Open Bill');
+    await page.getByRole('button', { name: 'Opsi bill B-0004' }).click();
+    await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();
     await expect(
       page.getByText('Bill saat ini belum selesai. Tahan dahulu agar tidak hilang.'),
     ).toBeVisible();
+    await openDrawerItem(page, 'Pesanan Baru');
     await page.locator('.pos-bill__name').first().click();
     await page.getByRole('button', { name: 'Hapus Item' }).click();
     await page
@@ -53,7 +57,7 @@ test.describe('POS-05 sampai POS-10', () => {
       .getByRole('button', { name: 'Hapus', exact: true })
       .click();
 
-    await openOrderMenu(page, 'Panggil Bill');
+    await openDrawerItem(page, 'Open Bill');
     await expect(page).toHaveURL(/#\/pos\/bill$/);
     const rows = page.locator('.pos-bill-card');
     await expect(rows).toHaveCount(4);
@@ -87,7 +91,9 @@ test.describe('POS-05 sampai POS-10', () => {
     await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();
     await expect(page).toHaveURL(/#\/pos\/jual$/);
     await expect(page.locator('.pos-order__item')).toHaveCount(2);
-    await openOrderMenu(page, 'Panggil Bill');
+    await openDrawerItem(page, 'Open Bill');
+    await page.getByRole('button', { name: 'Opsi bill B-0001' }).click();
+    await page.getByRole('menuitem', { name: 'Ubah', exact: true }).click();
     await expect(page.getByText('Bill saat ini belum selesai.')).toBeVisible();
   });
 
@@ -103,7 +109,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await expect(page.locator('.pos-bill-card')).toHaveCount(2);
   });
 
-  test('F-05: offline dari Panel Simulasi, stok negatif, antrean, lalu sinkronisasi', async ({
+  test('F-05: offline dari Panel Simulasi, antrean, lalu sinkronisasi (stok toko membatasi jual)', async ({
     page,
   }) => {
     await login(page, 'Dewi');
@@ -116,9 +122,14 @@ test.describe('POS-05 sampai POS-10', () => {
 
     await page.locator('.pos-card__main').first().click();
     await page.locator('.pos-bill__name').first().click();
+    // Jumlah di atas stok toko (28 sak) ditolak: stok tidak pernah menjadi negatif dari POS.
     await page.getByRole('textbox', { name: 'Jumlah' }).fill('9999');
     await page.getByRole('button', { name: 'Simpan', exact: true }).click();
-    await expect(page.getByText('Stok kurang')).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Detail Barang' }).getByRole('alert')).toHaveText(
+      'Jumlah melebihi stok toko.',
+    );
+    await page.getByRole('textbox', { name: 'Jumlah' }).fill('2');
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await page.getByRole('button', { name: /^Bayar/ }).click();
     await page.getByRole('button', { name: 'Uang Pas' }).click();
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
@@ -131,8 +142,7 @@ test.describe('POS-05 sampai POS-10', () => {
     await expect(page.locator('.pos-status__queue tbody tr')).toHaveCount(4);
     await expect(page.locator('.pos-sync--menunggu')).toHaveCount(4);
     await expect(page.locator('.pos-status-card__count')).toHaveText('4');
-    await expect(page.locator('.pos-status__negative')).toContainText('SEMEN GRESIK 40KG');
-    await expect(page.locator('.pos-status__negative')).toContainText('Ditinjau (negatif)');
+    await expect(page.locator('.pos-status__negative')).not.toContainText('Ditinjau (negatif)');
     await expect(page.locator('.pos-status-card--connection')).toHaveClass(/is-offline/);
 
     await page.getByRole('button', { name: 'Sinkronkan Sekarang' }).click();
@@ -217,12 +227,12 @@ test.describe('POS-05 sampai POS-10', () => {
     await save.click();
     await expect(dialog.getByText('Jumlah harus lebih dari 0.')).toBeVisible();
     await dialog.locator('.dropdown__button').click();
-    await dialog.getByRole('option', { name: 'Lainnya', exact: true }).click();
+    await dialog.getByRole('option', { name: 'Biaya Lainnya', exact: true }).click();
     await pad('5000');
     await save.click();
     await expect(dialog.getByText('Keterangan wajib diisi untuk jenis Lainnya.')).toBeVisible();
     await dialog.locator('.dropdown__button').click();
-    await dialog.getByRole('option', { name: 'Parkir', exact: true }).click();
+    await dialog.getByRole('option', { name: 'Uang Makan Karyawan', exact: true }).click();
     await dialog.locator('.pos-amount').getByRole('button', { name: 'C', exact: true }).click();
     await pad('9999999');
     await save.click();

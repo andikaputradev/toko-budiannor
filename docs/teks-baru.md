@@ -1862,3 +1862,50 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1852: "Pilihan belum diterapkan.". Kunci tmsBelumDiterapkan.
 - TB-1853: "Pilihan ini sama dengan tampilan yang sedang dipakai.". Kunci tmsSudahDiterapkan.
 - TB-1854: "Pilih warna aksen". Kunci tmsPaletAria.
+- TB-1855: "Jumlah melebihi stok toko.". Kunci jumlahMelebihiStokToko.
+- TB-1856: "Stok {nama} kosong. Barang tidak bisa dimasukkan ke keranjang.". Kunci stokBarangKosong.
+- TB-1857: "Stok toko {nama} hanya tersisa {jumlah}.". Kunci stokTokoTerbatas.
+- TB-1858: "Stok kosong". Kunci stokKosongTanda.
+- TB-1859: "No Rak". Kunci stokNoRak.
+- TB-1860: "Toko: {toko} Gudang: {gudang} No Rak: {rak}". Kunci stokTokoModal.
+- TB-1861: "Diskon Transaksi". Kunci menuDiskonTransaksi.
+- TB-1862: "Mulai Pesanan Baru". Kunci menuPesananBaru.
+- TB-1863: "Konfirmasi Pesanan Baru". Kunci pesananBaruJudul.
+- TB-1864: "Barang yang ada di keranjang tidak akan tersimpan.". Kunci pesananBaruIsi.
+- TB-1865: "Mulai Baru". Kunci pesananBaruLanjut.
+- TB-1866: "Pesanan baru dimulai.". Kunci pesananBaruDimulai.
+- TB-1867: "Nilai diskon transaksi". Kunci diskonTransaksiNilai.
+- TB-1868: "Diskon transaksi diterapkan.". Kunci diskonTransaksiDiterapkan.
+- TB-1869: "Hapus Diskon". Kunci hapusDiskon.
+- TB-1870: "Masukkan Catatan (Opsional)". Kunci catatanPembayaran.
+- TB-1871: "Pecahan uang". Kunci pecahanUang.
+- TB-1872: "Potongan per satuan, dikali jumlah barang.". Kunci diskonPerSatuanPetunjuk.
+- TB-1873: "-{nilai}/{satuan}". Kunci diskonTandaNominalSatuan.
+- TB-1874: "Pilih Berikan Diskon atau Ubah Harga.". Kunci pilihDiskonAtauHarga.
+- TB-1875: "Shift selesai. Anda keluar dari kasir.". Kunci shiftSelesaiKeluar.
+- TB-1876: "Bensin Armada". Kunci biayaBensin.
+- TB-1877: "Bayar Ekspedisi". Kunci biayaEkspedisi.
+- TB-1878: "Uang Makan Karyawan". Kunci biayaMakan.
+- TB-1879: "Upah Bongkar Muat". Kunci biayaBongkar.
+- TB-1880: "Biaya Lainnya". Kunci biayaLainnya.
+- TB-1881: "Merah". Kunci temaMerah.
+- TB-1882: "Kuning". Kunci temaKuning.
+- TB-1883: "Nilai diskon per satuan (dikali jumlah)". Kunci diskonPerSatuanLabel.
+- TB-1884: "Nominal Penerimaan". Kunci nominalPenerimaan.
+- TB-1885: "Pilih QRIS, Transfer, atau EDC terlebih dahulu.". Kunci pilihCaraNonTunai.
+- TB-1886: "Split Payment dibatasi tiga pembayaran.". Kunci splitMaksimalTiga.
+- TB-1887: "Nomor Open Bill". Kunci nomorOpenBill.
+- TB-1888: "Waktu Open Bill". Kunci waktuOpenBill.
+- TB-1889: "Informasi Retur". Kunci infoRetur.
+- TB-1890: "Nomor Retur". Kunci nomorRetur.
+- TB-1891: "Penjualan Asal". Kunci penjualanAsal.
+- TB-1892: "Foto Bukti Retur Barang dan Jasa". Kunci fotoBuktiReturBarang.
+- TB-1893: "Tanpa foto". Kunci tanpaFoto.
+- TB-1894: "Nilai Barang Retur". Kunci nilaiBarangRetur.
+- TB-1895: "Total Uang Dikembalikan". Kunci totalUangDikembalikan.
+- TB-1896: "Tanpa pengembalian uang". Kunci tanpaPengembalianUang.
+- TB-1897: "Riwayat Retur". Kunci riwayatRetur.
+- TB-1898: "Tanggal Retur". Kunci tanggalRetur.
+- TB-1899: "Cara bayar ini sudah dipakai pada pembayaran lain.". Kunci pembayaranSudahAda.
+- TB-1900: "Bill {sumber} digabung ke {tujuan}. Diskon Transaksi bill {sumber} tidak ikut digabung.". Kunci billDigabungTanpaDiskon.
+- TB-1901: "Diskon Transaksi dihapus karena tidak lagi sesuai dengan isi pesanan.". Kunci diskonTransaksiDibuang.

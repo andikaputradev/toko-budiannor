@@ -121,17 +121,17 @@ test.describe('kerangka', () => {
     expect(await page.evaluate(() => document.documentElement.dataset['posTheme'])).toBe('teal');
   });
 
-  test('chip Shift Dimulai, lencana Open Bill, dan Selesai Shift', async ({ page }) => {
+  test('lencana Open Bill dan Selesai Shift yang langsung keluar', async ({ page }) => {
     await loginPos(page);
-    await expect(page.locator('.pos-shiftchip')).toHaveText('Shift Dimulai');
     await expect(page.locator('.pos-billlink .pos-badge')).toHaveText('3');
     await page.getByRole('button', { name: 'Menu' }).click();
     await page.getByRole('button', { name: 'Selesai Shift' }).click();
     const summary = page.getByRole('dialog', { name: 'Selesai Shift' });
     await expect(summary).toContainText('Rp 500.000');
     await summary.getByRole('button', { name: 'Akhiri Shift' }).click();
-    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
-    await expect(page.locator('.pos-shiftchip')).toBeHidden();
+    // Akhiri Shift langsung keluar (log off) dan kembali ke layar PIN.
+    await expect(page).toHaveURL(/#\/pos$/);
+    await expect(page.getByRole('radio', { name: /Dewi/ })).toBeVisible();
   });
 
   test('Keluar menuju login gelap, dan pengguna lain melanjutkan shift yang berjalan', async ({
@@ -144,7 +144,8 @@ test.describe('kerangka', () => {
     await expect(page.locator('[data-pos-surface="dark"]')).toBeVisible();
     await loginPosRaw(page, 'Rizal');
     await expect(page.locator('.pos-card').first()).toBeVisible();
-    await expect(page.locator('.pos-shiftchip')).toHaveText('Shift Dimulai (Dewi)');
+    // Shift Dewi masih berjalan, jadi Rizal tidak diminta memulai shift lagi.
+    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeHidden();
   });
 
   test('axe: menu samping terbuka tanpa pelanggaran dan semua kontrol 48 px', async ({ page }) => {
@@ -170,8 +171,8 @@ test.describe('kerangka', () => {
 });
 
 test.describe('tema', () => {
-  const combos = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu'].flatMap((theme) =>
-    ['terang', 'gelap'].map((mode) => ({ theme, mode })),
+  const combos = ['oranye', 'terakota', 'teal', 'biru', 'hijau', 'ungu', 'merah', 'kuning'].flatMap(
+    (theme) => ['terang', 'gelap'].map((mode) => ({ theme, mode })),
   );
   for (const { theme, mode } of combos) {
     test(`axe: login, gerbang shift, dan layar jual pada palet ${theme} mode ${mode}`, async ({
@@ -206,12 +207,15 @@ test.describe('layar jual', () => {
     await loginPos(page);
     const semen = page.locator('.pos-card').first();
     await expect(semen).toContainText('SEMEN GRESIK 40KG');
-    await expect(semen.getByRole('button', { name: /^SAK/ })).toContainText('Rp 70.000');
+    await expect(semen.locator('.pos-card__price[data-unit="SAK"]')).toContainText('Rp 70.000');
     await expect(semen.locator('.pos-card__stock')).toContainText('28 SAK');
     await expect(semen.locator('.pos-card__stock')).toContainText('800 SAK');
     const fox = page.locator('.pos-card', { hasText: 'LEM FOX 70 GRAM' });
-    await expect(fox.locator('.pos-card__stock')).toContainText('72 KLG');
-    await fox.getByRole('button', { name: /^DOS/ }).click();
+    // Stok PO tidak ditampilkan lagi (diganti No Rak): Toko 78, Gudang 144.
+    await expect(fox.locator('.pos-card__stock')).toContainText('78 KLG');
+    await expect(fox.locator('.pos-card__stock')).toContainText('144 KLG');
+    await expect(fox.locator('.pos-card__stock')).not.toContainText('PO');
+    await fox.locator('.pos-card__price[data-unit="DOS"]').click();
     const line = page.locator('.pos-order__item').first();
     await expect(line).toContainText('LEM FOX 70 GRAM');
     await expect(line).toContainText('QTY : 1 X 600.000');
@@ -238,11 +242,11 @@ test.describe('layar jual', () => {
   }) => {
     await loginPos(page);
     const button = page.locator('.pos-customer-btn');
-    await expect(button).toContainText('Umum');
+    await expect(button).toContainText('UMUM (ECERAN)');
     await button.click();
     const dialog = page.getByRole('dialog', { name: 'Pilih Pelanggan' });
     await dialog.locator('.pos-customers__row', { hasText: 'Kevin Wahyudi' }).click();
-    await expect(button).toContainText('PL387 - KEVIN WAHYUDI (RETAIL)');
+    await expect(button).toContainText('PL387 - KEVIN WAHYUDI (ECERAN)');
     await button.click();
     await page
       .getByRole('dialog', { name: 'Pilih Pelanggan' })
@@ -265,14 +269,14 @@ test.describe('layar jual', () => {
     await expect(page.getByRole('button', { name: /^Bayar Rp 210\.000/ })).toBeVisible();
   });
 
-  test('menu titik tiga: Tahan Bill menaikkan lencana Open Bill dan mengosongkan pesanan', async ({
+  test('menu titik tiga: Open Bill menaikkan lencana Open Bill dan mengosongkan pesanan', async ({
     page,
   }) => {
     await loginPos(page);
     await page.locator('.pos-card').first().locator('.pos-card__main').click();
     await page.getByRole('button', { name: 'Opsi pesanan' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Panggil Bill' })).toBeVisible();
-    await page.getByRole('menuitem', { name: 'Tahan Bill' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Panggil Bill' })).toHaveCount(0);
+    await page.getByRole('menuitem', { name: 'Open Bill' }).click();
     await expect(page.locator('.pos-billlink .pos-badge')).toHaveText('4');
     await expect(page.getByText('Belum ada barang yang dipilih')).toBeVisible();
   });
@@ -342,15 +346,14 @@ test.describe('pembayaran', () => {
     await expect(page.getByText('Transaksi T-000141 tersimpan.')).toBeVisible();
   });
 
-  test('QRIS langsung sebesar total dan Bayar aktif setelah Cek Status', async ({ page }) => {
+  test('QRIS langsung sebesar total dan Bayar aktif tanpa kode QR (konfirmasi manual)', async ({
+    page,
+  }) => {
     await toPay(page);
     await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
     await expect(page.locator('.pos-pay__sisa')).toHaveText('Rp 0');
-    await expect(finish(page)).toHaveAttribute('aria-disabled', 'true');
-    const dialog = page.getByRole('dialog', { name: 'Scan QR Code' });
-    await dialog.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
-    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
   });
 
@@ -372,9 +375,7 @@ test.describe('pembayaran', () => {
     }
     await expect(dialog.locator('.pos-amount__value')).toHaveText('Rp 40.000');
     await dialog.getByRole('button', { name: 'Simpan' }).click();
-    const qr = page.getByRole('dialog', { name: 'Scan QR Code' });
-    await qr.getByRole('button', { name: 'Cek Status Pembayaran' }).click();
-    await expect(qr).toBeHidden();
+    await expect(dialog).toBeHidden();
     await expect(page.locator('.pos-pay__sisa')).toContainText('Rp 0');
     await expect(finish(page)).toHaveAttribute('aria-disabled', 'false');
     await finish(page).click();
@@ -391,8 +392,8 @@ test.describe('pembayaran', () => {
       'true',
     );
     await expect(page.locator('.pos-pay__due')).toContainText('18 Nov 2026');
-    await page.getByRole('button', { name: '45 hari' }).click();
-    await expect(page.locator('.pos-pay__due')).toContainText('3 Des 2026');
+    await page.getByRole('button', { name: '7 hari' }).click();
+    await expect(page.locator('.pos-pay__due')).toContainText('26 Okt 2026');
     await page.getByLabel('DP', { exact: true }).fill('20000');
     await page.getByRole('button', { name: 'QRIS', exact: true }).click();
     await expect(page.locator('.pos-pay__due-amount')).toContainText('Rp 50.000');
@@ -815,24 +816,25 @@ test.describe('perbaikan hasil review', () => {
     await loginPos(page);
     await page.locator('.pos-card__main').first().click();
     await endShiftFromMenu(page);
-    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    // Akhiri Shift langsung keluar: pesanan hilang dan alamat bayar tidak bisa dibuka lagi.
+    await expect(page).toHaveURL(/#\/pos$/);
     await page.keyboard.press('F4');
-    await expect(page).toHaveURL(/#\/pos\/jual$/);
+    await expect(page).toHaveURL(/#\/pos$/);
     await page.evaluate(() => {
       window.location.hash = '/pos/bayar';
     });
-    await expect(page).toHaveURL(/#\/pos\/jual$/);
-    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    await expect(page).toHaveURL(/#\/pos$/);
+    await expect(page.getByRole('radio', { name: /Dewi/ })).toBeVisible();
   });
 
-  test('mengakhiri shift dari layar bayar mengembalikan ke layar jual', async ({ page }) => {
+  test('mengakhiri shift dari layar bayar langsung keluar ke layar PIN', async ({ page }) => {
     await loginPos(page);
     await page.locator('.pos-card__main').first().click();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
     await endShiftFromMenu(page);
-    await expect(page).toHaveURL(/#\/pos\/jual$/);
-    await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
+    await expect(page).toHaveURL(/#\/pos$/);
+    await expect(page.getByRole('radio', { name: /Dewi/ })).toBeVisible();
   });
 
   test('DP bercara QRIS tetap terpilih saat layar bayar dibuka ulang', async ({ page }) => {

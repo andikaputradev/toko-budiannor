@@ -148,7 +148,7 @@ describe('sumber retur dan perhitungan nilai', () => {
       ...plain,
       quantity: 4,
       unitPrice: 100_000,
-      discount: { kind: 'nominal' as const, value: 40_000 },
+      discount: { kind: 'nominal' as const, value: 10_000 },
     };
     expect(returnedValue(discounted, 2)).toBe(180_000);
     expect(returnedValue(discounted, 4)).toBe(360_000);

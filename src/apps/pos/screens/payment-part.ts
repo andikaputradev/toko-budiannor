@@ -1,33 +1,38 @@
+import type { PaidMethod } from '../../../shared/data/types';
 import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
-import { label } from '../../../shared/messages';
+import { label, type LabelKey } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { createAmountEntry } from '../amount-entry';
 import { remainingDue } from '../domain/payment';
-import { checkPart, partLimit, partOf, type PaymentPart, type SavedPart } from '../domain/split';
+import { checkPart, partLimit, partOf, type PaymentPart } from '../domain/split';
 import type { PosSession } from '../pos-session';
-import { createChannelCards, type ChannelCard } from './channel-cards';
 
 export interface PaymentPartOptions {
   readonly session: PosSession;
   readonly index: number;
-  readonly onSaved: (saved: SavedPart) => void;
 }
 
 type PartTab = 'tunai' | 'nontunai';
 
-// Modal "Pembayaran N" pada tab Split: tab Tunai dan Non-Tunai, papan angka, dan Simpan.
+// Non-tunai pada Split sama dengan tab Non-Tunai: hanya QRIS, Transfer, dan EDC.
+const NON_CASH: readonly { readonly method: PaidMethod; readonly text: LabelKey }[] = [
+  { method: 'qris', text: 'metodeQris' },
+  { method: 'transfer', text: 'metodeTransfer' },
+  { method: 'edc', text: 'metodeEdc' },
+];
+
+// Modal "Pembayaran N" pada tab Split: tab Tunai dan Non-Tunai, papan angka, dan Simpan. Dua kolom
+// (pilihan dan nominal di kiri, papan angka di kanan) supaya muat satu layar tanpa scroll bar.
 export function openPaymentPart(options: PaymentPartOptions): void {
   const { session, index } = options;
   const existing = partOf(session.state().rows[index]);
   let tab: PartTab = existing === undefined || existing.method === 'tunai' ? 'tunai' : 'nontunai';
-  let chosen: ChannelCard | undefined =
-    existing === undefined || existing.method === 'tunai'
-      ? undefined
-      : { method: existing.method, channel: existing.channel, text: '' };
+  let chosen: PaidMethod | undefined =
+    existing === undefined || existing.method === 'tunai' ? undefined : existing.method;
 
-  // Semua kanal non-tunai berbagi batas yang sama: sisa tagihan tanpa baris slot ini.
+  // Semua cara non-tunai berbagi batas yang sama: sisa tagihan tanpa baris slot ini.
   const limit = (): number | undefined =>
     partLimit(session.state().rows, index, tab === 'tunai' ? 'tunai' : 'edc', session.total());
   const remaining = (): number =>
@@ -36,7 +41,7 @@ export function openPaymentPart(options: PaymentPartOptions): void {
       session.state().rows.filter((_, position) => position !== index),
     );
 
-  const error = el('p', { className: 'pos-cash__error', attrs: { role: 'alert' } });
+  const error = el('p', { className: 'pos-cash__error pos-part__error', attrs: { role: 'alert' } });
   const entry = createAmountEntry({
     labelText: label('jumlahDiterima'),
     value: existing?.amount ?? 0,
@@ -45,12 +50,25 @@ export function openPaymentPart(options: PaymentPartOptions): void {
       error.textContent = '';
     },
   });
-  const cards = createChannelCards((card) => {
-    chosen = card;
-    error.textContent = '';
-    paint();
+  const methodButtons = new Map<PaidMethod, HTMLButtonElement>();
+  const methods = el('div', {
+    className: 'pos-pay__methods pos-part__methods',
+    attrs: { role: 'group', 'aria-label': label('kanalPembayaran') },
   });
-  const cardsPanel = el('div', { className: 'pos-part__cards' }, cards.element);
+  for (const item of NON_CASH) {
+    const button = createButton({
+      text: label(item.text),
+      variant: 'secondary',
+      onClick: () => {
+        chosen = item.method;
+        error.textContent = '';
+        paint();
+      },
+    });
+    button.classList.add('pos-pay__method');
+    methodButtons.set(item.method, button);
+    methods.append(button);
+  }
   const sisa = el('output', { className: 't-total pos-part__sisa' });
 
   const tabButtons = new Map<PartTab, HTMLButtonElement>();
@@ -80,8 +98,10 @@ export function openPaymentPart(options: PaymentPartOptions): void {
     for (const [id, button] of tabButtons) {
       button.setAttribute('aria-selected', id === tab ? 'true' : 'false');
     }
-    cardsPanel.hidden = tab !== 'nontunai';
-    cards.select(chosen?.method, chosen?.channel);
+    methods.hidden = tab !== 'nontunai';
+    for (const [method, button] of methodButtons) {
+      button.setAttribute('aria-pressed', method === chosen ? 'true' : 'false');
+    }
     entry.setMax(limit());
     sisa.textContent = formatRupiah(remaining());
   }
@@ -91,30 +111,28 @@ export function openPaymentPart(options: PaymentPartOptions): void {
     if (tab === 'tunai') {
       part = { method: 'tunai', amount: entry.value() };
     } else if (chosen === undefined) {
-      error.textContent = label('pilihKanalDulu');
+      error.textContent = label('pilihCaraNonTunai');
       return;
     } else {
-      part = { method: chosen.method, channel: chosen.channel, amount: entry.value() };
+      part = { method: chosen, amount: entry.value() };
     }
     const check = checkPart(session.state().rows, index, part);
     if (!check.ok) {
       error.textContent = label(
         check.reason === 'duplikat'
           ? 'pembayaranSudahAda'
-          : check.reason === 'kanal'
-            ? 'pilihKanalDulu'
+          : check.reason === 'maksimal'
+            ? 'splitMaksimalTiga'
             : 'isiNominalPembayaran',
       );
       return;
     }
     session.setPart(index, part);
-    const saved = partOf(session.state().rows[index]);
-    if (saved === undefined) {
+    if (partOf(session.state().rows[index]) === undefined) {
       error.textContent = label('isiNominalPembayaran');
       return;
     }
     handle.close();
-    options.onSaved(saved);
   };
 
   const handle = openModal({
@@ -123,7 +141,7 @@ export function openPaymentPart(options: PaymentPartOptions): void {
       'div',
       { className: 'pos-part' },
       tablist,
-      cardsPanel,
+      methods,
       el(
         'div',
         { className: 'pos-part__remain' },
@@ -148,7 +166,6 @@ export function openPaymentPart(options: PaymentPartOptions): void {
             onClick: () => {
               session.setPart(index, undefined);
               handle.close();
-              options.onSaved({ ...existing, amount: 0 });
             },
           }),
       createButton({

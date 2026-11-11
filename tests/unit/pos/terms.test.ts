@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { dueDateOf, parseTermDays, TERM_CHOICES } from '../../../src/apps/pos/domain/terms';
 
 describe('tempo piutang', () => {
-  it('menyediakan pilihan 7, 30, dan 45 hari dari proposal', () => {
-    expect(TERM_CHOICES).toEqual([7, 30, 45]);
+  it('menyediakan pilihan 7, 14, dan 30 hari sesuai revisi klien', () => {
+    expect(TERM_CHOICES).toEqual([7, 14, 30]);
   });
 
   it('dueDateOf menambah hari ke tanggal demo', () => {

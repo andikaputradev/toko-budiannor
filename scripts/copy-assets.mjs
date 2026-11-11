@@ -29,6 +29,7 @@ const ICONS = [
   'pencil',
   'inbox',
   'chevron-down',
+  'chevron-up',
   'bell',
   'refresh-cw',
   'phone',
