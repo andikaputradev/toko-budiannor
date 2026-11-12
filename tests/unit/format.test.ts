@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatDate,
+  formatDayDateTime,
   formatDecimal,
   formatDocumentNumber,
   formatPercent,
@@ -68,6 +69,20 @@ describe('formatDate dan formatTime', () => {
   it('memakai jam 24 WIB', () => {
     expect(formatTime(new Date('2026-10-17T07:32:00Z'))).toBe('14:32');
     expect(formatTime(new Date('2026-10-17T17:05:00Z'))).toBe('00:05');
+  });
+});
+
+describe('formatDayDateTime', () => {
+  it('menaruh hari di depan tanggal, bulan tiga huruf, dan jam WIB', () => {
+    expect(formatDayDateTime(new Date('2026-10-19T03:02:00Z'))).toBe(
+      'Senin, 19 Okt 2026, 10:02 WIB',
+    );
+  });
+
+  it('menggeser hari dan tanggal bersama jam saat WIB melewati tengah malam UTC', () => {
+    expect(formatDayDateTime(new Date('2026-10-19T17:30:00Z'))).toBe(
+      'Selasa, 20 Okt 2026, 00:30 WIB',
+    );
   });
 });
 

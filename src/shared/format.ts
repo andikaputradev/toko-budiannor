@@ -83,6 +83,12 @@ export function formatDayDate(date: Date): string {
   return `${day}, ${String(wib.getUTCDate())} ${month} ${String(wib.getUTCFullYear())}`;
 }
 
+// Header Back Office: hari, tanggal bulan singkat, dan jam WIB, mis. "Senin, 19 Okt 2026, 10:02 WIB".
+export function formatDayDateTime(date: Date): string {
+  const day = DAYS[toWib(date).getUTCDay()] ?? '';
+  return `${day}, ${formatDate(date)}, ${formatTime(date)} WIB`;
+}
+
 export function formatTime(date: Date): string {
   const wib = toWib(date);
   return `${pad(wib.getUTCHours())}:${pad(wib.getUTCMinutes())}`;
