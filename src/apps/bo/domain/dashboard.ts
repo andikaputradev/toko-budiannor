@@ -1,5 +1,6 @@
 import { balanceOf, overdueInvoices, wibDate } from '../../../shared/data/receivable';
 import type { DailyRevenue, Product, Role } from '../../../shared/data/types';
+import { formatDate } from '../../../shared/format';
 import { totalStock } from '../../../shared/data/units';
 import type { AppState } from '../../../shared/store/store';
 import { LAST_BACKUP, type BackupInfo } from './backup';
@@ -65,10 +66,66 @@ export interface ProfitBreakdown {
   readonly pengeluaran: number;
 }
 
+export type ExpenseKind = 'gaji' | 'katering' | 'bensin' | 'operasional' | 'listrik';
+
+export interface ExpenseItem {
+  readonly key: ExpenseKind;
+  readonly amount: number;
+}
+
 export interface ExpenseBreakdown {
   readonly beban: number;
+  readonly items: readonly ExpenseItem[];
+  // Turunan untuk layar lama; dihapus saat layar Dashboard ditulis ulang.
   readonly bebanGaji: number;
   readonly bebanOperasional: number;
+}
+
+export interface RankPeriod {
+  readonly label: string;
+  readonly products: readonly RankedItem[];
+  readonly customers: readonly RankedItem[];
+}
+
+export type DashboardWidgetId =
+  'omset' | 'grafik' | 'kegiatan' | 'laba' | 'beban' | 'aset' | 'pelanggan' | 'barang' | 'hpp';
+
+const OWNER_WIDGETS: readonly DashboardWidgetId[] = [
+  'omset',
+  'grafik',
+  'kegiatan',
+  'laba',
+  'beban',
+  'aset',
+  'pelanggan',
+  'barang',
+  'hpp',
+];
+
+// Supervisor tidak melihat widget keuangan dan HPP (informasi Owner).
+const SUPERVISOR_WIDGETS: readonly DashboardWidgetId[] = [
+  'omset',
+  'grafik',
+  'kegiatan',
+  'pelanggan',
+  'barang',
+];
+
+export function dashboardWidgets(role: Role): readonly DashboardWidgetId[] {
+  if (role === 'owner') {
+    return OWNER_WIDGETS;
+  }
+  return role === 'supervisor' ? SUPERVISOR_WIDGETS : [];
+}
+
+export type HppTone = 'bahaya' | 'waspada' | 'aman';
+
+// Persen HPP terhadap harga jual: makin tinggi makin tipis labanya.
+export function hppTone(percent: number): HppTone {
+  if (percent >= 95) {
+    return 'bahaya';
+  }
+  return percent >= 90 ? 'waspada' : 'aman';
 }
 
 export interface AssetBreakdown {
@@ -113,6 +170,8 @@ export interface FullDashboardData {
   readonly upcomingEvents: readonly UpcomingEvent[];
   readonly topProducts: readonly RankedItem[];
   readonly topCustomers: readonly RankedItem[];
+  // Dua periode untuk widget peringkat: bulan berjalan sampai hari ini, lalu bulan lalu penuh.
+  readonly rankPeriods: readonly RankPeriod[];
   readonly hppMonitoring: readonly HppMonitoringItem[];
   readonly lowStockItems: readonly LowStockItem[];
   readonly profit: {
@@ -156,6 +215,111 @@ export function computeDashboard(state: AppState, now: Date): DashboardData {
     queue: state.posQueue,
     backup: LAST_BACKUP,
   };
+}
+
+const EXPENSE_ORDER: readonly ExpenseKind[] = [
+  'gaji',
+  'katering',
+  'bensin',
+  'operasional',
+  'listrik',
+];
+
+function expenseOf(amounts: Readonly<Record<ExpenseKind, number>>): ExpenseBreakdown {
+  const items = EXPENSE_ORDER.map((key) => ({ key, amount: amounts[key] }));
+  return {
+    beban: items.reduce((sum, item) => sum + item.amount, 0),
+    items,
+    bebanGaji: amounts.gaji,
+    bebanOperasional: amounts.operasional,
+  };
+}
+
+function profitOf(pendapatan: number, nilaiHpp: number, pengeluaran: number): ProfitBreakdown {
+  return { laba: pendapatan - nilaiHpp - pengeluaran, pendapatan, nilaiHpp, pengeluaran };
+}
+
+function hppRow(name: string, hpp: number, price: number): HppMonitoringItem {
+  return { name, hpp, price, percent: Math.round((hpp / price) * 100) };
+}
+
+interface RankRow {
+  readonly name: string;
+  readonly amount: number;
+}
+
+// Persen = bagian dari seluruh penjualan periode (bukan hanya baris yang tampil), urut terbesar dulu.
+function ranked(rows: readonly RankRow[], total: number): RankedItem[] {
+  return [...rows]
+    .sort((first, second) => second.amount - first.amount)
+    .map((row) => ({ ...row, percent: Math.min(100, Math.round((row.amount / total) * 100)) }));
+}
+
+const RANK_DATA: readonly {
+  readonly customers: readonly RankRow[];
+  readonly customerTotal: number;
+  readonly products: readonly RankRow[];
+  readonly productTotal: number;
+}[] = [
+  {
+    customers: [
+      { name: 'PELANGGAN UMUM', amount: 159_694_400 },
+      { name: 'UD RESMI (BU MILA)', amount: 9_800_000 },
+      { name: 'ABM', amount: 9_556_000 },
+      { name: 'PRIMA', amount: 8_450_100 },
+      { name: 'INDRA RIDHA', amount: 6_195_000 },
+      { name: 'DWI PUTRA', amount: 4_820_000 },
+      { name: 'BAGUS PERDANA', amount: 3_410_000 },
+    ],
+    customerTotal: 261_000_000,
+    products: [
+      { name: 'THINNER CEMERLANG A 5LT', amount: 8_780_000 },
+      { name: 'SENG GELOMBANG KECIL CAP KUDA', amount: 7_500_000 },
+      { name: 'SENG FIBER GELOMBANG KECIL', amount: 7_485_000 },
+      { name: 'THINNER PEGASUS HIJAU 5LT', amount: 5_760_000 },
+      { name: 'KERAMIK 50X50 GNET ELCHE', amount: 4_400_000 },
+      { name: 'LEM QBOND XTRA', amount: 4_150_000 },
+      { name: 'CAT NIPPON 1LT', amount: 3_960_000 },
+    ],
+    productTotal: 130_000_000,
+  },
+  {
+    customers: [
+      { name: 'PELANGGAN UMUM', amount: 201_340_000 },
+      { name: 'PRIMA', amount: 14_200_000 },
+      { name: 'UD RESMI (BU MILA)', amount: 11_050_000 },
+      { name: 'ABM', amount: 8_730_000 },
+      { name: 'SINAR PELANGI', amount: 7_100_000 },
+      { name: 'INDRA RIDHA', amount: 5_480_000 },
+    ],
+    customerTotal: 318_000_000,
+    products: [
+      { name: 'SENG GELOMBANG KECIL CAP KUDA', amount: 11_200_000 },
+      { name: 'THINNER CEMERLANG A 5LT', amount: 9_640_000 },
+      { name: 'LEM QBOND XTRA', amount: 6_900_000 },
+      { name: 'SENG FIBER GELOMBANG KECIL', amount: 6_120_000 },
+      { name: 'CAT NIPPON 1LT', amount: 5_330_000 },
+      { name: 'KERAMIK 50X50 GNET ELCHE', amount: 4_010_000 },
+    ],
+    productTotal: 165_000_000,
+  },
+];
+
+// Periode pertama: tanggal 1 bulan berjalan sampai hari ini. Kedua: bulan lalu penuh.
+function buildRankPeriods(now: Date): readonly RankPeriod[] {
+  const [year = 0, month = 1] = wibDate(now).split('-').map(Number);
+  const day = (y: number, monthIndex: number, dayOfMonth: number): string =>
+    formatDate(new Date(Date.UTC(y, monthIndex, dayOfMonth)));
+  const withoutYear = (text: string): string => text.replace(/ \d{4}$/, '');
+  const labels = [
+    `${withoutYear(day(year, month - 1, 1))} - ${formatDate(now)}`,
+    `${withoutYear(day(year, month - 2, 1))} - ${day(year, month - 1, 0)}`,
+  ];
+  return RANK_DATA.map((data, index) => ({
+    label: labels[index] ?? '',
+    customers: ranked(data.customers, data.customerTotal),
+    products: ranked(data.products, data.productTotal),
+  }));
 }
 
 export function computeFullDashboard(
@@ -220,25 +384,17 @@ export function computeFullDashboard(
     },
   ];
 
-  const topProducts: RankedItem[] = [
-    { name: 'LEM QBOND XTRA', amount: 5_196_915, percent: 94 },
-    { name: 'CAT NIPPON 1LT', amount: 3_196_915, percent: 18 },
-    { name: 'CCM MATEX 20KG', amount: 196_915, percent: 5 },
-    { name: 'THINNER CEMERLANG 5L', amount: 126_915, percent: 5 },
-  ];
-
-  const topCustomers: RankedItem[] = [
-    { name: 'PRIMA', amount: 98_450_000, percent: 95 },
-    { name: 'BAGUS PERDANA', amount: 8_450_000, percent: 18 },
-    { name: 'DWI PUTRA', amount: 450_000, percent: 21 },
-    { name: 'JEPARA MEBEL', amount: 100_500, percent: 20 },
-  ];
+  const rankPeriods = buildRankPeriods(now);
+  const topProducts = rankPeriods[0]?.products ?? [];
+  const topCustomers = rankPeriods[0]?.customers ?? [];
 
   const hppMonitoring: HppMonitoringItem[] = [
-    { name: 'CCM TINTER LAMP BLACK', hpp: 120_175, price: 125_000, percent: 96 },
-    { name: 'CCM TINTER OXIDE', hpp: 120_175, price: 125_000, percent: 96 },
-    { name: 'CAT DJARUM 4KG', hpp: 228_012, price: 240_000, percent: 95 },
-    { name: 'CCM TINTER RED', hpp: 223_724, price: 235_500, percent: 94 },
+    hppRow('CCM TINTER LAMP BLACK', 120_175, 125_000),
+    hppRow('CCM TINTER OXIDE', 120_175, 125_000),
+    hppRow('CAT DJARUM 4KG', 228_012, 240_000),
+    hppRow('CCM TINTER RED', 223_724, 235_500),
+    hppRow('OBENG 2WAY TEKIRO TPR', 60_581, 68_000),
+    hppRow('TARIKAN TOP 088 SC', 62_791, 70_000),
   ];
 
   const lowStockItems: LowStockItem[] = [
@@ -251,32 +407,26 @@ export function computeFullDashboard(
     { name: 'LEM QBOND POWER', remaining: 3 },
   ];
 
-  const profit = {
-    daily: {
-      laba: 737_253,
-      pendapatan: 43_320_000,
-      nilaiHpp: 3_320_000,
-      pengeluaran: 320_000,
-    },
-    monthly: {
-      laba: 18_450_000,
-      pendapatan: 142_800_000,
-      nilaiHpp: 98_500_000,
-      pengeluaran: 25_850_000,
-    },
-  };
-
+  // Laba = pendapatan - nilai HPP - pengeluaran; pengeluaran sama dengan total beban.
   const expense = {
-    daily: {
-      beban: 54_946_500,
-      bebanGaji: 43_320_000,
-      bebanOperasional: 320_000,
-    },
-    monthly: {
-      beban: 52_600_000,
-      bebanGaji: 31_400_000,
-      bebanOperasional: 21_200_000,
-    },
+    daily: expenseOf({
+      gaji: 650_000,
+      katering: 150_000,
+      bensin: 120_000,
+      operasional: 90_000,
+      listrik: 60_000,
+    }),
+    monthly: expenseOf({
+      gaji: 7_000_000,
+      katering: 4_100_000,
+      bensin: 3_200_000,
+      operasional: 2_800_000,
+      listrik: 1_800_000,
+    }),
+  };
+  const profit = {
+    daily: profitOf(5_480_000, 3_630_000, expense.daily.beban),
+    monthly: profitOf(142_800_000, 98_500_000, expense.monthly.beban),
   };
 
   const totalAsset = 3_837_012_882;
@@ -336,6 +486,7 @@ export function computeFullDashboard(
     upcomingEvents,
     topProducts,
     topCustomers,
+    rankPeriods,
     hppMonitoring,
     lowStockItems,
     profit,
