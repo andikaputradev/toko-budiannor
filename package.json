@@ -25,7 +25,8 @@
     "audit:semua": "npm audit",
     "sbom": "cyclonedx-npm --ignore-npm-errors --no-validate --spec-version 1.6 --output-format JSON --output-file sbom/bom.cdx.json",
     "lighthouse": "node scripts/lighthouse.mjs",
-    "verifikasi:axe": "node scripts/axe-summary.mjs"
+    "verifikasi:axe": "node scripts/axe-summary.mjs",
+    "ukur:bo": "node scripts/ukur-bo.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
