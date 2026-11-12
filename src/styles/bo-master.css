@@ -506,3 +506,121 @@
     max-width: none;
   }
 }
+
+/* ==========================================================================
+   Muat satu layar (revisi Back-Office putaran kedua): kerangka mengisi tinggi area isi, tombol dan
+   kartu angka dipadatkan, dan hanya panel formulir dan tabel yang menggulir di dalamnya.
+   ========================================================================== */
+.bo-master {
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.bo-master__bar {
+  padding: 6px 10px;
+}
+
+.bo-master .btn {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.bo-master__stats {
+  flex: none;
+  gap: 8px;
+}
+
+.bo-master__stat {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px;
+}
+
+.bo-master__stat-label {
+  font-size: 13px;
+}
+
+.bo-master__stat-value {
+  font-size: 18px;
+}
+
+.bo-master__split {
+  flex: 1 1 0;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.bo-master__panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.bo-master__formpanel {
+  overflow-y: auto;
+}
+
+.bo-master__panelhead {
+  flex: none;
+  min-height: 44px;
+  padding: 6px 14px;
+}
+
+.bo-master__title {
+  font-size: 16px;
+}
+
+.bo-master__listhead {
+  padding: 6px 14px;
+}
+
+.bo-master__form {
+  gap: 8px 10px;
+  padding: 10px 14px;
+}
+
+.bo-master .field {
+  gap: 2px;
+}
+
+.bo-master .field__label {
+  font-size: 13px;
+}
+
+.bo-master .input {
+  height: 34px;
+  min-height: 34px;
+  font-size: 14px;
+}
+
+.bo-master__area {
+  min-height: 56px;
+  padding: 6px 10px;
+}
+
+.bo-master__formactions {
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.bo-master__summary {
+  gap: 8px;
+  padding: 10px 14px 12px;
+}
+
+.bo-master__metrics {
+  gap: 6px;
+}
+
+.bo-master__tablewrap {
+  flex: 1 1 0;
+  max-height: none;
+  min-height: 0;
+}
