@@ -28,7 +28,6 @@ export function createTabStrip(options: { onClose(key: string): void }): TabStri
         type: 'button',
         'aria-haspopup': 'true',
         'aria-expanded': 'false',
-        'aria-label': label('boTabSemua'),
       },
     },
     count,
@@ -121,6 +120,8 @@ export function createTabStrip(options: { onClose(key: string): void }): TabStri
     activeLink = activeItem?.querySelector<HTMLElement>('.bo-tab__link') ?? undefined;
 
     count.textContent = String(state.tabs.length);
+    // Nama aksesibel memuat teks yang terlihat (angka jumlah tab).
+    more.setAttribute('aria-label', `${String(state.tabs.length)} ${label('boTabSemua')}`);
     menuList.replaceChildren(
       ...state.tabs.map((entry) => {
         const active = entry.key === state.activeKey;

@@ -118,6 +118,8 @@ test.describe('BO-01 Masuk ke Back-Office', () => {
 test.describe('kerangka Back-Office', () => {
   test('menu per peran, urutan tab, dan tautan lewati konten', async ({ page }) => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
+    await expect(page.locator('.bo-menu')).toBeHidden();
+    await page.getByRole('button', { name: 'Buka menu' }).click();
     const links = page.locator('.bo-menu__link');
     await expect(links.first()).toHaveText('Dashboard');
     expect(await links.count()).toBeGreaterThanOrEqual(20);
@@ -125,11 +127,13 @@ test.describe('kerangka Back-Office', () => {
     const menuWidth = await page
       .locator('.bo-menu')
       .evaluate((node) => node.getBoundingClientRect().width);
-    expect(Math.round(menuWidth)).toBe(280);
+    expect(Math.round(menuWidth)).toBe(300);
     const barHeight = await page
       .locator('.bo-topbar')
       .evaluate((node) => node.getBoundingClientRect().height);
-    expect(Math.round(barHeight)).toBe(68);
+    expect(Math.round(barHeight)).toBe(60);
+    await page.getByRole('button', { name: 'Tutup menu' }).click();
+    await expect(page.locator('.bo-menu')).toBeHidden();
 
     await page.evaluate(() => {
       if (document.activeElement instanceof HTMLElement) {
@@ -200,10 +204,7 @@ test.describe('kerangka Back-Office', () => {
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
       expect(overflow, screen).toBeLessThanOrEqual(1);
-      const toggle = page.locator('.bo-mobile-toggle');
-      if (await toggle.isVisible()) {
-        await toggle.click();
-      }
+      await page.getByRole('button', { name: 'Buka menu' }).click();
       await expect(page.locator('.bo-menu__link').first()).toBeVisible();
       const result = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
       expect(result.violations, screen).toEqual([]);
