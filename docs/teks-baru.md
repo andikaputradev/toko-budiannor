@@ -1960,3 +1960,24 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1950: "Segarkan daftar". Kunci boSegarkanDaftar.
 - TB-1951: "Matriks harga satuan". Kunci boMatriksHarga.
 - TB-1952: "Pilih barang untuk melihat harga satuan". Kunci boPilihBarang.
+- TB-1953: "Dari". Kunci infoDari.
+- TB-1954: "Sampai". Kunci infoSampai.
+- TB-1955: "30 hari terakhir". Kunci infoTigaPuluh.
+- TB-1956: "Riwayat barang". Kunci infoRiwayat.
+- TB-1957: "Tidak ada riwayat pada rentang tanggal ini.". Kunci infoKosong.
+- TB-1958: "Stok: Toko {toko}, Gudang {gudang} ({satuan})". Kunci infoStokRingkas.
+- TB-1959: "No Rak: {rak}". Kunci infoRak.
+- TB-1960: "Saldo awal: {tanggal}, {jumlah} {satuan}, nilai satuan {nilai}". Kunci infoSaldoAwal.
+- TB-1961: "Saldo awal: belum tercatat". Kunci infoTanpaSaldoAwal.
+- TB-1962: "Cetak Info Barang". Kunci cetakJudul.
+- TB-1963: "Kolom yang dicetak". Kunci cetakKolom.
+- TB-1964: "Filter barang". Kunci cetakFilter.
+- TB-1965: "Cari nama atau kode". Kunci cetakCari.
+- TB-1966: "Ada stok". Kunci cetakStokAda.
+- TB-1967: "{jumlah} barang akan dicetak". Kunci cetakJumlah.
+- TB-1968: "Print". Kunci cetakPrint.
+- TB-1969: "Export Excel". Kunci cetakExcel.
+- TB-1970: "Export PDF". Kunci cetakPdf.
+- TB-1971: "Daftar Info Barang". Kunci cetakJudulLaporan.
+- TB-1972: "Berkas {nama} diunduh.". Kunci cetakDiunduh.
+- TB-1973: "Pilih minimal satu kolom.". Kunci cetakPilihKolom.

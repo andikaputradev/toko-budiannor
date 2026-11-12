@@ -632,13 +632,15 @@ export function renderProducts(session: BoSession): ScreenHandle {
     requestCloseTab(container);
   });
 
+  // Info dan Cetak dimuat malas supaya layar Data Barang tetap kecil.
   btnInfo.addEventListener('click', () => {
     const target = productById(selectedId);
-    const skuTotal = products().length;
-    openModal({
-      title: 'Informasi Master Data Barang',
-      body: `Total Terdaftar: ${String(skuTotal)} SKU.\nBarang Aktif Saat Ini: ${target ? `${target.name} [${target.code}]` : 'Belum dipilih'}.\nLokasi Rak: ${target?.rak ?? '-'}\nTotal Stok: Toko ${String(target?.stock.display ?? 0)}, Gudang ${String(target?.stock.besar ?? 0)}`,
-      actions: [{ text: 'Tutup', variant: 'secondary' }],
+    if (target === undefined) {
+      showToast({ kind: 'info', text: label('boPilihBarang') });
+      return;
+    }
+    void import('./product-info').then(({ openProductInfo }) => {
+      openProductInfo(session, target);
     });
   });
 
@@ -676,7 +678,9 @@ export function renderProducts(session: BoSession): ScreenHandle {
   });
 
   btnCetak.addEventListener('click', () => {
-    window.print();
+    void import('./product-print').then(({ openProductPrint }) => {
+      openProductPrint(session, products(), store.getState().role);
+    });
   });
 
   btnRefresh.addEventListener('click', () => {
@@ -687,6 +691,11 @@ export function renderProducts(session: BoSession): ScreenHandle {
   searchInput.addEventListener('input', () => {
     query = searchInput.value;
     refreshList();
+    // Baris teratas hasil pencarian ikut terpilih supaya formulir, Info, dan Cetak memakai barang
+    // yang tampak tersorot. Isian yang sedang diubah tidak ditimpa.
+    if (!isEditing && rows().length > 0) {
+      grid.select(0);
+    }
   });
 
   zoomButton.addEventListener('click', () => {

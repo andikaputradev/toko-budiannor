@@ -562,3 +562,181 @@
   border-color: var(--color-status-danger-fg);
   background: var(--color-status-danger-bg);
 }
+
+/* ===== Modal Info barang ===== */
+.bo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bo-info__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.bo-info__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.bo-info__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bo-info__date {
+  width: 160px;
+}
+
+.bo-info__scroll {
+  max-height: 36vh;
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.bo-info__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.bo-info__table th,
+.bo-info__table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border-default);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.bo-info__table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-table-header);
+}
+
+.bo-info__table .is-end {
+  text-align: right;
+}
+
+.bo-info__empty {
+  margin: 12px 0;
+  color: var(--color-text-secondary);
+}
+
+/* ===== Modal Cetak info barang ===== */
+.bo-cetak {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 16px;
+  min-width: 0;
+}
+
+.bo-cetak__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.bo-cetak__group legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bo-cetak__cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+}
+
+.bo-cetak__col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.bo-cetak__count {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.bo-cetak__actions {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ===== Cetak: hanya tabel info barang yang tampil ===== */
+.bo-print-area {
+  display: none;
+}
+
+@media print {
+  body.is-printing-barang > *:not(.bo-print-area) {
+    display: none !important;
+  }
+
+  body.is-printing-barang .bo-print-area {
+    display: block;
+    padding: 12px;
+    background: #fff;
+    color: #000;
+  }
+
+  .bo-print-area h1 {
+    margin: 0 0 4px;
+    font-size: 16px;
+  }
+
+  .bo-print-area p {
+    margin: 0 0 8px;
+    font-size: 11px;
+  }
+
+  .bo-print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+
+  .bo-print-area th,
+  .bo-print-area td {
+    padding: 2px 4px;
+    border: 1px solid #888;
+    text-align: left;
+  }
+}
+
+/* Modal Info dan Cetak lebih lebar dari modal biasa agar tabel dan kolom tidak terpotong. */
+[data-app='bo'] .modal:has(.bo-info) {
+  width: min(860px, calc(100% - 32px));
+  max-width: none;
+}
+
+[data-app='bo'] .modal:has(.bo-cetak) {
+  width: min(760px, calc(100% - 32px));
+  max-width: none;
+}
