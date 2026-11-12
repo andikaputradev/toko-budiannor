@@ -11,6 +11,7 @@ import type { BoSession } from '../bo-session';
 import { type TransferLineDraft } from '../domain/transfer';
 import { createProductPicker } from '../picker';
 import type { ScreenHandle } from './login';
+import { screenActive } from '../screen-active';
 
 function isPc(): boolean {
   return (
@@ -292,6 +293,9 @@ export function renderTransfer(session: BoSession): ScreenHandle {
   toField.select.value = to;
 
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(element)) {
+      return;
+    }
     if (document.querySelector('.modal-overlay') !== null) {
       return;
     }

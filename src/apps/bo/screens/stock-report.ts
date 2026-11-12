@@ -43,6 +43,7 @@ import {
 import { createProductPicker } from '../picker';
 import { findProducts } from '../search';
 import type { ScreenHandle } from './login';
+import { screenActive } from '../screen-active';
 
 type Tab = 'posisi' | 'kartu';
 
@@ -1147,6 +1148,9 @@ export function renderStockReport(
   };
 
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(element)) {
+      return;
+    }
     if (document.querySelector('.modal-overlay') !== null || !isPc() || !event.altKey) {
       return;
     }

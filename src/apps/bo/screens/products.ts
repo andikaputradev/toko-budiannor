@@ -12,6 +12,7 @@ import { BASE_UNITS, CODE_MAX, draftOf, type ProductDraft } from '../domain/prod
 import { getSampleExcelProducts } from '../domain/import-excel';
 import { findProducts } from '../search';
 import type { ScreenHandle } from './login';
+import { screenActive } from '../screen-active';
 
 const CATEGORY_OPTIONS = [
   'DOOR & WINDOW',
@@ -736,6 +737,9 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
 
   // Shortcuts
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(container)) {
+      return;
+    }
     if (event.altKey && event.key.toLowerCase() === 't') {
       event.preventDefault();
       btnTambah.click();

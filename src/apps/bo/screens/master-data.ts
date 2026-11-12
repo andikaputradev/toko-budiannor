@@ -34,6 +34,7 @@ import {
 } from './master-dialogs';
 import { createMasterForm } from './master-form';
 import { createMasterTable } from './master-table';
+import { screenActive } from '../screen-active';
 
 type Mode = 'view' | 'add' | 'edit';
 
@@ -593,6 +594,9 @@ export function renderMasterData(
     k: btnExit,
   };
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(container)) {
+      return;
+    }
     if (document.body.classList.contains('is-modal-open')) {
       return;
     }

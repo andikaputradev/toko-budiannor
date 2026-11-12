@@ -16,6 +16,7 @@ import { renderDashboard } from './screens/dashboard';
 import { renderLogin, type ScreenHandle } from './screens/login';
 import { renderPlaceholder } from './screens/placeholder';
 import { createShell, type Shell } from './shell';
+import { createWorkspace, type Workspace } from './workspace';
 import '../../styles/bo-polish.css';
 import '../../styles/bo-shell.css';
 
@@ -394,12 +395,12 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
 };
 
 let session: BoSession | undefined;
-let screen: ScreenHandle | undefined;
+let loginScreen: ScreenHandle | undefined;
 let shell: Shell | undefined;
+let workspace: Workspace | undefined;
 let watched: Store | undefined;
 let latest: { root: HTMLElement; path: string; context: AppContext } | undefined;
 let stopWatchingTheme: (() => void) | undefined;
-let mountToken = 0;
 
 function sessionFor(store: Store): BoSession {
   if (session?.store !== store) {
@@ -429,11 +430,44 @@ function denied(active: BoSession, go: (path: string) => void): HTMLElement {
   );
 }
 
-export function mount(root: HTMLElement, fullPath: string, context: AppContext): void {
-  latest = { root, path: fullPath, context };
+// Seluruh tab dan layarnya dibuang bersama kerangkanya: saat Keluar, ganti peran, atau ganti sesi.
+function disposeWorkspace(): void {
+  workspace?.destroy();
+  shell?.destroy();
+  workspace = undefined;
+  shell = undefined;
+}
+
+// Membangun layar untuk satu tab. Layar yang ditolak hak aksesnya tampil sebagai panel penolakan.
+function buildScreen(
+  active: BoSession,
+  go: (path: string) => void,
+  fullPath: string,
+): Promise<ScreenHandle> {
   const [path = '/bo', search = ''] = fullPath.split('?');
   const query = new URLSearchParams(search);
+  const explicitRoute = ROUTES[path];
+  const screenId = explicitRoute ? explicitRoute.id : (entryFor(path)?.screenId ?? 'BO-02');
+  if (!canOpenScreen(active.store.getState().role, screenId)) {
+    return Promise.resolve({ element: denied(active, go), destroy: () => undefined });
+  }
+  if (explicitRoute?.render !== undefined) {
+    return Promise.resolve(explicitRoute.render(active, go, query));
+  }
+  if (explicitRoute?.load !== undefined) {
+    return explicitRoute.load().then((renderer) => renderer(active, go, query));
+  }
+  return Promise.resolve(renderPlaceholder(path, go));
+}
+
+export function mount(root: HTMLElement, fullPath: string, context: AppContext): void {
+  latest = { root, path: fullPath, context };
+  const [path = '/bo'] = fullPath.split('?');
+  const previous = session;
   const active = sessionFor(context.store);
+  if (previous !== undefined && previous !== active) {
+    disposeWorkspace();
+  }
   document.documentElement.dataset['app'] = 'bo';
 
   // Sinkronisasi tema POS ke Back-Office
@@ -449,6 +483,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     watched = context.store;
     context.store.bus.on('role', () => {
       if (latest !== undefined) {
+        disposeWorkspace();
         mount(latest.root, latest.path, latest.context);
       }
     });
@@ -457,64 +492,38 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     navigate(target);
   };
 
-  screen?.destroy();
-  shell?.destroy();
-  screen = undefined;
-  shell = undefined;
-  closeAllModals();
+  loginScreen?.destroy();
+  loginScreen = undefined;
 
   if (path === '/bo') {
-    screen = renderLogin(active, go);
-    root.replaceChildren(screen.element);
-    screen.element.querySelector<HTMLInputElement>('.bo-login__input')?.focus();
+    disposeWorkspace();
+    closeAllModals();
+    loginScreen = renderLogin(active, go);
+    root.replaceChildren(loginScreen.element);
+    loginScreen.element.querySelector<HTMLInputElement>('.bo-login__input')?.focus();
     return;
   }
   if (active.state().user === undefined && context.store.getState().reviewMode) {
     active.login('sinta.spv', 'Kunci2026B');
   }
   if (active.state().user === undefined) {
+    disposeWorkspace();
     navigate('/bo');
     return;
   }
-
-  const explicitRoute = ROUTES[path];
-  const menuEntry = entryFor(path);
-
-  if (explicitRoute === undefined && menuEntry === undefined) {
+  if (ROUTES[path] === undefined && entryFor(path) === undefined) {
     navigate('/bo/dashboard');
     return;
   }
 
-  const screenId = explicitRoute ? explicitRoute.id : (menuEntry?.screenId ?? 'BO-02');
-  mountToken += 1;
-  const token = mountToken;
-
-  shell = createShell(active, go);
-  shell.setPage(path);
-  if (canOpenScreen(context.store.getState().role, screenId)) {
-    if (explicitRoute?.render !== undefined) {
-      screen = explicitRoute.render(active, go, query);
-      shell.content.replaceChildren(screen.element);
-    } else if (explicitRoute?.load !== undefined) {
-      shell.content.replaceChildren(
-        el(
-          'div',
-          { className: 'bo-panel bo-loading', attrs: { role: 'status' } },
-          label('memuatData'),
-        ),
-      );
-      void explicitRoute.load().then((r) => {
-        if (token === mountToken && shell !== undefined) {
-          screen = r(active, go, query);
-          shell.content.replaceChildren(screen.element);
-        }
-      });
-    } else {
-      screen = renderPlaceholder(path, go);
-      shell.content.replaceChildren(screen.element);
-    }
-  } else {
-    shell.content.replaceChildren(denied(active, go));
+  // Kerangka dan tab dipertahankan selama pengguna berpindah halaman di Back-Office. Bila akar
+  // aplikasi diganti (pengguna sempat membuka aplikasi lain), mulai dari kerangka baru.
+  if (workspace === undefined || shell?.element.parentElement !== root) {
+    disposeWorkspace();
+    const created = createShell(active, go);
+    shell = created;
+    workspace = createWorkspace(created, go, (target) => buildScreen(active, go, target));
+    root.replaceChildren(created.element);
   }
-  root.replaceChildren(shell.element);
+  workspace.show(fullPath);
 }

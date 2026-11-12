@@ -1,3 +1,4 @@
+import { screenActive } from '../screen-active';
 import { el } from '../../../shared/dom';
 import { formatDecimal } from '../../../shared/format';
 import { icon, type IconName } from '../../../shared/icons';
@@ -251,6 +252,9 @@ export function renderStock(
     refresh();
   });
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(element)) {
+      return;
+    }
     if (document.querySelector('.modal-overlay') !== null || !isPc()) {
       return;
     }

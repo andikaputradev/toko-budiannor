@@ -19,6 +19,7 @@ import {
   type InvoiceStatus,
 } from '../domain/invoices';
 import type { ScreenHandle } from './login';
+import { screenActive } from '../screen-active';
 
 const STATUS_LABELS: Readonly<Record<InvoiceStatus, LabelKey>> = {
   lunas: 'statusLunas',
@@ -326,6 +327,9 @@ export function renderSales(session: BoSession): ScreenHandle {
   status.select.addEventListener('change', apply);
 
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(element)) {
+      return;
+    }
     if (event.ctrlKey && event.key.toLowerCase() === 'p') {
       const row = visible().find((item) => item.number === selected);
       if (row !== undefined) {

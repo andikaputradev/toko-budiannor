@@ -40,6 +40,7 @@ import type { ScreenHandle } from './login';
 import { saveReturn } from './return-actions';
 import { createReturnList } from './return-list';
 import { openReturnNote } from './return-print';
+import { screenActive } from '../screen-active';
 
 interface RowRef {
   readonly line: SourceLine;
@@ -727,6 +728,9 @@ export function renderReturnForm(
   });
 
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(container)) {
+      return;
+    }
     if (document.body.classList.contains('is-modal-open')) {
       return;
     }

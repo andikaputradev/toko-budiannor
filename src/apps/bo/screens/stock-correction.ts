@@ -31,6 +31,7 @@ import {
 import { formatSigned, formatSignedRupiah } from '../domain/stock-report';
 import { createProductPicker } from '../picker';
 import type { ScreenHandle } from './login';
+import { screenActive } from '../screen-active';
 
 const WAREHOUSE_OPTIONS: readonly { readonly value: WarehouseId; readonly key: LabelKey }[] = [
   { value: 'display', key: 'namaGudangDisplay' },
@@ -800,6 +801,9 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
   };
 
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(element)) {
+      return;
+    }
     if (document.querySelector('.modal-overlay') !== null) {
       return;
     }

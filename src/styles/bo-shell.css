@@ -66,9 +66,211 @@
   outline-offset: var(--focus-ring-offset);
 }
 
-/* ===== Tab halaman (diisi bilah tab; kosong bila belum ada) ===== */
+/* ===== Tab halaman di bawah header ===== */
+.bo-tabs {
+  position: relative;
+  z-index: 20;
+  flex: none;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--bo-surface-soft);
+}
+
 .bo-tabs:empty {
   display: none;
+}
+
+.bo-tabs__bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px var(--primitive-space-4) 0;
+}
+
+.bo-tabs__nav {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.bo-tabs__list {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.bo-tabs__list::-webkit-scrollbar {
+  display: none;
+}
+
+.bo-tab {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 96px;
+  max-width: 220px;
+  height: 36px;
+  border: 1px solid var(--color-border-default);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--color-bg-page);
+  color: var(--color-text-secondary);
+}
+
+.bo-tab:hover {
+  background: var(--bo-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.bo-tab__link {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 12px;
+  overflow: hidden;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 35px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-tab__title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bo-tab__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.bo-tab__close .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.bo-tab__close:hover {
+  background: var(--bo-surface-hover);
+}
+
+.bo-tab--active {
+  border-color: var(--color-accent-default);
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+}
+
+.bo-tab--active:hover {
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+}
+
+.bo-tab--active .bo-tab__link {
+  font-weight: 700;
+}
+
+.bo-tab--active .bo-tab__close:hover {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.bo-tab__link:focus-visible,
+.bo-tab__close:focus-visible,
+.bo-tabs__more:focus-visible,
+.bo-tabs__menu-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.bo-tab--active .bo-tab__link:focus-visible,
+.bo-tab--active .bo-tab__close:focus-visible {
+  outline-color: var(--color-text-on-accent);
+}
+
+/* Penunjuk jumlah tab: membuka daftar semua tab terbuka. */
+.bo-tabs__more {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  margin-bottom: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bo-tabs__more .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.bo-tabs__menu {
+  position: absolute;
+  top: 100%;
+  right: var(--primitive-space-4);
+  z-index: 30;
+  min-width: 220px;
+  max-width: min(360px, 90vw);
+  max-height: 60vh;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: var(--bo-shadow-pop);
+}
+
+.bo-tabs__menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bo-tabs__menu-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.bo-tabs__menu-link:hover {
+  background: var(--bo-surface-hover);
+}
+
+.bo-tabs__menu-link--active {
+  background: var(--color-accent-soft);
+  font-weight: 700;
+}
+
+/* ===== Panel tab: tiap tab memegang satu layar yang mengisi area isi ===== */
+.bo-tabpanel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* ===== Penanda memuat layar ===== */

@@ -1,3 +1,4 @@
+import { screenActive } from '../screen-active';
 import { el } from '../../../shared/dom';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label, message } from '../../../shared/messages';
@@ -326,6 +327,9 @@ export function renderUnits(session: BoSession, query: URLSearchParams): ScreenH
   });
 
   const onKey = (event: KeyboardEvent): void => {
+    if (!screenActive(element)) {
+      return;
+    }
     if (document.querySelector('.modal-overlay') !== null) {
       return;
     }
