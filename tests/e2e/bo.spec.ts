@@ -339,7 +339,7 @@ test.describe('BO-05 Stok per Gudang', () => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
     await simulate(page, 'Picu stok negatif');
     await page.goto('/#/bo/stok?filter=negatif');
-    await expect(page.locator('.bo-pd-count')).toHaveText('1 barang');
+    await expect(page.locator('.bo-count')).toHaveText('1 barang');
     await expect(page.locator('.vtable__rows')).toContainText('Ditinjau (negatif)');
     await page.getByRole('button', { name: 'Tandai Sudah Ditinjau' }).click();
     await expect(

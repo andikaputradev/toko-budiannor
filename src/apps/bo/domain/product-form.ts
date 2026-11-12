@@ -333,6 +333,10 @@ export function buildProduct(
     active: base?.active ?? true,
     defaultUnit: draft.defaultUnit === '' ? undefined : draft.defaultUnit,
     photoName: draft.photoName === '' ? undefined : draft.photoName,
+    // Penanda barang proposal (tampil paling depan di POS) dan foto bawaan tidak ada di formulir,
+    // jadi dibawa dari barang lama; tanpa ini mengubah barang menjatuhkan keduanya.
+    pinned: base?.pinned,
+    photoUrl: base?.photoUrl,
     minByWarehouse: { display, besar },
     rak: draft.rak && draft.rak.trim() !== '' ? draft.rak.trim() : base?.rak,
     weight: draft.berat ? Number(draft.berat.replace(',', '.')) : base?.weight,

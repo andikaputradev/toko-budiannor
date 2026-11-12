@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
+import type { Product } from '../../../src/shared/data/types';
 import {
   buildProduct,
   draftOf,
@@ -243,5 +244,24 @@ describe('formulir barang: satuan bertahap, komisi, promo, dan biaya', () => {
     expect(draft.unitRows?.[0]?.code).toBe(first.baseUnit);
     expect(draft.promoPersen).toBe('12,5');
     expect(draft.komisiSalesPersen).toBe('');
+  });
+});
+
+describe('menyimpan barang tidak menjatuhkan penanda dan foto bawaan', () => {
+  it('mempertahankan pinned (barang proposal) dan photoUrl saat barang diubah', () => {
+    const first = products[0];
+    if (first === undefined) {
+      throw new Error('data kosong');
+    }
+    const proposal: Product = { ...first, pinned: true, photoUrl: 'produk/uji.webp' };
+    const saved = buildProduct({ ...draftOf(proposal), name: 'Nama Baru' }, proposal, proposal.id);
+    expect(saved.pinned).toBe(true);
+    expect(saved.photoUrl).toBe('produk/uji.webp');
+  });
+
+  it('barang baru tidak punya penanda proposal maupun photoUrl', () => {
+    const created = buildProduct({ ...base }, undefined, 'P-9100');
+    expect(created.pinned).toBeUndefined();
+    expect(created.photoUrl).toBeUndefined();
   });
 });
