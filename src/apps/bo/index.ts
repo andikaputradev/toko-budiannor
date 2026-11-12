@@ -19,6 +19,8 @@ import { createShell, type Shell } from './shell';
 import { createWorkspace, type Workspace } from './workspace';
 import '../../styles/bo-polish.css';
 import '../../styles/bo-shell.css';
+import '../../styles/bo-dashboard.css';
+import '../../styles/bo-dashboard-widgets.css';
 
 export interface AppContext {
   readonly store: Store;
@@ -37,7 +39,7 @@ interface RouteEntry {
 }
 
 const ROUTES: Readonly<Record<string, RouteEntry>> = {
-  '/bo/dashboard': { id: 'BO-02', render: (session, go) => renderDashboard(session, go) },
+  '/bo/dashboard': { id: 'BO-02', render: (session) => renderDashboard(session) },
   '/bo/barang': {
     id: 'BO-03',
     load: async () => {

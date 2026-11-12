@@ -103,57 +103,6 @@ export function createLineChart(
   return el('div', { className: 'bo-chart-line' }, chart);
 }
 
-export interface DonutSegment {
-  readonly label: string;
-  readonly value: number;
-  readonly color: string;
-}
-
-export function createDonutChart(
-  segments: readonly DonutSegment[],
-  size = 110,
-  strokeWidth = 14,
-): HTMLElement {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
-
-  const chart = svg('svg', {
-    viewBox: `0 0 ${size} ${size}`,
-    class: 'bo-donut-svg',
-    width: String(size),
-    height: String(size),
-    role: 'img',
-    'aria-label': 'Grafik komposisi omset kas dan piutang',
-  });
-
-  let accumulatedPercent = 0;
-
-  segments.forEach((seg) => {
-    const percent = seg.value / total;
-    const strokeDasharray = `${circumference * percent} ${circumference * (1 - percent)}`;
-    const strokeDashoffset = String(-circumference * accumulatedPercent);
-
-    const circle = svg('circle', {
-      cx: String(size / 2),
-      cy: String(size / 2),
-      r: String(radius),
-      fill: 'none',
-      stroke: seg.color,
-      'stroke-width': String(strokeWidth),
-      'stroke-dasharray': strokeDasharray,
-      'stroke-dashoffset': strokeDashoffset,
-      class: 'bo-donut-segment',
-      transform: `rotate(-90 ${size / 2} ${size / 2})`,
-    });
-
-    chart.append(circle);
-    accumulatedPercent += percent;
-  });
-
-  return el('div', { className: 'bo-donut-wrapper' }, chart);
-}
-
 // Warna kategori grafik: tujuh nada `--chart-1` sampai `--chart-7` (bo-dashboard.css), tetap sama
 // pada semua palet tema karena melambangkan kategori data, bukan aksen.
 export type ChartTone = 1 | 2 | 3 | 4 | 5 | 6 | 7;

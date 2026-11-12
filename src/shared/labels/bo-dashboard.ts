@@ -1,0 +1,22 @@
+// Teks Dashboard Back-Office sembilan widget (revisi putaran kedua).
+export const boDashboardLabels = {
+  dxGrafikJudul: 'Grafik Penjualan',
+  dxTotal: 'Total',
+  dxTotalAset: 'Total Aset',
+  dxTotalBeban: 'TOTAL',
+  dxBebanKatering: 'Beban Katering',
+  dxBebanBensin: 'Beban Bensin',
+  dxBebanListrik: 'Beban Listrik',
+  dxSegarkan: 'Segarkan',
+  dxDiperbarui: 'Data diperbarui',
+  dxPeriode: 'Periode',
+  dxPeriodeSebelumnya: 'Periode sebelumnya',
+  dxPeriodeBerikutnya: 'Periode berikutnya',
+  dxGrafikLaba: 'Grafik batang laba',
+  dxGrafikBeban: 'Grafik donat beban',
+  dxGrafikAset: 'Grafik batang aset',
+  dxDaftarKegiatan: 'Daftar kegiatan mendatang',
+  dxDaftarPelanggan: 'Daftar penjualan per pelanggan',
+  dxDaftarBarang: 'Daftar penjualan per barang',
+  dxDaftarHpp: 'Daftar monitoring HPP',
+};

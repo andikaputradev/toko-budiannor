@@ -1,660 +1,523 @@
-import { el } from '../../../shared/dom';
-import { formatDate, formatRupiah, formatTime } from '../../../shared/format';
-import { icon } from '../../../shared/icons';
-import { label } from '../../../shared/messages';
-import { createButton } from '../../../shared/ui/button';
+import { el, nextId } from '../../../shared/dom';
+import { formatRupiah, formatTime } from '../../../shared/format';
+import { icon, type IconName } from '../../../shared/icons';
+import { label, type LabelKey } from '../../../shared/messages';
+import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
-import { createDonutChart, createLineChart } from '../dashboard-charts';
-import { computeFullDashboard, type FullDashboardData } from '../domain/dashboard';
+import {
+  createColorBars,
+  createDonutTotal,
+  createHorizontalBars,
+  createLineChart,
+  type ChartTone,
+} from '../dashboard-charts';
+import {
+  computeFullDashboard,
+  dashboardWidgets,
+  hppTone,
+  type DashboardWidgetId,
+  type ExpenseKind,
+  type FullDashboardData,
+  type RankedItem,
+} from '../domain/dashboard';
 import type { ScreenHandle } from './login';
 
-export function renderDashboard(session: BoSession, go: (path: string) => void): ScreenHandle {
+type Period = 'harian' | 'bulanan';
+
+const EXPENSE_LABELS: Readonly<Record<ExpenseKind, LabelKey>> = {
+  gaji: 'bebanGaji',
+  katering: 'dxBebanKatering',
+  bensin: 'dxBebanBensin',
+  operasional: 'bebanOperasionalSingkat',
+  listrik: 'dxBebanListrik',
+};
+
+const EXPENSE_TONES: Readonly<Record<ExpenseKind, ChartTone>> = {
+  gaji: 1,
+  katering: 2,
+  bensin: 3,
+  operasional: 4,
+  listrik: 6,
+};
+
+// Elemen yang mengisi lebar batang lewat CSSOM (variabel --bar); CSP menolak atribut style.
+function bar(percent: number, className: string): HTMLElement {
+  const fill = el('span', { className });
+  fill.style.setProperty('--bar', `${String(Math.max(2, Math.min(100, percent)))}%`);
+  return el('span', { className: 'bo-dx-bar' }, fill);
+}
+
+// Daftar yang bisa digulir di dalam kartu: harus bisa difokus papan ketik dan bernama.
+function scroller(name: string, ...children: HTMLElement[]): HTMLElement {
+  return el(
+    'div',
+    { className: 'bo-dx-scroll', attrs: { tabindex: '0', role: 'region', 'aria-label': name } },
+    ...children,
+  );
+}
+
+function segmented(
+  groupName: string,
+  active: Period,
+  onSelect: (period: Period) => void,
+): HTMLElement {
+  const option = (period: Period, text: string): HTMLElement => {
+    const button = el('button', {
+      className: `bo-dx-seg__btn${active === period ? ' bo-dx-seg__btn--active' : ''}`,
+      attrs: { type: 'button', 'aria-pressed': active === period ? 'true' : 'false' },
+      text,
+    });
+    button.addEventListener('click', () => {
+      onSelect(period);
+    });
+    return button;
+  };
+  return el(
+    'div',
+    { className: 'bo-dx-seg', attrs: { role: 'group', 'aria-label': groupName } },
+    option('harian', label('omsetHarian')),
+    option('bulanan', label('omsetBulanan')),
+  );
+}
+
+function card(
+  id: DashboardWidgetId,
+  iconName: IconName,
+  title: string,
+  body: HTMLElement,
+  ...actions: Node[]
+): HTMLElement {
+  const titleId = nextId('dx-title');
+  return el(
+    'section',
+    { className: 'bo-dx-card', attrs: { 'data-widget': id, 'aria-labelledby': titleId } },
+    el(
+      'div',
+      { className: 'bo-dx-card__header' },
+      el(
+        'div',
+        { className: 'bo-dx-card__title' },
+        icon(iconName),
+        el('h2', { text: title, attrs: { id: titleId } }),
+      ),
+      actions.length > 0 && el('div', { className: 'bo-dx-card__actions' }, ...actions),
+    ),
+    body,
+  );
+}
+
+function legendRow(tone: ChartTone, name: string, value: string): HTMLElement {
+  return el(
+    'div',
+    { className: 'bo-dx-legend__row' },
+    el('span', { className: `bo-dx-legend__dot bo-tone-${String(tone)}` }),
+    el('span', { className: 'bo-dx-legend__name', text: name }),
+    el('strong', { className: 'bo-dx-legend__value', text: value }),
+  );
+}
+
+function medal(position: number): HTMLElement {
+  return el('span', {
+    className: `bo-dx-medal${position <= 3 ? ` bo-dx-medal--${String(position)}` : ''}`,
+    text: String(position),
+  });
+}
+
+function rankRow(position: number, item: RankedItem): HTMLElement {
+  return el(
+    'div',
+    { className: 'bo-dx-rank__item' },
+    medal(position),
+    el(
+      'div',
+      { className: 'bo-dx-rank__main' },
+      el(
+        'div',
+        { className: 'bo-dx-rank__line' },
+        el('strong', { className: 'bo-dx-rank__name', text: item.name }),
+        el('span', { className: 'bo-dx-rank__amount', text: formatRupiah(item.amount) }),
+        el('span', { className: 'bo-dx-chip', text: `${String(item.percent)}%` }),
+      ),
+      bar(item.percent, 'bo-dx-bar__fill bo-tone-1'),
+    ),
+  );
+}
+
+export function renderDashboard(session: BoSession): ScreenHandle {
   const store = session.store;
-  const container = el('div', { className: 'bo-dash-container' });
+  const container = el('div', { className: 'bo-dx' });
 
-  let omzetTab: 'harian' | 'bulanan' = 'harian';
-  let chartTab: 'harian' | 'bulanan' = 'harian';
-  let labaTab: 'harian' | 'bulanan' = 'harian';
-  let bebanTab: 'harian' | 'bulanan' = 'harian';
+  const periods: Record<'omset' | 'grafik' | 'laba' | 'beban', Period> = {
+    omset: 'harian',
+    grafik: 'harian',
+    laba: 'harian',
+    beban: 'harian',
+  };
+  const rankIndex = { pelanggan: 0, barang: 0 };
 
-  const tabToggle = (
-    active: 'harian' | 'bulanan',
-    onSelect: (tab: 'harian' | 'bulanan') => void,
-  ): HTMLElement => {
-    const dailyBtn = el(
+  const refreshButton = (onRefresh: () => void): HTMLElement => {
+    const button = el(
       'button',
       {
-        className: `bo-tab-btn ${active === 'harian' ? 'bo-tab-btn--active' : ''}`,
-        attrs: { type: 'button' },
+        className: 'bo-dx-icon-btn',
+        attrs: { type: 'button', 'aria-label': label('dxSegarkan'), title: label('dxSegarkan') },
       },
-      el('span', { text: label('omsetHarian') }),
+      icon('refresh-cw'),
     );
-    const monthlyBtn = el(
-      'button',
-      {
-        className: `bo-tab-btn ${active === 'bulanan' ? 'bo-tab-btn--active' : ''}`,
-        attrs: { type: 'button' },
-      },
-      el('span', { text: label('omsetBulanan') }),
-    );
-    dailyBtn.addEventListener('click', () => {
-      onSelect('harian');
+    button.addEventListener('click', () => {
+      onRefresh();
+      showToast({
+        kind: 'info',
+        text: `${label('dxDiperbarui')} ${formatTime(session.now())}`,
+      });
     });
-    monthlyBtn.addEventListener('click', () => {
-      onSelect('bulanan');
-    });
-    return el('div', { className: 'bo-tab-group' }, dailyBtn, monthlyBtn);
+    return button;
   };
 
-  const paint = (): void => {
+  const widgetBuilders = (
+    data: FullDashboardData,
+  ): Record<DashboardWidgetId, () => HTMLElement> => {
+    const setPeriod = (key: keyof typeof periods) => (period: Period) => {
+      periods[key] = period;
+      paint();
+    };
+
+    const omset = (): HTMLElement => {
+      const info =
+        periods.omset === 'harian' ? data.omset.dailyBreakdown : data.omset.monthlyBreakdown;
+      const stat = (name: string, value: string): HTMLElement =>
+        el(
+          'div',
+          { className: 'bo-dx-stat' },
+          el('span', { className: 'bo-dx-stat__label', text: name }),
+          el('strong', { className: 'bo-dx-stat__value', text: value }),
+        );
+      return card(
+        'omset',
+        'wallet',
+        label('omsetSingkat'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-omset' },
+          el('p', {
+            className: 'bo-dx-caption',
+            text: label(periods.omset === 'harian' ? 'omsetHariIniJudul' : 'omsetBulanIniJudul'),
+          }),
+          el('div', { className: 'bo-dx-big', text: formatRupiah(info.current) }),
+          el(
+            'div',
+            { className: 'bo-dx-stats' },
+            stat(label('dxTotal'), formatRupiah(info.total)),
+            stat(label('totalTransaksiNilai'), `${String(info.count)} Kali`),
+            stat(label('rataRataTransaksi'), formatRupiah(info.average)),
+          ),
+        ),
+        el('span', {
+          className: 'bo-dx-chip bo-dx-chip--ok',
+          text: `+${String(info.trendPercent)}%`,
+        }),
+        segmented(label('omsetSingkat'), periods.omset, setPeriod('omset')),
+      );
+    };
+
+    const grafik = (): HTMLElement => {
+      const points =
+        periods.grafik === 'harian' ? data.chartSeries.daily : data.chartSeries.monthly;
+      return card(
+        'grafik',
+        'trending-up',
+        label('dxGrafikJudul'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-line' },
+          el('div', { className: 'bo-dx-line__chart' }, createLineChart(points, 420, 104)),
+          el('p', { className: 'bo-dx-trend', text: data.chartSeries.trendText }),
+        ),
+        segmented(label('dxGrafikJudul'), periods.grafik, setPeriod('grafik')),
+      );
+    };
+
+    const kegiatan = (): HTMLElement =>
+      card(
+        'kegiatan',
+        'calendar',
+        label('kegiatanMendatangJudul'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body' },
+          scroller(
+            label('dxDaftarKegiatan'),
+            ...data.upcomingEvents.map((event) =>
+              el(
+                'div',
+                { className: 'bo-dx-event' },
+                el('span', { className: 'bo-dx-event__date', text: event.dateText }),
+                el(
+                  'div',
+                  { className: 'bo-dx-event__info' },
+                  el('strong', { text: event.code }),
+                  el('span', {
+                    text: `Jatuh Tempo ${event.type === 'utang' ? 'Utang' : 'Piutang'} · ${event.name}`,
+                  }),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+    const laba = (): HTMLElement => {
+      const info = periods.laba === 'harian' ? data.profit.daily : data.profit.monthly;
+      return card(
+        'laba',
+        'trending-up',
+        label('labaJudul'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-split' },
+          el(
+            'div',
+            { className: 'bo-dx-split__chart' },
+            createColorBars(
+              [
+                { label: label('pendapatan'), value: info.pendapatan, tone: 1 },
+                { label: label('nilaiHpp'), value: info.nilaiHpp, tone: 2 },
+                { label: label('pengeluaran'), value: info.pengeluaran, tone: 3 },
+                { label: label('labaJudul'), value: Math.max(0, info.laba), tone: 4 },
+              ],
+              label('dxGrafikLaba'),
+            ),
+          ),
+          el(
+            'div',
+            { className: 'bo-dx-split__text' },
+            el(
+              'div',
+              { className: 'bo-dx-legend' },
+              legendRow(1, label('pendapatan'), formatRupiah(info.pendapatan)),
+              legendRow(2, label('nilaiHpp'), formatRupiah(info.nilaiHpp)),
+              legendRow(3, label('pengeluaran'), formatRupiah(info.pengeluaran)),
+            ),
+            el(
+              'p',
+              { className: 'bo-dx-headline bo-dx-headline--ok' },
+              el('span', { text: label('labaJudul') }),
+              el('strong', { text: formatRupiah(info.laba) }),
+            ),
+          ),
+        ),
+        segmented(label('labaJudul'), periods.laba, setPeriod('laba')),
+      );
+    };
+
+    const beban = (): HTMLElement => {
+      const info = periods.beban === 'harian' ? data.expense.daily : data.expense.monthly;
+      return card(
+        'beban',
+        'wallet',
+        label('bebanJudul'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-split' },
+          el(
+            'div',
+            { className: 'bo-dx-split__chart bo-dx-split__chart--round' },
+            createDonutTotal(
+              info.items.map((item) => ({
+                label: label(EXPENSE_LABELS[item.key]),
+                value: item.amount,
+                tone: EXPENSE_TONES[item.key],
+              })),
+              [label('dxTotalBeban'), formatRupiah(info.beban)],
+              label('dxGrafikBeban'),
+            ),
+          ),
+          el(
+            'div',
+            { className: 'bo-dx-split__text' },
+            el(
+              'div',
+              { className: 'bo-dx-legend' },
+              ...info.items.map((item) =>
+                legendRow(
+                  EXPENSE_TONES[item.key],
+                  label(EXPENSE_LABELS[item.key]),
+                  formatRupiah(item.amount),
+                ),
+              ),
+            ),
+            el(
+              'p',
+              { className: 'bo-dx-headline bo-dx-headline--bad' },
+              el('span', { text: label('bebanJudul') }),
+              el('strong', { text: formatRupiah(info.beban) }),
+            ),
+          ),
+        ),
+        segmented(label('bebanJudul'), periods.beban, setPeriod('beban')),
+      );
+    };
+
+    const aset = (): HTMLElement =>
+      card(
+        'aset',
+        'banknote',
+        label('asetSaatIniJudul'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-aset' },
+          el(
+            'p',
+            { className: 'bo-dx-headline bo-dx-headline--info' },
+            el('span', { text: label('dxTotalAset') }),
+            el('strong', { text: formatRupiah(data.assets.total) }),
+          ),
+          createHorizontalBars(
+            [
+              {
+                label: label('labelKas'),
+                value: data.assets.kas,
+                text: formatRupiah(data.assets.kas),
+                tone: 1,
+              },
+              {
+                label: label('labelPiutang'),
+                value: data.assets.piutang,
+                text: formatRupiah(data.assets.piutang),
+                tone: 3,
+              },
+              {
+                label: label('labelStok'),
+                value: data.assets.stok,
+                text: formatRupiah(data.assets.stok),
+                tone: 2,
+              },
+            ],
+            label('dxGrafikAset'),
+          ),
+        ),
+      );
+
+    const rank = (
+      id: 'pelanggan' | 'barang',
+      iconName: IconName,
+      title: string,
+      listName: string,
+    ): HTMLElement => {
+      const index = rankIndex[id];
+      const period = data.rankPeriods[index];
+      const items = id === 'pelanggan' ? (period?.customers ?? []) : (period?.products ?? []);
+      const step = (delta: number): HTMLElement => {
+        const target = index + delta;
+        const disabled = data.rankPeriods[target] === undefined;
+        const button = el(
+          'button',
+          {
+            className: 'bo-dx-icon-btn bo-dx-icon-btn--sm',
+            attrs: {
+              type: 'button',
+              'aria-label': label(delta > 0 ? 'dxPeriodeSebelumnya' : 'dxPeriodeBerikutnya'),
+              ...(disabled ? { disabled: '' } : {}),
+            },
+          },
+          icon(delta > 0 ? 'chevron-left' : 'chevron-right'),
+        );
+        button.addEventListener('click', () => {
+          rankIndex[id] = target;
+          paint();
+        });
+        return button;
+      };
+      return card(
+        id,
+        iconName,
+        title,
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-rank' },
+          el(
+            'div',
+            {
+              className: 'bo-dx-period',
+              attrs: { role: 'group', 'aria-label': label('dxPeriode') },
+            },
+            step(1),
+            el('span', { className: 'bo-dx-period__label', text: period?.label ?? '' }),
+            step(-1),
+          ),
+          scroller(listName, ...items.map((item, position) => rankRow(position + 1, item))),
+        ),
+        refreshButton(() => {
+          rankIndex[id] = 0;
+          paint();
+        }),
+      );
+    };
+
+    const hpp = (): HTMLElement =>
+      card(
+        'hpp',
+        'triangle-alert',
+        label('monitoringHppJudul'),
+        el(
+          'div',
+          { className: 'bo-dx-card__body bo-dx-rank' },
+          scroller(
+            label('dxDaftarHpp'),
+            ...data.hppMonitoring.map((item, position) => {
+              const tone = hppTone(item.percent);
+              return el(
+                'div',
+                { className: 'bo-dx-rank__item' },
+                medal(position + 1),
+                el(
+                  'div',
+                  { className: 'bo-dx-rank__main' },
+                  el(
+                    'div',
+                    { className: 'bo-dx-rank__line' },
+                    el('strong', { className: 'bo-dx-rank__name', text: item.name }),
+                    el('span', {
+                      className: 'bo-dx-rank__amount bo-dx-rank__amount--bad',
+                      text: formatRupiah(item.hpp),
+                    }),
+                    el('span', {
+                      className: `bo-dx-chip bo-dx-chip--${tone}`,
+                      text: `${String(item.percent)}%`,
+                    }),
+                  ),
+                  bar(item.percent, `bo-dx-bar__fill bo-dx-bar__fill--${tone}`),
+                ),
+              );
+            }),
+          ),
+        ),
+        refreshButton(paint),
+      );
+
+    return {
+      omset,
+      grafik,
+      kegiatan,
+      laba,
+      beban,
+      aset,
+      pelanggan: () =>
+        rank('pelanggan', 'users', label('penjualanPelangganJudul'), label('dxDaftarPelanggan')),
+      barang: () =>
+        rank('barang', 'shopping-cart', label('penjualanBarangJudul'), label('dxDaftarBarang')),
+      hpp,
+    };
+  };
+
+  function paint(): void {
     const role = store.getState().role;
-    const data: FullDashboardData = computeFullDashboard(store.getState(), session.now(), role);
-
-    // 1. Header Ringkasan
-    const headerEl = el(
-      'div',
-      { className: 'bo-dash-header' },
-      el(
-        'div',
-        { className: 'bo-dash-header__titles' },
-        el('h2', { className: 'bo-dash-header__title', text: label('menuDashboard') }),
-        el('p', {
-          className: 'bo-dash-header__sub',
-          text: `Ringkasan operasional hari ini · Diperbarui ${formatDate(session.now())}, ${formatTime(session.now())} WIB`,
-        }),
-      ),
-    );
-
-    // 2. Baris 1: Omset, Grafik Penjualan, Kegiatan Mendatang (3 Kolom)
-    const omsetInfo =
-      omzetTab === 'harian' ? data.omset.dailyBreakdown : data.omset.monthlyBreakdown;
-    const omsetTitle =
-      omzetTab === 'harian' ? label('omsetHariIniJudul') : label('omsetBulanIniJudul');
-
-    const omsetCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--omset' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('wallet'),
-          el('h3', { className: 'bo-widget__title', text: label('omsetSingkat') }),
-          el('span', {
-            className: 'bo-badge bo-badge--positive',
-            text: `+${omsetInfo.trendPercent}%`,
-          }),
-        ),
-        tabToggle(omzetTab, (t) => {
-          omzetTab = t;
-          paint();
-        }),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body' },
-        el('p', { className: 'bo-stat-caption', text: omsetTitle }),
-        el('div', { className: 'bo-stat-main-number', text: formatRupiah(omsetInfo.current) }),
-        el(
-          'div',
-          { className: 'bo-stat-subgrid' },
-          el(
-            'div',
-            { className: 'bo-stat-subitem' },
-            el('span', { className: 'bo-stat-sublabel', text: 'Total' }),
-            el('strong', { className: 'bo-stat-subvalue', text: formatRupiah(omsetInfo.total) }),
-          ),
-          el(
-            'div',
-            { className: 'bo-stat-subitem' },
-            el('span', { className: 'bo-stat-sublabel', text: label('totalTransaksiNilai') }),
-            el('strong', { className: 'bo-stat-subvalue', text: `${omsetInfo.count} Kali` }),
-          ),
-          el(
-            'div',
-            { className: 'bo-stat-subitem' },
-            el('span', { className: 'bo-stat-sublabel', text: label('rataRataTransaksi') }),
-            el('strong', { className: 'bo-stat-subvalue', text: formatRupiah(omsetInfo.average) }),
-          ),
-        ),
-      ),
-    );
-
-    const chartPoints = chartTab === 'harian' ? data.chartSeries.daily : data.chartSeries.monthly;
-    const chartCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--chart' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('trending-up'),
-          el('h3', { className: 'bo-widget__title', text: 'Grafik Penjualan' }),
-        ),
-        tabToggle(chartTab, (t) => {
-          chartTab = t;
-          paint();
-        }),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body' },
-        createLineChart(chartPoints, 380, 130),
-        el('p', { className: 'bo-chart-subtext', text: data.chartSeries.trendText }),
-      ),
-    );
-
-    const eventsCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--events' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('calendar'),
-          el('h3', { className: 'bo-widget__title', text: label('kegiatanMendatangJudul') }),
-        ),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-events-list' },
-        ...data.upcomingEvents.map((evt) =>
-          el(
-            'div',
-            { className: 'bo-event-row' },
-            el('span', { className: 'bo-event-date-chip', text: evt.dateText }),
-            el(
-              'div',
-              { className: 'bo-event-info' },
-              el('strong', { className: 'bo-event-code', text: evt.code }),
-              el('span', {
-                className: 'bo-event-desc',
-                text: `Jatuh Tempo ${evt.type === 'utang' ? 'Utang' : 'Piutang'} · ${evt.name}`,
-              }),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    const row1 = el(
-      'div',
-      { className: 'bo-dash-grid bo-dash-grid--row1' },
-      omsetCard,
-      chartCard,
-      eventsCard,
-    );
-
-    // 3. Baris 2: Laba, Beban, Aset saat ini, Stok Minim (4 Kolom untuk Owner)
-    // Widget Laba
-    const labaInfo = labaTab === 'harian' ? data.profit.daily : data.profit.monthly;
-    const labaCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--finance' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('trending-up'),
-          el('h3', { className: 'bo-widget__title', text: label('labaJudul') }),
-        ),
-        tabToggle(labaTab, (t) => {
-          labaTab = t;
-          paint();
-        }),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-finance-body' },
-        el(
-          'div',
-          { className: 'bo-donut-center-wrap' },
-          createDonutChart([
-            {
-              label: 'Pendapatan',
-              value: labaInfo.pendapatan,
-              color: 'var(--color-accent-default)',
-            },
-            { label: 'HPP', value: labaInfo.nilaiHpp, color: 'var(--primitive-color-amber-800)' },
-            {
-              label: 'Pengeluaran',
-              value: labaInfo.pengeluaran,
-              color: 'var(--primitive-color-ink-600)',
-            },
-          ]),
-          el(
-            'div',
-            { className: 'bo-finance-headline' },
-            el('span', { className: 'bo-stat-caption', text: label('labaJudul') }),
-            el('strong', { className: 'bo-finance-number', text: formatRupiah(labaInfo.laba) }),
-          ),
-        ),
-        el(
-          'div',
-          { className: 'bo-legend-list' },
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', {
-              className: 'bo-legend-dot',
-              attrs: { style: 'background: var(--color-accent-default)' },
-            }),
-            el('span', { className: 'bo-legend-label', text: label('pendapatan') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(labaInfo.pendapatan) }),
-          ),
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', {
-              className: 'bo-legend-dot',
-              attrs: { style: 'background: var(--primitive-color-amber-800)' },
-            }),
-            el('span', { className: 'bo-legend-label', text: label('nilaiHpp') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(labaInfo.nilaiHpp) }),
-          ),
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', {
-              className: 'bo-legend-dot',
-              attrs: { style: 'background: var(--primitive-color-ink-600)' },
-            }),
-            el('span', { className: 'bo-legend-label', text: label('pengeluaran') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(labaInfo.pengeluaran) }),
-          ),
-        ),
-      ),
-    );
-
-    // Widget Beban
-    const bebanInfo = bebanTab === 'harian' ? data.expense.daily : data.expense.monthly;
-    const bebanCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--finance' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('wallet'),
-          el('h3', { className: 'bo-widget__title', text: label('bebanJudul') }),
-        ),
-        tabToggle(bebanTab, (t) => {
-          bebanTab = t;
-          paint();
-        }),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-finance-body' },
-        el(
-          'div',
-          { className: 'bo-donut-center-wrap' },
-          createDonutChart([
-            {
-              label: 'Gaji',
-              value: bebanInfo.bebanGaji,
-              color: 'var(--primitive-color-night-800)',
-            },
-            {
-              label: 'Operasional',
-              value: bebanInfo.bebanOperasional,
-              color: 'var(--color-accent-default)',
-            },
-          ]),
-          el(
-            'div',
-            { className: 'bo-finance-headline' },
-            el('span', { className: 'bo-stat-caption', text: label('bebanJudul') }),
-            el('strong', { className: 'bo-finance-number', text: formatRupiah(bebanInfo.beban) }),
-          ),
-        ),
-        el(
-          'div',
-          { className: 'bo-legend-list' },
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', {
-              className: 'bo-legend-dot',
-              attrs: { style: 'background: var(--primitive-color-night-800)' },
-            }),
-            el('span', { className: 'bo-legend-label', text: label('bebanGaji') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(bebanInfo.bebanGaji) }),
-          ),
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', {
-              className: 'bo-legend-dot',
-              attrs: { style: 'background: var(--color-accent-default)' },
-            }),
-            el('span', { className: 'bo-legend-label', text: label('bebanOperasionalSingkat') }),
-            el('strong', {
-              className: 'bo-legend-val',
-              text: formatRupiah(bebanInfo.bebanOperasional),
-            }),
-          ),
-        ),
-      ),
-    );
-
-    // Widget Aset Saat Ini
-    const asetCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--asset' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('banknote'),
-          el('h3', { className: 'bo-widget__title', text: label('asetSaatIniJudul') }),
-        ),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body' },
-        el('div', { className: 'bo-stat-caption', text: 'Total Aset' }),
-        el('div', { className: 'bo-asset-total-number', text: formatRupiah(data.assets.total) }),
-        el(
-          'div',
-          { className: 'bo-progress-stack' },
-          el('div', {
-            className: 'bo-progress-stack__bar bo-progress--kas',
-            attrs: { style: `width: ${data.assets.percentKas}%` },
-          }),
-          el('div', {
-            className: 'bo-progress-stack__bar bo-progress--piutang',
-            attrs: { style: `width: ${data.assets.percentPiutang}%` },
-          }),
-          el('div', {
-            className: 'bo-progress-stack__bar bo-progress--stok',
-            attrs: { style: `width: ${data.assets.percentStok}%` },
-          }),
-        ),
-        el(
-          'div',
-          { className: 'bo-legend-list bo-asset-legend' },
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', { className: 'bo-legend-dot bo-dot--kas' }),
-            el('span', { className: 'bo-legend-label', text: label('labelKas') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(data.assets.kas) }),
-          ),
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', { className: 'bo-legend-dot bo-dot--piutang' }),
-            el('span', { className: 'bo-legend-label', text: label('labelPiutang') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(data.assets.piutang) }),
-          ),
-          el(
-            'div',
-            { className: 'bo-legend-item' },
-            el('span', { className: 'bo-legend-dot bo-dot--stok' }),
-            el('span', { className: 'bo-legend-label', text: label('labelStok') }),
-            el('strong', { className: 'bo-legend-val', text: formatRupiah(data.assets.stok) }),
-          ),
-        ),
-      ),
-    );
-
-    const btnLihatSemua = createButton({
-      variant: 'secondary',
-      text: label('lihatSemua'),
-      onClick: () => {
-        go('/bo/stok');
-      },
-    });
-    btnLihatSemua.classList.add('is-btn-sm');
-
-    // Widget Stok Minim
-    const stokMinimCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--stok' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('triangle-alert'),
-          el('h3', { className: 'bo-widget__title', text: label('daftarStokMinimJudul') }),
-        ),
-        btnLihatSemua,
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-rank-list' },
-        ...data.lowStockItems.map((item) =>
-          el(
-            'div',
-            { className: 'bo-rank-row' },
-            el('span', { className: 'bo-rank-dot bo-rank-dot--danger' }),
-            el('span', { className: 'bo-rank-name', text: item.name }),
-            el('span', {
-              className: `bo-badge ${item.remaining === 0 ? 'bo-badge--danger' : 'bo-badge--warning'}`,
-              text: `sisa=${item.remaining}`,
-            }),
-          ),
-        ),
-      ),
-    );
-
-    // 4. Baris 3: Monitoring HPP, Penjualan Barang, Penjualan Pelanggan, Pelanggan Berhutang
-    // Widget Monitoring HPP
-    const hppCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--hpp' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('triangle-alert'),
-          el('h3', { className: 'bo-widget__title', text: label('monitoringHppJudul') }),
-        ),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-rank-list' },
-        ...data.hppMonitoring.map((item) =>
-          el(
-            'div',
-            { className: 'bo-rank-row' },
-            el(
-              'div',
-              { className: 'bo-rank-details' },
-              el('strong', { className: 'bo-rank-name', text: item.name }),
-              el('span', {
-                className: 'bo-rank-sub',
-                text: `${formatRupiah(item.hpp)} vs ${formatRupiah(item.price)}`,
-              }),
-            ),
-            el('span', { className: 'bo-badge bo-badge--danger', text: `${item.percent}%` }),
-          ),
-        ),
-      ),
-    );
-
-    // Widget Penjualan Barang
-    const barangCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--rank' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('shopping-cart'),
-          el('h3', { className: 'bo-widget__title', text: label('penjualanBarangJudul') }),
-        ),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-rank-list' },
-        ...data.topProducts.map((item) =>
-          el(
-            'div',
-            { className: 'bo-rank-item' },
-            el(
-              'div',
-              { className: 'bo-rank-row' },
-              el(
-                'div',
-                { className: 'bo-rank-details' },
-                el('strong', { className: 'bo-rank-name', text: item.name }),
-                el('span', { className: 'bo-rank-sub', text: formatRupiah(item.amount) }),
-              ),
-              el('span', { className: 'bo-badge bo-badge--neutral', text: `${item.percent}%` }),
-            ),
-            el(
-              'div',
-              { className: 'bo-mini-progress' },
-              el('div', {
-                className: 'bo-mini-progress__bar',
-                attrs: { style: `width: ${item.percent}%` },
-              }),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    // Widget Penjualan Pelanggan
-    const pelangganCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--rank' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('users'),
-          el('h3', { className: 'bo-widget__title', text: label('penjualanPelangganJudul') }),
-        ),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-rank-list' },
-        ...data.topCustomers.map((item) =>
-          el(
-            'div',
-            { className: 'bo-rank-item' },
-            el(
-              'div',
-              { className: 'bo-rank-row' },
-              el(
-                'div',
-                { className: 'bo-rank-details' },
-                el('strong', { className: 'bo-rank-name', text: item.name }),
-                el('span', { className: 'bo-rank-sub', text: formatRupiah(item.amount) }),
-              ),
-              el('span', { className: 'bo-badge bo-badge--neutral', text: `${item.percent}%` }),
-            ),
-            el(
-              'div',
-              { className: 'bo-mini-progress' },
-              el('div', {
-                className: 'bo-mini-progress__bar',
-                attrs: { style: `width: ${item.percent}%` },
-              }),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    // Widget Pelanggan Berhutang
-    const hutangCard = el(
-      'section',
-      { className: 'bo-widget bo-widget--debt' },
-      el(
-        'div',
-        { className: 'bo-widget__header' },
-        el(
-          'div',
-          { className: 'bo-widget__title-wrap' },
-          icon('triangle-alert'),
-          el('h3', { className: 'bo-widget__title', text: label('pelangganBerhutangJudul') }),
-        ),
-      ),
-      el(
-        'div',
-        { className: 'bo-widget__body bo-rank-list' },
-        ...data.overdueCustomers.map((item) => {
-          const barWidth = Math.min(100, Math.max(10, Math.round((item.overdueDays / 140) * 100)));
-          return el(
-            'div',
-            { className: 'bo-rank-item' },
-            el(
-              'div',
-              { className: 'bo-rank-row' },
-              el('strong', { className: 'bo-rank-name', text: item.name }),
-              el('span', {
-                className: 'bo-badge bo-badge--danger',
-                text: `${item.overdueDays} Hari`,
-              }),
-            ),
-            el(
-              'div',
-              { className: 'bo-mini-progress' },
-              el('div', {
-                className: 'bo-mini-progress__bar bo-mini-progress__bar--danger',
-                attrs: { style: `width: ${barWidth}%` },
-              }),
-            ),
-          );
-        }),
-      ),
-    );
-
-    // Susun grid sesuai role Owner vs Staff
-    if (data.isOwner) {
-      const row2 = el(
-        'div',
-        { className: 'bo-dash-grid bo-dash-grid--row2' },
-        labaCard,
-        bebanCard,
-        asetCard,
-        stokMinimCard,
-      );
-      const row3 = el(
-        'div',
-        { className: 'bo-dash-grid bo-dash-grid--row3' },
-        hppCard,
-        barangCard,
-        pelangganCard,
-        hutangCard,
-      );
-      container.replaceChildren(headerEl, row1, row2, row3);
-    } else {
-      // Tampilan Staff: Tanpa widget finansial sensitif
-      const staffRow2 = el(
-        'div',
-        { className: 'bo-dash-grid bo-dash-grid--row1' },
-        barangCard,
-        pelangganCard,
-        stokMinimCard,
-      );
-      container.replaceChildren(headerEl, row1, staffRow2);
-    }
-  };
+    const data = computeFullDashboard(store.getState(), session.now(), role);
+    const builders = widgetBuilders(data);
+    const widgets = dashboardWidgets(role);
+    container.classList.toggle('bo-dx--spv', widgets.length === 5);
+    container.replaceChildren(...widgets.map((id) => builders[id]()));
+  }
 
   const unsubscribe = store.subscribe(paint);
   paint();

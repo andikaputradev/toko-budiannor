@@ -212,17 +212,6 @@ test.describe('kerangka Back-Office', () => {
   });
 });
 
-test.describe('BO-02 Dashboard', () => {
-  test('kartu, grafik, tabel peringatan, strip, dan tautan Lihat Semua Stok', async ({ page }) => {
-    await loginBo(page, 'sinta.spv', 'Kunci2026B');
-    await expect(page.locator('.bo-widget--omset')).toBeVisible();
-    await expect(page.locator('.bo-widget--chart')).toBeVisible();
-    await expect(page.locator('.bo-widget--stok')).toBeVisible();
-    await page.getByRole('button', { name: 'Lihat Semua' }).first().click();
-    await expect(page).toHaveURL(/#\/bo\/stok$/);
-  });
-});
-
 test.describe('BO-03 Barang', () => {
   test('tabel virtual 3.600 baris dan form seluruh informasi satu barang', async ({ page }) => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');

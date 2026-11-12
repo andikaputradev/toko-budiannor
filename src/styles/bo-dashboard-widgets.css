@@ -1,0 +1,539 @@
+/* Dashboard Back-Office: tata letak 3 x 3 dan gaya widget. Warna dan grafik ada di bo-dashboard.css. */
+
+/* ===== Tata letak: mengisi tinggi layar tanpa scroll halaman ===== */
+.bo-dx {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 0;
+}
+
+.bo-dx > .bo-dx-card {
+  grid-column: span 2;
+}
+
+/* Supervisor: lima widget (tiga di atas, dua di bawah). */
+.bo-dx--spv {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.bo-dx--spv > .bo-dx-card[data-widget='pelanggan'],
+.bo-dx--spv > .bo-dx-card[data-widget='barang'] {
+  grid-column: span 3;
+}
+
+.bo-dx-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 12px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: var(--bo-shadow);
+}
+
+.bo-dx-card__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.bo-dx-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bo-dx-card__title .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent-default);
+}
+
+.bo-dx-card__title h2 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-dx-card__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.bo-dx-card__body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: 6px;
+}
+
+/* ===== Kontrol kecil ===== */
+.bo-dx-seg {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--bo-line-strong);
+  border-radius: 999px;
+  background: var(--color-bg-surface);
+}
+
+.bo-dx-seg__btn {
+  min-height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bo-dx-seg__btn--active {
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+}
+
+.bo-dx-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.bo-dx-icon-btn:hover:not(:disabled) {
+  background: var(--bo-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.bo-dx-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bo-dx-icon-btn .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.bo-dx-seg__btn:focus-visible,
+.bo-dx-icon-btn:focus-visible,
+.bo-dx-scroll:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.bo-dx-chip {
+  flex: none;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--bo-surface-soft);
+  color: var(--color-text-primary);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.bo-dx-chip--ok,
+.bo-dx-chip--aman {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}
+
+.bo-dx-chip--waspada {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-fg);
+}
+
+.bo-dx-chip--bahaya {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-fg);
+}
+
+/* ===== Omset ===== */
+.bo-dx-omset {
+  justify-content: space-between;
+}
+
+.bo-dx-caption {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.bo-dx-big {
+  font-size: clamp(22px, 4.2vh, 36px);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.bo-dx-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.bo-dx-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bo-dx-stat__label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.bo-dx-stat__value {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Grafik garis ===== */
+.bo-dx-line {
+  gap: 2px;
+}
+
+.bo-dx-line__chart {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.bo-dx-line__chart .bo-chart-line,
+.bo-dx-line__chart .bo-chart-line-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bo-chart-line-grid {
+  stroke: var(--color-border-default);
+  stroke-dasharray: 2 4;
+}
+
+.bo-chart-line-path {
+  stroke: var(--color-accent-default);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bo-chart-line-area {
+  fill: var(--color-accent-soft);
+  opacity: 0.7;
+}
+
+.bo-chart-line-dot {
+  fill: var(--color-bg-surface);
+  stroke: var(--color-accent-default);
+  stroke-width: 2.5;
+}
+
+.bo-chart-line-label {
+  fill: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bo-dx-trend {
+  margin: 0;
+  color: var(--color-accent-default);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ===== Kegiatan, dan daftar yang menggulir di dalam kartu ===== */
+.bo-dx-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 6px;
+  scrollbar-width: thin;
+}
+
+.bo-dx-event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.bo-dx-event__date {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.bo-dx-event__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.bo-dx-event__info strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.bo-dx-event__info span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Laba dan Beban: grafik di kiri, legenda di kanan ===== */
+.bo-dx-split {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.bo-dx-split__chart {
+  flex: 0 0 38%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.bo-dx-split__chart--round {
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 1;
+}
+
+.bo-dx-split__text {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.bo-dx-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bo-dx-legend__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.bo-dx-legend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.bo-dx-legend__name {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-dx-legend__value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bo-dx-headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+}
+
+.bo-dx-headline span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bo-dx-headline strong {
+  font-size: clamp(15px, 2.6vh, 20px);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.bo-dx-headline--ok {
+  color: var(--chart-4);
+}
+
+.bo-dx-headline--bad {
+  color: var(--chart-3);
+}
+
+.bo-dx-headline--info {
+  color: var(--chart-1);
+}
+
+/* ===== Aset ===== */
+.bo-dx-aset {
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* ===== Peringkat dan Monitoring HPP ===== */
+.bo-dx-rank {
+  gap: 4px;
+}
+
+.bo-dx-period {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+}
+
+.bo-dx-rank__item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.bo-dx-rank__main {
+  min-width: 0;
+}
+
+.bo-dx-rank__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.bo-dx-rank__name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-dx-rank__amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bo-dx-rank__amount--bad {
+  color: var(--chart-3);
+}
+
+.bo-dx-bar {
+  display: block;
+  height: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--bo-surface-soft);
+}
+
+.bo-dx-bar__fill {
+  display: block;
+  width: var(--bar, 0);
+  height: 100%;
+  border-radius: 2px;
+  background: var(--tone, var(--chart-1));
+}
+
+.bo-dx-bar__fill--bahaya {
+  background: var(--chart-3);
+}
+
+.bo-dx-bar__fill--waspada {
+  background: var(--chart-2);
+}
+
+.bo-dx-bar__fill--aman {
+  background: var(--chart-4);
+}
+
+.bo-dx-medal {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bo-dx-medal--1 {
+  background: #fde68a;
+  color: #7a4f01;
+}
+
+.bo-dx-medal--2 {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.bo-dx-medal--3 {
+  background: #fdba74;
+  color: #7c2d12;
+}
+
+[data-app='bo'][data-pos-scheme='gelap'] .bo-dx-medal--1 {
+  background: #78350f;
+  color: #fde68a;
+}
+
+[data-app='bo'][data-pos-scheme='gelap'] .bo-dx-medal--2 {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+[data-app='bo'][data-pos-scheme='gelap'] .bo-dx-medal--3 {
+  background: #7c2d12;
+  color: #fed7aa;
+}

@@ -23,6 +23,9 @@ async function loginBo(
 async function openPage(page: Page, hash: string): Promise<void> {
   await page.goto(`/#${hash}`);
   await expect(page).toHaveURL(new RegExp(`#${hash.replace(/[?.]/g, '\\$&')}$`));
+  // Render rute berjalan sesudah perubahan hash; tunggu sampai tab aktif benar-benar berganti
+  // agar navigasi beruntun tidak saling mendahului.
+  await expect(page.locator('.bo-tab--active .bo-tab__link')).toHaveAttribute('href', `#${hash}`);
 }
 
 const tabs = (page: Page) => page.locator('.bo-tab');
@@ -146,18 +149,13 @@ test.describe('K5 tab halaman', () => {
     await expect(page.locator('.bo-tab--active')).toContainText('Data Barang');
   });
 
-  test('Lihat Semua dengan tab stok berquery merender ulang isi tab yang sama', async ({
-    page,
-  }) => {
+  test('rute yang sama dengan query berbeda merender ulang isi tab yang sama', async ({ page }) => {
     await loginBo(page);
     await openPage(page, '/bo/stok?filter=minimum');
     const panel = page.locator('.bo-tabpanel:not([hidden])');
     await expect(panel.getByText('256 barang')).toBeVisible();
 
-    await page.locator('.bo-tab__link', { hasText: 'Dashboard' }).click();
-    await expect(page).toHaveURL(/#\/bo\/dashboard$/);
-    await page.getByRole('button', { name: 'Lihat Semua' }).first().click();
-    await expect(page).toHaveURL(/#\/bo\/stok$/);
+    await openPage(page, '/bo/stok');
     await expect(tabs(page)).toHaveCount(2);
     await expect(panel.getByText('256 barang')).toHaveCount(0);
   });

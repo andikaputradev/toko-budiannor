@@ -1,3 +1,4 @@
+import { boDashboardLabels } from './labels/bo-dashboard';
 import { boMasterLabels } from './labels/bo-master';
 import { boReturLabels } from './labels/bo-retur';
 import { boShellLabels } from './labels/bo-shell';
@@ -169,6 +170,7 @@ export const labels = {
   ...mobileLabels,
   ...boMasterLabels,
   ...boReturLabels,
+  ...boDashboardLabels,
   ...boShellLabels,
   ...boStokLabels,
   ...ownerDashboardLabels,

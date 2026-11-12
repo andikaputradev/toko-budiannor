@@ -1915,3 +1915,18 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1905: "Semua tab". Kunci boTabSemua.
 - TB-1906: "Halaman yang terbuka". Kunci boDaftarTab.
 - TB-1907: "Tab halaman". Kunci boHalamanTab.
+- TB-1908: "Grafik Penjualan". Kunci dxGrafikJudul.
+- TB-1909: "Beban Katering". Kunci dxBebanKatering.
+- TB-1910: "Beban Bensin". Kunci dxBebanBensin.
+- TB-1911: "Beban Listrik". Kunci dxBebanListrik.
+- TB-1912: "Segarkan". Kunci dxSegarkan.
+- TB-1913: "Data diperbarui". Kunci dxDiperbarui.
+- TB-1914: "Periode sebelumnya". Kunci dxPeriodeSebelumnya.
+- TB-1915: "Periode berikutnya". Kunci dxPeriodeBerikutnya.
+- TB-1916: "Grafik batang laba". Kunci dxGrafikLaba.
+- TB-1917: "Grafik donat beban". Kunci dxGrafikBeban.
+- TB-1918: "Grafik batang aset". Kunci dxGrafikAset.
+- TB-1919: "Daftar kegiatan mendatang". Kunci dxDaftarKegiatan.
+- TB-1920: "Daftar penjualan per pelanggan". Kunci dxDaftarPelanggan.
+- TB-1921: "Daftar penjualan per barang". Kunci dxDaftarBarang.
+- TB-1922: "Daftar monitoring HPP". Kunci dxDaftarHpp.

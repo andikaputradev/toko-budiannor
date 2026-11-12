@@ -76,9 +76,6 @@ export interface ExpenseItem {
 export interface ExpenseBreakdown {
   readonly beban: number;
   readonly items: readonly ExpenseItem[];
-  // Turunan untuk layar lama; dihapus saat layar Dashboard ditulis ulang.
-  readonly bebanGaji: number;
-  readonly bebanOperasional: number;
 }
 
 export interface RankPeriod {
@@ -230,8 +227,6 @@ function expenseOf(amounts: Readonly<Record<ExpenseKind, number>>): ExpenseBreak
   return {
     beban: items.reduce((sum, item) => sum + item.amount, 0),
     items,
-    bebanGaji: amounts.gaji,
-    bebanOperasional: amounts.operasional,
   };
 }
 
