@@ -131,17 +131,12 @@ describe('Komisi Sales per barang', () => {
       ?.metrics.find((metric) => metric.label === 'masterMetKomisiBulan')?.value;
 
   it('memakai persen barang bila terisi dan persen profil sales bila kosong, per baris', () => {
-    const base = generateDataset();
-    const own: Product = {
-      ...base.products[0]!,
-      id: 'T-A',
-      salesCommission: { percent: 5, nominal: 0 },
-    };
-    const none: Product = {
-      ...base.products[1]!,
-      id: 'T-B',
-      salesCommission: undefined,
-    };
+    const [first, second] = generateDataset().products;
+    if (first === undefined || second === undefined) {
+      throw new Error('dataset tanpa barang');
+    }
+    const own: Product = { ...first, id: 'T-A', salesCommission: { percent: 5, nominal: 0 } };
+    const none: Product = { ...second, id: 'T-B', salesCommission: undefined };
     const ctx = contextWith({
       products: [own, none],
       sales: [
