@@ -186,7 +186,8 @@ function createProduct(index: number, random: Random): Product {
     stock: { display, besar },
     rak,
     weight,
-    salesCommission: { percent: commPercent, nominal: commNominal },
+    // Sepertiga barang tidak punya komisi sendiri, jadi komisinya mengikuti persen profil sales.
+    ...(index % 3 === 2 ? {} : { salesCommission: { percent: commPercent, nominal: commNominal } }),
     promo: { percent: promoPercent, nominal: promoNominal },
     notes: index % 5 === 0 ? 'Barang stok banyak, harga diskon' : 'Stok reguler toko',
     supplierName,

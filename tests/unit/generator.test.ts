@@ -112,4 +112,11 @@ describe('generator data fiktif', () => {
     expect(first?.salesCommission).toBeDefined();
     expect(first?.initialStock).toBeDefined();
   });
+
+  it('sepertiga barang tidak punya komisi sendiri sehingga komisinya ikut profil sales', () => {
+    const withoutOwn = dataset.products.filter((item) => item.salesCommission === undefined);
+    const withOwn = dataset.products.filter((item) => item.salesCommission !== undefined);
+    expect(withoutOwn.length).toBeGreaterThan(0);
+    expect(withOwn.length).toBeGreaterThan(withoutOwn.length);
+  });
 });

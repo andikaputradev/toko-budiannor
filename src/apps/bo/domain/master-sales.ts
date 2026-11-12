@@ -1,5 +1,6 @@
 import { wibDate } from '../../../shared/data/receivable';
 import type { AppUser } from '../../../shared/data/types';
+import { commissionPercent } from '../../../shared/domain/promo';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label, type LabelKey } from '../../../shared/messages';
 import { lineSubtotal } from '../../pos/domain/bill';
@@ -106,9 +107,17 @@ function ensureProfiles(ctx: MasterContext): SalesProfile[] {
   return [...registry.sales.values()];
 }
 
+// Dasar komisi: nilai baris beserta barangnya, supaya komisi dihitung per baris (persen barang
+// bila terisi, selain itu persen profil sales).
+interface CommissionBase {
+  readonly productId: string | undefined;
+  readonly amount: number;
+}
+
 interface Totals {
   total: number;
   documents: Set<string>;
+  bases: CommissionBase[];
 }
 
 /** Omzet bulan berjalan per penjual: baris penjualan POS dan Sales Order yang dibuat sales. */
@@ -116,10 +125,16 @@ function totalsBySeller(ctx: MasterContext): Map<string, Totals> {
   const state = ctx.store.getState();
   const month = wibDate(ctx.now()).slice(0, 7);
   const result = new Map<string, Totals>();
-  const add = (id: string, amount: number, document: string): void => {
-    const current = result.get(id) ?? { total: 0, documents: new Set<string>() };
+  const add = (
+    id: string,
+    amount: number,
+    document: string,
+    bases: readonly CommissionBase[],
+  ): void => {
+    const current = result.get(id) ?? { total: 0, documents: new Set<string>(), bases: [] };
     current.total += amount;
     current.documents.add(document);
+    current.bases.push(...bases);
     result.set(id, current);
   };
   for (const sale of state.data.sales) {
@@ -127,12 +142,19 @@ function totalsBySeller(ctx: MasterContext): Map<string, Totals> {
       continue;
     }
     for (const line of sale.lines) {
-      add(line.sellerId ?? sale.cashierId, lineSubtotal(line), sale.number);
+      const amount = lineSubtotal(line);
+      add(line.sellerId ?? sale.cashierId, amount, sale.number, [
+        { productId: line.productId, amount },
+      ]);
     }
   }
   for (const order of state.salesOrders) {
     if (wibDate(new Date(order.createdAt)).slice(0, 7) === month) {
-      add(order.createdBy, order.total, order.number);
+      const bases: CommissionBase[] =
+        order.lines.length > 0
+          ? order.lines.map((line) => ({ productId: line.productId, amount: lineSubtotal(line) }))
+          : [{ productId: undefined, amount: order.total }];
+      add(order.createdBy, order.total, order.number, bases);
     }
   }
   return result;
@@ -142,12 +164,25 @@ function buildRows(ctx: MasterContext): readonly MasterRow[] {
   const profiles = ensureProfiles(ctx);
   const totals = totalsBySeller(ctx);
   const users = ctx.store.getState().data.users;
+  const products = new Map(ctx.store.getState().data.products.map((item) => [item.id, item]));
   return profiles
     .map((profile): MasterRow => {
       const found = totals.get(profile.id);
       const revenue = found?.total ?? 0;
       const documents = found?.documents.size ?? 0;
-      const commission = Math.round((revenue * profile.commission) / 100);
+      const commission = Math.round(
+        (found?.bases ?? []).reduce(
+          (sum, base) =>
+            sum +
+            (base.amount *
+              commissionPercent(
+                base.productId === undefined ? undefined : products.get(base.productId),
+                profile.commission,
+              )) /
+              100,
+          0,
+        ),
+      );
       const progress =
         profile.target > 0 ? Math.min(100, Math.round((revenue / profile.target) * 100)) : 0;
       const role = label(ROLE_LABELS[profile.role]);
