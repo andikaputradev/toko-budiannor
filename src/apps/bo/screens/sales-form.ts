@@ -5,6 +5,7 @@ import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
+import { linkFieldLabels } from './field-labels';
 import type { ScreenHandle } from './login';
 import {
   calculateSalesTotals,
@@ -863,6 +864,7 @@ export function renderSalesForm(
     el('div', { className: 'bo-panel' }, quickEntryBar, tableEl),
     footerCard,
   );
+  linkFieldLabels(container);
 
   return {
     element: container,

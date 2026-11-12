@@ -4,6 +4,7 @@ import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
+import { linkFieldLabels } from './field-labels';
 import type { ScreenHandle } from './login';
 import {
   calculatePurchaseTotals,
@@ -681,6 +682,7 @@ export function renderPurchaseForm(
     el('div', { className: 'bo-panel' }, quickEntryBar, tableEl),
     footerCard,
   );
+  linkFieldLabels(container);
 
   return {
     element: container,

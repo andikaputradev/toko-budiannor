@@ -23,15 +23,12 @@ export function renderSettingsScreen(
     container.replaceChildren();
 
     // Top Bar
+    const subtitle = 'Kelola identitas usaha, rekening bank, printer kasir, dan backup database';
     const titleBlock = el(
       'div',
       {},
       el('h1', { className: 'bo-page-title', text: 'Pengaturan Profil Toko & Sistem' }),
-      el('p', {
-        className: 't-label',
-        attrs: { style: 'margin: 2px 0 0 0;' },
-        text: 'Kelola identitas usaha, rekening bank, printer kasir, dan backup database',
-      }),
+      el('p', { className: 't-label bo-acc-sub', attrs: { title: subtitle }, text: subtitle }),
     );
 
     const tabs: { key: SettingsTab; text: string }[] = [
@@ -71,12 +68,7 @@ export function renderSettingsScreen(
     const topBar = el(
       'div',
       { className: 'bo-toolbar' },
-      el(
-        'div',
-        { className: 'bo-toolbar__left', attrs: { style: 'gap: 20px;' } },
-        titleBlock,
-        tabSwitcher,
-      ),
+      el('div', { className: 'bo-toolbar__left bo-acc-toolbar-left' }, titleBlock, tabSwitcher),
       el('div', { className: 'bo-toolbar__right' }, btnSimpan),
     );
 
@@ -122,17 +114,14 @@ export function renderSettingsScreen(
       attrs: { type: 'text', value: profile.npwp },
     });
     const footerInput = el('textarea', {
-      className: 'input',
-      attrs: { rows: '3', style: 'height: auto; resize: vertical;' },
+      className: 'input bo-footer-input',
+      attrs: { rows: '3' },
       text: profile.receiptFooter,
     });
 
     const grid = el(
       'div',
-      {
-        className: 'bo-form-meta-grid',
-        attrs: { style: 'grid-template-columns: repeat(2, 1fr); gap: 16px;' },
-      },
+      { className: 'bo-form-meta-grid bo-form-meta-grid--two' },
       el(
         'div',
         { className: 'field' },
@@ -176,7 +165,7 @@ export function renderSettingsScreen(
 
     const fullField = el(
       'div',
-      { className: 'field', attrs: { style: 'margin-top: 14px;' } },
+      { className: 'field bo-field-gap-top' },
       el('label', {
         className: 'field__label',
         text: 'Catatan Kaki Struk Kasir POS (Receipt Footer)',
@@ -304,49 +293,22 @@ export function renderSettingsScreen(
           { className: 'bo-print-modal-content' },
           el(
             'div',
-            {
-              attrs: {
-                style:
-                  'font-family: monospace; text-align: center; border: 1px solid var(--color-border-default); padding: 12px; background: var(--color-bg-surface); width: 260px; margin: 0 auto;',
-              },
-            },
-            el('h4', { attrs: { style: 'margin: 0;' }, text: 'TOKO BUDIANNOR' }),
+            { className: 'bo-test-slip' },
+            el('h4', { className: 'bo-test-slip__brand', text: 'TOKO BUDIANNOR' }),
             el('p', {
-              attrs: { style: 'margin: 2px 0; font-size: 11px;' },
+              className: 'bo-test-slip__line',
               text: 'Jl. Ahmad Yani No. 12, Banjarbaru',
             }),
+            el('p', { className: 'bo-test-slip__line', text: 'Telp: 0811-500-1234' }),
+            el('hr', { className: 'bo-test-slip__rule' }),
+            el('p', { className: 'bo-test-slip__title', text: 'TES PRINTER THERMAL OK' }),
             el('p', {
-              attrs: { style: 'margin: 4px 0; font-size: 11px;' },
-              text: 'Telp: 0811-500-1234',
-            }),
-            el('hr', {
-              attrs: {
-                style:
-                  'border: 0; border-top: 1px dashed var(--color-border-default); margin: 8px 0;',
-              },
-            }),
-            el('p', {
-              attrs: { style: 'font-weight: bold; margin: 4px 0;' },
-              text: 'TES PRINTER THERMAL OK',
-            }),
-            el('p', {
-              attrs: { style: 'font-size: 11px; margin: 2px 0;' },
+              className: 'bo-test-slip__line',
               text: 'Status: Koneksi LAN 192.168.1.200',
             }),
-            el('p', {
-              attrs: { style: 'font-size: 11px; margin: 2px 0;' },
-              text: 'Kertas: 80 mm | Laci Kas: OK',
-            }),
-            el('hr', {
-              attrs: {
-                style:
-                  'border: 0; border-top: 1px dashed var(--color-border-default); margin: 8px 0;',
-              },
-            }),
-            el('p', {
-              attrs: { style: 'font-size: 10px; margin: 0;' },
-              text: '*** SUKSES TERKONEKSI ***',
-            }),
+            el('p', { className: 'bo-test-slip__line', text: 'Kertas: 80 mm | Laci Kas: OK' }),
+            el('hr', { className: 'bo-test-slip__rule' }),
+            el('p', { className: 'bo-test-slip__line', text: '*** SUKSES TERKONEKSI ***' }),
           ),
         );
         openModal({
@@ -368,10 +330,7 @@ export function renderSettingsScreen(
 
     const grid = el(
       'div',
-      {
-        className: 'bo-form-meta-grid',
-        attrs: { style: 'grid-template-columns: repeat(2, 1fr); gap: 16px;' },
-      },
+      { className: 'bo-form-meta-grid bo-form-meta-grid--two' },
       el(
         'div',
         { className: 'field' },
@@ -394,13 +353,12 @@ export function renderSettingsScreen(
         'div',
         { className: 'field' },
         el('label', { className: 'field__label', text: 'Tindakan Pengujian' }),
-        el('div', { attrs: { style: 'padding-top: 4px;' } }, btnTestPrint),
+        el('div', { className: 'bo-field-pad-top' }, btnTestPrint),
       ),
     );
 
     const drawerChk = el('label', {
-      className: 'bo-chk-lbl',
-      attrs: { style: 'margin-top: 16px;' },
+      className: 'bo-chk-lbl bo-chk-lbl--gap',
     });
     const chkInput = el('input', { attrs: { type: 'checkbox' } });
     chkInput.checked = profile.hardware.autoOpenDrawer;
@@ -424,8 +382,7 @@ export function renderSettingsScreen(
     );
 
     const desc = el('p', {
-      className: 't-label',
-      attrs: { style: 'margin: 0 0 16px 0;' },
+      className: 't-label bo-backup-desc',
       text: 'Sesuai SLA Bab III no 3 proposal: Backup otomatis harian database toko berjalan setiap pukul 23.59 WITA ke Cloud Storage terpisah dengan retensi 30 hari.',
     });
 
@@ -444,8 +401,7 @@ export function renderSettingsScreen(
     const infoGrid = el(
       'div',
       {
-        className: 'bo-stats-grid',
-        attrs: { style: 'grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;' },
+        className: 'bo-stats-grid bo-stats-grid--three',
       },
       el(
         'div',

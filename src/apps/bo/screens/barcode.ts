@@ -35,15 +35,12 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
   const container = el('div', { className: 'bo-form-page' });
 
   // Top Bar
+  const subtitle = 'Cetak label barcode kemasan dan label harga rak display toko berbagai ukuran';
   const titleBlock = el(
     'div',
     {},
     el('h1', { className: 'bo-page-title', text: 'Cetak Barcode Massal & Label Rak' }),
-    el('p', {
-      className: 't-label',
-      attrs: { style: 'margin: 2px 0 0 0;' },
-      text: 'Cetak label barcode kemasan dan label harga rak display toko berbagai ukuran',
-    }),
+    el('p', { className: 't-label bo-acc-sub', attrs: { title: subtitle }, text: subtitle }),
   );
 
   // Format Switcher
@@ -91,12 +88,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
   const topBar = el(
     'div',
     { className: 'bo-toolbar' },
-    el(
-      'div',
-      { className: 'bo-toolbar__left', attrs: { style: 'gap: 20px;' } },
-      titleBlock,
-      formatSwitcher,
-    ),
+    el('div', { className: 'bo-toolbar__left bo-acc-toolbar-left' }, titleBlock, formatSwitcher),
     el('div', { className: 'bo-toolbar__right' }, btnBack, btnCetak),
   );
 
@@ -133,7 +125,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
   const filterBar = el(
     'div',
     { className: 'bo-panel bo-filter-bar' },
-    el('div', { attrs: { style: 'flex: 1 1 240px;' } }, searchInput),
+    el('div', { className: 'bo-acc-filter__search' }, searchInput),
     btnPilihSemua,
     btnBatalPilih,
   );
@@ -179,13 +171,12 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
       });
 
       const copyInput = el('input', {
-        className: 'input is-sm is-num',
+        className: 'input is-sm is-num bo-copies-input',
         attrs: {
           type: 'number',
           min: '1',
           max: '100',
           value: String(it.copies),
-          style: 'width: 60px;',
         },
       });
       copyInput.addEventListener('input', () => {
@@ -229,8 +220,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
     if (selectedItems.length === 0) {
       previewContainer.appendChild(
         el('p', {
-          className: 't-label',
-          attrs: { style: 'grid-column: 1 / -1; text-align: center; padding: 20px;' },
+          className: 't-label bo-preview-empty',
           text: 'Pilih barang pada tabel di atas untuk melihat pratinjau label barcode.',
         }),
       );
@@ -268,7 +258,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
               ),
               el(
                 'div',
-                { attrs: { style: 'text-align: right;' } },
+                { className: 'bo-shelf-label__right' },
                 el('span', { className: 't-label', text: 'GROSIR' }),
                 el('div', {
                   className: 'bo-shelf-label__wholesale',
@@ -324,11 +314,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
       rect.setAttribute('fill', isBlack ? '#000' : '#fff');
       svg.appendChild(rect);
     }
-    const svgWrapper = el('div', {
-      attrs: {
-        style: 'height: 28px; width: 110px; margin: 2px 0; overflow: hidden;',
-      },
-    });
+    const svgWrapper = el('div', { className: 'bo-barcode-svg' });
     svgWrapper.appendChild(svg);
     return svgWrapper;
   }
@@ -345,27 +331,11 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
       const price = it.product.prices[it.product.baseUnit || 'PCS']?.eceran ?? 0;
       return el(
         'div',
-        {
-          attrs: {
-            style:
-              'border: 1px solid #000; padding: 6px; width: 140px; background: #fff; font-size: 10px; text-align: center; color: #000;',
-          },
-        },
-        el('div', {
-          attrs: { style: 'font-weight: bold; font-size: 8px;' },
-          text: 'TOKO BUDIANNOR',
-        }),
-        el('div', {
-          attrs: { style: 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' },
-          text: it.product.name,
-        }),
-        el('div', {
-          attrs: {
-            style:
-              'margin: 4px 0; height: 20px; background: repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 4px);',
-          },
-        }),
-        el('div', { attrs: { style: 'font-weight: bold;' }, text: formatRupiah(price) }),
+        { className: 'bo-print-card' },
+        el('div', { className: 'bo-print-card__brand', text: 'TOKO BUDIANNOR' }),
+        el('div', { className: 'bo-print-card__name', text: it.product.name }),
+        el('div', { className: 'bo-print-card__bars' }),
+        el('div', { className: 'bo-print-card__price', text: formatRupiah(price) }),
       );
     });
 
@@ -374,43 +344,24 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
       { className: 'bo-print-modal-content' },
       el(
         'div',
-        { attrs: { style: 'text-align: center; margin-bottom: 16px;' } },
-        el('h3', {
-          attrs: { style: 'margin: 0; font-size: 16px;' },
-          text: 'LEMBAR CETAK LABEL BARCODE',
-        }),
+        { className: 'bo-print-head' },
+        el('h3', { className: 'bo-print-head__title', text: 'LEMBAR CETAK LABEL BARCODE' }),
         el('p', {
-          attrs: { style: 'margin: 4px 0; font-size: 12px; color: var(--color-text-secondary);' },
+          className: 'bo-print-head__meta',
           text: `Format: ${labelFormat.toUpperCase()} | Total ${String(totalLabels)} Label Siap Dicetak`,
         }),
       ),
       el(
         'div',
-        {
-          attrs: {
-            style:
-              'border: 1px dashed var(--color-border-default); padding: 14px; background: var(--color-bg-page); border-radius: 8px;',
-          },
-        },
+        { className: 'bo-print-box' },
         el('p', {
-          attrs: {
-            style: 'margin: 0 0 10px 0; font-size: 12px; color: var(--color-text-secondary);',
-          },
+          className: 'bo-print-box__warn',
           text: 'Perhatian: Pastikan printer barcode / thermal label telah terpasang dan kertas stiker terkalibrasi dengan benar.',
         }),
-        el(
-          'div',
-          {
-            attrs: { style: 'display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;' },
-          },
-          ...labelCards,
-        ),
+        el('div', { className: 'bo-print-box__cards' }, ...labelCards),
         selected.length > 12
           ? el('p', {
-              attrs: {
-                style:
-                  'text-align: center; font-size: 11px; margin-top: 10px; color: var(--color-text-secondary);',
-              },
+              className: 'bo-print-box__more',
               text: `...dan ${String(selected.length - 12)} barang lainnya`,
             })
           : el('span'),
@@ -474,14 +425,14 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
 
   const previewPanel = el(
     'div',
-    { className: 'bo-panel', attrs: { style: 'margin-top: 14px;' } },
+    { className: 'bo-panel bo-barcode-preview-panel' },
     el('h3', { className: 'bo-form-sec-title', text: 'Pratinjau Label Siap Cetak' }),
     previewContainer,
   );
 
   const tablePanel = el(
     'div',
-    { className: 'bo-panel', attrs: { style: 'margin-top: 14px; overflow-x: auto;' } },
+    { className: 'bo-panel' },
     el(
       'table',
       { className: 'pos-table is-compact' },

@@ -26,15 +26,13 @@ export function renderRbacScreen(
     container.replaceChildren();
 
     // Top Bar
+    const subtitle =
+      'Kelola akun staf, PIN kasir, dan kontrol izin berjenjang sesuai peran pengguna';
     const titleBlock = el(
       'div',
       {},
       el('h1', { className: 'bo-page-title', text: 'Manajemen Pengguna & Hak Akses (RBAC)' }),
-      el('p', {
-        className: 't-label',
-        attrs: { style: 'margin: 2px 0 0 0;' },
-        text: 'Kelola akun staf, PIN kasir, dan kontrol izin berjenjang sesuai peran pengguna',
-      }),
+      el('p', { className: 't-label bo-acc-sub', attrs: { title: subtitle }, text: subtitle }),
     );
 
     const btnTabUsers = el('button', {
@@ -69,12 +67,7 @@ export function renderRbacScreen(
     const topBar = el(
       'div',
       { className: 'bo-toolbar' },
-      el(
-        'div',
-        { className: 'bo-toolbar__left', attrs: { style: 'gap: 20px;' } },
-        titleBlock,
-        tabSwitcher,
-      ),
+      el('div', { className: 'bo-toolbar__left bo-acc-toolbar-left' }, titleBlock, tabSwitcher),
       el('div', { className: 'bo-toolbar__right' }, btnAddUser),
     );
 
@@ -169,14 +162,9 @@ export function renderRbacScreen(
     // Info Box Khusus Frontliner & Owner
     const infoBox = el(
       'div',
-      {
-        attrs: {
-          style:
-            'background: var(--color-bg-subtle); border-left: 4px solid var(--color-accent-solid); padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;',
-        },
-      },
+      { className: 'bo-rbac-info' },
       el('p', {
-        attrs: { style: 'margin: 0; font-size: 0.9rem; line-height: 1.5;' },
+        className: 'bo-rbac-info__text',
         text: 'Aturan Keamanan Berjenjang (Proposal Bab II.A): Role khusus Frontliner/Pramuniaga hanya dapat mengecek barang dan menginput pesanan ke draf / Hold Bill (picking list), dan TIDAK BISA melakukan closing pembayaran maupun mencetak nota resmi. Closing pembayaran dan nota resmi hanya oleh Kasir atau Admin berwenang.',
       }),
     );
@@ -184,9 +172,7 @@ export function renderRbacScreen(
     card.appendChild(infoBox);
 
     const groups = getStructuredRbacMatrix();
-    const matrixContainer = el('div', {
-      attrs: { style: 'display: flex; flex-direction: column; gap: 20px;' },
-    });
+    const matrixContainer = el('div', { className: 'bo-rbac-matrix' });
 
     groups.forEach((g) => {
       const gCard = el('div', { className: 'bo-rbac-group-card' });
@@ -203,11 +189,7 @@ export function renderRbacScreen(
       g.items.forEach((it) => {
         const renderCheck = (allowed: boolean) =>
           allowed
-            ? el('span', {
-                className: 'bo-badge is-lunas',
-                attrs: { style: 'font-size: 0.8rem;' },
-                text: 'YA',
-              })
+            ? el('span', { className: 'bo-badge is-lunas bo-rbac-yes', text: 'YA' })
             : el('span', { className: 't-label', text: '-' });
 
         gTbody.appendChild(
@@ -275,10 +257,7 @@ export function renderRbacScreen(
 
     const modalBody = el(
       'div',
-      {
-        className: 'bo-form-fields',
-        attrs: { style: 'display: flex; flex-direction: column; gap: 12px;' },
-      },
+      { className: 'bo-form-fields bo-form-fields--stack' },
       el(
         'div',
         { className: 'field' },

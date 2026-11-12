@@ -79,7 +79,7 @@ export function renderAccountingScreen(
       'div',
       {},
       el('h1', { className: 'bo-page-title', text: titleText }),
-      el('p', { className: 't-label', attrs: { style: 'margin: 2px 0 0 0;' }, text: subText }),
+      el('p', { className: 't-label bo-acc-sub', attrs: { title: subText }, text: subText }),
     );
 
     // Tabs
@@ -126,12 +126,7 @@ export function renderAccountingScreen(
     return el(
       'div',
       { className: 'bo-toolbar' },
-      el(
-        'div',
-        { className: 'bo-toolbar__left', attrs: { style: 'gap: 20px;' } },
-        titleBlock,
-        tabSwitcher,
-      ),
+      el('div', { className: 'bo-toolbar__left bo-acc-toolbar-left' }, titleBlock, tabSwitcher),
       rightActions,
     );
   }
@@ -269,11 +264,11 @@ export function renderAccountingScreen(
 
     const filterBar = el(
       'div',
-      { className: 'bo-panel bo-filter-bar', attrs: { style: 'flex-wrap: wrap;' } },
-      el('div', { attrs: { style: 'flex: 1 1 200px;' } }, searchInput),
-      el('div', { attrs: { style: 'width: 170px;' } }, sourceSelect),
-      el('div', { attrs: { style: 'width: 140px;' } }, statusSelect),
-      el('div', { attrs: { style: 'width: 160px;' } }, warehouseSelect),
+      { className: 'bo-panel bo-filter-bar bo-acc-filter' },
+      el('div', { className: 'bo-acc-filter__search' }, searchInput),
+      el('div', { className: 'bo-acc-filter__source' }, sourceSelect),
+      el('div', { className: 'bo-acc-filter__status' }, statusSelect),
+      el('div', { className: 'bo-acc-filter__warehouse' }, warehouseSelect),
     );
 
     const journalTable = el(
@@ -316,7 +311,7 @@ export function renderAccountingScreen(
 
     viewContainer.appendChild(filterBar);
     viewContainer.appendChild(
-      el('div', { className: 'bo-panel', attrs: { style: 'margin-top: 14px;' } }, journalTable),
+      el('div', { className: 'bo-panel bo-acc-table-panel' }, journalTable),
     );
 
     return viewContainer;
@@ -331,7 +326,7 @@ export function renderAccountingScreen(
 
     const statsGrid = el(
       'div',
-      { className: 'bo-stats-grid', attrs: { style: 'grid-template-columns: repeat(4, 1fr);' } },
+      { className: 'bo-stats-grid bo-acc-stats' },
       el(
         'div',
         { className: 'bo-panel bo-stat-card' },
@@ -454,7 +449,7 @@ export function renderAccountingScreen(
 
     const leftPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 1 1 340px;' } },
+      { className: 'bo-panel bo-acc-form-panel' },
       el('h3', { className: 'bo-form-sec-title', text: label('labelInputBebanBaru') }),
       el(
         'div',
@@ -486,7 +481,7 @@ export function renderAccountingScreen(
         el('label', { className: 'field__label', text: 'Keterangan' }),
         descInput,
       ),
-      el('div', { attrs: { style: 'margin-top: 18px;' } }, btnSubmitExpense),
+      el('div', { className: 'bo-acc-submit' }, btnSubmitExpense),
     );
 
     // Tabel Riwayat Beban (Kanan)
@@ -516,7 +511,7 @@ export function renderAccountingScreen(
 
     const rightPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 2 1 540px; overflow-x: auto;' } },
+      { className: 'bo-panel bo-acc-hist-panel' },
       el('h3', { className: 'bo-form-sec-title', text: label('labelRiwayatBeban') }),
       el(
         'table',
@@ -538,12 +533,7 @@ export function renderAccountingScreen(
       ),
     );
 
-    const splitSection = el(
-      'div',
-      { className: 'bo-product-split', attrs: { style: 'margin-top: 14px;' } },
-      leftPanel,
-      rightPanel,
-    );
+    const splitSection = el('div', { className: 'bo-acc-split' }, leftPanel, rightPanel);
 
     viewContainer.appendChild(statsGrid);
     viewContainer.appendChild(splitSection);
@@ -558,7 +548,7 @@ export function renderAccountingScreen(
     // 4 Stat Cards
     const statsGrid = el(
       'div',
-      { className: 'bo-stats-grid', attrs: { style: 'grid-template-columns: repeat(4, 1fr);' } },
+      { className: 'bo-stats-grid bo-acc-stats' },
       el(
         'div',
         { className: 'bo-panel bo-stat-card' },
@@ -592,7 +582,7 @@ export function renderAccountingScreen(
     // Panel Kiri: Laporan Arus Kas
     const leftPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 3 1 540px;' } },
+      { className: 'bo-panel bo-acc-main-panel' },
       el('h3', { className: 'bo-form-sec-title', text: 'Laporan Arus Kas' }),
       // Operasi
       el('h4', { className: 'bo-sec-sub', text: label('labelAktivitasOperasi') }),
@@ -641,7 +631,7 @@ export function renderAccountingScreen(
       // Kenaikan Kas Bersih Bar
       el(
         'div',
-        { className: 'bo-report-highlight-bar', attrs: { style: 'margin-top: 20px;' } },
+        { className: 'bo-report-highlight-bar bo-acc-bar-top' },
         el('strong', { text: label('labelKenaikanKasBersih') }),
         el('strong', { className: 'bo-text-primary', text: formatRupiah(cf.netCashChange) }),
       ),
@@ -649,16 +639,15 @@ export function renderAccountingScreen(
 
     // Panel Kanan: Posisi Kas dan Bank
     const posBars = cf.cashPositions.map((pos) => {
-      const bar = el('div', {
-        className: 'bo-prog-fill',
-        attrs: { style: `width: ${pos.percent}%; background: ${pos.barColor};` },
-      });
+      const bar = el('div', { className: 'bo-prog-fill' });
+      bar.style.setProperty('width', `${String(pos.percent)}%`);
+      bar.style.setProperty('background', pos.barColor);
       return el(
         'div',
         { className: 'bo-cash-pos-row' },
         el(
           'div',
-          { className: 'bo-report-line', attrs: { style: 'margin-bottom: 4px;' } },
+          { className: 'bo-report-line bo-acc-line-tight' },
           el('strong', { text: pos.account }),
           el('span', { text: `${formatRupiah(pos.amount)} (${pos.percent}%)` }),
         ),
@@ -668,7 +657,7 @@ export function renderAccountingScreen(
 
     const rightPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 2 1 320px;' } },
+      { className: 'bo-panel bo-acc-side-panel' },
       el('h3', { className: 'bo-form-sec-title', text: label('labelPosisiKasBank') }),
       ...posBars,
       el('hr', {}),
@@ -680,12 +669,7 @@ export function renderAccountingScreen(
       ),
     );
 
-    const splitSection = el(
-      'div',
-      { className: 'bo-product-split', attrs: { style: 'margin-top: 14px;' } },
-      leftPanel,
-      rightPanel,
-    );
+    const splitSection = el('div', { className: 'bo-acc-split' }, leftPanel, rightPanel);
 
     viewContainer.appendChild(statsGrid);
     viewContainer.appendChild(splitSection);
@@ -700,7 +684,7 @@ export function renderAccountingScreen(
     // Panel Kiri: Rincian Laba Rugi
     const leftPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 3 1 540px;' } },
+      { className: 'bo-panel bo-acc-main-panel' },
       el('h3', { className: 'bo-form-sec-title', text: 'Laba Rugi Oktober 2026' }),
       el('h4', { className: 'bo-sec-sub', text: 'PENDAPATAN' }),
       el(
@@ -717,7 +701,7 @@ export function renderAccountingScreen(
       ),
       el(
         'div',
-        { className: 'bo-report-highlight-bar', attrs: { style: 'margin: 12px 0;' } },
+        { className: 'bo-report-highlight-bar bo-acc-bar-gap' },
         el('strong', { text: label('labelLabaKotor') }),
         el('strong', {
           text: `${formatRupiah(pl.revenue.grossProfit)} (${pl.revenue.grossMarginPercent}%)`,
@@ -740,7 +724,7 @@ export function renderAccountingScreen(
       ),
       el(
         'div',
-        { className: 'bo-report-highlight-bar is-success', attrs: { style: 'margin-top: 16px;' } },
+        { className: 'bo-report-highlight-bar is-success bo-acc-bar-top' },
         el('strong', { text: label('labelLabaBersih') }),
         el('strong', { text: `${formatRupiah(pl.netProfit)} (${pl.netProfitPercentFromSales}%)` }),
       ),
@@ -788,8 +772,7 @@ export function renderAccountingScreen(
       { className: 'bo-panel' },
       el('h4', { className: 'bo-form-sec-title', text: label('jurnalOtomatisJudul') }),
       el('p', {
-        className: 't-label',
-        attrs: { style: 'margin: 6px 0 14px 0;' },
+        className: 't-label bo-acc-note',
         text: 'Setiap transaksi kasir, penerimaan barang, retur, dan beban operasional membentuk jurnal otomatis ke laporan ini.',
       }),
       btnBukaBeban,
@@ -797,14 +780,14 @@ export function renderAccountingScreen(
 
     const rightPanel = el(
       'div',
-      { attrs: { style: 'flex: 2 1 320px; display: flex; flex-direction: column; gap: 14px;' } },
+      { className: 'bo-acc-side-col' },
       cardLaba,
       cardMargin,
       cardBeban,
       cardJurnal,
     );
 
-    const splitSection = el('div', { className: 'bo-product-split' }, leftPanel, rightPanel);
+    const splitSection = el('div', { className: 'bo-acc-split' }, leftPanel, rightPanel);
     viewContainer.appendChild(splitSection);
     return viewContainer;
   }
@@ -817,7 +800,7 @@ export function renderAccountingScreen(
     // Panel Kiri: Aset
     const leftPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 1 1 450px;' } },
+      { className: 'bo-panel bo-acc-main-panel' },
       el('h3', { className: 'bo-form-sec-title', text: 'Aset' }),
       el('h4', { className: 'bo-sec-sub', text: label('labelAsetLancar') }),
       ...bs.currentAssets.map((item) =>
@@ -845,7 +828,7 @@ export function renderAccountingScreen(
       ),
       el(
         'div',
-        { className: 'bo-report-highlight-bar', attrs: { style: 'margin-top: 24px;' } },
+        { className: 'bo-report-highlight-bar bo-acc-bar-top' },
         el('strong', { text: label('labelTotalAset') }),
         el('strong', { text: formatRupiah(bs.totalAssets) }),
       ),
@@ -854,7 +837,7 @@ export function renderAccountingScreen(
     // Panel Kanan: Kewajiban dan Ekuitas
     const rightPanel = el(
       'div',
-      { className: 'bo-panel', attrs: { style: 'flex: 1 1 450px;' } },
+      { className: 'bo-panel bo-acc-main-panel' },
       el('h3', { className: 'bo-form-sec-title', text: 'Kewajiban dan Ekuitas' }),
       el('h4', { className: 'bo-sec-sub', text: label('labelKewajiban') }),
       ...bs.liabilities.map((item) =>
@@ -882,13 +865,13 @@ export function renderAccountingScreen(
       ),
       el(
         'div',
-        { className: 'bo-report-highlight-bar', attrs: { style: 'margin-top: 24px;' } },
+        { className: 'bo-report-highlight-bar bo-acc-bar-top' },
         el('strong', { text: label('labelTotalKewajibanEkuitas') }),
         el('strong', { text: formatRupiah(bs.totalLiabilitiesAndEquity) }),
       ),
     );
 
-    const splitSection = el('div', { className: 'bo-product-split' }, leftPanel, rightPanel);
+    const splitSection = el('div', { className: 'bo-acc-split' }, leftPanel, rightPanel);
 
     // Banner Seimbang
     const balanceBanner = el(

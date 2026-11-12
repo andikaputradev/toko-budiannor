@@ -751,3 +751,854 @@
 .bo-pay-panel .bo-quick-entry .field.is-btn-col {
   flex: none;
 }
+
+/* ===== Akuntansi: jurnal, beban, arus kas, laba rugi, neraca ===== */
+.bo-form-page > .bo-act-view {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.bo-acc-toolbar-left {
+  gap: 20px;
+}
+
+.bo-acc-sub {
+  max-width: 320px;
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-acc-filter {
+  flex-wrap: wrap;
+}
+
+.bo-acc-filter__search {
+  flex: 1 1 200px;
+}
+
+.bo-acc-filter__source {
+  width: 170px;
+}
+
+.bo-acc-filter__status {
+  width: 140px;
+}
+
+.bo-acc-filter__warehouse {
+  width: 160px;
+}
+
+.bo-act-view > .bo-acc-table-panel {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+.bo-acc-table-panel .pos-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+.bo-acc-table-panel .bo-tfoot-summary td {
+  padding: 8px 14px !important;
+}
+
+.bo-act-view > .bo-acc-stats {
+  flex: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bo-acc-stats .bo-stat-card {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 6px 12px;
+}
+
+.bo-acc-split {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.bo-acc-split:has(> .bo-acc-form-panel) {
+  grid-template-columns: minmax(300px, 2fr) minmax(0, 3fr);
+}
+
+.bo-acc-split:has(> .bo-acc-main-panel + .bo-acc-main-panel) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.bo-acc-split > .bo-panel {
+  min-height: 0;
+  padding: 10px 14px;
+  overflow: auto;
+}
+
+.bo-acc-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bo-acc-side-col > .bo-panel {
+  flex: none;
+  padding: 8px 14px;
+}
+
+.bo-acc-side-col .bo-stat-card {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0;
+}
+
+.bo-acc-split .bo-form-sec-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.bo-acc-split .bo-report-line {
+  padding: 3px 0;
+  font-size: 14px;
+}
+
+.bo-acc-split .bo-report-line.is-subtotal {
+  padding-top: 6px;
+}
+
+.bo-acc-split .bo-sec-sub {
+  margin: 8px 0 4px;
+  padding-bottom: 2px;
+}
+
+.bo-acc-split .bo-report-highlight-bar {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.bo-acc-split .bo-acc-bar-top {
+  margin-top: 10px;
+}
+
+.bo-acc-split .bo-acc-bar-gap {
+  margin: 8px 0;
+}
+
+.bo-acc-line-tight {
+  margin-bottom: 4px;
+}
+
+.bo-acc-split .bo-cash-pos-row {
+  margin-bottom: 8px;
+}
+
+.bo-acc-note {
+  margin: 4px 0 8px;
+}
+
+.bo-acc-form-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-content: start;
+  gap: 6px 10px;
+}
+
+.bo-acc-form-panel > .bo-form-sec-title,
+.bo-acc-form-panel > .field:nth-of-type(5),
+.bo-acc-form-panel > .bo-acc-submit {
+  grid-column: 1 / -1;
+}
+
+.bo-acc-submit {
+  margin-top: 4px;
+}
+
+.bo-acc-hist-panel .pos-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.bo-act-view > .bo-balance-banner {
+  flex: none;
+  gap: 10px;
+  margin-top: 0;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.bo-balance-banner__icon {
+  width: 26px;
+  height: 26px;
+}
+
+@media (max-height: 700px) {
+  .bo-acc-split .bo-report-line {
+    padding: 1px 0;
+  }
+
+  .bo-acc-split .bo-sec-sub {
+    margin: 6px 0 2px;
+  }
+
+  .bo-acc-stats .bo-stat-card {
+    padding: 4px 12px;
+  }
+
+  .bo-acc-split > .bo-panel {
+    padding: 8px 14px;
+  }
+}
+
+/* ===== Laporan Stok dan Kartu Stok: tabel mengisi sisa tinggi, ringkasan dipadatkan ===== */
+[data-app='bo'] .bo-stok-page.bo-lapstok {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-lapstok__tabs {
+  flex: none;
+  padding: 2px;
+}
+
+[data-app='bo'] .bo-lapstok__tab {
+  min-height: 32px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-lapstok__pane {
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-lapstok__filters {
+  flex: none;
+  gap: 8px 12px;
+}
+
+[data-app='bo'] .bo-lapstok__filters .field {
+  gap: 2px;
+}
+
+[data-app='bo'] .bo-lapstok__filters .field__label {
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-lapstok__filters .input,
+[data-app='bo'] .bo-lapstok__filters .btn {
+  min-height: 34px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-lapstok__top {
+  flex: none;
+  grid-template-rows: 130px;
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-lapstok__stats {
+  grid-auto-rows: auto;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-lapstok-stat {
+  gap: 0;
+  padding: 6px 12px;
+}
+
+[data-app='bo'] .bo-lapstok-stat__value {
+  font-size: 20px;
+}
+
+[data-app='bo'] .bo-lapstok-stat--wide {
+  flex-direction: row;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+
+[data-app='bo'] .bo-lapstok-stat--wide .bo-lapstok-stat__value {
+  font-size: 22px;
+}
+
+[data-app='bo'] .bo-lapstok-stat__caption {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-lapstok__bars {
+  min-height: 0;
+  padding: 8px 12px;
+  overflow: auto;
+}
+
+[data-app='bo'] .bo-lapstok__bars .bo-stok-panel-title {
+  margin-bottom: 6px;
+}
+
+[data-app='bo'] .bo-lapstok-bars {
+  gap: 6px;
+}
+
+[data-app='bo'] .bo-lapstok-bars__track {
+  height: 6px;
+  margin-top: 2px;
+}
+
+[data-app='bo'] .bo-lapstok__table {
+  flex: 1 1 0;
+  gap: 6px;
+  min-height: 0;
+  padding: 8px 12px;
+}
+
+[data-app='bo'] .bo-lapstok__table > .bo-stok-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+[data-app='bo'] .bo-lapstok__pager {
+  flex: none;
+}
+
+[data-app='bo'] .bo-lapstok__pager .btn {
+  min-height: 34px;
+}
+
+@media (max-height: 760px) {
+  [data-app='bo'] .bo-lapstok .bo-stok-head__text {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+    align-items: baseline;
+  }
+
+  [data-app='bo'] .bo-lapstok .bo-stok-head__sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-app='bo'] .bo-lapstok .bo-stok-head__actions .btn {
+    height: 36px;
+    min-height: 36px;
+  }
+
+  [data-app='bo'] .bo-lapstok__filters {
+    padding: 6px 12px;
+  }
+
+  [data-app='bo'] .bo-lapstok__filters .field__label {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  [data-app='bo'] .bo-lapstok__top {
+    grid-template-rows: 124px;
+  }
+
+  [data-app='bo'] .bo-lapstok-stat__label {
+    font-size: 13px;
+  }
+
+  [data-app='bo'] .bo-lapstok-stat__value {
+    font-size: 18px;
+  }
+
+  [data-app='bo'] .bo-lapstok__grid td {
+    padding-block: 4px;
+  }
+}
+
+/* Kartu Stok: filter satu baris, chip contoh menggulir ke samping, hasil mengisi sisa tinggi. */
+[data-app='bo'] .bo-lapstok__filters-extra {
+  flex-wrap: nowrap;
+  gap: 8px 16px;
+  overflow-x: auto;
+}
+
+[data-app='bo'] .bo-lapstok__chips,
+[data-app='bo'] .bo-lapstok__samples {
+  flex-wrap: nowrap;
+  flex: none;
+}
+
+[data-app='bo'] .bo-lapstok__filters-extra .btn {
+  min-height: 30px;
+  padding-block: 0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-lapstok__picked {
+  margin: 2px 0 0;
+}
+
+[data-app='bo'] .bo-lapstok__result {
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-lapstok__result > .bo-lapstok__top {
+  flex: none;
+}
+
+[data-app='bo'] .bo-lapcard__info {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 8px 24px;
+  padding: 6px 12px;
+}
+
+[data-app='bo'] .bo-lapcard__name {
+  font-size: 16px;
+}
+
+[data-app='bo'] .bo-lapcard__meta {
+  margin: 0;
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-lapcard__facts {
+  flex-wrap: nowrap;
+  gap: 8px 28px;
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-lapstok__stats--card {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+[data-app='bo'] .bo-lapstok__stats--card .bo-lapstok-stat {
+  padding: 4px 10px;
+}
+
+[data-app='bo'] .bo-lapstok__chart {
+  min-height: 0;
+  padding: 6px 12px;
+  overflow: hidden;
+}
+
+[data-app='bo'] .bo-lapstok__chart .bo-stok-panel-title {
+  margin-bottom: 2px;
+}
+
+[data-app='bo'] .bo-lapstok-chart__svg {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-lapstok__table > .bo-stok-note {
+  flex: none;
+  font-size: 13px;
+}
+
+@media (max-height: 760px) {
+  [data-app='bo'] .bo-lapstok__picked {
+    display: none;
+  }
+
+  [data-app='bo'] .bo-lapcard__facts > div {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+
+  [data-app='bo'] .bo-lapcard__facts dd + dd {
+    display: none;
+  }
+
+  [data-app='bo'] .bo-lapcard__facts dd {
+    margin: 0;
+  }
+
+  [data-app='bo'] .bo-lapcard__info {
+    align-items: center;
+  }
+
+  [data-app='bo'] .bo-lapstok__result > .bo-lapstok__top {
+    grid-template-rows: 84px;
+  }
+
+  [data-app='bo'] .bo-lapstok__stats--card {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  [data-app='bo'] .bo-lapstok__chart {
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+  }
+
+  [data-app='bo'] .bo-lapstok__chart .bo-stok-panel-title {
+    flex: none;
+    margin: 0;
+  }
+
+  [data-app='bo'] .bo-lapstok-chart__svg {
+    height: 100%;
+  }
+}
+
+/* Layar pendek: judul, tab Posisi/Kartu dan tombol ekspor berbagi satu baris. */
+@media (max-height: 760px) {
+  [data-app='bo'] .bo-stok-page.bo-lapstok {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px 16px;
+    align-items: center;
+  }
+
+  [data-app='bo'] .bo-lapstok > .bo-stok-head {
+    display: contents;
+  }
+
+  [data-app='bo'] .bo-lapstok .bo-stok-head__text {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  [data-app='bo'] .bo-lapstok .bo-stok-head__sub {
+    display: none;
+  }
+
+  [data-app='bo'] .bo-lapstok > .bo-lapstok__tabs {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  [data-app='bo'] .bo-lapstok .bo-stok-head__actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  [data-app='bo'] .bo-lapstok > .bo-lapstok__pane {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: stretch;
+  }
+}
+
+@media (max-height: 760px) {
+  [data-app='bo'] .bo-lapcard__info {
+    padding: 4px 12px;
+  }
+
+  [data-app='bo'] .bo-lapcard__title {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+  }
+
+  [data-app='bo'] .bo-lapstok__result > .bo-lapstok__top {
+    grid-template-rows: 70px;
+  }
+
+  [data-app='bo'] .bo-lapstok__stats--card .bo-lapstok-stat {
+    padding: 2px 10px;
+  }
+
+  [data-app='bo'] .bo-lapstok__stats--card .bo-lapstok-stat__value {
+    font-size: 17px;
+    line-height: 1.15;
+  }
+}
+
+/* ===== Pengaturan Tema: pilihan di kiri, pratinjau di kanan, masing-masing menggulir di dalam ===== */
+[data-app='bo'] .bo-stok-page.bo-tema {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-tema__layout {
+  flex: 1 1 0;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-tema__choices {
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-app='bo'] .bo-tema__choices > .bo-panel {
+  flex: none;
+}
+
+[data-app='bo'] .bo-tema__preview-panel {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-app='bo'] .bo-tema__palettes {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Tombol Terapkan Tema selalu terlihat di dasar kolom pilihan. */
+[data-app='bo'] .bo-tema__choices > .bo-tema__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+.bo-audit-role {
+  display: block;
+}
+
+/* ===== Cetak barcode: pengganti atribut style (CSP style-src 'self') ===== */
+.bo-copies-input {
+  width: 60px;
+}
+
+.bo-preview-empty {
+  grid-column: 1 / -1;
+  padding: 20px;
+  text-align: center;
+}
+
+.bo-shelf-label__right {
+  text-align: right;
+}
+
+.bo-barcode-svg {
+  width: 110px;
+  height: 28px;
+  margin: 2px 0;
+  overflow: hidden;
+}
+
+.bo-print-card {
+  width: 140px;
+  padding: 6px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 10px;
+  text-align: center;
+}
+
+.bo-print-card__brand {
+  font-size: 8px;
+  font-weight: bold;
+}
+
+.bo-print-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-print-card__bars {
+  height: 20px;
+  margin: 4px 0;
+  background: repeating-linear-gradient(90deg, #000, #000 2px, #fff 2px, #fff 4px);
+}
+
+.bo-print-card__price {
+  font-weight: bold;
+}
+
+.bo-print-head {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.bo-print-head__title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.bo-print-head__meta {
+  margin: 4px 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.bo-print-box {
+  padding: 14px;
+  border: 1px dashed var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-page);
+}
+
+.bo-print-box__warn {
+  margin: 0 0 10px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.bo-print-box__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.bo-print-box__more {
+  margin-top: 10px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ===== Hak akses dan pengaturan: pengganti atribut style (CSP style-src 'self') ===== */
+.bo-rbac-info {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--color-accent-solid);
+  border-radius: 4px;
+  background: var(--color-bg-subtle);
+}
+
+.bo-rbac-info__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.bo-rbac-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bo-rbac-yes {
+  font-size: 0.8rem;
+}
+
+.bo-form-fields--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bo-footer-input {
+  height: auto;
+  resize: vertical;
+}
+
+.bo-form-meta-grid.bo-form-meta-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bo-field-gap-top {
+  margin-top: 14px;
+}
+
+.bo-test-slip {
+  width: 260px;
+  margin: 0 auto;
+  padding: 12px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  font-family: monospace;
+  text-align: center;
+}
+
+.bo-test-slip__brand {
+  margin: 0;
+}
+
+.bo-test-slip__line {
+  margin: 2px 0;
+  font-size: 11px;
+}
+
+.bo-test-slip__title {
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.bo-test-slip__rule {
+  margin: 8px 0;
+  border: 0;
+  border-top: 1px dashed var(--color-border-default);
+}
+
+.bo-field-pad-top {
+  padding-top: 4px;
+}
+
+.bo-chk-lbl.bo-chk-lbl--gap {
+  margin-top: 16px;
+}
+
+.bo-backup-desc {
+  margin: 0 0 16px;
+}
+
+.bo-stats-grid.bo-stats-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 20px;
+}
+
+/* Toolbar halaman bertab: judul, tab dan tombol tetap satu baris; judul dan subjudul yang mengalah. */
+.bo-toolbar:has(> .bo-acc-toolbar-left) {
+  flex-wrap: nowrap;
+}
+
+.bo-toolbar > .bo-acc-toolbar-left {
+  flex: 1 1 0;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.bo-acc-toolbar-left > :first-child {
+  min-width: 0;
+}
+
+.bo-acc-toolbar-left .bo-page-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-toolbar:has(> .bo-acc-toolbar-left) > .bo-toolbar__right {
+  flex: none;
+}
+
+/* Cetak barcode: pratinjau setinggi isinya (paling banyak 36%), tabel barang mendapat sisanya. */
+.bo-form-page > .bo-barcode-preview-panel {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 36%;
+  overflow: auto;
+}
+
+.bo-form-page:has(> .bo-barcode-preview-panel) > .bo-panel:has(> table) {
+  min-height: 150px;
+}
+
+.bo-acc-toolbar-left .bo-tab-switcher {
+  flex: none;
+  flex-wrap: nowrap;
+}

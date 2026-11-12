@@ -1426,7 +1426,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
 
 .bo-status-pill.is-info {
   background: var(--color-accent-soft);
-  color: var(--color-accent-default);
+  color: var(--color-accent-pressed);
 }
 
 .bo-form-meta-grid {
@@ -1585,7 +1585,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
 }
 
 .bo-grand-total__label {
-  color: var(--color-accent-default);
+  color: var(--color-accent-pressed);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;

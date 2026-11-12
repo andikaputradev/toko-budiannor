@@ -32,15 +32,13 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
   const container = el('div', { className: 'bo-form-page' });
 
   // Top Bar
+  const subtitle =
+    'Rekam jejak seluruh aktivitas transaksi, otorisasi, mutasi, dan backup sistem untuk audit internal';
   const titleBlock = el(
     'div',
     {},
     el('h1', { className: 'bo-page-title', text: 'Log Aktivitas Pengguna (Audit Trail)' }),
-    el('p', {
-      className: 't-label',
-      attrs: { style: 'margin: 2px 0 0 0;' },
-      text: 'Rekam jejak seluruh aktivitas transaksi, otorisasi, mutasi, dan backup sistem untuk audit internal',
-    }),
+    el('p', { className: 't-label bo-acc-sub', attrs: { title: subtitle }, text: subtitle }),
   );
 
   const btnExportPdf = createButton({
@@ -115,11 +113,11 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
 
   const filterBar = el(
     'div',
-    { className: 'bo-panel bo-filter-bar', attrs: { style: 'flex-wrap: wrap;' } },
-    el('div', { attrs: { style: 'flex: 1 1 200px;' } }, searchInput),
-    el('div', { attrs: { style: 'width: 170px;' } }, userSelect),
-    el('div', { attrs: { style: 'width: 170px;' } }, moduleSelect),
-    el('div', { attrs: { style: 'width: 140px;' } }, statusSelect),
+    { className: 'bo-panel bo-filter-bar bo-acc-filter' },
+    el('div', { className: 'bo-acc-filter__search' }, searchInput),
+    el('div', { className: 'bo-acc-filter__source' }, userSelect),
+    el('div', { className: 'bo-acc-filter__source' }, moduleSelect),
+    el('div', { className: 'bo-acc-filter__status' }, statusSelect),
   );
 
   // Table
@@ -171,8 +169,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
             {},
             el('strong', { text: log.username }),
             el('span', {
-              className: 't-label',
-              attrs: { style: 'display: block;' },
+              className: 't-label bo-audit-role',
               text: log.role.toUpperCase(),
             }),
           ),
@@ -255,7 +252,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
 
   const tablePanel = el(
     'div',
-    { className: 'bo-panel', attrs: { style: 'margin-top: 14px; overflow-x: auto;' } },
+    { className: 'bo-panel' },
     el(
       'table',
       { className: 'pos-table is-compact' },
