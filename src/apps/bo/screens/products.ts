@@ -1,104 +1,89 @@
+import '../../../styles/bo-products.css';
 import { el, nextId } from '../../../shared/dom';
-import { formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDecimal } from '../../../shared/format';
 import { icon, type IconName } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
 import type { Product } from '../../../shared/data/types';
+import { round3 } from '../../../shared/data/units';
 import { openModal } from '../../../shared/ui/modal';
-import { createProductPhoto } from '../../../shared/ui/product-photo';
+import { createProductPhoto, productPhotoUrl } from '../../../shared/ui/product-photo';
 import { showToast } from '../../../shared/ui/toast';
 import { createVirtualGrid } from '../../../shared/ui/virtual-grid';
 import type { BoSession } from '../bo-session';
-import { BASE_UNITS, CODE_MAX, draftOf, type ProductDraft } from '../domain/product-form';
 import { getSampleExcelProducts } from '../domain/import-excel';
+import { BRAND_OPTIONS, CATEGORY_OPTIONS } from '../domain/product-options';
+import {
+  CODE_MAX,
+  draftOf,
+  parseMin,
+  splitMin,
+  type ProductDraft,
+  type ProductIssue,
+} from '../domain/product-form';
+import { UNIT_CODES, rowsOf, type UnitRowDraft } from '../domain/product-units';
 import { findProducts } from '../search';
+import { requestCloseTab, screenActive } from '../screen-active';
 import type { ScreenHandle } from './login';
-import { screenActive } from '../screen-active';
-
-const CATEGORY_OPTIONS = [
-  'DOOR & WINDOW',
-  'BUILDING MATERIAL',
-  'PAINT',
-  'ELECTRICAL',
-  'PLUMBING SANITARY',
-  'POWER TOOLS',
-  'CERAMIC',
-  'FASTENER',
-  'ACCESORIS TOOLS',
-  'Bahan Dasar',
-  'Pipa & Fitting',
-  'Cat & Pelapis',
-  'Kayu & Papan',
-  'Atap & Plafon',
-  'Lantai & Dinding',
-  'Besi & Baja',
-  'Alat Pertukangan',
-  'Kelistrikan',
-  'Kunci & Engsel',
-  'Saniter & Dapur',
-  'Baut & Mur',
-];
-
-const BRAND_OPTIONS = [
-  'BELLUCCI',
-  'GRESIK',
-  'MAKITA',
-  'ASIA TILE',
-  'RUCIKA',
-  'NIPPON PAINT',
-  'ETERNA',
-  'KODAI',
-  'AMICO',
-  'STEEL',
-  'WD',
-  'SES',
-  'BROCO',
-  'MASPION',
-  'MILLIARD',
-  'Tiga Roda',
-  'Holcim',
-  'Avian',
-  'Dulux',
-  'Mulia',
-  'Roman',
-  'Bosh',
-  'Tekiro',
-  'Panasonic',
-  'Onda',
-  'Toto',
-];
+import { createUnitPicker } from './product-unit-picker';
 
 // Teks tombol pada kamus berhuruf kapital; tampilkan sebagai kalimat biasa.
 function sentenceCase(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
 }
 
-export function renderProducts(session: BoSession, go: (path: string) => void): ScreenHandle {
+function issueText(issue: ProductIssue): string {
+  if (issue.messageId !== undefined) {
+    return message(issue.messageId);
+  }
+  return 'labelKey' in issue ? label(issue.labelKey) : label('produkErrKodePendek');
+}
+
+function setSelect(select: HTMLSelectElement, value: string, fallback: string): void {
+  const wanted = value === '' ? fallback : value;
+  if (wanted !== '' && ![...select.options].some((option) => option.value === wanted)) {
+    select.append(el('option', { text: wanted, attrs: { value: wanted } }));
+  }
+  select.value = wanted;
+}
+
+interface TypedPrice {
+  ecer: string;
+  grosir: string;
+}
+
+export function renderProducts(session: BoSession): ScreenHandle {
   const store = session.store;
+  // Harga Beli Akhir dan HPP hanya untuk Owner: bagian ini tidak dirender sama sekali untuk peran lain.
+  const isOwner = store.getState().role === 'owner';
   let query = '';
   let selectedId: string | undefined;
   let isNew = false;
   let isEditing = false;
   let photo = { name: '', bytes: 0 };
-  let initialStockExpanded = false;
+  let previewUrl: string | undefined;
+  const typed: TypedPrice[] = [
+    { ecer: '', grosir: '' },
+    { ecer: '', grosir: '' },
+    { ecer: '', grosir: '' },
+  ];
 
   const products = (): readonly Product[] => store.getState().data.products;
   const rows = (): readonly Product[] => findProducts(products(), query, products().length);
   const productById = (id: string | undefined): Product | undefined =>
     products().find((item) => item.id === id);
 
-  // --- Top Action Bar ---
+  // --- Tombol aksi ---
   const actionButton = (
     iconName: IconName,
     text: string,
     title: string,
-    _shortcut: string | undefined,
-    className = 'bo-btn-action',
+    className = '',
     ariaLabel?: string,
   ): HTMLButtonElement =>
     el(
       'button',
       {
-        className,
+        className: `bo-pd-btn ${className}`.trim(),
         attrs: {
           type: 'button',
           title,
@@ -112,44 +97,30 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
     'plus',
     sentenceCase(label('btnAksiTambah')),
     'Tambah (Alt+T)',
-    'Alt+T',
-    'bo-btn-action bo-btn-action--primary',
+    'bo-pd-btn--primary',
     label('tambahBarang'),
   );
-  const btnRubah = actionButton(
+  const btnSimpan = actionButton(
     'save',
     sentenceCase(label('simpan')),
     'Simpan (Alt+S)',
-    'Alt+S',
-    'bo-btn-action',
+    '',
     label('simpanBarang'),
   );
-  const btnHapus = actionButton(
+  const btnNonaktif = actionButton(
     'trash-2',
     sentenceCase(label('nonaktifkan')),
     'Nonaktifkan (Alt+H)',
-    'Alt+H',
-    'bo-btn-action bo-btn-action--danger',
+    'bo-pd-btn--danger',
     label('nonaktifkanBarang'),
   );
-  btnHapus.style.display = session.allowed('BO-03', 'Nonaktifkan Barang') ? '' : 'none';
-  const btnKeluar = actionButton(
-    'log-out',
-    sentenceCase(label('btnAksiKeluar')),
-    'Keluar (Alt+K)',
-    'Alt+K',
-  );
-  const btnInfo = actionButton('info', sentenceCase(label('btnAksiInfo')), 'Info SKU', undefined);
-  const btnImpor = actionButton(
-    'download',
-    sentenceCase(label('btnAksiImpor')),
-    'Impor Excel',
-    undefined,
-    'bo-btn-action bo-btn-action--accent',
-  );
+  btnNonaktif.hidden = !session.allowed('BO-03', 'Nonaktifkan Barang');
+  const btnKeluar = actionButton('log-out', sentenceCase(label('btnAksiKeluar')), 'Keluar (Alt+K)');
+  const btnInfo = actionButton('info', sentenceCase(label('btnAksiInfo')), 'Info SKU');
+  const btnCetak = actionButton('printer', sentenceCase(label('btnAksiCetak')), 'Cetak (Alt+C)');
 
   const searchInput = el('input', {
-    className: 'bo-product-search-input',
+    className: 'bo-pd-search',
     attrs: {
       type: 'search',
       placeholder: label('placeholderCariBarang'),
@@ -159,160 +130,168 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
   });
   const btnRefresh = el(
     'button',
-    { className: 'bo-product-refresh-btn', attrs: { type: 'button', 'aria-label': 'Refresh' } },
-    icon('refresh-cw'),
-  );
-  const btnCetak = actionButton(
-    'printer',
-    sentenceCase(label('btnAksiCetak')),
-    'Cetak (Alt+C)',
-    'Alt+C',
-  );
-
-  // --- Form Elements (Left Panel) ---
-  const inNama = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-nama', type: 'text', 'aria-label': label('namaBarang') },
-  });
-  const inKode = el('input', {
-    className: 'bo-pform-input',
-    attrs: {
-      id: 'bo-pform-kode',
-      type: 'text',
-      maxLength: String(CODE_MAX),
-      'aria-label': label('kodeBarang'),
-    },
-  });
-  const inBarcode = el('input', {
-    className: 'bo-pform-input',
-    attrs: {
-      id: 'bo-pform-barcode',
-      type: 'text',
-      inputMode: 'numeric',
-      'aria-label': label('barcode'),
-    },
-  });
-  const selKategori = el(
-    'select',
     {
-      className: 'bo-pform-select',
-      attrs: { id: 'bo-pform-kategori', 'aria-label': label('kategori') },
-    },
-    ...CATEGORY_OPTIONS.map((c) => el('option', { text: c, attrs: { value: c } })),
-  );
-  const selMerk = el(
-    'select',
-    { className: 'bo-pform-select', attrs: { id: 'bo-pform-merk', 'aria-label': label('merek') } },
-    ...BRAND_OPTIONS.map((b) => el('option', { text: b, attrs: { value: b } })),
-  );
-  const selSatuan = el(
-    'select',
-    {
-      className: 'bo-pform-select',
+      className: 'bo-pd-btn bo-pd-btn--icon',
       attrs: {
-        id: 'bo-pform-satuan',
-        'aria-label': label('satuanDasar'),
+        type: 'button',
+        'aria-label': label('boSegarkanDaftar'),
+        title: label('boSegarkanDaftar'),
       },
     },
-    el('option', { text: label('pilihSatuanDasar'), attrs: { value: '' } }),
-    ...BASE_UNITS.map((unit) => el('option', { text: unit, attrs: { value: unit } })),
+    icon('refresh-cw'),
   );
-  const formError = el('p', { className: 'bo-error', attrs: { role: 'alert' } });
-  const inSatuan2 = el('input', {
-    className: 'bo-pform-input',
-    attrs: {
-      id: 'bo-pform-satuan2',
-      type: 'text',
-      placeholder: 'Contoh: LSN = 12 PSG',
-      'aria-label': label('labelSatuan2'),
-    },
-  });
-  const inSatuan3 = el('input', {
-    className: 'bo-pform-input',
-    attrs: {
-      id: 'bo-pform-satuan3',
-      type: 'text',
-      placeholder: 'Contoh: DOS = 120 PSG',
-      'aria-label': label('labelSatuan3'),
-    },
-  });
-  const inMinStockAll = el('input', {
-    className: 'bo-pform-input',
-    attrs: {
-      id: 'bo-pform-min-all',
-      type: 'text',
-      inputMode: 'decimal',
-      'aria-label': label('labelMinStokAll'),
-    },
-  });
-  const inMinStockToko = el('input', {
-    className: 'bo-pform-input',
-    attrs: {
-      id: 'bo-pform-min-toko',
-      type: 'text',
-      inputMode: 'decimal',
-      'aria-label': label('stokMinDisplay'),
-    },
-  });
-  const inRak = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-rak', type: 'text', 'aria-label': label('labelNoRak') },
-  });
-  const inBerat = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-berat', type: 'text', 'aria-label': label('labelBeratBarang') },
-  });
-  const inKomisiSales = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-komisi', type: 'text', 'aria-label': label('labelKomisiSales') },
-  });
-  const inPromo = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-promo', type: 'text', 'aria-label': label('labelPromo') },
-  });
-  const inCatatan = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-catatan', type: 'text', 'aria-label': label('labelCatatanBarang') },
-  });
-
-  // Subpanel Supplier & HPP
-  const inSupplier = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-supplier', type: 'text', 'aria-label': label('menuPemasok') },
-  });
-  const inTglBeliAkhir = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-tgl-beli', type: 'text', 'aria-label': label('labelTglBeliAkhir') },
-  });
-  const inHargaBeliAkhir = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-harga-beli', type: 'text', 'aria-label': label('labelHargaBeliAkhir') },
-  });
-  const inHppAvg = el('input', {
-    className: 'bo-pform-input',
-    attrs: { id: 'bo-pform-hpp-avg', type: 'text', 'aria-label': label('labelHppAvg') },
-  });
-
-  // Subpanel Saldo Awal
-  const initialStockContent = el('div', { className: 'bo-initial-stock-body' });
-  const toggleInitialStock = el(
+  const btnImpor = el(
     'button',
-    { className: 'bo-initial-stock-header', attrs: { type: 'button' } },
-    el('strong', { text: label('labelStokAwalHeader') }),
-    el('span', { className: 'bo-initial-stock-sub', text: label('labelStokAwalSub') }),
+    {
+      className: 'bo-pd-btn bo-pd-btn--icon',
+      attrs: { type: 'button', 'aria-label': label('boImporExcel'), title: label('boImporExcel') },
+    },
+    icon('download'),
   );
+  const formError = el('p', { className: 'bo-pd-error', attrs: { role: 'alert' } });
 
-  // Photo
+  // --- Isian formulir ---
+  const input = (
+    labelText: string,
+    ariaLabel: string,
+    options: { readonly inputMode?: string; readonly maxLength?: number } = {},
+  ): { readonly control: HTMLInputElement; readonly field: HTMLElement } => {
+    const id = nextId('bo-pd');
+    const control = el('input', {
+      className: 'bo-pd-input',
+      attrs: {
+        id,
+        type: 'text',
+        autocomplete: 'off',
+        'aria-label': ariaLabel,
+        ...(options.inputMode === undefined ? {} : { inputmode: options.inputMode }),
+        ...(options.maxLength === undefined ? {} : { maxlength: String(options.maxLength) }),
+      },
+    });
+    return {
+      control,
+      field: el(
+        'div',
+        { className: 'bo-pd-field' },
+        el('label', { attrs: { for: id }, text: labelText }),
+        control,
+      ),
+    };
+  };
+  const select = (
+    labelText: string,
+    ariaLabel: string,
+    options: readonly string[],
+  ): { readonly control: HTMLSelectElement; readonly field: HTMLElement } => {
+    const id = nextId('bo-pd');
+    const control = el(
+      'select',
+      { className: 'bo-pd-input', attrs: { id, 'aria-label': ariaLabel } },
+      ...options.map((value) => el('option', { text: value, attrs: { value } })),
+    );
+    return {
+      control,
+      field: el(
+        'div',
+        { className: 'bo-pd-field' },
+        el('label', { attrs: { for: id }, text: labelText }),
+        control,
+      ),
+    };
+  };
+  const percentInput = (
+    labelText: string,
+    ariaLabel: string,
+  ): { readonly control: HTMLInputElement; readonly field: HTMLElement } => {
+    const base = input(labelText, ariaLabel, { inputMode: 'decimal' });
+    const heading = base.field.firstElementChild;
+    base.field.replaceChildren(
+      ...(heading === null ? [] : [heading]),
+      el(
+        'div',
+        { className: 'bo-pd-suffix' },
+        base.control,
+        el('span', {
+          className: 'bo-pd-suffix__unit',
+          text: '%',
+          attrs: { 'aria-hidden': 'true' },
+        }),
+      ),
+    );
+    return base;
+  };
+
+  const nama = input('NAMA', label('namaBarang'));
+  const kode = input('KODE', label('kodeBarang'), { maxLength: CODE_MAX });
+  const barcode = input('BARCODE', label('barcode'), { inputMode: 'numeric' });
+  const kategori = select('KATEGORI', label('kategori'), CATEGORY_OPTIONS);
+  const merk = select('MERK', label('merek'), BRAND_OPTIONS);
+  const rak = input(label('labelNoRak'), label('labelNoRak'));
+  const berat = input(label('labelBeratBarang'), label('labelBeratBarang'), {
+    inputMode: 'decimal',
+  });
+  const catatan = input(label('labelCatatanBarang'), label('labelCatatanBarang'));
+  const supplier = input(label('labelSuplier'), label('menuPemasok'));
+  const tglBeli = input(label('labelTglBeliAkhir'), label('labelTglBeliAkhir'));
+  const hargaBeli = input(label('labelHargaBeliAkhir'), label('labelHargaBeliAkhir'), {
+    inputMode: 'numeric',
+  });
+  const hppAvg = input(label('labelHppAvg'), label('labelHppAvg'), { inputMode: 'numeric' });
+  const minAll = input(label('labelMinStokAll'), label('labelMinStokAll'), {
+    inputMode: 'decimal',
+  });
+  const minToko = input(label('labelMinStokTokoSingkat'), label('stokMinDisplay'), {
+    inputMode: 'decimal',
+  });
+  const komisi = percentInput(label('labelKomisiSales'), label('labelKomisiSales'));
+  const promo = percentInput(label('labelPromo'), label('labelPromo'));
+
+  const knownCodes = (): readonly string[] => {
+    const seen = new Set(UNIT_CODES.map((code) => code.toLowerCase()));
+    const extra: string[] = [];
+    for (const item of products()) {
+      for (const unit of item.units) {
+        if (!seen.has(unit.code.toLowerCase())) {
+          seen.add(unit.code.toLowerCase());
+          extra.push(unit.code);
+        }
+      }
+    }
+    return [...UNIT_CODES, ...extra];
+  };
+
+  const priceBody = el('tbody');
+  const unitPicker = createUnitPicker({
+    codes: knownCodes(),
+    onChange: () => {
+      renderMatrix();
+    },
+  });
+
+  // --- Foto ---
   const photoInputId = nextId('foto-bo');
   const fileInput = el('input', {
-    className: 'bo-photo-file',
+    className: 'bo-pd-photo__file',
     attrs: { id: photoInputId, type: 'file', accept: 'image/*' },
   });
-  const photoSlot = el('div', { className: 'bo-photo-slot' });
-  const showPhoto = (product: Product | undefined, previewUrl?: string): void => {
-    if (previewUrl !== undefined) {
+  const photoSlot = el('div', { className: 'bo-pd-photo__slot' });
+  const zoomButton = el(
+    'button',
+    {
+      className: 'bo-pd-photo__zoom',
+      attrs: {
+        type: 'button',
+        'aria-label': label('boPerbesarFoto'),
+        title: label('boPerbesarFoto'),
+      },
+    },
+    icon('zoom-in'),
+  );
+  const showPhoto = (product: Product | undefined, preview?: string): void => {
+    previewUrl = preview;
+    if (preview !== undefined) {
       photoSlot.replaceChildren(
-        el('img', { className: 'bo-product-img', attrs: { alt: '', src: previewUrl } }),
+        el('img', { className: 'bo-product-img', attrs: { alt: '', src: preview } }),
       );
     } else if (product !== undefined) {
       photoSlot.replaceChildren(createProductPhoto(product, 'lg'));
@@ -321,46 +300,47 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
         el('span', { className: 'mob-photo mob-photo--lg mob-photo--empty' }, icon('package')),
       );
     }
+    zoomButton.disabled =
+      preview === undefined && (product === undefined || productPhotoUrl(product) === undefined);
   };
-  showPhoto(undefined);
-  const photoPlaceholder = el(
+  const photoBox = el(
     'div',
-    { className: 'bo-photo-box' },
-    photoSlot,
+    { className: 'bo-pd-photo' },
+    el('div', { className: 'bo-pd-photo__frame' }, photoSlot, zoomButton),
     el('label', {
-      className: 'bo-photo-upload-label',
+      className: 'bo-pd-photo__pick',
       attrs: { for: photoInputId },
       text: 'Pilih / Ganti Foto',
     }),
     fileInput,
   );
 
-  // --- Right Panel Elements ---
-  const count = el('p', { className: 't-label bo-count', attrs: { 'aria-live': 'polite' } });
+  // --- Daftar barang ---
+  const count = el('p', { className: 'bo-pd-count', attrs: { 'aria-live': 'polite' } });
   const grid = createVirtualGrid<Product>({
     label: label('daftarBarang'),
     columns: [
       {
         header: 'NAMA BARANG',
-        width: 'minmax(180px, 1.8fr)',
+        width: 'minmax(150px, 2fr)',
         cell: (p) => (p.active ? p.name : `${p.name} (Nonaktif)`),
       },
-      { header: 'SATUAN', width: '80px', cell: (p) => p.baseUnit },
+      { header: 'Satuan', width: '64px', cell: (p) => p.baseUnit },
       {
         header: label('kolomStokTokoSingkat'),
-        width: '85px',
+        width: '78px',
         align: 'end',
-        cell: (p) => formatDecimal(p.stock.display, 3, 1),
+        cell: (p) => formatDecimal(p.stock.display, 3, 0),
       },
       {
         header: label('kolomStokGdgSingkat'),
-        width: '85px',
+        width: '86px',
         align: 'end',
-        cell: (p) => formatDecimal(p.stock.besar, 3, 1),
+        cell: (p) => formatDecimal(p.stock.besar, 3, 0),
       },
       {
         header: label('kolomQtyPoSingkat'),
-        width: '80px',
+        width: '72px',
         align: 'end',
         cell: (p) => formatDecimal(p.incoming ?? 0),
       },
@@ -374,183 +354,137 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
     },
   });
 
-  const priceTbody = el('tbody');
+  // --- Matriks harga: mengikuti baris satuan; hanya bisa diisi saat Tambah barang baru ---
   const priceTable = el(
     'table',
-    { className: 'bo-price-matrix-table' },
+    { attrs: { 'aria-label': label('boMatriksHarga') } },
     el(
       'thead',
       {},
       el(
         'tr',
         {},
-        el('th', { className: 'col-unit', text: 'HARGA' }),
-        el('th', { className: 'col-num', text: label('kolomHargaRetail') }),
-        el('th', { className: 'col-num', text: label('kolomHargaGrosir') }),
+        el('th', { text: 'HARGA' }),
+        el('th', { text: label('kolomHargaRetail') }),
+        el('th', { text: label('kolomHargaGrosir') }),
       ),
     ),
-    priceTbody,
+    priceBody,
   );
+
+  function renderMatrix(): void {
+    const used = unitPicker.getRows().filter((row) => row.code !== '');
+    if (used.length === 0) {
+      priceBody.replaceChildren(
+        el('tr', {}, el('td', { attrs: { colspan: '3' }, text: label('boPilihBarang') })),
+      );
+      return;
+    }
+    const product = productById(selectedId);
+    const baseCode = used[0]?.code ?? '';
+    const editable = isNew && isEditing;
+    priceBody.replaceChildren(
+      ...used.map((row, index) => {
+        const name = index === 0 ? row.code : `${row.code} = ${row.factor || '?'} ${baseCode}`;
+        const prices = isNew ? undefined : product?.prices[row.code];
+        const cell = (kind: 'ecer' | 'grosir'): HTMLElement => {
+          if (editable) {
+            const heading = kind === 'ecer' ? label('kolomHargaRetail') : label('kolomHargaGrosir');
+            const field = el('input', {
+              className: 'bo-pd-prices__input',
+              attrs: {
+                type: 'text',
+                inputmode: 'numeric',
+                autocomplete: 'off',
+                'aria-label': `${heading} ${row.code}`,
+              },
+            });
+            field.value = typed[index]?.[kind] ?? '';
+            field.addEventListener('input', () => {
+              const slot = typed[index];
+              if (slot !== undefined) {
+                slot[kind] = field.value;
+              }
+            });
+            return el('td', {}, field);
+          }
+          const value = kind === 'ecer' ? prices?.eceran : prices?.grosir;
+          return el('td', { text: value === undefined ? '-' : formatDecimal(value, 0) });
+        };
+        return el('tr', {}, el('td', { text: name }), cell('ecer'), cell('grosir'));
+      }),
+    );
+  }
+
+  const fields: readonly (HTMLInputElement | HTMLSelectElement)[] = [
+    nama.control,
+    kode.control,
+    barcode.control,
+    kategori.control,
+    merk.control,
+    rak.control,
+    berat.control,
+    catatan.control,
+    supplier.control,
+    tglBeli.control,
+    hargaBeli.control,
+    hppAvg.control,
+    minAll.control,
+    minToko.control,
+    komisi.control,
+    promo.control,
+  ];
 
   const setFormEnabled = (enabled: boolean): void => {
     isEditing = enabled;
-    const inputs = [
-      inNama,
-      inKode,
-      inBarcode,
-      selKategori,
-      selMerk,
-      selSatuan,
-      inSatuan2,
-      inSatuan3,
-      inMinStockAll,
-      inMinStockToko,
-      inRak,
-      inBerat,
-      inKomisiSales,
-      inPromo,
-      inCatatan,
-      inSupplier,
-      inTglBeliAkhir,
-      inHargaBeliAkhir,
-      inHppAvg,
-    ];
-    inputs.forEach((input) => {
-      input.disabled = !enabled;
-    });
-    btnRubah.classList.toggle('bo-btn-action--active', enabled);
-    btnRubah.setAttribute('aria-label', 'Simpan Barang');
+    for (const field of fields) {
+      field.disabled = !enabled;
+    }
+    unitPicker.setEnabled(enabled);
+    btnSimpan.classList.toggle('bo-pd-btn--active', enabled);
+    renderMatrix();
   };
 
   const fillForm = (product: Product | undefined): void => {
+    formError.textContent = '';
+    unitPicker.markIssue(undefined);
+    for (const slot of typed) {
+      slot.ecer = '';
+      slot.grosir = '';
+    }
     if (product === undefined) {
-      inNama.value = '';
-      inKode.value = '';
-      inBarcode.value = '';
-      selKategori.value = CATEGORY_OPTIONS[0] ?? '';
-      selMerk.value = BRAND_OPTIONS[0] ?? '';
-      selSatuan.value = '';
-      inSatuan2.value = '';
-      inSatuan3.value = '';
-      inMinStockAll.value = '';
-      inMinStockToko.value = '';
-      inRak.value = '';
-      inBerat.value = '';
-      inKomisiSales.value = '';
-      inPromo.value = '';
-      inCatatan.value = '';
-      inSupplier.value = '';
-      inTglBeliAkhir.value = '';
-      inHargaBeliAkhir.value = '';
-      inHppAvg.value = '';
+      for (const field of fields) {
+        field.value = '';
+      }
+      setSelect(kategori.control, '', CATEGORY_OPTIONS[0] ?? '');
+      setSelect(merk.control, '', BRAND_OPTIONS[0] ?? '');
+      unitPicker.setRows([]);
       showPhoto(undefined);
-      priceTbody.replaceChildren(
-        el(
-          'tr',
-          {},
-          el('td', { attrs: { colspan: '3' }, text: 'Pilih barang untuk melihat matriks harga' }),
-        ),
-      );
-      initialStockContent.textContent = 'Tidak ada saldo awal tercatat';
+      photo = { name: '', bytes: 0 };
+      renderMatrix();
       return;
     }
-
     const draft = draftOf(product);
-    inNama.value = draft.name;
-    inKode.value = draft.code;
-    inBarcode.value = draft.barcode;
-    selKategori.value = CATEGORY_OPTIONS.includes(draft.category)
-      ? draft.category
-      : (CATEGORY_OPTIONS[0] ?? '');
-    selMerk.value = BRAND_OPTIONS.includes(draft.brand) ? draft.brand : (BRAND_OPTIONS[0] ?? '');
-    selSatuan.value = draft.baseUnit;
-
-    const u2 = product.units[1];
-    inSatuan2.value = u2 ? `${u2.code} = ${u2.factor} ${product.baseUnit}` : '';
-    const u3 = product.units[2];
-    inSatuan3.value = u3 ? `${u3.code} = ${u3.factor} ${product.baseUnit}` : '';
-
-    inMinStockAll.value = String(product.minStock);
-    inMinStockToko.value = String(
-      product.minByWarehouse?.display ?? Math.round(product.minStock * 0.4),
-    );
-    inRak.value = product.rak ?? '123A';
-    inBerat.value = product.weight
-      ? `${product.weight >= 1000 ? product.weight / 1000 : product.weight} ${product.weight >= 1000 ? 'KG' : 'GR'}`
-      : '0,7 KG';
-
-    const comm = product.salesCommission;
-    inKomisiSales.value = comm
-      ? `${comm.percent}%  |  ${formatRupiah(comm.nominal)}`
-      : '1%  |  Rp 1.500';
-
-    const prm = product.promo;
-    inPromo.value =
-      prm && prm.percent > 0
-        ? `${prm.percent}%  |  ${formatRupiah(prm.nominal)}`
-        : '20%  |  Rp 30.000';
-
-    inCatatan.value = product.notes ?? 'BARANG STOK BANYAK, HARGA DISKON';
-
-    inSupplier.value = product.supplierName ?? 'PT SEKAWAN JAYA';
-    inTglBeliAkhir.value = product.lastPurchaseDate ?? '12-09-2026';
-    inHargaBeliAkhir.value = formatDecimal(
-      product.lastPurchasePrice ?? Math.round(product.hpp * 0.95),
-    );
-    inHppAvg.value = formatDecimal(product.hppAvg ?? product.hpp);
-
-    // Photo preview
+    nama.control.value = draft.name;
+    kode.control.value = draft.code;
+    barcode.control.value = draft.barcode;
+    setSelect(kategori.control, draft.category, CATEGORY_OPTIONS[0] ?? '');
+    setSelect(merk.control, draft.brand, BRAND_OPTIONS[0] ?? '');
+    unitPicker.setRows(rowsOf(product));
+    minAll.control.value = draft.minStockAll ?? '';
+    minToko.control.value = String(splitMin(product).display).replace('.', ',');
+    rak.control.value = draft.rak ?? '';
+    berat.control.value = draft.berat ?? '';
+    komisi.control.value = draft.komisiSalesPersen ?? '';
+    promo.control.value = draft.promoPersen ?? '';
+    catatan.control.value = draft.catatan ?? '';
+    supplier.control.value = draft.supplierName ?? '';
+    tglBeli.control.value = draft.tglBeliAkhir ?? '';
+    hargaBeli.control.value = draft.hargaBeliAkhir ?? '';
+    hppAvg.control.value = draft.hppAvg ?? '';
     showPhoto(product);
-
-    // Matriks Harga
-    const priceRows: HTMLElement[] = product.units.map((unit) => {
-      const p = product.prices[unit.code];
-      const ratioLabel =
-        unit.factor > 1 ? `${unit.code} = ${unit.factor} ${product.baseUnit}` : unit.code;
-      return el(
-        'tr',
-        {},
-        el('td', { className: 'col-unit', text: ratioLabel }),
-        el('td', { className: 'col-num', text: p ? formatDecimal(p.eceran) : '-' }),
-        el('td', { className: 'col-num', text: p ? formatDecimal(p.grosir) : '-' }),
-      );
-    });
-    priceTbody.replaceChildren(...priceRows);
-
-    // Saldo awal details
-    const initStk = product.initialStock;
-    initialStockContent.replaceChildren(
-      el(
-        'div',
-        { className: 'bo-initial-stock-grid' },
-        el(
-          'div',
-          {},
-          el('span', { className: 'bo-init-label', text: 'Tanggal Saldo:' }),
-          el('strong', { text: initStk?.date ?? '01-01-2026' }),
-        ),
-        el(
-          'div',
-          {},
-          el('span', { className: 'bo-init-label', text: 'Kuantitas Awal:' }),
-          el('strong', {
-            text: `${initStk?.quantity ?? product.stock.display + product.stock.besar} ${product.baseUnit}`,
-          }),
-        ),
-        el(
-          'div',
-          {},
-          el('span', { className: 'bo-init-label', text: 'Nilai Satuan:' }),
-          el('strong', { text: formatRupiah(initStk?.unitPrice ?? product.hpp) }),
-        ),
-        el(
-          'div',
-          {},
-          el('span', { className: 'bo-init-label', text: 'Gudang Display / Besar:' }),
-          el('strong', { text: `${product.stock.display} / ${product.stock.besar}` }),
-        ),
-      ),
-    );
+    photo = { name: '', bytes: 0 };
+    renderMatrix();
   };
 
   const refreshList = (): void => {
@@ -559,76 +493,116 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
     grid.setRows(list);
   };
 
-  // Actions
+  const digits = (text: string | undefined): string => (text ?? '').replace(/\D/g, '');
+
+  const draftFromForm = (): ProductDraft | undefined => {
+    const unitRows: readonly UnitRowDraft[] = unitPicker.getRows();
+    const all = parseMin(minAll.control.value);
+    const toko = parseMin(minToko.control.value);
+    // ALL kosong berarti total minimum sama dengan minimum Toko (tanpa minimum Gudang).
+    const allFilled = minAll.control.value.trim() !== '';
+    if (allFilled && all !== undefined && toko !== undefined && toko > all) {
+      formError.textContent = label('produkErrMinToko');
+      minToko.control.setAttribute('aria-invalid', 'true');
+      return undefined;
+    }
+    minToko.control.removeAttribute('aria-invalid');
+    const baseCode = unitRows[0]?.code ?? '';
+    const besar =
+      all !== undefined && toko !== undefined ? (allFilled ? round3(all - toko) : 0) : undefined;
+    return {
+      code: kode.control.value,
+      barcode: barcode.control.value,
+      name: nama.control.value,
+      brand: merk.control.value,
+      category: kategori.control.value,
+      baseUnit: baseCode,
+      allowDecimal: productById(selectedId)?.allowDecimal ?? false,
+      defaultUnit: baseCode,
+      unitRows,
+      minDisplay: minToko.control.value,
+      minBesar: besar === undefined ? minAll.control.value : String(besar).replace('.', ','),
+      photoName: photo.name,
+      photoBytes: photo.bytes,
+      rak: rak.control.value,
+      berat: berat.control.value.replace(',', '.'),
+      komisiSalesPersen: komisi.control.value,
+      promoPersen: promo.control.value,
+      catatan: catatan.control.value,
+      supplierName: supplier.control.value,
+      tglBeliAkhir: tglBeli.control.value,
+      hargaBeliAkhir: digits(hargaBeli.control.value),
+      hppAvg: digits(hppAvg.control.value),
+      hargaEcer1: digits(typed[0]?.ecer),
+      hargaGrosir1: digits(typed[0]?.grosir),
+      hargaEcer2: digits(typed[1]?.ecer),
+      hargaGrosir2: digits(typed[1]?.grosir),
+      hargaEcer3: digits(typed[2]?.ecer),
+      hargaGrosir3: digits(typed[2]?.grosir),
+    };
+  };
+
+  // --- Aksi ---
   btnTambah.addEventListener('click', () => {
     isNew = true;
     selectedId = undefined;
     fillForm(undefined);
     setFormEnabled(true);
-    inKode.value = '';
-    inKode.focus();
-    formError.textContent = '';
+    kode.control.focus();
     showToast({ kind: 'info', text: 'Silakan isi data barang baru' });
   });
 
-  btnRubah.addEventListener('click', () => {
+  btnSimpan.addEventListener('click', () => {
     if (!isEditing) {
       if (selectedId === undefined && products().length > 0) {
         selectedId = products()[0]?.id;
         fillForm(productById(selectedId));
       }
       setFormEnabled(true);
-      inNama.focus();
+      nama.control.focus();
       showToast({ kind: 'info', text: 'Mode edit aktif. Tekan Simpan lagi untuk simpan.' });
       return;
     }
-
-    // Simpan
-    const draft: ProductDraft = {
-      code: inKode.value,
-      barcode: inBarcode.value,
-      name: inNama.value,
-      brand: selMerk.value,
-      category: selKategori.value,
-      baseUnit: selSatuan.value,
-      allowDecimal: false,
-      defaultUnit: selSatuan.value,
-      minDisplay: inMinStockToko.value,
-      minBesar: inMinStockAll.value,
-      photoName: photo.name,
-      photoBytes: photo.bytes,
-      rak: inRak.value,
-      berat: inBerat.value,
-      catatan: inCatatan.value,
-      supplierName: inSupplier.value,
-      tglBeliAkhir: inTglBeliAkhir.value,
-      hargaBeliAkhir: inHargaBeliAkhir.value.replace(/\D/g, ''),
-      hppAvg: inHppAvg.value.replace(/\D/g, ''),
-    };
-
-    const res = session.saveProduct(draft, isNew ? undefined : selectedId);
-    if (res.ok) {
+    const draft = draftFromForm();
+    if (draft === undefined) {
+      return;
+    }
+    const result = session.saveProduct(draft, isNew ? undefined : selectedId);
+    if (result.ok) {
       formError.textContent = '';
+      unitPicker.markIssue(undefined);
       showToast({ kind: 'success', text: message('MSG-011') });
-      selectedId = res.product.id;
+      selectedId = result.product.id;
       isNew = false;
       setFormEnabled(false);
       refreshList();
-      fillForm(res.product);
-      const idx = rows().findIndex((p) => p.id === res.product.id);
-      if (idx >= 0) {
-        grid.select(idx);
+      fillForm(result.product);
+      const index = rows().findIndex((item) => item.id === result.product.id);
+      if (index >= 0) {
+        grid.select(index);
       }
-      btnHapus.style.display = session.allowed('BO-03', 'Nonaktifkan Barang') ? '' : 'none';
-    } else if ('issue' in res) {
-      const errText = res.issue.messageId
-        ? message(res.issue.messageId)
-        : 'Kode barang minimal 3 karakter.';
-      formError.textContent = errText;
+    } else if ('issue' in result) {
+      formError.textContent = issueText(result.issue);
+      if (result.issue.field === 'units') {
+        unitPicker.markIssue({
+          field: result.issue.labelKey === 'produkErrSatuanGanda' ? 'duplicate' : 'factor',
+          row: result.issue.row,
+        });
+      } else {
+        unitPicker.markIssue(undefined);
+        const target: Readonly<Record<string, HTMLElement>> = {
+          code: kode.control,
+          codeLength: kode.control,
+          name: nama.control,
+          commission: komisi.control,
+          promo: promo.control,
+        };
+        target[result.issue.field]?.focus();
+      }
     }
   });
 
-  btnHapus.addEventListener('click', () => {
+  btnNonaktif.addEventListener('click', () => {
     const target = productById(selectedId);
     if (!target) {
       showToast({ kind: 'info', text: 'Pilih barang yang ingin dihapus' });
@@ -653,8 +627,9 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
     });
   });
 
+  // Keluar menutup tab Data Barang dan kembali ke tab sebelumnya.
   btnKeluar.addEventListener('click', () => {
-    go('/bo/dashboard');
+    requestCloseTab(container);
   });
 
   btnInfo.addEventListener('click', () => {
@@ -662,12 +637,11 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
     const skuTotal = products().length;
     openModal({
       title: 'Informasi Master Data Barang',
-      body: `Total Terdaftar: ${skuTotal} SKU.\nBarang Aktif Saat Ini: ${target ? target.name + ' [' + target.code + ']' : 'Belum dipilih'}.\nLokasi Rak: ${target?.rak ?? '-'}\nTotal Stok: Display ${target?.stock.display ?? 0}, Gudang ${target?.stock.besar ?? 0}`,
+      body: `Total Terdaftar: ${String(skuTotal)} SKU.\nBarang Aktif Saat Ini: ${target ? `${target.name} [${target.code}]` : 'Belum dipilih'}.\nLokasi Rak: ${target?.rak ?? '-'}\nTotal Stok: Toko ${String(target?.stock.display ?? 0)}, Gudang ${String(target?.stock.besar ?? 0)}`,
       actions: [{ text: 'Tutup', variant: 'secondary' }],
     });
   });
 
-  // Impor Modal
   btnImpor.addEventListener('click', () => {
     openModal({
       title: label('judulModalImpor'),
@@ -679,26 +653,22 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
           variant: 'primary',
           onClick: () => {
             const sample = getSampleExcelProducts();
-            const current = store.getState().data.products;
-            const existingCodes = new Set(current.map((p) => p.code));
-            const newToAdd = sample.filter((p) => !existingCodes.has(p.code));
-
-            if (newToAdd.length === 0) {
+            const existingCodes = new Set(products().map((item) => item.code));
+            const fresh = sample.filter((item) => !existingCodes.has(item.code));
+            if (fresh.length === 0) {
               showToast({ kind: 'info', text: '10 SKU contoh sudah ada di dalam katalog.' });
               return;
             }
-
-            newToAdd.forEach((p) => {
-              store.saveProduct(p);
+            fresh.forEach((item) => {
+              store.saveProduct(item);
             });
-
             showToast({
               kind: 'success',
-              text: label('pesanImporBerhasil', { jumlah: String(newToAdd.length) }),
+              text: label('pesanImporBerhasil', { jumlah: String(fresh.length) }),
             });
-            selectedId = newToAdd[0]?.id;
+            selectedId = fresh[0]?.id;
             refreshList();
-            fillForm(newToAdd[0]);
+            fillForm(fresh[0]);
           },
         },
       ],
@@ -714,48 +684,56 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
     searchInput.value = '';
     refreshList();
   });
-
   searchInput.addEventListener('input', () => {
     query = searchInput.value;
     refreshList();
   });
 
-  toggleInitialStock.addEventListener('click', () => {
-    initialStockExpanded = !initialStockExpanded;
-    initialStockContent.classList.toggle('bo-initial-stock-body--open', initialStockExpanded);
+  zoomButton.addEventListener('click', () => {
+    const product = productById(selectedId);
+    const url = previewUrl ?? (product === undefined ? undefined : productPhotoUrl(product));
+    if (url === undefined) {
+      return;
+    }
+    openModal({
+      title: product?.name ?? label('boPerbesarFoto'),
+      body: el(
+        'div',
+        { className: 'bo-pd-zoom' },
+        el('img', { attrs: { src: url, alt: product?.name ?? '' } }),
+      ),
+      actions: [{ text: label('tutup'), variant: 'secondary' }],
+    });
   });
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (file) {
       photo = { name: file.name, bytes: file.size };
-      const url = URL.createObjectURL(file);
-      showPhoto(undefined, url);
+      showPhoto(undefined, URL.createObjectURL(file));
       showToast({ kind: 'info', text: `Foto dipilih: ${file.name}` });
     }
   });
 
-  // Shortcuts
+  // --- Pintasan papan ketik (hanya saat tab Data Barang tampil) ---
   const onKey = (event: KeyboardEvent): void => {
     if (!screenActive(container)) {
       return;
     }
-    if (event.altKey && event.key.toLowerCase() === 't') {
+    const key = event.key.toLowerCase();
+    if (event.altKey && key === 't') {
       event.preventDefault();
       btnTambah.click();
-    } else if (
-      (event.altKey && (event.key.toLowerCase() === 'r' || event.key.toLowerCase() === 's')) ||
-      (event.ctrlKey && event.key.toLowerCase() === 's')
-    ) {
+    } else if ((event.altKey && (key === 'r' || key === 's')) || (event.ctrlKey && key === 's')) {
       event.preventDefault();
-      btnRubah.click();
-    } else if (event.altKey && event.key.toLowerCase() === 'h') {
+      btnSimpan.click();
+    } else if (event.altKey && key === 'h') {
       event.preventDefault();
-      btnHapus.click();
-    } else if (event.altKey && event.key.toLowerCase() === 'k') {
+      btnNonaktif.click();
+    } else if (event.altKey && key === 'k') {
       event.preventDefault();
       btnKeluar.click();
-    } else if (event.altKey && event.key.toLowerCase() === 'c') {
+    } else if (event.altKey && key === 'c') {
       event.preventDefault();
       btnCetak.click();
     } else if (event.key === '/' && !(event.target instanceof HTMLInputElement)) {
@@ -765,261 +743,77 @@ export function renderProducts(session: BoSession, go: (path: string) => void): 
   };
   document.addEventListener('keydown', onKey);
 
-  // Layout Assembler (Mengikuti data-barang.png)
-  const leftPanel = el(
-    'section',
-    { className: 'bo-product-left', attrs: { 'aria-label': label('formBarang') } },
-    formError,
-    photoPlaceholder,
-    el(
-      'div',
-      { className: 'bo-pform-table' },
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', { className: 'bo-pform-lbl', attrs: { for: 'bo-pform-nama' }, text: 'NAMA' }),
-        inNama,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', { className: 'bo-pform-lbl', attrs: { for: 'bo-pform-kode' }, text: 'KODE' }),
-        inKode,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-barcode' },
-          text: 'BARCODE',
-        }),
-        inBarcode,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-kategori' },
-          text: 'KATEGORI',
-        }),
-        selKategori,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', { className: 'bo-pform-lbl', attrs: { for: 'bo-pform-merk' }, text: 'MERK' }),
-        selMerk,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-satuan' },
-          text: 'SATUAN',
-        }),
-        selSatuan,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-satuan2' },
-          text: label('labelSatuan2'),
-        }),
-        inSatuan2,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-satuan3' },
-          text: label('labelSatuan3'),
-        }),
-        inSatuan3,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-min-all' },
-          text: label('labelMinStokAll'),
-        }),
-        inMinStockAll,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-min-toko' },
-          text: label('labelMinStokTokoSingkat'),
-        }),
-        inMinStockToko,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-rak' },
-          text: label('labelNoRak'),
-        }),
-        inRak,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-berat' },
-          text: label('labelBeratBarang'),
-        }),
-        inBerat,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-komisi' },
-          text: label('labelKomisiSales'),
-        }),
-        inKomisiSales,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-promo' },
-          text: label('labelPromo'),
-        }),
-        inPromo,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-catatan' },
-          text: label('labelCatatanBarang'),
-        }),
-        inCatatan,
-      ),
-    ),
-    el(
-      'div',
-      { className: 'bo-pform-table bo-pform-table--supplier' },
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-supplier' },
-          text: label('labelSuplier'),
-        }),
-        inSupplier,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-tgl-beli' },
-          text: label('labelTglBeliAkhir'),
-        }),
-        inTglBeliAkhir,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-harga-beli' },
-          text: label('labelHargaBeliAkhir'),
-        }),
-        inHargaBeliAkhir,
-      ),
-      el(
-        'div',
-        { className: 'bo-pform-row' },
-        el('label', {
-          className: 'bo-pform-lbl',
-          attrs: { for: 'bo-pform-hpp-avg' },
-          text: label('labelHppAvg'),
-        }),
-        inHppAvg,
-      ),
-    ),
-    el('div', { className: 'bo-initial-stock-card' }, toggleInitialStock, initialStockContent),
+  // --- Susunan layar (gambar 3) ---
+  const leftColumn = el(
+    'div',
+    { className: 'bo-pd-col' },
+    nama.field,
+    el('div', { className: 'bo-pd-row2' }, kode.field, barcode.field),
+    el('div', { className: 'bo-pd-row2' }, kategori.field, merk.field),
+    el('div', { className: 'bo-pd-row2' }, rak.field, berat.field),
+    catatan.field,
+    el('div', { className: 'bo-pd-row2' }, supplier.field, tglBeli.field),
+    ...(isOwner ? [el('div', { className: 'bo-pd-row2' }, hargaBeli.field, hppAvg.field)] : []),
   );
-
-  const rightPanel = el(
-    'section',
-    { className: 'bo-product-right' },
-    el('div', { className: 'bo-product-search-row' }, searchInput, btnRefresh),
-    count,
+  const rightColumn = el(
+    'div',
+    { className: 'bo-pd-col' },
     el(
       'div',
-      {
-        className: 'bo-product-table-wrapper',
-        attrs: { tabindex: '0', 'aria-label': 'Daftar produk' },
-      },
-      grid.element,
+      { className: 'bo-pd-field' },
+      el('span', { className: 'bo-pd-label', text: 'SATUAN' }),
+      unitPicker.element,
     ),
-    el(
-      'div',
-      {
-        className: 'bo-price-matrix-wrapper',
-        attrs: { tabindex: '0', 'aria-label': 'Matriks harga satuan' },
-      },
-      priceTable,
-    ),
+    el('div', { className: 'bo-pd-row2' }, minAll.field, minToko.field),
+    el('div', { className: 'bo-pd-row2' }, komisi.field, promo.field),
+    photoBox,
   );
 
   const container = el(
     'div',
-    { className: 'bo-product-screen' },
-    // Top Bar
+    { className: 'bo-pd' },
     el(
-      'div',
-      { className: 'bo-product-topbar' },
+      'section',
+      { className: 'bo-pd-form', attrs: { 'aria-label': label('formBarang') } },
+      leftColumn,
+      rightColumn,
+    ),
+    el(
+      'section',
+      { className: 'bo-pd-right' },
       el(
         'div',
-        { className: 'bo-product-actions-left' },
+        { className: 'bo-pd-toolbar' },
         btnTambah,
-        btnRubah,
-        btnHapus,
+        btnSimpan,
+        btnNonaktif,
         btnKeluar,
         btnInfo,
-        btnImpor,
         btnCetak,
       ),
+      formError,
+      el('div', { className: 'bo-pd-searchrow' }, searchInput, btnRefresh, btnImpor),
+      count,
+      el('div', { className: 'bo-pd-list' }, grid.element),
+      el('div', { className: 'bo-pd-prices' }, priceTable),
     ),
-    // Main Split
-    el('div', { className: 'bo-product-split' }, leftPanel, rightPanel),
   );
 
-  // Initialize
+  // --- Awal ---
   setFormEnabled(false);
   refreshList();
-  const initialSelected = rows()[0];
-  if (initialSelected) {
-    selectedId = initialSelected.id;
-    fillForm(initialSelected);
-    refreshList();
+  const initial = rows()[0];
+  if (initial) {
+    selectedId = initial.id;
+    fillForm(initial);
+  } else {
+    fillForm(undefined);
   }
 
   const stop = store.subscribe(() => {
     const online = store.getState().online;
-    btnRubah.toggleAttribute('data-inactive', !online);
-    btnRubah.setAttribute('aria-disabled', online ? 'false' : 'true');
+    btnSimpan.toggleAttribute('data-inactive', !online);
+    btnSimpan.setAttribute('aria-disabled', online ? 'false' : 'true');
   });
 
   return {

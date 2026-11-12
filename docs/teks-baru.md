@@ -1947,3 +1947,16 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1937: "Berat". Kunci expBerat.
 - TB-1938: "Komisi Sales". Kunci expKomisi.
 - TB-1939: "Promo". Kunci expPromo.
+- TB-1940: "Kode barang minimal 3 karakter.". Kunci produkErrKodePendek.
+- TB-1941: "Min stok toko tidak boleh melebihi minimal stok (ALL).". Kunci produkErrMinToko.
+- TB-1942: "Hapus satuan {nomor} ({kode})". Kunci boHapusSatuan.
+- TB-1943: "Tidak ada satuan yang cocok". Kunci boSatuanKosong.
+- TB-1944: "Cari/Pilih...". Kunci boCariPilih.
+- TB-1945: "Satuan {nomor}". Kunci boSatuanKe.
+- TB-1946: "Pilih satuan". Kunci boPilihSatuan.
+- TB-1947: "Konversi satuan {nomor}". Kunci boKonversiSatuan.
+- TB-1948: "Perbesar foto". Kunci boPerbesarFoto.
+- TB-1949: "Impor Excel". Kunci boImporExcel.
+- TB-1950: "Segarkan daftar". Kunci boSegarkanDaftar.
+- TB-1951: "Matriks harga satuan". Kunci boMatriksHarga.
+- TB-1952: "Pilih barang untuk melihat harga satuan". Kunci boPilihBarang.

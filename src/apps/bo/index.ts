@@ -44,7 +44,7 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-03',
     load: async () => {
       const { renderProducts } = await import('./screens/products');
-      return (session, go) => renderProducts(session, go);
+      return (session) => renderProducts(session);
     },
   },
   '/bo/harga': {

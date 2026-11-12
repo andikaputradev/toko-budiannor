@@ -243,7 +243,13 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
         return { ok: false, issue };
       }
       const existing = editingId === undefined ? undefined : lookup(editingId);
-      const product = buildProduct(draft, existing, existing?.id ?? nextProductId(all.length));
+      // Hanya Owner boleh mengubah harga beli akhir dan HPP rata-rata.
+      const product = buildProduct(
+        draft,
+        existing,
+        existing?.id ?? nextProductId(all.length),
+        role() === 'owner',
+      );
       store.saveProduct(product);
       log('koreksi', `Barang ${product.code} ${existing === undefined ? 'ditambah' : 'diubah'}`);
       return { ok: true, product };

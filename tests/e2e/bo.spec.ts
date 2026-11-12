@@ -216,7 +216,7 @@ test.describe('BO-03 Barang', () => {
   test('tabel virtual 3.600 baris dan form seluruh informasi satu barang', async ({ page }) => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
     await page.goto('/#/bo/barang');
-    await expect(page.locator('.bo-count')).toHaveText('3.607 barang');
+    await expect(page.locator('.bo-pd-count')).toHaveText('3.607 barang');
     expect(await page.locator('.vtable__rows .vtable__row').count()).toBeLessThan(60);
     await expect(page.getByLabel('Kode barang')).toHaveValue('B0001');
     await page.locator('.vtable__viewport').evaluate((node) => {
@@ -252,14 +252,15 @@ test.describe('BO-03 Barang', () => {
     await page.getByLabel('Nama barang').fill('Barang Uji Baru');
     await save.click();
     await expect(page.getByText('Satuan dasar wajib dipilih.')).toBeVisible();
-    await page.getByLabel('Satuan dasar').selectOption('Pcs');
+    await page.getByLabel('Satuan dasar', { exact: true }).click();
+    await page.locator('.bo-pd-units__option', { hasText: /^Pcs$/ }).click();
     await page.getByLabel('Stok minimum Gudang Display').fill('-1');
     await save.click();
     await expect(page.getByText('Stok minimum tidak boleh negatif.')).toBeVisible();
     await page.getByLabel('Stok minimum Gudang Display').fill('5');
     await save.click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
-    await expect(page.locator('.bo-count')).toHaveText('3.608 barang');
+    await expect(page.locator('.bo-pd-count')).toHaveText('3.608 barang');
     await expect(page.getByRole('button', { name: 'Nonaktifkan Barang' })).toBeHidden();
   });
 
@@ -338,7 +339,7 @@ test.describe('BO-05 Stok per Gudang', () => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
     await simulate(page, 'Picu stok negatif');
     await page.goto('/#/bo/stok?filter=negatif');
-    await expect(page.locator('.bo-count')).toHaveText('1 barang');
+    await expect(page.locator('.bo-pd-count')).toHaveText('1 barang');
     await expect(page.locator('.vtable__rows')).toContainText('Ditinjau (negatif)');
     await page.getByRole('button', { name: 'Tandai Sudah Ditinjau' }).click();
     await expect(
