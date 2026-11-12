@@ -133,12 +133,12 @@ describe('Komisi Sales per barang', () => {
   it('memakai persen barang bila terisi dan persen profil sales bila kosong, per baris', () => {
     const base = generateDataset();
     const own: Product = {
-      ...(base.products[0] as Product),
+      ...base.products[0]!,
       id: 'T-A',
       salesCommission: { percent: 5, nominal: 0 },
     };
     const none: Product = {
-      ...(base.products[1] as Product),
+      ...base.products[1]!,
       id: 'T-B',
       salesCommission: undefined,
     };
