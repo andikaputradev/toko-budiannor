@@ -138,7 +138,7 @@ export function mount(root: HTMLElement, path: string, context: AppContext): voi
 
   let loggedIn = active.state().loggedIn;
   if (path !== '/pos' && !loggedIn && context.store.getState().reviewMode) {
-    active.attemptLogin('U-3', '2468');
+    active.attemptLogin('U-3', '123456');
     loggedIn = active.state().loggedIn;
   }
   if (

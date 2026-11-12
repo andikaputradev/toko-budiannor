@@ -1016,10 +1016,10 @@ test.describe('OWN-06 Transaksi', () => {
     await dialog.getByRole('button', { name: 'Setujui' }).click();
     await expect(dialog.getByText('Alasan wajib diisi minimal 5 karakter.')).toBeVisible();
     await dialog.getByLabel('Alasan').fill('Pelanggan lama');
-    await dialog.getByLabel('PIN Owner').fill('1234');
+    await dialog.getByLabel('PIN Owner').fill('111222');
     await dialog.getByRole('button', { name: 'Setujui' }).click();
     await expect(dialog.getByText('PIN Owner salah. Sisa percobaan: 2.')).toBeVisible();
-    await dialog.getByLabel('PIN Owner').fill('3571');
+    await dialog.getByLabel('PIN Owner').fill('654321');
     await dialog.getByRole('button', { name: 'Setujui' }).click();
     await expect(dialog.getByText('PIN ini bukan milik Owner.')).toBeVisible();
     await dialog.getByLabel('PIN Owner').fill('482916');

@@ -25,7 +25,7 @@ function setup() {
   const store = createStore({ dataset });
   store.setOnline(true);
   const session = createPosSession(store, { clock: () => 1_000_000 });
-  session.attemptLogin('U-3', '2468');
+  session.attemptLogin('U-3', '123456');
   session.startShift(100000);
   session.addProduct(semen());
   return { store, session };

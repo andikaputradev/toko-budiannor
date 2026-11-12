@@ -26,26 +26,26 @@ function first() {
 describe('login', () => {
   it('menolak tanpa kasir terpilih, format salah, PIN salah, lalu mengunci pada percobaan ketiga', () => {
     const { session } = setup();
-    expect(session.attemptLogin(undefined, '2468')).toMatchObject({
+    expect(session.attemptLogin(undefined, '123456')).toMatchObject({
       ok: false,
       messageId: 'MSG-021',
     });
     expect(session.attemptLogin('U-3', '12')).toMatchObject({ ok: false, messageId: 'MSG-022' });
-    const wrong = session.attemptLogin('U-3', '1111');
+    const wrong = session.attemptLogin('U-3', '111111');
     expect(wrong).toMatchObject({ ok: false, messageId: 'MSG-023', values: { sisa: 2 } });
     expect(wrong.ok ? '' : failureText(wrong)).toBe('PIN salah. Sisa percobaan: 2.');
-    expect(session.attemptLogin('U-3', '1111')).toMatchObject({ values: { sisa: 1 } });
-    expect(session.attemptLogin('U-3', '1111')).toMatchObject({ messageId: 'MSG-024' });
-    expect(session.attemptLogin('U-3', '2468')).toMatchObject({ messageId: 'MSG-024' });
+    expect(session.attemptLogin('U-3', '111111')).toMatchObject({ values: { sisa: 1 } });
+    expect(session.attemptLogin('U-3', '111111')).toMatchObject({ messageId: 'MSG-024' });
+    expect(session.attemptLogin('U-3', '123456')).toMatchObject({ messageId: 'MSG-024' });
   });
 
   it('menerima PIN benar, menyetel peran, dan membuka kunci setelah 5 menit', () => {
     const { session, store, advance } = setup();
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      session.attemptLogin('U-4', '0000');
+      session.attemptLogin('U-4', '000000');
     }
     advance(5 * 60 * 1000);
-    expect(session.attemptLogin('U-4', '1357')).toEqual({ ok: true });
+    expect(session.attemptLogin('U-4', '123456')).toEqual({ ok: true });
     expect(session.state().loggedIn).toBe(true);
     expect(store.getState().userId).toBe('U-4');
     expect(store.getState().role).toBe('kasir');
@@ -53,8 +53,8 @@ describe('login', () => {
 
   it('menghitung percobaan terpisah untuk tiap kasir', () => {
     const { session } = setup();
-    session.attemptLogin('U-3', '0000');
-    expect(session.attemptLogin('U-4', '0000')).toMatchObject({ values: { sisa: 2 } });
+    session.attemptLogin('U-3', '000000');
+    expect(session.attemptLogin('U-4', '000000')).toMatchObject({ values: { sisa: 2 } });
   });
 });
 
@@ -128,11 +128,11 @@ describe('otorisasi Owner untuk piutang', () => {
   it('memeriksa alasan, PIN salah dengan sisa percobaan, PIN bukan Owner, lalu PIN benar', () => {
     const { session } = blocked();
     expect(session.authorizeOwner('abc', '482916')).toMatchObject({ messageId: 'MSG-048' });
-    expect(session.authorizeOwner('Pelanggan lama', '1234')).toMatchObject({
+    expect(session.authorizeOwner('Pelanggan lama', '111222')).toMatchObject({
       messageId: 'MSG-049',
       values: { sisa: 2 },
     });
-    expect(session.authorizeOwner('Pelanggan lama', '3571')).toMatchObject({
+    expect(session.authorizeOwner('Pelanggan lama', '654321')).toMatchObject({
       messageId: 'MSG-050',
     });
     expect(session.authorizeOwner('Pelanggan lama', '482916')).toEqual({ ok: true });
@@ -148,9 +148,9 @@ describe('otorisasi Owner untuk piutang', () => {
 
   it('mengunci otorisasi setelah tiga PIN salah', () => {
     const { session } = blocked();
-    session.authorizeOwner('Pelanggan lama', '1111');
-    session.authorizeOwner('Pelanggan lama', '2222');
-    expect(session.authorizeOwner('Pelanggan lama', '3333')).toMatchObject({
+    session.authorizeOwner('Pelanggan lama', '111111');
+    session.authorizeOwner('Pelanggan lama', '222222');
+    expect(session.authorizeOwner('Pelanggan lama', '333333')).toMatchObject({
       messageId: 'MSG-051',
     });
     expect(session.authorizeOwner('Pelanggan lama', '482916')).toMatchObject({

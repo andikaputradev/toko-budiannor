@@ -87,7 +87,7 @@ Label: [Dari dokumen klien], [Asumsi], [Usulan], [Belum diketahui]. Bila spesifi
 
 - D-16 [Asumsi] Rute mockup: #/pos (POS-01), #/pos/jual (POS-02), #/pos/bayar (POS-04). POS-03 dan POS-10 berupa modal. Rute awal aplikasi kini #/pos; #/gaya tetap dapat dibuka. Tanpa login, semua rute POS dialihkan ke #/pos.
 - D-17 [Asumsi] Daftar kasir pada POS-01 memuat semua pengguna aktif, termasuk Owner, Supervisor, dan Frontliner (spesifikasi menyebut Kasir, Supervisor, Owner). Tombol Masuk bergaya nonaktif bila kasir belum dipilih tetapi tetap menampilkan MSG-021 saat ditekan, agar validasi spesifikasi dapat tampil. Papan angka memakai komponen PIN Stage B (berisi Hapus dan Kosong); PIN diketik juga lewat papan ketik fisik.
-- D-18 [Asumsi] Pencocokan PIN memakai penjaga per kasir: percobaan salah pertama menampilkan sisa 2, kedua sisa 1, ketiga mengunci 5 menit (MSG-024, [Usulan] spesifikasi). Format PIN selain 4 sampai 6 angka tidak dihitung sebagai percobaan. Otorisasi POS-10 memakai penjaga terpisah dan MSG-049, MSG-050, MSG-051.
+- D-18 [Asumsi] Pencocokan PIN memakai penjaga per kasir: percobaan salah pertama menampilkan sisa 2, kedua sisa 1, ketiga mengunci 5 menit (MSG-024, [Usulan] spesifikasi). Format PIN selain 6 angka tidak dihitung sebagai percobaan. Otorisasi POS-10 memakai penjaga terpisah dan MSG-049, MSG-050, MSG-051.
 - D-19 [Konflik] Kartu barang menulis stok sebagai "Stok Toko x | Gudang y" mengikuti prompt Stage D; spesifikasi menulis "Stok D 12 | B 40". Angka dikonversi ke satuan bawaan dan dibulatkan sampai 1 desimal. Modal POS-03 tetap memakai "Gudang Display" dan "Gudang Besar" sesuai spesifikasi.
 - D-20 [Asumsi] Satuan jual bawaan: satuan kemasan pertama bila satuan dasar Kg (mis. Sak untuk semen), selain itu satuan dasar. Dataset tidak memuat penanda satuan bawaan.
 - D-21 [Asumsi] Foto produk berupa kotak berlabel "Foto produk" (147 x 93 px pada kartu, 176 x 144 px pada POS-03). Daftar hasil dibatasi 60 dan memuat teks pembatas.
@@ -291,6 +291,7 @@ Acuan: dokumen klien "Revisi Penyesuaian Pos" (Word, 10 gambar contoh) dan `docs
 - R3-18 [Usulan] Header memuat hari dan tanggal mulai lebar 700 px; di bawahnya hanya jam, dan bilah alat layar jual membungkus. Di bawah 900 px panel pesanan menjadi lembar sehingga tombol pelanggan ringkas tampil di bilah alat. Modal satuan dan modal lain tetap satu kolom di ponsel.
 - R3-19 [Catatan] Data riwayat lama yang memuat Tenaga Penjual pada baris tetap menampilkannya di detail Riwayat (catatan arsip); fitur pengisiannya sudah dihapus dari modal barang sesuai dokumen.
 - R3-20 [Catatan] Temuan uji yang sudah ada sebelum revisi ini dan tidak disentuh: gaya inline pada Back-Office Akuntansi dan galat kontras `.bo-status-pill` serta `.mob-avatar` pada palet Oranye (4,24 : 1) di BO-09 dan OWN-04.
+- R3-21 [Perubahan atas D-18] PIN seluruh pengguna wajib tepat 6 angka (sebelumnya 4 sampai 6). PIN contoh Dewi, Rizal, Agus, Budi, dan pengguna contoh Pengaturan BO semuanya 123456; Owner tetap 482916 dan Ibu Sinta (Supervisor) 654321 agar otorisasi PIN Supervisor atau Owner tidak bisa dilakukan dengan PIN login kasir.
 
 ## Revisi mobile (9 November 2026)
 

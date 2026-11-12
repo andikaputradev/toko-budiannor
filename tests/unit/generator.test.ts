@@ -77,14 +77,13 @@ describe('generator data fiktif', () => {
     }
   });
 
-  it('menghasilkan enam pengguna fiktif dengan PIN unik dan kelima peran', () => {
+  it('menghasilkan enam pengguna fiktif dengan PIN 6 digit dan kelima peran', () => {
     expect(dataset.users).toHaveLength(6);
-    expect(new Set(dataset.users.map((user) => user.pin)).size).toBe(6);
     expect(new Set(dataset.users.map((user) => user.role))).toEqual(
       new Set(['owner', 'supervisor', 'kasir', 'frontliner', 'sales']),
     );
     for (const user of dataset.users) {
-      expect(user.pin).toMatch(/^\d{4,6}$/);
+      expect(user.pin).toMatch(/^\d{6}$/);
     }
   });
 

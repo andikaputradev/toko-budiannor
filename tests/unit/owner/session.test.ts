@@ -69,7 +69,7 @@ describe('persetujuan', () => {
     expect(session.decide('AP-1', 'disetujui', 'abc', '482916')).toMatchObject({
       messageId: 'MSG-048',
     });
-    expect(session.decide('AP-1', 'disetujui', 'Pelanggan lama', '3571')).toMatchObject({
+    expect(session.decide('AP-1', 'disetujui', 'Pelanggan lama', '654321')).toMatchObject({
       messageId: 'MSG-050',
     });
     expect(session.decide('AP-1', 'disetujui', 'Pelanggan lama', '482916')).toEqual({ ok: true });
@@ -92,9 +92,9 @@ describe('persetujuan', () => {
     expect(need(store.getState().approvals.find((item) => item.id === 'AP-3')).status).toBe(
       'ditolak',
     );
-    session.decide('AP-2', 'disetujui', 'Pelanggan lama', '1111');
-    session.decide('AP-2', 'disetujui', 'Pelanggan lama', '2222');
-    expect(session.decide('AP-2', 'disetujui', 'Pelanggan lama', '3333')).toMatchObject({
+    session.decide('AP-2', 'disetujui', 'Pelanggan lama', '111111');
+    session.decide('AP-2', 'disetujui', 'Pelanggan lama', '222222');
+    expect(session.decide('AP-2', 'disetujui', 'Pelanggan lama', '333333')).toMatchObject({
       messageId: 'MSG-051',
     });
   });
@@ -139,7 +139,9 @@ describe('dokumen dari HP', () => {
     };
     const asked = session.saveSalesOrder(draft);
     expect(asked).toMatchObject({ ok: false, approval: 'MSG-035' });
-    expect(session.saveSalesOrder(draft, { reason: 'Pelanggan lama', pin: '1111' })).toMatchObject({
+    expect(
+      session.saveSalesOrder(draft, { reason: 'Pelanggan lama', pin: '111111' }),
+    ).toMatchObject({
       messageId: 'MSG-049',
     });
     const saved = session.saveSalesOrder(draft, { reason: 'Pelanggan lama', pin: '482916' });

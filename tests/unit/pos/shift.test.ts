@@ -21,7 +21,7 @@ function setup() {
   store.setOnline(true);
   let now = 1_000_000;
   const session = createPosSession(store, { clock: () => now });
-  session.attemptLogin('U-3', '2468');
+  session.attemptLogin('U-3', '123456');
   return { store, session, advance: (ms: number) => (now += ms) };
 }
 
@@ -68,7 +68,7 @@ describe('memulai shift', () => {
     const { session } = setup();
     session.startShift(100000);
     session.logout();
-    expect(session.attemptLogin('U-4', '1357')).toEqual({ ok: true });
+    expect(session.attemptLogin('U-4', '123456')).toEqual({ ok: true });
     expect(session.state().shift).toMatchObject({ userId: 'U-3', openingCash: 100000 });
   });
 

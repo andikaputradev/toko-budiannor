@@ -979,7 +979,7 @@ test.describe('Detail Barang (diskon per satuan dan ubah harga)', () => {
     const auth = page.getByRole('dialog', { name: 'Otorisasi Supervisor atau Owner' });
     await expect(auth).toBeVisible();
     await auth.getByLabel('Alasan').fill('Pelanggan langganan');
-    await auth.getByLabel('PIN Supervisor atau Owner').fill('3571');
+    await auth.getByLabel('PIN Supervisor atau Owner').fill('654321');
     await auth.getByRole('button', { name: 'Setujui' }).click();
     await expect(auth).toBeHidden();
     await expect(dialog.locator('.pos-amount:visible')).toHaveCount(1);
@@ -994,7 +994,7 @@ test.describe('Detail Barang (diskon per satuan dan ubah harga)', () => {
     await dialog.getByRole('button', { name: 'Ubah Harga' }).click();
     const auth = page.getByRole('dialog', { name: 'Otorisasi Supervisor atau Owner' });
     await auth.getByLabel('Alasan').fill('Pelanggan langganan');
-    await auth.getByLabel('PIN Supervisor atau Owner').fill('1111');
+    await auth.getByLabel('PIN Supervisor atau Owner').fill('111111');
     await auth.getByRole('button', { name: 'Setujui' }).click();
     await expect(auth.getByRole('alert')).toContainText('PIN');
     await expect(auth).toBeVisible();
@@ -2108,13 +2108,13 @@ test.describe('Pengaturan', () => {
       await detail.getByLabel('Ulangi PIN baru', { exact: true }).fill(again);
       await detail.getByRole('button', { name: 'Ubah PIN', exact: true }).click();
     };
-    await fill('2468', '1357', '1358');
+    await fill('123456', '135790', '135791');
     await expect(detail.getByText('Ulangi PIN baru tidak sama dengan PIN baru.')).toBeVisible();
-    await fill('2468', '12', '12');
-    await expect(detail.getByText('PIN baru harus 4 sampai 6 digit angka.')).toBeVisible();
-    await fill('2468', '2468', '2468');
+    await fill('123456', '12', '12');
+    await expect(detail.getByText('PIN baru harus 6 digit angka.')).toBeVisible();
+    await fill('123456', '123456', '123456');
     await expect(detail.getByText('PIN baru tidak boleh sama dengan PIN lama.')).toBeVisible();
-    await fill('0000', '1357', '1357');
+    await fill('000000', '135790', '135790');
     await expect(detail.getByText('PIN salah. Sisa percobaan: 2.')).toBeVisible();
   });
 
@@ -2122,9 +2122,9 @@ test.describe('Pengaturan', () => {
     await loginPos(page, 'Dewi');
     await toSettings(page);
     const detail = page.locator('.pos-split__detail');
-    await detail.getByLabel('PIN lama', { exact: true }).fill('2468');
-    await detail.getByLabel('PIN baru', { exact: true }).fill('1357');
-    await detail.getByLabel('Ulangi PIN baru', { exact: true }).fill('1357');
+    await detail.getByLabel('PIN lama', { exact: true }).fill('123456');
+    await detail.getByLabel('PIN baru', { exact: true }).fill('135790');
+    await detail.getByLabel('Ulangi PIN baru', { exact: true }).fill('135790');
     await detail.getByRole('button', { name: 'Ubah PIN', exact: true }).click();
     await expect(page.getByText(/PIN berhasil diubah/)).toBeVisible();
     await expect(detail.getByLabel('PIN lama', { exact: true })).toHaveValue('');
@@ -2136,10 +2136,10 @@ test.describe('Pengaturan', () => {
       .click();
     await expect(page).toHaveURL(/#\/pos$/);
     await page.getByRole('radio', { name: /Dewi/ }).click();
-    await typePinDigits(page, '2468');
+    await typePinDigits(page, '123456');
     await page.getByRole('button', { name: 'Masuk' }).click();
     await expect(page.getByText('PIN salah. Sisa percobaan: 2.')).toBeVisible();
-    await typePinDigits(page, '1357');
+    await typePinDigits(page, '135790');
     await page.getByRole('button', { name: 'Masuk' }).click();
     await expect(page).toHaveURL(/#\/pos\/jual$/);
   });

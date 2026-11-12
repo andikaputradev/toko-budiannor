@@ -22,15 +22,15 @@ describe('persetujuan PIN Owner (aturan POS-10)', () => {
       kind: 'error',
       messageId: 'MSG-048',
     });
-    expect(checkApproval(users, 'Pelanggan lama', '3571', INITIAL_GUARD, 0)).toMatchObject({
+    expect(checkApproval(users, 'Pelanggan lama', '654321', INITIAL_GUARD, 0)).toMatchObject({
       messageId: 'MSG-050',
     });
     let guard = INITIAL_GUARD;
-    const wrong = checkApproval(users, 'Pelanggan lama', '1111', guard, 0);
+    const wrong = checkApproval(users, 'Pelanggan lama', '111111', guard, 0);
     expect(wrong).toMatchObject({ messageId: 'MSG-049', values: { sisa: 2 } });
     guard = wrong.guard;
-    guard = checkApproval(users, 'Pelanggan lama', '2222', guard, 0).guard;
-    const locked = checkApproval(users, 'Pelanggan lama', '3333', guard, 0);
+    guard = checkApproval(users, 'Pelanggan lama', '222222', guard, 0).guard;
+    const locked = checkApproval(users, 'Pelanggan lama', '333333', guard, 0);
     expect(locked).toMatchObject({ messageId: 'MSG-051' });
     expect(checkApproval(users, 'Pelanggan lama', '482916', locked.guard, 1000)).toMatchObject({
       messageId: 'MSG-051',

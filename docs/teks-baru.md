@@ -1016,7 +1016,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1006: "PIN lama". Kunci pinLama.
 - TB-1007: "PIN baru". Kunci pinBaru.
 - TB-1008: "Ulangi PIN baru". Kunci ulangiPinBaru.
-- TB-1009: "PIN baru harus 4 sampai 6 digit angka.". Kunci pinBaruTidakSah.
+- TB-1009: "PIN baru harus 6 digit angka.". Kunci pinBaruTidakSah.
 - TB-1010: "PIN baru tidak boleh sama dengan PIN lama.". Kunci pinBaruSamaDenganLama.
 - TB-1011: "Ulangi PIN baru tidak sama dengan PIN baru.". Kunci pinBaruTidakCocok.
 - TB-1012: "PIN berhasil diubah. Berlaku untuk masuk berikutnya selama aplikasi belum dimuat ulang.". Kunci pinDiubah.

@@ -164,7 +164,7 @@ test.describe('Mode Tinjau', () => {
     await page.getByLabel('Layar', { exact: true }).selectOption('POS-01');
     await expect(page.locator('.rev-badge')).toContainText('POS-01');
     await frame.getByRole('radio', { name: /Dewi/ }).click();
-    for (const digit of '2468') {
+    for (const digit of '123456') {
       await frame.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
     }
     await frame.getByRole('button', { name: 'Masuk' }).click();

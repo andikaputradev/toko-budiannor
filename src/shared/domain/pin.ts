@@ -2,7 +2,7 @@ import type { AppUser } from '../data/types';
 
 export const MAX_PIN_FAILURES = 3;
 export const LOCK_MS = 5 * 60 * 1000;
-export const PIN_PATTERN = /^\d{4,6}$/;
+export const PIN_PATTERN = /^\d{6}$/;
 
 export interface PinGuard {
   readonly failures: number;

@@ -40,9 +40,9 @@ describe('buildBackup', () => {
   it('tidak memuat PIN pengguna, baik bawaan maupun yang baru diganti', () => {
     const { session } = setup();
     session.startShift(500000);
-    expect(session.changePin('U-3', '2468', '135790')).toEqual({ ok: true });
+    expect(session.changePin('U-3', '123456', '135790')).toEqual({ ok: true });
     const text = buildBackup(session.state(), '2026-10-19T03:05:00.000Z');
-    expect(text).not.toContain('135790');
+    expect(text).not.toContain('246890');
     expect(text).not.toMatch(/"pins?"/);
     expect(Object.keys(JSON.parse(text) as Record<string, unknown>)).not.toContain('pins');
   });

@@ -35,12 +35,12 @@ test.describe('POS-01 sampai POS-04', () => {
     await page.getByRole('button', { name: 'Masuk' }).click();
     await expect(page.getByRole('alert')).toHaveText('Pilih nama kasir terlebih dahulu.');
     await page.getByRole('radio', { name: /Dewi/ }).click();
-    for (const digit of '1111') {
+    for (const digit of '111111') {
       await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
     }
     await page.getByRole('button', { name: 'Masuk' }).click();
     await expect(page.locator('.pos-login__error')).toHaveText('PIN salah. Sisa percobaan: 2.');
-    for (const digit of '2468') {
+    for (const digit of '123456') {
       await page.locator('.pinpad__key', { hasText: new RegExp(`^${digit}$`) }).click();
     }
     await page.getByRole('button', { name: 'Masuk' }).click();
@@ -127,7 +127,7 @@ test.describe('POS-01 sampai POS-04', () => {
     await page.getByRole('button', { name: 'Minta Otorisasi Owner' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Alasan').fill('Pelanggan lama, disetujui Owner');
-    await dialog.getByLabel('PIN Owner').fill('1234');
+    await dialog.getByLabel('PIN Owner').fill('111222');
     await dialog.getByRole('button', { name: 'Setujui' }).click();
     await expect(dialog.getByRole('alert')).toHaveText('PIN Owner salah. Sisa percobaan: 2.');
     await dialog.getByLabel('PIN Owner').fill('482916');

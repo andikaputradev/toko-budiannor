@@ -59,8 +59,8 @@ test.describe('A. Pesanan Baru', () => {
     await page.goto('/#/pos');
     await page.getByRole('radio', { name: /Dewi/ }).click();
     // Fokus ada di kartu kasir, bukan dipindah ke tombol "1"; angka datang dari papan ketik.
-    await page.keyboard.type('2468');
-    await expect(page.locator('.pinpad__dot.is-filled')).toHaveCount(4);
+    await page.keyboard.type('123456');
+    await expect(page.locator('.pinpad__dot.is-filled')).toHaveCount(6);
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/#\/pos\/jual$/);
   });
@@ -70,10 +70,10 @@ test.describe('A. Pesanan Baru', () => {
   }) => {
     await page.goto('/#/pos');
     await page.getByRole('radio', { name: /Dewi/ }).click();
-    const key = page.locator('.pinpad__key', { hasText: /^2$/ });
+    const key = page.locator('.pinpad__key', { hasText: /^1$/ });
     await key.click();
     await expect(key).toBeFocused();
-    await page.keyboard.type('468');
+    await page.keyboard.type('23456');
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/#\/pos\/jual$/);
   });
@@ -81,7 +81,7 @@ test.describe('A. Pesanan Baru', () => {
   test('A1: Enter dengan PIN salah menampilkan galat dan mengosongkan isian', async ({ page }) => {
     await page.goto('/#/pos');
     await page.getByRole('radio', { name: /Dewi/ }).click();
-    await page.keyboard.type('1111');
+    await page.keyboard.type('111111');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('alert').filter({ hasText: 'PIN salah' })).toBeVisible();
     await expect(page.locator('.pinpad__dot.is-filled')).toHaveCount(0);
@@ -99,7 +99,7 @@ test.describe('A. Pesanan Baru', () => {
     await expect(page.getByRole('button', { name: 'Menu' })).toBeHidden();
     // Masuk lagi: shift baru harus dimulai lagi.
     await page.getByRole('radio', { name: /Dewi/ }).click();
-    await page.keyboard.type('2468');
+    await page.keyboard.type('123456');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: 'Belum Mulai Shift' })).toBeVisible();
   });
