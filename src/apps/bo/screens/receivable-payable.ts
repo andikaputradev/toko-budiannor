@@ -243,11 +243,7 @@ export function renderReceivablePayable(
             { className: 'is-end is-bold' },
             el('span', { text: formatRupiah(inv.remaining) }),
             inv.isOverdue
-              ? el('span', {
-                  className: 'bo-badge is-danger',
-                  attrs: { style: 'margin-left: 6px;' },
-                  text: 'LEWAT',
-                })
+              ? el('span', { className: 'bo-badge is-danger bo-party-late', text: 'LEWAT' })
               : el('span', {}),
           ),
         ),
@@ -635,20 +631,24 @@ export function renderReceivablePayable(
     el('h3', { className: 'bo-form-sec-title', text: label('labelDaftarSaldoHeader') }),
     searchInput,
     el(
-      'table',
-      { className: 'pos-table is-compact' },
+      'div',
+      { className: 'bo-party-scroll' },
       el(
-        'thead',
-        {},
+        'table',
+        { className: 'pos-table is-compact' },
         el(
-          'tr',
+          'thead',
           {},
-          el('th', { text: 'Nama' }),
-          el('th', { className: 'is-end', text: 'Saldo' }),
-          el('th', { className: 'is-center', text: 'Status' }),
+          el(
+            'tr',
+            {},
+            el('th', { text: 'Nama' }),
+            el('th', { className: 'is-end', text: 'Saldo' }),
+            el('th', { className: 'is-center', text: 'Status' }),
+          ),
         ),
+        leftPartyListTbody,
       ),
-      leftPartyListTbody,
     ),
   );
 
@@ -657,27 +657,29 @@ export function renderReceivablePayable(
     { className: 'bo-panel bo-party-split-right' },
     el('div', { className: 'bo-split-right-header' }, rightTitleEl, rightTotalTagihanEl),
     el(
-      'table',
-      { className: 'pos-table is-compact' },
+      'div',
+      { className: 'bo-party-scroll' },
       el(
-        'thead',
-        {},
+        'table',
+        { className: 'pos-table is-compact' },
         el(
-          'tr',
+          'thead',
           {},
-          el('th', { text: 'No' }),
-          el('th', { text: 'No. Faktur' }),
-          el('th', { text: 'Tgl Nota' }),
-          el('th', { text: 'Jatuh Tempo' }),
-          el('th', { className: 'is-end', text: 'Nilai Nota' }),
-          el('th', { className: 'is-end', text: 'Sisa Bayar' }),
+          el(
+            'tr',
+            {},
+            el('th', { text: 'No' }),
+            el('th', { text: 'No. Faktur' }),
+            el('th', { text: 'Tgl Nota' }),
+            el('th', { text: 'Jatuh Tempo' }),
+            el('th', { className: 'is-end', text: 'Nilai Nota' }),
+            el('th', { className: 'is-end', text: 'Sisa Bayar' }),
+          ),
         ),
+        rightInvoicesTbody,
       ),
-      rightInvoicesTbody,
     ),
   );
-
-  const topSplitSection = el('div', { className: 'bo-product-split' }, leftPanel, rightPanel);
 
   // Bottom Panel: Form Pembayaran
   const bottomPayPanel = el(
@@ -719,26 +721,30 @@ export function renderReceivablePayable(
       ),
     ),
     el(
-      'table',
-      { className: 'pos-table is-compact' },
+      'div',
+      { className: 'bo-party-scroll' },
       el(
-        'thead',
-        {},
+        'table',
+        { className: 'pos-table is-compact' },
         el(
-          'tr',
+          'thead',
           {},
-          el('th', { text: 'No. Faktur' }),
-          el('th', { text: 'Tgl Nota' }),
-          el('th', { className: 'is-end', text: 'Sisa Tagihan' }),
-          el('th', { className: 'is-center', text: 'Alokasi Bayar (Rp)' }),
-          el('th', { className: 'is-end', text: 'Sisa Setelah Bayar' }),
+          el(
+            'tr',
+            {},
+            el('th', { text: 'No. Faktur' }),
+            el('th', { text: 'Tgl Nota' }),
+            el('th', { className: 'is-end', text: 'Sisa Tagihan' }),
+            el('th', { className: 'is-center', text: 'Alokasi Bayar (Rp)' }),
+            el('th', { className: 'is-end', text: 'Sisa Setelah Bayar' }),
+          ),
         ),
+        allocTableTbody,
       ),
-      allocTableTbody,
     ),
     el(
       'div',
-      { className: 'bo-form-footer-summary', attrs: { style: 'margin-top: 14px;' } },
+      { className: 'bo-form-footer-summary' },
       el(
         'div',
         {},
@@ -752,7 +758,15 @@ export function renderReceivablePayable(
   // Initial load
   loadParties();
 
-  container.replaceChildren(topBar, metricsGrid, topSplitSection, bottomPayPanel);
+  // Daftar pihak di kiri; rincian nota dan form pembayaran bertumpuk di kanan supaya muat satu layar.
+  const topSplitSection = el(
+    'div',
+    { className: 'bo-party-main' },
+    leftPanel,
+    el('div', { className: 'bo-party-side' }, rightPanel, bottomPayPanel),
+  );
+
+  container.replaceChildren(topBar, metricsGrid, topSplitSection);
 
   return {
     element: container,

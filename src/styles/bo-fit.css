@@ -615,3 +615,139 @@
 .bo-units-page .bo-form__actions {
   flex: none;
 }
+
+/* ===== Hutang piutang: daftar pihak di kiri, rincian nota dan form bayar bertumpuk di kanan ===== */
+[data-app='bo'] .bo-form-page .bo-tab-btn {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.bo-party-main {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(300px, 5fr) minmax(0, 8fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.bo-party-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Rincian nota setinggi isinya (paling banyak 30%); form pembayaran memakai sisanya. */
+.bo-party-main .bo-party-side > .bo-party-split-right {
+  flex: 0 1 auto;
+  max-height: 30%;
+}
+
+.bo-party-main .bo-party-side > .bo-party-split-right > .bo-party-scroll {
+  flex: 0 1 auto;
+}
+
+.bo-party-main .bo-party-side > .bo-pay-panel {
+  flex: 1 1 0;
+  overflow-y: auto;
+}
+
+.bo-party-main .pos-table th {
+  height: 34px;
+  padding-block: 4px;
+}
+
+.bo-party-main .pos-table td {
+  height: 40px;
+  padding-block: 4px;
+}
+
+/* Tabel alokasi tidak boleh habis terhimpit: bila layar sangat pendek, panel bayar yang menggulir. */
+.bo-party-main .bo-pay-panel > .bo-party-scroll {
+  min-height: 100px;
+}
+
+.bo-party-main .bo-panel {
+  gap: 6px;
+  min-height: 0;
+  max-height: none;
+  padding: 8px 12px;
+  overflow: hidden;
+}
+
+.bo-party-main .bo-panel > * {
+  flex: none;
+}
+
+.bo-party-main .bo-panel > .bo-party-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bo-party-scroll .pos-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.bo-party-main .bo-form-sec-title {
+  margin: 0;
+  font-size: 14px;
+}
+
+.bo-party-main .bo-split-right-header {
+  margin-bottom: 0;
+}
+
+.bo-pay-panel .bo-quick-entry {
+  position: static;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.bo-pay-panel .bo-form-footer-summary {
+  margin: 0;
+  padding: 4px 0 0;
+}
+
+.bo-party-late {
+  margin-inline-start: 6px;
+}
+
+.bo-pay-panel .bo-form-footer-summary > div:first-child {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.bo-pay-panel .bo-grand-total__value {
+  font-size: 18px;
+}
+
+.bo-pay-panel .bo-quick-entry .field__label {
+  font-size: 12px;
+}
+
+.bo-pay-panel .bo-quick-entry {
+  flex-wrap: nowrap;
+}
+
+.bo-pay-panel .bo-quick-entry .field {
+  flex: 1 1 0;
+  min-width: 118px;
+}
+
+.bo-pay-panel .bo-quick-entry .field.is-grow-2 {
+  flex: 2 1 0;
+  min-width: 120px;
+}
+
+.bo-pay-panel .bo-quick-entry .field.is-btn-col {
+  flex: none;
+}
