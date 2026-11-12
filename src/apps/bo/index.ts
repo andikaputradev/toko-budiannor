@@ -21,6 +21,7 @@ import '../../styles/bo-polish.css';
 import '../../styles/bo-shell.css';
 import '../../styles/bo-dashboard.css';
 import '../../styles/bo-dashboard-widgets.css';
+import '../../styles/bo-fit.css';
 
 export interface AppContext {
   readonly store: Store;

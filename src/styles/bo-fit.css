@@ -1,0 +1,342 @@
+/* Back-Office putaran kedua: semua halaman muat satu layar (syarat "tanpa scroll naik turun").
+   Kerangka halaman mengisi tinggi area isi, tombol dan isian dipadatkan, dan hanya daftar atau
+   tabel yang menggulir di dalam panelnya. Dimuat paling akhir sehingga menimpa aturan lama. */
+
+/* ===== Halaman transaksi: penjualan, pembelian, retur, surat jalan, daftar nota ===== */
+.bo-tabpanel > .bo-form-page {
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.bo-form-page > .bo-toolbar {
+  flex: none;
+  padding: 6px 12px;
+  gap: 6px 12px;
+}
+
+.bo-form-page .bo-toolbar__left,
+.bo-form-page .bo-toolbar__right {
+  gap: 6px;
+}
+
+.bo-form-page .bo-page-title {
+  font-size: 18px;
+}
+
+.bo-form-page .btn {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.bo-form-page .input {
+  height: 34px;
+  min-height: 34px;
+  font-size: 14px;
+}
+
+.bo-form-page .field {
+  gap: 2px;
+}
+
+.bo-form-page .field__label {
+  font-size: 13px;
+}
+
+/* Kepala formulir: tiga kolom, tiap kolom dua isian per baris. */
+.bo-form-page .bo-form-meta-grid {
+  flex: none;
+  gap: 8px 16px;
+  padding: 8px 12px 10px;
+}
+
+.bo-form-page .bo-form-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-content: start;
+  gap: 6px 10px;
+}
+
+.bo-form-page .bo-form-sec-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-bottom: 2px;
+  font-size: 14px;
+}
+
+.bo-form-page .bo-form-col > .field:has(textarea),
+.bo-form-page .bo-form-col > .bo-form-row-2,
+.bo-form-page .bo-form-col > .bo-credit-box {
+  grid-column: 1 / -1;
+}
+
+.bo-form-page .bo-form-meta-grid textarea {
+  height: 34px;
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  resize: none;
+}
+
+.bo-form-page .bo-form-row-2 {
+  gap: 8px;
+}
+
+.bo-form-page .bo-credit-box {
+  gap: 4px;
+  min-height: 0;
+  padding: 6px 10px;
+}
+
+/* Isian cepat dan tabel baris: panel mengisi sisa tinggi, isian cepat menempel di atas tabel. */
+.bo-form-page > .bo-panel:has(> .bo-quick-entry),
+.bo-form-page > .bo-panel:has(> table) {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 0;
+}
+
+.bo-form-page .bo-quick-entry {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 6px 8px;
+  gap: 6px;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+.bo-form-page .pos-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.bo-form-page .bo-quick-entry ~ table th {
+  top: 0;
+}
+
+.bo-form-page .bo-form-footer-summary {
+  flex: none;
+  gap: 8px 16px;
+  padding: 6px 12px;
+}
+
+.bo-form-page .bo-footer-fields {
+  gap: 4px;
+}
+
+.bo-form-page .bo-footer-fields .field__label {
+  width: 150px;
+}
+
+.bo-form-page .bo-grand-total-card {
+  gap: 0;
+  padding: 6px 14px;
+}
+
+.bo-form-page .bo-grand-total__value {
+  font-size: 22px;
+}
+
+/* Kartu angka dan filter pada halaman daftar. */
+.bo-form-page > .bo-stats-grid {
+  flex: none;
+  gap: 8px;
+}
+
+.bo-form-page .bo-stat-card {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px;
+}
+
+.bo-form-page .bo-stat-card__lbl {
+  font-size: 13px;
+}
+
+.bo-form-page .bo-stat-card__val {
+  font-size: 18px;
+}
+
+.bo-form-page > .bo-filter-bar {
+  flex: none;
+  gap: 6px 8px;
+  padding: 6px 10px;
+}
+
+/* Tiga kolom kepala formulir dipertahankan di layar 1000 px ke atas (aturan lama menurunkannya ke dua
+   kolom pada lebar 1280 px ke bawah, padahal layar acuan klien selebar itu). */
+@media (min-width: 1000px) {
+  .bo-form-page .bo-form-meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bo-form-page .bo-form-col.is-grow-2 {
+    grid-column: span 2;
+  }
+}
+
+[data-app='bo'] .bo-form-page .bo-form-meta-grid textarea.input {
+  height: 34px;
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  resize: none;
+}
+
+/* ===== Retur dan Deposit =====
+   Awalan [data-app] menaikkan spesifisitas karena CSS retur dimuat malas sesudah berkas ini. */
+.bo-form-page.bo-ret,
+[data-app='bo'] .bo-form-page.bo-dep {
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-ret .btn,
+[data-app='bo'] .bo-dep .btn {
+  min-height: 36px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-ret .input:not(textarea),
+[data-app='bo'] .bo-dep .input:not(textarea) {
+  min-height: 34px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-ret-head,
+[data-app='bo'] .bo-dep-head {
+  flex: none;
+  gap: 6px 16px;
+  padding: 6px 12px;
+}
+
+[data-app='bo'] .bo-ret-head__icon {
+  width: 36px;
+  height: 36px;
+}
+
+[data-app='bo'] .bo-ret-layout,
+[data-app='bo'] .bo-dep-layout {
+  flex: 1 1 0;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  align-items: stretch;
+}
+
+[data-app='bo'] .bo-ret-main {
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-app='bo'] .bo-ret-side {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+[data-app='bo'] .bo-dep-stats {
+  flex: none;
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-dep-stat {
+  gap: 2px;
+  padding: 6px 12px;
+}
+
+[data-app='bo'] .bo-dep-stat__value {
+  font-size: 18px;
+}
+
+@media (max-height: 760px) {
+  .bo-dep-stat__hint {
+    display: none;
+  }
+}
+
+[data-app='bo'] .bo-dep-panel {
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow: hidden;
+}
+
+[data-app='bo'] .bo-dep-table-wrap {
+  flex: 1 1 0;
+  max-height: none;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-dep-table th {
+  height: 38px;
+}
+
+[data-app='bo'] .bo-dep-table td {
+  height: 46px;
+}
+
+[data-app='bo'] .bo-ret-tab,
+[data-app='bo'] .bo-dep-seg__item {
+  height: 32px;
+  min-height: 32px;
+}
+
+[data-app='bo'] .bo-ret-tabs,
+[data-app='bo'] .bo-dep-seg {
+  padding: 2px;
+}
+
+[data-app='bo'] .bo-dep-search,
+[data-app='bo'] .bo-dep-foot {
+  gap: 6px 10px;
+}
+
+[data-app='bo'] .bo-dep-panel {
+  overflow-y: auto;
+}
+
+/* Kartu retur tidak boleh mengerut: bila layar pendek, kolom kiri menggulir sebagai satu kesatuan. */
+[data-app='bo'] .bo-ret-card {
+  flex: none;
+  gap: 10px;
+  padding: 12px 16px;
+  overflow: visible;
+}
+
+/* ===== Surat jalan: daftar koli mengisi sisa tinggi, tanda tangan dipadatkan ===== */
+.bo-form-page > .bo-koli-container {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bo-form-page .bo-signature-grid {
+  flex: none;
+  gap: 8px;
+  padding: 6px 12px;
+}
+
+.bo-form-page .bo-sig-box {
+  padding: 2px 8px;
+}
+
+.bo-form-page .bo-sig-box__line {
+  margin: 28px 0 4px;
+}
+
+/* Lebar kolom tetap pada tabel baris transaksi (pengganti atribut style yang diblokir CSP). */
+.bo-form-page .pos-table th.bo-col-no {
+  width: 40px;
+}
+
+.bo-form-page .pos-table th.bo-col-del {
+  width: 50px;
+}

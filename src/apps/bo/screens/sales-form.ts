@@ -803,7 +803,7 @@ export function renderSalesForm(
       el(
         'tr',
         {},
-        el('th', { attrs: { style: 'width: 40px;' }, text: 'No' }),
+        el('th', { className: 'bo-col-no', text: 'No' }),
         el('th', { text: label('namaBarang') }),
         el('th', { text: label('labelAmbilDariStok') }),
         el('th', { text: label('satuanDasar') }),
@@ -811,7 +811,7 @@ export function renderSalesForm(
         el('th', { className: 'is-end', text: label('hargaSatuan') }),
         el('th', { className: 'is-center', text: label('labelDiskonBertingkat') }),
         el('th', { className: 'is-end', text: label('kolomTotal') }),
-        el('th', { className: 'is-center', attrs: { style: 'width: 50px;' }, text: 'Hapus' }),
+        el('th', { className: 'is-center bo-col-del', text: 'Hapus' }),
       ),
     ),
     tableBodyEl,
