@@ -1,6 +1,14 @@
-import type { Product } from '../../../shared/data/types';
-import type { SystemMessageId } from '../../../shared/messages';
+import type { Product, TierPrices, UnitDef } from '../../../shared/data/types';
+import type { LabelKey, SystemMessageId } from '../../../shared/messages';
 import { round3 } from '../../../shared/data/units';
+import { parseOptionalPercent } from '../../../shared/domain/promo';
+import {
+  normalizeRows,
+  rowsOf,
+  toUnitDefs,
+  validateUnitRows,
+  type UnitRowDraft,
+} from './product-units';
 
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 export const CODE_MIN = 3;
@@ -29,18 +37,15 @@ export interface ProductDraft {
   readonly minBesar: string;
   readonly photoName: string;
   readonly photoBytes: number;
-  readonly satuan2?: string;
-  readonly rasio2?: string;
-  readonly satuan3?: string;
-  readonly rasio3?: string;
+  // Baris satuan (1 sampai 3). Bila ada, baris pertama menjadi satuan dasar menggantikan baseUnit.
+  readonly unitRows?: readonly UnitRowDraft[];
   readonly minStockAll?: string;
   readonly minStockToko?: string;
   readonly rak?: string;
   readonly berat?: string;
+  // Persen 0 sampai 100. Kosong berarti tidak diisi (komisi ikut profil sales, tanpa promo).
   readonly komisiSalesPersen?: string;
-  readonly komisiSalesNominal?: string;
   readonly promoPersen?: string;
-  readonly promoNominal?: string;
   readonly catatan?: string;
   readonly supplierName?: string;
   readonly tglBeliAkhir?: string;
@@ -58,7 +63,18 @@ export type ProductField = 'code' | 'name' | 'baseUnit' | 'minStock' | 'photo';
 
 export type ProductIssue =
   | { readonly field: ProductField; readonly messageId: SystemMessageId }
-  | { readonly field: 'codeLength'; readonly messageId: undefined };
+  | { readonly field: 'codeLength'; readonly messageId: undefined }
+  | {
+      readonly field: 'units';
+      readonly messageId: undefined;
+      readonly labelKey: LabelKey;
+      readonly row: number;
+    }
+  | {
+      readonly field: 'commission' | 'promo';
+      readonly messageId: undefined;
+      readonly labelKey: LabelKey;
+    };
 
 export function parseMin(raw: string): number | undefined {
   const text = raw.trim().replace(',', '.');
@@ -94,8 +110,19 @@ export function validateProduct(
   if (draft.name.trim() === '') {
     return { field: 'name', messageId: 'MSG-060' };
   }
-  if (draft.baseUnit === '') {
+  const baseUnit =
+    draft.unitRows === undefined ? draft.baseUnit : (normalizeRows(draft.unitRows)[0]?.code ?? '');
+  if (baseUnit === '') {
     return { field: 'baseUnit', messageId: 'MSG-061' };
+  }
+  const unitIssue = draft.unitRows === undefined ? undefined : validateUnitRows(draft.unitRows);
+  if (unitIssue !== undefined && unitIssue.field !== 'base') {
+    return {
+      field: 'units',
+      messageId: undefined,
+      labelKey: unitIssue.field === 'duplicate' ? 'produkErrSatuanGanda' : 'produkErrKonversi',
+      row: unitIssue.row,
+    };
   }
   const display = parseMin(draft.minDisplay);
   const besar = parseMin(draft.minBesar);
@@ -105,8 +132,20 @@ export function validateProduct(
   if (draft.photoBytes > MAX_PHOTO_BYTES) {
     return { field: 'photo', messageId: 'MSG-063' };
   }
+  if (
+    draft.komisiSalesPersen !== undefined &&
+    parseOptionalPercent(draft.komisiSalesPersen) === undefined
+  ) {
+    return { field: 'commission', messageId: undefined, labelKey: 'produkErrKomisi' };
+  }
+  if (draft.promoPersen !== undefined && parseOptionalPercent(draft.promoPersen) === undefined) {
+    return { field: 'promo', messageId: undefined, labelKey: 'produkErrPromo' };
+  }
   return undefined;
 }
+
+const percentText = (value: number | undefined): string =>
+  value !== undefined && value > 0 ? String(value).replace('.', ',') : '';
 
 export function draftOf(product: Product): ProductDraft {
   const min = splitMin(product);
@@ -131,18 +170,13 @@ export function draftOf(product: Product): ProductDraft {
     minBesar: text(min.besar),
     photoName: product.photoName ?? '',
     photoBytes: 0,
-    satuan2: unit2?.code ?? '',
-    rasio2: unit2 ? String(unit2.factor) : '',
-    satuan3: unit3?.code ?? '',
-    rasio3: unit3 ? String(unit3.factor) : '',
+    unitRows: rowsOf(product),
     minStockAll: text(product.minStock),
     minStockToko: text(min.display),
     rak: product.rak ?? '',
     berat: text(product.weight),
-    komisiSalesPersen: product.salesCommission ? String(product.salesCommission.percent) : '',
-    komisiSalesNominal: product.salesCommission ? String(product.salesCommission.nominal) : '',
-    promoPersen: product.promo ? String(product.promo.percent) : '',
-    promoNominal: product.promo ? String(product.promo.nominal) : '',
+    komisiSalesPersen: percentText(product.salesCommission?.percent),
+    promoPersen: percentText(product.promo?.percent),
     catatan: product.notes ?? '',
     supplierName: product.supplierName ?? '',
     tglBeliAkhir: product.lastPurchaseDate ?? '',
@@ -172,18 +206,12 @@ export function emptyDraft(): ProductDraft {
     minBesar: '',
     photoName: '',
     photoBytes: 0,
-    satuan2: '',
-    rasio2: '',
-    satuan3: '',
-    rasio3: '',
     minStockAll: '',
     minStockToko: '',
     rak: '',
     berat: '',
     komisiSalesPersen: '',
-    komisiSalesNominal: '',
     promoPersen: '',
-    promoNominal: '',
     catatan: '',
     supplierName: '',
     tglBeliAkhir: '',
@@ -202,71 +230,91 @@ export function nextProductId(count: number): string {
   return `P-${String(count + 1).padStart(4, '0')}`;
 }
 
-export function buildProduct(draft: ProductDraft, base: Product | undefined, id: string): Product {
+const amountOf = (text: string | undefined): number => {
+  const value = Number((text ?? '').trim() === '' ? '0' : text);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+};
+
+const nonEmpty = (text: string | undefined): string | undefined =>
+  text === undefined || text === '' ? undefined : text;
+
+const tierOf = (eceran: number, grosir: number): TierPrices => ({
+  eceran,
+  grosir,
+  kontraktor: Math.round(grosir * 0.95),
+});
+
+// Harga satuan baru yang belum diisi mengikuti harga satuan dasar dikali konversi.
+const derivedTier = (base: TierPrices | undefined, factor: number): TierPrices => ({
+  eceran: Math.round((base?.eceran ?? 0) * factor),
+  grosir: Math.round((base?.grosir ?? 0) * factor),
+  kontraktor: Math.round((base?.kontraktor ?? 0) * factor),
+});
+
+// Isian persen: tidak dikirim berarti dipertahankan; kosong atau nol berarti dihapus.
+function percentField(
+  text: string | undefined,
+  current: { readonly percent: number; readonly nominal: number } | undefined,
+): { readonly percent: number; readonly nominal: number } | undefined {
+  if (text === undefined) {
+    return current;
+  }
+  const value = parseOptionalPercent(text);
+  return value === null || value === undefined || value === 0
+    ? undefined
+    : { percent: value, nominal: 0 };
+}
+
+// canEditCost: hanya Owner boleh mengubah harga beli akhir dan HPP rata-rata.
+export function buildProduct(
+  draft: ProductDraft,
+  base: Product | undefined,
+  id: string,
+  canEditCost = true,
+): Product {
   const display = parseMin(draft.minDisplay) ?? parseMin(draft.minStockToko ?? '') ?? 0;
   const besar = parseMin(draft.minBesar) ?? 0;
-  const keep = base?.baseUnit === draft.baseUnit ? base : undefined;
 
-  // Bangun unit bertingkat bila satuan 2 / 3 diisi
-  const units = [...(keep?.units ?? [{ code: draft.baseUnit, name: draft.baseUnit, factor: 1 }])];
-  const r2 = Number(draft.rasio2 !== '' ? draft.rasio2 : '0');
-  if (draft.satuan2 && r2 > 1 && !units.some((u) => u.code === draft.satuan2)) {
-    units.push({ code: draft.satuan2, name: draft.satuan2, factor: r2 });
-  }
-  const r3 = Number(draft.rasio3 !== '' ? draft.rasio3 : '0');
-  if (draft.satuan3 && r3 > 1 && !units.some((u) => u.code === draft.satuan3)) {
-    units.push({ code: draft.satuan3, name: draft.satuan3, factor: r3 });
-  }
+  const defs = draft.unitRows === undefined ? [] : toUnitDefs(draft.unitRows);
+  const baseUnit = defs[0]?.code ?? draft.baseUnit;
+  const keep = base?.baseUnit === baseUnit ? base : undefined;
+  const units: UnitDef[] =
+    defs.length > 0
+      ? defs.map(
+          (def) =>
+            base?.units.find((unit) => unit.code === def.code && unit.factor === def.factor) ?? def,
+        )
+      : [...(keep?.units ?? [{ code: baseUnit, name: baseUnit, factor: 1 }])];
 
-  // Bangun prices
-  let prices: Record<string, { eceran: number; grosir: number; kontraktor: number }>;
-  if (keep?.prices) {
-    prices = { ...keep.prices };
-  } else {
-    prices = { [draft.baseUnit]: { eceran: 0, grosir: 0, kontraktor: 0 } };
-    const ecer1 = Number(draft.hargaEcer1 !== '' ? draft.hargaEcer1 : '0');
-    const grosir1 = Number(draft.hargaGrosir1 !== '' ? draft.hargaGrosir1 : '0');
-    if (ecer1 > 0 || grosir1 > 0) {
-      prices[draft.baseUnit] = {
-        eceran: ecer1,
-        grosir: grosir1,
-        kontraktor: Math.round(grosir1 * 0.95),
-      };
+  const typed: readonly (readonly [string | undefined, string | undefined])[] = [
+    [draft.hargaEcer1, draft.hargaGrosir1],
+    [draft.hargaEcer2, draft.hargaGrosir2],
+    [draft.hargaEcer3, draft.hargaGrosir3],
+  ];
+  const prices: Record<string, TierPrices> = {};
+  units.forEach((unit, index) => {
+    const existing = base?.prices[unit.code];
+    if (existing !== undefined) {
+      prices[unit.code] = existing;
+      return;
     }
-    if (draft.satuan2) {
-      const ecer2 = Number(draft.hargaEcer2 !== '' ? draft.hargaEcer2 : '0');
-      const grosir2 = Number(draft.hargaGrosir2 !== '' ? draft.hargaGrosir2 : '0');
-      if (ecer2 > 0 || grosir2 > 0) {
-        prices[draft.satuan2] = {
-          eceran: ecer2,
-          grosir: grosir2,
-          kontraktor: Math.round(grosir2 * 0.95),
-        };
-      }
+    const [ecer, grosir] = typed[index] ?? [undefined, undefined];
+    // Isian harga pada draf hanya bermakna saat barang baru ditambah; pada barang lama isian itu
+    // masih membawa harga satuan sebelumnya, jadi satuan baru diturunkan dari harga satuan dasar.
+    const typedPrice = base === undefined && (amountOf(ecer) > 0 || amountOf(grosir) > 0);
+    if (index === 0 || typedPrice) {
+      prices[unit.code] = tierOf(amountOf(ecer), amountOf(grosir));
+      return;
     }
-    if (draft.satuan3) {
-      const ecer3 = Number(draft.hargaEcer3 !== '' ? draft.hargaEcer3 : '0');
-      const grosir3 = Number(draft.hargaGrosir3 !== '' ? draft.hargaGrosir3 : '0');
-      if (ecer3 > 0 || grosir3 > 0) {
-        prices[draft.satuan3] = {
-          eceran: ecer3,
-          grosir: grosir3,
-          kontraktor: Math.round(grosir3 * 0.95),
-        };
-      }
-    }
-  }
+    prices[unit.code] = derivedTier(prices[units[0]?.code ?? baseUnit], unit.factor);
+  });
 
   const hppVal =
     base !== undefined
       ? base.hpp
-      : Number(
-          draft.hppAvg !== ''
-            ? draft.hppAvg
-            : draft.hargaBeliAkhir !== ''
-              ? draft.hargaBeliAkhir
-              : 0,
-        );
+      : canEditCost
+        ? amountOf(draft.hppAvg) || amountOf(draft.hargaBeliAkhir)
+        : 0;
 
   return {
     id,
@@ -275,7 +323,7 @@ export function buildProduct(draft: ProductDraft, base: Product | undefined, id:
     name: draft.name.trim(),
     brand: draft.brand.trim(),
     category: draft.category.trim(),
-    baseUnit: draft.baseUnit,
+    baseUnit,
     allowDecimal: draft.allowDecimal,
     units,
     prices,
@@ -288,28 +336,17 @@ export function buildProduct(draft: ProductDraft, base: Product | undefined, id:
     minByWarehouse: { display, besar },
     rak: draft.rak && draft.rak.trim() !== '' ? draft.rak.trim() : base?.rak,
     weight: draft.berat ? Number(draft.berat.replace(',', '.')) : base?.weight,
-    salesCommission: draft.komisiSalesPersen
-      ? {
-          percent: Number(draft.komisiSalesPersen),
-          nominal: Number(draft.komisiSalesNominal !== '' ? draft.komisiSalesNominal : '0'),
-        }
-      : base?.salesCommission,
-    promo: draft.promoPersen
-      ? {
-          percent: Number(draft.promoPersen),
-          nominal: Number(draft.promoNominal !== '' ? draft.promoNominal : '0'),
-        }
-      : base?.promo,
+    salesCommission: percentField(draft.komisiSalesPersen, base?.salesCommission),
+    promo: percentField(draft.promoPersen, base?.promo),
     notes: draft.catatan && draft.catatan.trim() !== '' ? draft.catatan.trim() : base?.notes,
     supplierName:
       draft.supplierName && draft.supplierName.trim() !== ''
         ? draft.supplierName.trim()
         : base?.supplierName,
-    lastPurchaseDate: draft.tglBeliAkhir !== '' ? draft.tglBeliAkhir : base?.lastPurchaseDate,
-    lastPurchasePrice: draft.hargaBeliAkhir
-      ? Number(draft.hargaBeliAkhir)
-      : base?.lastPurchasePrice,
-    hppAvg: hppVal,
+    lastPurchaseDate: nonEmpty(draft.tglBeliAkhir) ?? base?.lastPurchaseDate,
+    lastPurchasePrice:
+      canEditCost && draft.hargaBeliAkhir ? Number(draft.hargaBeliAkhir) : base?.lastPurchasePrice,
+    hppAvg: canEditCost ? hppVal : (base?.hppAvg ?? hppVal),
     incoming: base?.incoming ?? 0,
     initialStock: base?.initialStock,
   };

@@ -102,3 +102,146 @@ describe('formulir barang', () => {
     });
   });
 });
+
+describe('formulir barang: satuan bertahap, komisi, promo, dan biaya', () => {
+  const row = (code: string, factor = '') => ({ code, factor });
+
+  function firstProduct() {
+    const first = products[0];
+    if (first === undefined) {
+      throw new Error('data kosong');
+    }
+    return first;
+  }
+
+  it('menyimpan tiga baris satuan menjadi tiga satuan dan tiga harga turunan', () => {
+    const product = buildProduct(
+      {
+        ...base,
+        unitRows: [row('Pcs'), row('LSN', '12'), row('DOS', '60')],
+        hargaEcer1: '1000',
+        hargaGrosir1: '900',
+      },
+      undefined,
+      'P-9001',
+    );
+    expect(product.units.map((unit) => [unit.code, unit.factor])).toEqual([
+      ['Pcs', 1],
+      ['LSN', 12],
+      ['DOS', 60],
+    ]);
+    expect(product.prices['Pcs']).toEqual({ eceran: 1000, grosir: 900, kontraktor: 855 });
+    expect(product.prices['LSN']).toEqual({ eceran: 12_000, grosir: 10_800, kontraktor: 10_260 });
+    expect(product.prices['DOS']?.eceran).toBe(60_000);
+  });
+
+  it('mengubah satuan pada barang lama mempertahankan harga dasar dan menurunkan harga satuan baru', () => {
+    const first = firstProduct();
+    const basePrice = first.prices[first.baseUnit];
+    if (basePrice === undefined) {
+      throw new Error('barang tanpa harga satuan dasar');
+    }
+    const product = buildProduct(
+      { ...draftOf(first), unitRows: [row(first.baseUnit), row('UJI', '10')] },
+      first,
+      first.id,
+    );
+    expect(product.units).toHaveLength(2);
+    expect(product.prices[first.baseUnit]).toEqual(basePrice);
+    expect(product.prices['UJI']?.eceran).toBe(Math.round(basePrice.eceran * 10));
+    expect(product.prices['UJI']?.grosir).toBe(Math.round(basePrice.grosir * 10));
+  });
+
+  it('menandai satuan ganda dan konversi tidak valid pada baris yang salah', () => {
+    expect(
+      validateProduct({ ...base, unitRows: [row('Pcs'), row('pcs', '12')] }, products, undefined),
+    ).toEqual({
+      field: 'units',
+      messageId: undefined,
+      labelKey: 'produkErrSatuanGanda',
+      row: 1,
+    });
+    expect(
+      validateProduct({ ...base, unitRows: [row('Pcs'), row('LSN', '0')] }, products, undefined),
+    ).toEqual({ field: 'units', messageId: undefined, labelKey: 'produkErrKonversi', row: 1 });
+  });
+
+  it('menolak komisi dan promo di luar 0 sampai 100 persen', () => {
+    expect(validateProduct({ ...base, promoPersen: '101' }, products, undefined)).toEqual({
+      field: 'promo',
+      messageId: undefined,
+      labelKey: 'produkErrPromo',
+    });
+    expect(validateProduct({ ...base, komisiSalesPersen: 'abc' }, products, undefined)).toEqual({
+      field: 'commission',
+      messageId: undefined,
+      labelKey: 'produkErrKomisi',
+    });
+    expect(
+      validateProduct(
+        { ...base, komisiSalesPersen: '2,5', promoPersen: '20%' },
+        products,
+        undefined,
+      ),
+    ).toBeUndefined();
+  });
+
+  it('komisi kosong menghapus komisi barang, terisi tersimpan sebagai persen', () => {
+    const withOwn = products.find((item) => (item.salesCommission?.percent ?? 0) > 0);
+    if (withOwn === undefined) {
+      throw new Error('tidak ada barang berkomisi');
+    }
+    const cleared = buildProduct(
+      { ...draftOf(withOwn), komisiSalesPersen: '' },
+      withOwn,
+      withOwn.id,
+    );
+    expect(cleared.salesCommission).toBeUndefined();
+    const filled = buildProduct(
+      { ...draftOf(withOwn), komisiSalesPersen: '2,5' },
+      withOwn,
+      withOwn.id,
+    );
+    expect(filled.salesCommission).toEqual({ percent: 2.5, nominal: 0 });
+  });
+
+  it('promo kosong atau nol menghapus promo, terisi tersimpan sebagai persen', () => {
+    const first = firstProduct();
+    expect(
+      buildProduct({ ...draftOf(first), promoPersen: '' }, first, first.id).promo,
+    ).toBeUndefined();
+    expect(
+      buildProduct({ ...draftOf(first), promoPersen: '0' }, first, first.id).promo,
+    ).toBeUndefined();
+    expect(buildProduct({ ...draftOf(first), promoPersen: '20' }, first, first.id).promo).toEqual({
+      percent: 20,
+      nominal: 0,
+    });
+  });
+
+  it('tanpa hak ubah biaya, harga beli akhir dan HPP rata-rata tidak berubah', () => {
+    const first = firstProduct();
+    const product = buildProduct(
+      { ...draftOf(first), hargaBeliAkhir: '1', hppAvg: '1' },
+      first,
+      first.id,
+      false,
+    );
+    expect(product.lastPurchasePrice).toBe(first.lastPurchasePrice);
+    expect(product.hppAvg).toBe(first.hppAvg);
+    const owner = buildProduct({ ...draftOf(first), hargaBeliAkhir: '1' }, first, first.id, true);
+    expect(owner.lastPurchasePrice).toBe(1);
+  });
+
+  it('draftOf memuat baris satuan serta komisi dan promo dalam persen berkoma', () => {
+    const first = firstProduct();
+    const draft = draftOf({
+      ...first,
+      promo: { percent: 12.5, nominal: 0 },
+      salesCommission: undefined,
+    });
+    expect(draft.unitRows?.[0]?.code).toBe(first.baseUnit);
+    expect(draft.promoPersen).toBe('12,5');
+    expect(draft.komisiSalesPersen).toBe('');
+  });
+});

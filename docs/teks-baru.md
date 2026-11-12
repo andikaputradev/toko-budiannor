@@ -1930,3 +1930,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1920: "Daftar penjualan per pelanggan". Kunci dxDaftarPelanggan.
 - TB-1921: "Daftar penjualan per barang". Kunci dxDaftarBarang.
 - TB-1922: "Daftar monitoring HPP". Kunci dxDaftarHpp.
+- TB-1923: "Satuan tidak boleh sama dengan satuan lain pada barang ini.". Kunci produkErrSatuanGanda.
+- TB-1924: "Isi angka konversi satuan lebih dari 0.". Kunci produkErrKonversi.
+- TB-1925: "Komisi sales harus berupa persen 0 sampai 100.". Kunci produkErrKomisi.
+- TB-1926: "Promo harus berupa persen 0 sampai 100.". Kunci produkErrPromo.
