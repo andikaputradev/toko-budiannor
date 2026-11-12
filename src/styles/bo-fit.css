@@ -340,3 +340,278 @@
 .bo-form-page .pos-table th.bo-col-del {
   width: 50px;
 }
+
+/* ===== Mutasi stok dan Pricelist =====
+   Awalan [data-app] menaikkan spesifisitas karena CSS stok dimuat malas sesudah berkas ini. */
+[data-app='bo'] .bo-stok-page {
+  gap: 8px;
+  padding-bottom: 0;
+}
+
+[data-app='bo'] .bo-stok-page .bo-panel {
+  padding: 10px 14px;
+}
+
+[data-app='bo'] .bo-stok-head {
+  flex: none;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+[data-app='bo'] .bo-stok-head__title {
+  font-size: 18px;
+}
+
+[data-app='bo'] .bo-stok-head__sub {
+  max-width: none;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+[data-app='bo'] .bo-stok-fact {
+  min-width: 110px;
+  padding: 4px 12px;
+  border-radius: 10px;
+}
+
+[data-app='bo'] .bo-stok-fact__value {
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-stok-panel-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-stok-scroll .pos-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Koreksi stok: kiri pemilih barang dan tabel baris, kanan alasan, ringkasan dan tombol. */
+[data-app='bo'] .bo-stok-page.bo-korek {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-korek__form {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+[data-app='bo'] .bo-korek__form .bo-stok-panel-title {
+  flex: none;
+}
+
+[data-app='bo'] .bo-korek__cols {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px 16px;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (min-width: 1000px) {
+  [data-app='bo'] .bo-korek__cols {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+}
+
+[data-app='bo'] .bo-korek__main,
+[data-app='bo'] .bo-korek__side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-korek__side {
+  overflow-y: auto;
+}
+
+[data-app='bo'] .bo-korek__tools {
+  flex: none;
+  gap: 8px 12px;
+  margin-bottom: 0;
+}
+
+[data-app='bo'] .bo-korek__table {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+[data-app='bo'] .bo-korek__table .bo-stok-scroll {
+  overflow: visible;
+}
+
+[data-app='bo'] .bo-korek__lines {
+  min-width: 720px;
+}
+
+[data-app='bo'] .bo-korek__lines th,
+[data-app='bo'] .bo-korek__lines td {
+  padding: 6px 8px;
+}
+
+[data-app='bo'] .bo-korek__lines .input {
+  height: 34px;
+  min-width: 96px;
+  min-height: 34px;
+}
+
+[data-app='bo'] .bo-korek__lines .bo-korek__actual {
+  min-width: 104px;
+}
+
+[data-app='bo'] .bo-korek__lines .btn {
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 10px;
+}
+
+[data-app='bo'] .bo-korek__empty {
+  padding: 14px 16px;
+}
+
+[data-app='bo'] .bo-korek__reason {
+  gap: 4px;
+  margin-top: 0;
+}
+
+[data-app='bo'] .bo-korek__reason {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-korek__reason-input {
+  flex: 1 1 44px;
+  height: auto;
+  min-height: 44px;
+  padding: 6px 10px;
+  resize: none;
+}
+
+[data-app='bo'] .bo-korek__presets {
+  flex: none;
+  gap: 6px;
+}
+
+[data-app='bo'] .bo-korek__presets .btn {
+  height: 30px;
+  min-height: 30px;
+  padding-inline: 12px;
+}
+
+[data-app='bo'] .bo-korek__foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+[data-app='bo'] .bo-korek__foot .bo-korek-summary {
+  flex: 1 1 auto;
+}
+
+[data-app='bo'] .bo-korek__foot .bo-form__actions {
+  margin: 0 0 0 auto;
+}
+
+[data-app='bo'] .bo-korek__foot .bo-korek__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+[data-app='bo'] .bo-korek-summary {
+  margin-top: 0;
+  padding: 8px 12px;
+}
+
+[data-app='bo'] .bo-korek__history {
+  flex: none;
+}
+
+[data-app='bo'] .bo-korek__history[open] {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow: hidden;
+}
+
+[data-app='bo'] .bo-korek__history-title {
+  margin: 0;
+  cursor: pointer;
+}
+
+[data-app='bo'] .bo-korek__history[open] > .bo-korek__history-title {
+  margin-bottom: 8px;
+}
+
+[data-app='bo'] .bo-korek__history .bo-stok-scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Pricelist: pemilih barang, dua tabel dan tombol dipadatkan; tabel harga mengisi sisa tinggi. */
+.bo-tabpanel > .bo-units-page {
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 0;
+}
+
+.bo-units-page .btn {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.bo-units-page .input {
+  height: 34px;
+  min-height: 34px;
+  font-size: 14px;
+}
+
+.bo-units-page > .bo-picker {
+  flex: none;
+  gap: 2px;
+}
+
+.bo-units-page .bo-panel {
+  padding: 10px 14px;
+}
+
+.bo-units-page .t-section-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.bo-units-page__top {
+  flex: none;
+  gap: 8px;
+}
+
+.bo-units-page > .bo-panel {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bo-units-page .bo-value p {
+  margin: 0 0 4px;
+}
+
+.bo-units-page .bo-form__actions {
+  flex: none;
+}

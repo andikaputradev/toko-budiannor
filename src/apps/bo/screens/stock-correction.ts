@@ -156,7 +156,9 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
   });
   const totalOutput = el('output', { className: 'bo-korek-summary__total' });
   const authNote = el('p', { className: 'bo-korek-summary__note' });
-  const historyBox = el('section', { className: 'bo-panel bo-korek__history' });
+  const historyBox = el('details', { className: 'bo-panel bo-korek__history' });
+  // Riwayat terbuka sendiri hanya di layar tinggi; di layar pendek tabel baris mendapat seluruh tinggi.
+  historyBox.open = window.innerHeight >= 800;
 
   const picker = createProductPicker({
     labelText: label('cariBarang'),
@@ -499,7 +501,10 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
   const renderHistory = (): void => {
     const docs = [...ledger.docs()].reverse();
     historyBox.replaceChildren(
-      el('h3', { className: 'bo-stok-panel-title', text: label('korRiwayat') }),
+      el('summary', {
+        className: 'bo-stok-panel-title bo-korek__history-title',
+        text: label('korRiwayat'),
+      }),
       docs.length === 0
         ? el('p', { className: 'bo-stok-note', text: label('korRiwayatKosong') })
         : el(
@@ -637,6 +642,7 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       }),
     );
     justSaved = doc.number;
+    historyBox.open = true;
     showToast({ kind: 'success', text: label('korTersimpan', { nomor: doc.number }) });
     lines = [];
     reason.value = '';
@@ -830,42 +836,58 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       'section',
       { className: 'bo-panel bo-korek__form' },
       el('h3', { className: 'bo-stok-panel-title', text: label('korDokumen') }),
-      el('div', { className: 'bo-korek__tools' }, picker.root, warehouseField.root),
-      tableBox,
       el(
         'div',
-        { className: 'bo-korek__reason' },
-        el('label', {
-          className: 'field__label',
-          text: label('korAlasan'),
-          attrs: { for: reasonId },
-        }),
-        reason,
-        el('p', {
-          className: 'bo-stok-note',
-          text: label('korAlasanBantuan'),
-          attrs: { id: hintId },
-        }),
-        presets,
-      ),
-      el(
-        'div',
-        { className: 'bo-korek-summary' },
+        { className: 'bo-korek__cols' },
         el(
           'div',
-          { className: 'bo-korek-summary__main' },
-          countOutput,
+          { className: 'bo-korek__main' },
+          el('div', { className: 'bo-korek__tools' }, picker.root, warehouseField.root),
+          tableBox,
+        ),
+        el(
+          'div',
+          { className: 'bo-korek__side' },
           el(
-            'p',
-            { className: 'bo-korek-summary__line' },
-            el('span', { text: label('korTotalNilai') }),
-            totalOutput,
+            'div',
+            { className: 'bo-korek__reason' },
+            el('label', {
+              className: 'field__label',
+              text: label('korAlasan'),
+              attrs: { for: reasonId },
+            }),
+            reason,
+            el('p', {
+              className: 'bo-stok-note',
+              text: label('korAlasanBantuan'),
+              attrs: { id: hintId },
+            }),
+            presets,
           ),
         ),
-        authNote,
       ),
-      error,
-      el('div', { className: 'bo-form__actions' }, cancel, save),
+      el(
+        'div',
+        { className: 'bo-korek__foot' },
+        el(
+          'div',
+          { className: 'bo-korek-summary' },
+          el(
+            'div',
+            { className: 'bo-korek-summary__main' },
+            countOutput,
+            el(
+              'p',
+              { className: 'bo-korek-summary__line' },
+              el('span', { text: label('korTotalNilai') }),
+              totalOutput,
+            ),
+          ),
+          authNote,
+        ),
+        el('div', { className: 'bo-form__actions' }, cancel, save),
+        error,
+      ),
     ),
     historyBox,
   );
