@@ -1934,3 +1934,16 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1924: "Isi angka konversi satuan lebih dari 0.". Kunci produkErrKonversi.
 - TB-1925: "Komisi sales harus berupa persen 0 sampai 100.". Kunci produkErrKomisi.
 - TB-1926: "Promo harus berupa persen 0 sampai 100.". Kunci produkErrPromo.
+- TB-1927: "Nama Barang". Kunci expNama.
+- TB-1928: "Stok Toko". Kunci expStokToko.
+- TB-1929: "Stok Gudang". Kunci expStokGudang.
+- TB-1930: "Stok Total". Kunci expStokTotal.
+- TB-1931: "Minimal Stok". Kunci expMinStok.
+- TB-1932: "Harga Eceran". Kunci expHargaEcer.
+- TB-1933: "Harga Grosir". Kunci expHargaGrosir.
+- TB-1934: "Harga Kontraktor". Kunci expHargaKontraktor.
+- TB-1935: "Harga Beli Akhir". Kunci expHargaBeliAkhir.
+- TB-1936: "Tgl Beli Akhir". Kunci expTglBeliAkhir.
+- TB-1937: "Berat". Kunci expBerat.
+- TB-1938: "Komisi Sales". Kunci expKomisi.
+- TB-1939: "Promo". Kunci expPromo.
