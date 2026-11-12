@@ -153,3 +153,140 @@ export function createDonutChart(
 
   return el('div', { className: 'bo-donut-wrapper' }, chart);
 }
+
+// Warna kategori grafik: tujuh nada `--chart-1` sampai `--chart-7` (bo-dashboard.css), tetap sama
+// pada semua palet tema karena melambangkan kategori data, bukan aksen.
+export type ChartTone = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export interface ChartDatum {
+  readonly label: string;
+  readonly value: number;
+  readonly tone: ChartTone;
+}
+
+// Batang tegak berwarna. Teks tidak ada di dalam SVG (legenda ada di luar), jadi SVG boleh
+// meregang mengisi wadahnya.
+export function createColorBars(items: readonly ChartDatum[], ariaLabel: string): SVGSVGElement {
+  const width = 120;
+  const height = 100;
+  const gap = 8;
+  const slot = (width - gap * (items.length + 1)) / Math.max(1, items.length);
+  const max = Math.max(1, ...items.map((item) => item.value));
+  const chart = svg('svg', {
+    viewBox: `0 0 ${width} ${height}`,
+    preserveAspectRatio: 'none',
+    class: 'bo-bars',
+    role: 'img',
+    'aria-label': ariaLabel,
+  });
+  items.forEach((item, index) => {
+    const barHeight = item.value > 0 ? Math.max(2, (item.value / max) * (height - 4)) : 0;
+    chart.append(
+      svg('rect', {
+        x: String(gap + index * (slot + gap)),
+        y: String(height - 1 - barHeight),
+        width: String(slot),
+        height: String(barHeight),
+        rx: '2',
+        class: `bo-bars__bar bo-tone-${String(item.tone)}`,
+      }),
+    );
+  });
+  chart.append(
+    svg('line', {
+      x1: '0',
+      x2: String(width),
+      y1: String(height - 0.5),
+      y2: String(height - 0.5),
+      class: 'bo-bars__axis',
+    }),
+  );
+  return chart;
+}
+
+// Donat dengan dua baris teks di tengah (mis. TOTAL dan jumlahnya).
+export function createDonutTotal(
+  items: readonly ChartDatum[],
+  centerLines: readonly [string, string],
+  ariaLabel: string,
+): SVGSVGElement {
+  const size = 120;
+  const stroke = 16;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+  const chart = svg('svg', {
+    viewBox: `0 0 ${size} ${size}`,
+    class: 'bo-donut',
+    role: 'img',
+    'aria-label': ariaLabel,
+  });
+  let accumulated = 0;
+  items.forEach((item) => {
+    const share = item.value / total;
+    chart.append(
+      svg('circle', {
+        cx: String(size / 2),
+        cy: String(size / 2),
+        r: String(radius),
+        fill: 'none',
+        'stroke-width': String(stroke),
+        'stroke-dasharray': `${String(circumference * share)} ${String(circumference * (1 - share))}`,
+        'stroke-dashoffset': String(-circumference * accumulated),
+        transform: `rotate(-90 ${String(size / 2)} ${String(size / 2)})`,
+        class: `bo-donut__segment bo-tone-${String(item.tone)}`,
+      }),
+    );
+    accumulated += share;
+  });
+  const [heading, value] = centerLines;
+  const top = svg('text', {
+    x: String(size / 2),
+    y: String(size / 2 - 3),
+    'text-anchor': 'middle',
+    class: 'bo-donut__heading',
+  });
+  top.textContent = heading;
+  const bottom = svg('text', {
+    x: String(size / 2),
+    y: String(size / 2 + 10),
+    'text-anchor': 'middle',
+    class: 'bo-donut__value',
+  });
+  bottom.textContent = value;
+  chart.append(top, bottom);
+  return chart;
+}
+
+export interface HorizontalBarDatum extends ChartDatum {
+  // Teks nilai di kanan baris (mis. "Rp 1.245.000.000").
+  readonly text: string;
+}
+
+// Batang mendatar: titik warna dan nama, batang, lalu nilai. Lebar batang lewat CSSOM (variabel
+// --bar), bukan atribut style, karena CSP menolaknya.
+export function createHorizontalBars(
+  items: readonly HorizontalBarDatum[],
+  ariaLabel: string,
+): HTMLElement {
+  const max = Math.max(1, ...items.map((item) => item.value));
+  return el(
+    'div',
+    { className: 'bo-hbars', attrs: { role: 'img', 'aria-label': ariaLabel } },
+    ...items.map((item) => {
+      const fill = el('span', { className: `bo-hbars__fill bo-tone-${String(item.tone)}` });
+      fill.style.setProperty(
+        '--bar',
+        `${String(Math.max(2, Math.round((item.value / max) * 100)))}%`,
+      );
+      return el(
+        'div',
+        { className: 'bo-hbars__row' },
+        el('span', { className: `bo-hbars__dot bo-tone-${String(item.tone)}` }),
+        el('span', { className: 'bo-hbars__label', text: item.label }),
+        el('span', { className: 'bo-hbars__track' }, fill),
+        el('span', { className: 'bo-hbars__value', text: item.text }),
+      );
+    }),
+  );
+}

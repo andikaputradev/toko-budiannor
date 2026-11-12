@@ -1,0 +1,136 @@
+/* Dashboard Back-Office: warna kategori grafik dan gaya grafik.
+   Tata letak widget ditambahkan bersama layar Dashboard. */
+
+/* Tujuh nada kategori; kontras minimal 3:1 terhadap permukaan kartu (terang: putih, gelap:
+   night-900). Tetap sama pada semua palet tema karena melambangkan kategori data. */
+[data-app='bo'] {
+  --chart-1: #2563eb;
+  --chart-2: #b7791f;
+  --chart-3: #dc2626;
+  --chart-4: #15803d;
+  --chart-5: #ea580c;
+  --chart-6: #7c3aed;
+  --chart-7: #0f766e;
+}
+
+[data-app='bo'][data-pos-scheme='gelap'] {
+  --chart-1: #60a5fa;
+  --chart-2: #facc15;
+  --chart-3: #f87171;
+  --chart-4: #4ade80;
+  --chart-5: #fb923c;
+  --chart-6: #a78bfa;
+  --chart-7: #2dd4bf;
+}
+
+.bo-tone-1 {
+  --tone: var(--chart-1);
+}
+.bo-tone-2 {
+  --tone: var(--chart-2);
+}
+.bo-tone-3 {
+  --tone: var(--chart-3);
+}
+.bo-tone-4 {
+  --tone: var(--chart-4);
+}
+.bo-tone-5 {
+  --tone: var(--chart-5);
+}
+.bo-tone-6 {
+  --tone: var(--chart-6);
+}
+.bo-tone-7 {
+  --tone: var(--chart-7);
+}
+
+/* ===== Batang tegak ===== */
+.bo-bars {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bo-bars__bar {
+  fill: var(--tone);
+}
+
+.bo-bars__axis {
+  stroke: var(--color-border-default);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ===== Donat ===== */
+.bo-donut {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bo-donut__segment {
+  stroke: var(--tone);
+}
+
+.bo-donut__heading {
+  fill: var(--color-text-secondary);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.bo-donut__value {
+  fill: var(--color-text-primary);
+  font-size: 8.5px;
+  font-weight: 700;
+}
+
+/* ===== Batang mendatar ===== */
+.bo-hbars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bo-hbars__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content) minmax(40px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.bo-hbars__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.bo-hbars__label {
+  color: var(--color-text-secondary);
+}
+
+.bo-hbars__track {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--bo-surface-soft);
+}
+
+.bo-hbars__fill {
+  display: block;
+  width: var(--bar, 0);
+  height: 100%;
+  border-radius: 3px;
+  background: var(--tone);
+}
+
+.bo-hbars__value {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
