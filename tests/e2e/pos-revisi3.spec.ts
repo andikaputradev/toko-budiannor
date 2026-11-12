@@ -332,6 +332,19 @@ test.describe('A. Pesanan Baru', () => {
     await expect(card(page, 'SEMEN GRESIK').locator('.pos-card__promo')).toHaveCount(0);
   });
 
+  test('B4 promo: barang promo masuk keranjang berdiskon otomatis dan bertanda PROMO', async ({
+    page,
+  }) => {
+    await loginPos(page);
+    await addByPrice(page, 'CAT SPRAY PYLOX', 'KLG');
+    await expect(page.locator('.pos-order__item .pos-order__promo')).toHaveText('PROMO');
+    await expect(page.locator('.pos-order__qty')).toContainText('10%');
+    await expect(page.locator('.pos-order__amount')).toHaveText('Rp 27.000');
+
+    await addByPrice(page, 'SEMEN GRESIK', 'SAK');
+    await expect(page.locator('.pos-order__promo')).toHaveCount(1);
+  });
+
   test('A11: nama barang satu baris (maksimal 32 karakter) dan kode barang ikut tampil', async ({
     page,
   }) => {
@@ -470,7 +483,8 @@ test.describe('C. Pembayaran', () => {
     await loginPos(page, user);
     await addByPrice(page, 'CAT SPRAY PYLOX', 'KLG');
     await page.getByRole('button', { name: /^Bayar/ }).click();
-    await expect(page.locator('.pos-pay__grand')).toHaveText('Rp 30.000');
+    // 30.000 dikurangi promo bawaan 10 persen.
+    await expect(page.locator('.pos-pay__grand')).toHaveText('Rp 27.000');
   }
 
   test('C1: Tunai memberi Uang Pas dan dua pecahan di atas total', async ({ page }) => {
@@ -478,7 +492,7 @@ test.describe('C. Pembayaran', () => {
     const quick = page.getByRole('group', { name: 'Nominal Penerimaan' });
     await expect(quick.getByRole('button')).toHaveText(['Uang Pas', '50.000', '100.000']);
     await quick.getByRole('button', { name: '50.000', exact: true }).click();
-    await expect(page.locator('.pos-pay__change')).toHaveText('Rp 20.000');
+    await expect(page.locator('.pos-pay__change')).toHaveText('Rp 23.000');
     await quick.getByRole('button', { name: 'Uang Pas' }).click();
     await expect(page.locator('.pos-pay__change')).toHaveText('Rp 0');
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();

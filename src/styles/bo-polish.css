@@ -685,16 +685,11 @@
 
 [data-app='bo'] .bo-badge.is-toko,
 [data-app='bo'] .bo-badge.is-disc,
+[data-app='bo'] .bo-badge.is-promo,
 [data-app='bo'] .bo-stat-pill.is-primary,
 [data-app='bo'] .bo-stat-pill.is-info {
   background: var(--color-accent-soft);
   color: var(--color-accent-default);
-}
-
-/* Lencana kecil di widget dashboard. */
-[data-app='bo'] .bo-widget .bo-badge {
-  height: 26px;
-  padding: 0 10px;
 }
 
 /* ===== Banner ===== */

@@ -1,4 +1,5 @@
 import { el, nextId } from '../../../shared/dom';
+import { isPromoLine } from '../../../shared/domain/promo';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
@@ -451,6 +452,9 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
         product === undefined
           ? false
           : el('span', { className: 'pos-bill__code t-label', text: product.code }),
+        product !== undefined &&
+          isPromoLine(line, product) &&
+          el('span', { className: 'pos-order__promo', text: label('promoTanda') }),
         short &&
           el(
             'span',

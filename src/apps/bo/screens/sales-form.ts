@@ -16,6 +16,7 @@ import {
   type SalesInvoiceDraft,
   type SalesInvoiceLine,
 } from '../domain/sales-transaction';
+import { promoDiscountExpr } from '../../../shared/domain/promo';
 import { calculateTieredDiscount } from '../domain/discount';
 
 export function renderSalesForm(
@@ -240,6 +241,7 @@ export function renderSalesForm(
     if (!prod) {
       itemUnitSelect.replaceChildren(el('option', { text: '-', attrs: { value: '' } }));
       itemPriceInput.value = '0';
+      itemDiscountInput.value = '';
       itemLastPriceInfo.textContent = '-';
       return;
     }
@@ -252,6 +254,8 @@ export function renderSalesForm(
     const price: number = unitTier?.eceran ?? 100000;
     itemPriceInput.value = String(price);
     itemLastPriceInfo.textContent = `${label('labelHargaTerakhir')}: ${formatRupiah(price)}`;
+    // Barang berpromo otomatis berlaku: diskon promo terisi dahulu, tetap bisa diubah.
+    itemDiscountInput.value = promoDiscountExpr(prod);
   }
 
   function renderTableLines(): void {
@@ -270,6 +274,11 @@ export function renderSalesForm(
       );
     } else {
       draft.lines.forEach((l, idx) => {
+        const lineProduct = dataset.products.find((item) => item.id === l.productId);
+        const onPromo =
+          lineProduct !== undefined &&
+          l.discountExpr !== '' &&
+          l.discountExpr === promoDiscountExpr(lineProduct);
         const discCalc = calculateTieredDiscount(l.unitPrice, l.discountExpr, l.quantity);
         const delBtn = createButton({
           text: '✕',
@@ -294,6 +303,7 @@ export function renderSalesForm(
               'td',
               {},
               el('strong', { text: l.productName }),
+              onPromo && el('span', { className: 'bo-badge is-promo', text: label('promoTanda') }),
               l.aliasName && l.aliasName !== l.productName
                 ? el('div', { className: 't-label', text: `Alias: ${l.aliasName}` })
                 : el('span', {}),

@@ -1,4 +1,5 @@
-import type { LineDiscount, Product } from '../data/types';
+import type { BillLine, LineDiscount, Product } from '../data/types';
+import { findUnit } from '../data/units';
 
 // Isian persen pada Data Barang (Komisi Sales dan Promo). Kosong berarti tidak diisi (null);
 // tidak valid (di luar 0 sampai 100, bukan angka, lebih dari dua desimal) mengembalikan undefined.
@@ -40,4 +41,21 @@ export function commissionPercent(
 ): number {
   const own = product?.salesCommission?.percent ?? 0;
   return own > 0 ? own : profilePercent;
+}
+
+// Baris keranjang yang masih memakai diskon promo bawaan barangnya (belum diubah atau dihapus).
+export function isPromoLine(line: BillLine, product: Product): boolean {
+  const expected = promoDiscount(product, findUnit(product, line.unit)?.factor ?? 1);
+  return (
+    expected !== undefined &&
+    line.discount?.kind === expected.kind &&
+    line.discount.value === expected.value
+  );
+}
+
+// Ekspresi diskon bertingkat pada Faktur Penjualan BO (mis. "10" atau "10+5"): persen promo barang,
+// atau kosong bila barang tidak berpromo persen.
+export function promoDiscountExpr(product: Pick<Product, 'promo'>): string {
+  const percent = product.promo?.percent ?? 0;
+  return percent > 0 ? String(percent) : '';
 }

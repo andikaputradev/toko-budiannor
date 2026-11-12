@@ -17,7 +17,8 @@ import type {
   SyncKind,
   Tier,
 } from '../../shared/data/types';
-import { toBase, unitPrice } from '../../shared/data/units';
+import { findUnit, toBase, unitPrice } from '../../shared/data/units';
+import { promoDiscount } from '../../shared/domain/promo';
 import { label, type LabelKey, type SystemMessageId } from '../../shared/messages';
 import type { Store } from '../../shared/store/store';
 import {
@@ -947,11 +948,14 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
           available: available - billBaseQuantity(state.lines, product),
         };
       }
+      // Barang berpromo masuk dengan diskon promo bawaan; kasir tetap bisa mengubahnya lewat Diskon.
+      const promo = promoDiscount(product, findUnit(product, code)?.factor ?? 1);
       const result = addLine(state.lines, {
         productId: product.id,
         unit: code,
         quantity,
         unitPrice: unitPrice(product, code, tier()),
+        ...(promo === undefined ? {} : { discount: promo }),
       });
       if (result.ok) {
         commit({ lines: result.lines, ownerApproved: false });
