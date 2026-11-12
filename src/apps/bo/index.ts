@@ -17,6 +17,7 @@ import { renderLogin, type ScreenHandle } from './screens/login';
 import { renderPlaceholder } from './screens/placeholder';
 import { createShell, type Shell } from './shell';
 import '../../styles/bo-polish.css';
+import '../../styles/bo-shell.css';
 
 export interface AppContext {
   readonly store: Store;
@@ -488,7 +489,8 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   mountToken += 1;
   const token = mountToken;
 
-  shell = createShell(active, path, go);
+  shell = createShell(active, go);
+  shell.setPage(path);
   if (canOpenScreen(context.store.getState().role, screenId)) {
     if (explicitRoute?.render !== undefined) {
       screen = explicitRoute.render(active, go, query);
@@ -497,10 +499,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
       shell.content.replaceChildren(
         el(
           'div',
-          {
-            className: 'bo-panel',
-            attrs: { role: 'status', style: 'padding: 40px; text-align: center;' },
-          },
+          { className: 'bo-panel bo-loading', attrs: { role: 'status' } },
           label('memuatData'),
         ),
       );

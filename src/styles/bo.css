@@ -3,10 +3,12 @@
    Semua warna lewat token tema sehingga enam palet dan mode terang/gelap bekerja. */
 
 .bo {
+  --bo-topbar-h: 60px;
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
+  overflow: hidden;
   background: var(--color-bg-page);
   color: var(--color-text-primary);
 }
@@ -42,8 +44,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--primitive-space-4);
-  height: 68px;
-  min-height: 68px;
+  height: var(--bo-topbar-h);
+  min-height: var(--bo-topbar-h);
   padding: 0 var(--space-screen-margin);
   border-bottom: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
@@ -136,11 +138,7 @@
   background: var(--color-accent-soft);
 }
 
-.bo-mobile-toggle {
-  display: none;
-}
-
-/* ===== Badan: sidebar + isi ===== */
+/* ===== Badan: isi halaman. Menu berupa laci yang dibuka lewat titik tiga di header. ===== */
 .bo-body {
   position: relative;
   display: flex;
@@ -150,13 +148,31 @@
 }
 
 .bo-sidebar {
+  position: fixed;
+  top: var(--bo-topbar-h);
+  bottom: 0;
+  left: 0;
+  z-index: 200;
   display: flex;
-  flex: none;
   flex-direction: column;
-  width: 280px;
+  width: min(300px, 86vw);
   border-right: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
+  box-shadow: var(--bo-shadow-pop);
   overflow: hidden;
+  transform: translateX(-105%);
+  visibility: hidden;
+  transition:
+    transform 240ms var(--bo-ease),
+    visibility 0s linear 240ms;
+}
+
+.bo-sidebar--open {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform 240ms var(--bo-ease),
+    visibility 0s;
 }
 
 .bo-brand {
@@ -400,8 +416,8 @@
   font-size: 13px;
 }
 
-/* Panel Simulasi (peluncur ulasan) tidak boleh menutupi menu: sisakan jalur di dasar sidebar. */
-body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
+/* Panel Simulasi (peluncur ulasan) tidak boleh menutupi menu: sisakan jalur di dasar laci. */
+body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   padding-bottom: 56px;
 }
 
@@ -517,10 +533,14 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
 }
 
 /* ===== Isi halaman ===== */
+/* Area isi mengisi sisa tinggi layar. Halaman yang tidak muat tetap bisa digulir di sini. */
 .bo-content {
+  display: flex;
   flex: 1 1 0;
+  flex-direction: column;
   min-width: 0;
-  padding: var(--primitive-space-6) var(--space-screen-margin);
+  min-height: 0;
+  padding: var(--primitive-space-3) var(--primitive-space-4);
   overflow: auto;
 }
 
@@ -529,8 +549,12 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
 }
 
 .bo-content__inner {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
   width: 100%;
   max-width: 1680px;
+  min-height: 0;
   margin-inline: auto;
 }
 
@@ -539,11 +563,23 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
 }
 
 .bo-banner {
+  flex: none;
   margin-bottom: var(--primitive-space-3);
 }
 
 .bo-scrim {
-  display: none;
+  position: fixed;
+  inset: var(--bo-topbar-h) 0 0;
+  z-index: 190;
+  background: var(--modal-overlay-bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms var(--bo-ease);
+}
+
+.bo-scrim--open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* ===== Panel, kartu, bilah alat ===== */
@@ -2540,53 +2576,6 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
 }
 
 @media (max-width: 1023px) {
-  .bo-mobile-toggle {
-    display: inline-flex;
-  }
-
-  .bo-sidebar {
-    position: fixed;
-    top: 68px;
-    bottom: 0;
-    left: 0;
-    z-index: 200;
-    width: min(300px, 86vw);
-    box-shadow: var(--bo-shadow-pop);
-    transform: translateX(-105%);
-    visibility: hidden;
-    transition:
-      transform 240ms var(--bo-ease),
-      visibility 0s linear 240ms;
-  }
-
-  .bo-sidebar--open {
-    transform: none;
-    visibility: visible;
-    transition:
-      transform 240ms var(--bo-ease),
-      visibility 0s;
-  }
-
-  .bo-scrim {
-    position: fixed;
-    inset: 68px 0 0;
-    z-index: 190;
-    display: block;
-    background: var(--modal-overlay-bg);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 240ms var(--bo-ease);
-  }
-
-  .bo-scrim--open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .bo-topbar__date-pill {
-    display: none;
-  }
-
   .bo-split,
   .bo-units-page__top,
   .bo-dash__split {
@@ -2614,12 +2603,12 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
 }
 
 @media (max-width: 767px) {
-  .bo-content {
-    padding: var(--primitive-space-4);
-  }
-
   .bo-topbar {
     padding: 0 var(--primitive-space-4);
+  }
+
+  .bo-topbar__date-pill {
+    display: none;
   }
 
   .bo-dash-grid--row1,
@@ -2640,6 +2629,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-user-profile {
 @media print {
   .bo-topbar,
   .bo-sidebar,
+  .bo-tabs,
   .bo-scrim {
     display: none !important;
   }

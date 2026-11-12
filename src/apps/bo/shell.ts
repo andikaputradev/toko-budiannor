@@ -1,31 +1,22 @@
 import { el } from '../../shared/dom';
-import { formatDate, formatTime } from '../../shared/format';
+import { formatDayDateTime } from '../../shared/format';
 import { icon } from '../../shared/icons';
 import { label, message, type LabelKey } from '../../shared/messages';
 import { createBanner } from '../../shared/ui/banner';
-import { createButton } from '../../shared/ui/button';
 import type { Role } from '../../shared/data/types';
 import type { BoSession } from './bo-session';
 import { entryFor, groupFor, menuFor, type MenuEntry, type MenuGroup } from './domain/menu';
 import { countBelowMinimum } from './domain/stock-view';
-import {
-  applyAppearance,
-  loadMode,
-  loadTheme,
-  parseMode,
-  parseTheme,
-  POS_MODES,
-  POS_THEMES,
-  prefersDark,
-  saveMode,
-  saveTheme,
-  type PosMode,
-  type PosTheme,
-} from '../../shared/theme';
+import { tabTitleKey } from './domain/tabs';
 
 export interface Shell {
   readonly element: HTMLElement;
+  // Tempat bilah tab, tepat di bawah header.
+  readonly tabsHost: HTMLElement;
+  // Isi halaman (panel tab).
   readonly content: HTMLElement;
+  // Memperbarui judul, breadcrumb, dan penanda menu aktif; menutup laci menu.
+  setPage(path: string): void;
   destroy(): void;
 }
 
@@ -37,42 +28,21 @@ const ROLE_LABELS: Readonly<Record<Role, LabelKey>> = {
   sales: 'peranSales',
 };
 
-const THEME_NAMES: Readonly<Record<PosTheme, LabelKey>> = {
-  oranye: 'temaOranye',
-  terakota: 'temaTerakota',
-  teal: 'temaTeal',
-  biru: 'temaBiru',
-  hijau: 'temaHijau',
-  ungu: 'temaUngu',
-  merah: 'temaMerah',
-  kuning: 'temaKuning',
-};
-
-const MODE_NAMES: Readonly<Record<PosMode, LabelKey>> = {
-  otomatis: 'modeOtomatis',
-  terang: 'modeTerang',
-  gelap: 'modeGelap',
-};
-
 const MINIMUM_PATH = '/bo/stok?filter=minimum';
 
 function samePath(left: string, right: string): boolean {
   return left.split('?')[0] === right.split('?')[0];
 }
 
-export function createShell(
-  session: BoSession,
-  activePath: string,
-  go: (path: string) => void,
-): Shell {
+export function createShell(session: BoSession, go: (path: string) => void): Shell {
   const store = session.store;
-  const currentEntry = entryFor(activePath);
-  const currentGroup = currentEntry ? groupFor(currentEntry.group) : undefined;
+  let activePath = '';
 
   const sidebar = el('aside', {
     className: 'bo-sidebar bo-menu',
     attrs: { id: 'bo-sidebar', 'aria-label': label('menuBackOffice') },
   });
+  sidebar.inert = true;
   const scrim = el('div', { className: 'bo-scrim' });
 
   const banner = el('div', { className: 'bo-banner' });
@@ -80,7 +50,8 @@ export function createShell(
   const breadcrumbEl = el('span', { className: 'bo-topbar__breadcrumb' });
   const titleEl = el('h1', { className: 'bo-topbar__title t-screen-title' });
   const dateEl = el('span', { className: 'bo-topbar__date' });
-  const userProfileEl = el('div', { className: 'bo-user-profile' });
+  const userEl = el('div', { className: 'bo-topbar__user' });
+  const tabsHost = el('div', { className: 'bo-tabs' });
 
   const skip = el('a', {
     className: 'skip-link',
@@ -94,6 +65,7 @@ export function createShell(
     banner,
     content,
   );
+  const body = el('div', { className: 'bo-body' }, main);
 
   let resettingFocus = false;
   const onFocusOut = (event: FocusEvent): void => {
@@ -112,138 +84,48 @@ export function createShell(
   };
   document.addEventListener('focusout', onFocusOut);
 
-  // Modal Pemilih Tema & Mode
-  let themeDialog: HTMLElement | undefined;
-  const closeThemeDialog = (): void => {
-    themeDialog?.remove();
-    themeDialog = undefined;
-  };
-
-  const openThemeDialog = (): void => {
-    if (themeDialog !== undefined) {
-      closeThemeDialog();
-      return;
-    }
-    const curTheme = parseTheme(document.documentElement.dataset['posTheme'] ?? loadTheme());
-    const curMode = parseMode(document.documentElement.dataset['posMode'] ?? loadMode());
-
-    const themeOptions = POS_THEMES.map((themeKey) => {
-      const isSelected = themeKey === curTheme;
-      const opt = el(
-        'button',
-        {
-          className: `bo-theme-option ${isSelected ? 'bo-theme-option--selected' : ''}`,
-          attrs: { type: 'button', 'aria-pressed': isSelected ? 'true' : 'false' },
-        },
-        el('span', {
-          className: 'bo-theme-swatch',
-          attrs: { 'data-app': 'bo', 'data-pos-theme': themeKey },
-        }),
-        el('span', { text: label(THEME_NAMES[themeKey]) }),
-      );
-      opt.addEventListener('click', () => {
-        saveTheme(themeKey);
-        applyAppearance(document.documentElement, themeKey, curMode, prefersDark());
-        closeThemeDialog();
-      });
-      return opt;
-    });
-
-    const modeOptions = POS_MODES.map((modeKey) => {
-      const isSelected = modeKey === curMode;
-      const opt = el(
-        'button',
-        {
-          className: `bo-mode-option ${isSelected ? 'bo-mode-option--selected' : ''}`,
-          attrs: { type: 'button', 'aria-pressed': isSelected ? 'true' : 'false' },
-        },
-        el('span', { text: label(MODE_NAMES[modeKey]) }),
-      );
-      opt.addEventListener('click', () => {
-        saveMode(modeKey);
-        applyAppearance(document.documentElement, curTheme, modeKey, prefersDark());
-        closeThemeDialog();
-      });
-      return opt;
-    });
-
-    themeDialog = el(
-      'div',
-      { className: 'bo-theme-popover', attrs: { role: 'dialog', 'aria-modal': 'true' } },
-      el(
-        'div',
-        { className: 'bo-theme-popover__header' },
-        el('h3', { text: label('menuTema') }),
-        createButton({
-          text: label('tutup'),
-          variant: 'secondary',
-          onClick: closeThemeDialog,
-        }),
-      ),
-      el('p', { className: 't-label bo-theme-popover__label', text: label('tema') }),
-      el('div', { className: 'bo-theme-grid' }, ...themeOptions),
-      el('p', { className: 't-label bo-theme-popover__label', text: label('modeTampilan') }),
-      el('div', { className: 'bo-mode-grid' }, ...modeOptions),
-    );
-
-    document.body.append(themeDialog);
-  };
-
-  const themeButton = el(
-    'button',
-    {
-      className: 'bo-icon-button',
-      attrs: {
-        type: 'button',
-        'aria-label': label('menuTema'),
-        title: label('menuTema'),
-        'data-theme-toggle': 'true',
-      },
-    },
-    icon('palette'),
-  );
-  themeButton.addEventListener('click', openThemeDialog);
-
-  // Tombol Keluar
-  const logoutBtn = createButton({
-    text: label('keluar'),
-    variant: 'secondary',
-    icon: 'log-out',
-    onClick: () => {
-      session.logout();
-      go('/bo');
-    },
-  });
-
-  // Laci menu pada layar sempit
+  // Laci menu: tersembunyi sampai titik tiga di kiri atas diklik.
   const menuToggle = el(
     'button',
     {
-      className: 'bo-icon-button bo-mobile-toggle',
+      className: 'bo-icon-button bo-menu-toggle',
       attrs: {
         type: 'button',
-        'aria-label': label('menu'),
+        'aria-label': label('boBukaMenu'),
         'aria-controls': 'bo-sidebar',
         'aria-expanded': 'false',
       },
     },
-    icon('menu'),
+    icon('ellipsis-vertical'),
   );
-  const setDrawer = (open: boolean): void => {
+  const isDrawerOpen = (): boolean => sidebar.classList.contains('bo-sidebar--open');
+  const setDrawer = (open: boolean, restoreFocus = false): void => {
     sidebar.classList.toggle('bo-sidebar--open', open);
+    sidebar.inert = !open;
     scrim.classList.toggle('bo-scrim--open', open);
+    // Selagi laci terbuka, isi halaman dan tab tidak bisa dijangkau papan ketik.
+    body.inert = open;
+    tabsHost.inert = open;
     menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuToggle.setAttribute('aria-label', label(open ? 'boTutupMenu' : 'boBukaMenu'));
+    if (open) {
+      (
+        sidebar.querySelector<HTMLElement>('.bo-menu__link--active') ??
+        sidebar.querySelector<HTMLElement>('.bo-menu__group-header')
+      )?.focus();
+    } else if (restoreFocus) {
+      menuToggle.focus();
+    }
   };
   menuToggle.addEventListener('click', () => {
-    setDrawer(!sidebar.classList.contains('bo-sidebar--open'));
+    setDrawer(!isDrawerOpen(), true);
   });
   scrim.addEventListener('click', () => {
     setDrawer(false);
   });
   const onEscape = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape' && sidebar.classList.contains('bo-sidebar--open')) {
-      setDrawer(false);
-      menuToggle.focus();
+    if (event.key === 'Escape' && isDrawerOpen()) {
+      setDrawer(false, true);
     }
   };
   document.addEventListener('keydown', onEscape);
@@ -261,8 +143,7 @@ export function createShell(
       'div',
       { className: 'bo-topbar__end' },
       el('div', { className: 'bo-topbar__date-pill' }, icon('calendar'), dateEl),
-      themeButton,
-      logoutBtn,
+      userEl,
     ),
   );
 
@@ -287,15 +168,22 @@ export function createShell(
     attrs: { 'aria-label': label('menuBackOffice') },
   });
 
-  sidebar.replaceChildren(brand, nav, userProfileEl);
-
-  const element = el(
-    'div',
-    { className: 'bo' },
-    skip,
-    header,
-    el('div', { className: 'bo-body' }, sidebar, scrim, main),
+  // Baris terakhir laci: Keluar (log off).
+  const logout = el(
+    'button',
+    { className: 'bo-menu__logout', attrs: { type: 'button' } },
+    icon('log-out'),
+    el('span', { text: label('keluar') }),
   );
+  logout.addEventListener('click', () => {
+    session.logout();
+    go('/bo');
+  });
+  const footer = el('div', { className: 'bo-menu__footer' }, logout);
+
+  sidebar.replaceChildren(brand, nav, footer);
+
+  const element = el('div', { className: 'bo' }, skip, header, sidebar, scrim, tabsHost, body);
 
   const focusMain = (event: Event): void => {
     event.preventDefault();
@@ -309,8 +197,7 @@ export function createShell(
   });
 
   // Status lipat per grup menu. Lipatan memakai kelas supaya bisa dianimasikan.
-  const openGroups = new Set<string>();
-  openGroups.add(currentGroup ? currentGroup.id : 'dashboard');
+  const openGroups = new Set<string>(['dashboard']);
 
   const countFor = (entry: MenuEntry): number =>
     entry.path === MINIMUM_PATH ? countBelowMinimum(store.getState().data.products) : 0;
@@ -392,11 +279,11 @@ export function createShell(
 
   let navSignature = '';
   const renderNav = (groups: readonly MenuGroup[]): void => {
-    const signature = groups
+    const signature = `${activePath}|${groups
       .map(
         (group) => `${group.id}:${group.entries.map((entry) => String(countFor(entry))).join(',')}`,
       )
-      .join('|');
+      .join('|')}`;
     if (signature === navSignature) {
       return;
     }
@@ -409,38 +296,39 @@ export function createShell(
     const current = session.state().user;
     const groups = menuFor(state.role);
 
-    // Update Topbar
-    dateEl.textContent = `${formatDate(session.now())}, ${formatTime(session.now())} WIB`;
-    if (currentEntry) {
-      const g = groupFor(currentEntry.group);
-      breadcrumbEl.textContent = g ? `${label(g.label)} /` : '';
-      titleEl.textContent = label(currentEntry.label);
-    } else {
-      breadcrumbEl.textContent = '';
-      titleEl.textContent = label('menuBackOffice');
-    }
+    dateEl.textContent = formatDayDateTime(session.now());
 
-    // Update User Profile di Sidebar Bawah
-    const roleLabelKey = ROLE_LABELS[state.role];
-    userProfileEl.replaceChildren(
+    const entry = entryFor(activePath);
+    const group = entry === undefined ? undefined : groupFor(entry.group);
+    const titleKey = tabTitleKey(activePath);
+    breadcrumbEl.textContent = group === undefined ? '' : `${label(group.label)} /`;
+    titleEl.textContent = titleKey === undefined ? label('menuBackOffice') : label(titleKey);
+
+    userEl.replaceChildren(
+      el('div', { className: 'bo-user-avatar' }, icon('user-round')),
       el(
         'div',
-        { className: 'bo-user-card' },
-        el('div', { className: 'bo-user-avatar' }, icon('user-round')),
-        el(
-          'div',
-          { className: 'bo-user-info' },
-          el('strong', {
-            className: 'bo-user-name',
-            text: current ? current.name : label('namaPengguna'),
-          }),
-          el('span', { className: 'bo-user-role', text: label(roleLabelKey) }),
-        ),
+        { className: 'bo-user-info' },
+        el('strong', {
+          className: 'bo-user-name',
+          text: current ? current.name : label('namaPengguna'),
+        }),
+        el('span', { className: 'bo-user-role', text: label(ROLE_LABELS[state.role]) }),
       ),
     );
 
     renderNav(groups);
     banner.replaceChildren(...(state.online ? [] : [createBanner('danger', message('MSG-001'))]));
+  };
+
+  const setPage = (path: string): void => {
+    activePath = path;
+    const entry = entryFor(path);
+    if (entry !== undefined) {
+      openGroups.add(entry.group);
+    }
+    setDrawer(false);
+    render();
   };
 
   const unsubscribe = store.subscribe(render);
@@ -449,13 +337,14 @@ export function createShell(
 
   return {
     element,
+    tabsHost,
     content,
+    setPage,
     destroy: () => {
       unsubscribe();
       window.clearInterval(interval);
       document.removeEventListener('focusout', onFocusOut);
       document.removeEventListener('keydown', onEscape);
-      closeThemeDialog();
     },
   };
 }

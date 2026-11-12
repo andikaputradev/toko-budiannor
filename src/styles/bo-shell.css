@@ -1,0 +1,78 @@
+/* Back-Office putaran kedua: titik tiga dan laci menu, header, bilah tab halaman.
+   Dimuat setelah bo.css dan bo-polish.css sehingga menimpa aturan kerangka lama. */
+
+/* ===== Header ===== */
+.bo-menu-toggle {
+  border-color: transparent;
+  background: transparent;
+}
+
+.bo-topbar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--primitive-space-3);
+  min-width: 0;
+  padding: 4px 12px 4px 4px;
+  border-radius: 12px;
+  background: var(--bo-surface-soft);
+}
+
+.bo-topbar__user .bo-user-avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.bo-topbar__date-pill {
+  height: 40px;
+}
+
+/* ===== Laci menu: baris Keluar di dasar ===== */
+.bo-menu__footer {
+  flex: none;
+  padding: var(--primitive-space-3);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.bo-menu__logout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bo-menu__logout .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.bo-menu__logout:hover {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-fg);
+}
+
+.bo-menu__logout:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== Tab halaman (diisi bilah tab; kosong bila belum ada) ===== */
+.bo-tabs:empty {
+  display: none;
+}
+
+/* ===== Penanda memuat layar ===== */
+.bo-loading {
+  padding: 40px;
+  text-align: center;
+}

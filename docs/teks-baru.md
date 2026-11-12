@@ -1909,3 +1909,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1899: "Cara bayar ini sudah dipakai pada pembayaran lain.". Kunci pembayaranSudahAda.
 - TB-1900: "Bill {sumber} digabung ke {tujuan}. Diskon Transaksi bill {sumber} tidak ikut digabung.". Kunci billDigabungTanpaDiskon.
 - TB-1901: "Diskon Transaksi dihapus karena tidak lagi sesuai dengan isi pesanan.". Kunci diskonTransaksiDibuang.
+- TB-1902: "Buka menu". Kunci boBukaMenu.
+- TB-1903: "Tutup menu". Kunci boTutupMenu.
+- TB-1904: "Tutup tab {nama}". Kunci boTabTutup.
+- TB-1905: "Semua tab". Kunci boTabSemua.
+- TB-1906: "Halaman yang terbuka". Kunci boDaftarTab.
+- TB-1907: "Tab halaman". Kunci boHalamanTab.
