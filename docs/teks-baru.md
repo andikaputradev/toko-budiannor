@@ -1981,3 +1981,4 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1971: "Daftar Info Barang". Kunci cetakJudulLaporan.
 - TB-1972: "Berkas {nama} diunduh.". Kunci cetakDiunduh.
 - TB-1973: "Pilih minimal satu kolom.". Kunci cetakPilihKolom.
+- TB-1974: "Area yang dapat digulir". Kunci boAreaGulir.

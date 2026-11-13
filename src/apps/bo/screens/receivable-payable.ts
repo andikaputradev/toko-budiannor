@@ -283,6 +283,7 @@ export function renderReceivablePayable(
           min: '0',
           max: String(inv.remaining),
           value: String(currentAlloc),
+          'aria-label': `Alokasi bayar ${inv.invoiceNumber}`,
         },
       });
 

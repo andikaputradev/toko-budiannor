@@ -5,7 +5,7 @@ import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
-import { linkFieldLabels } from './field-labels';
+import { linkFieldLabels } from '../a11y-refine';
 import type { ScreenHandle } from './login';
 import {
   calculateSalesTotals,

@@ -65,6 +65,11 @@ Kolom Tes: `U` uji unit (Vitest), `E` e2e Playwright, `M` ukur ulang 44 rute pad
 8. **Promo mengubah POS** (B4). Hanya Cat Spray Pylox yang berpromo di data contoh (10 persen), sehingga hanya tes yang memakai barang itu berubah. Kasir tetap bisa mengubah atau menghapus diskon lewat menu Diskon sesuai hak akses.
 9. **Komisi tidak memakai nominal** (B3). Isian lama berformat persen dan nominal; nominal tetap tersimpan pada data lama tetapi tidak dipakai perhitungan.
 10. **Sisa HPP di laporan BO**. Laporan Stok dan nilai persediaan juga menampilkan HPP ke Supervisor. Dokumen hanya meminta pembatasan di Data Barang, jadi ini dicatat sebagai pertanyaan terbuka, bukan diubah.
+11. **Saldo Awal pindah ke modal Info** (B1). Modul Saldo Awal tidak muat satu layar di formulir Data Barang, sehingga isinya (saldo awal per gudang) tampil di modal Info.
+12. **Export Excel dan PDF** (B8). Excel memakai CSV UTF-8 dengan BOM (dibuka Excel) dan PDF memakai pratinjau cetak seperti layar BO lain. Berkas .xlsx dan .pdf asli menunggu contoh visual dari klien.
+13. **Pencarian Data Barang memilih baris teratas** (B1) kecuali sedang mengedit, supaya barang di formulir, Info, dan Cetak sama dengan baris yang tersorot.
+14. **Menggulir di dalam panel tetap ada** (K2) untuk daftar dan tabel yang panjang (daftar barang, tabel baris faktur, riwayat, matriks Hak Akses, tabel Laporan Stok). Halaman dan area isi tidak menggulir. Pengecualian layar pendek dicatat di bagian 6.
+15. **Layout beberapa layar berubah demi muat satu layar**: form pembayaran Hutang Piutang pindah ke kolom kanan, Koreksi Stok dibagi dua kolom dengan riwayat yang bisa dilipat, tab dan judul Laporan Stok berbagi satu baris di layar setinggi 760 px ke bawah. Perilaku dan label tidak berubah.
 
 ## 5. Rancangan teknis
 
@@ -98,9 +103,22 @@ Kolom Tes: `U` uji unit (Vitest), `E` e2e Playwright, `M` ukur ulang 44 rute pad
 
 Pola umum: akar layar `flex: 1; min-height: 0`, wilayah tabel atau daftar `flex: 1; min-height: 0; overflow: auto` dengan header menempel, kartu ringkasan dan filter dipadatkan, formulir panjang memakai grid dua atau tiga kolom. Layar dikerjakan per kelompok (master, transaksi, mutasi, hutang piutang, akuntansi dan laporan, pengaturan). Setiap kelompok selesai bila ukur ulang menunjukkan 0 halaman melebihi layar pada empat ukuran. Gaya inline pada layar yang disentuh diganti sehingga kegagalan e2e BO yang sudah ada (gaya inline dan urutan Tab BO-09) ikut tertangani.
 
+Realisasi: seluruh aturan muat-layar ada di `src/styles/bo-fit.css`, diimpor paling akhir oleh `src/apps/bo/index.ts` supaya menimpa CSS lama. CSS yang dimuat malas sesudahnya (retur, stok, deposit) ditimpa dengan awalan `[data-app='bo']` untuk menaikkan spesifisitas. Pemeriksaan: `npm run ukur:bo` (skrip `scripts/ukur-bo.mjs`) dan tes `tests/e2e/bo-muat-layar.spec.ts`.
+
 ## 6. Hasil verifikasi
 
-Diisi setelah semua tahap selesai (lihat bagian 7).
+Dijalankan terhadap build produksi pada 12 dan 13 November 2026 (server pengembangan membuang CSP, sehingga tidak dipakai untuk ukur dan e2e).
+
+- Statis: `npm run lint`, `npm run lint:teks` (500 berkas, 0 pelanggaran), `npm run typecheck` bersih. `npm test`: 95 berkas, 963 tes lulus.
+- Anggaran dan kontras: `npm run budget` lolos (JS gzip POS 69,79 KB dari 70, BO 66,33, Owner 64,37, Sales 66,67, Portal 54,59; CSS BO 18,99 KB dari 25). `npm run kontras`: 37 pasangan, 0 gagal. Kontras warna grafik Dashboard: terang terhadap putih 3,56 sampai 5,70; gelap terhadap `night-900` 5,84 sampai 10,54 (syarat 3 : 1).
+- Tanpa scroll: `node scripts/ukur-bo.mjs` melaporkan 0 dari 51 rute melebihi layar pada 1366 x 640, 1280 x 720, 1366 x 768, dan 1920 x 1080. Tes `bo-muat-layar.spec.ts` menjaga hal yang sama dan juga Kartu Stok berisi barang serta Koreksi Stok berisi empat barang di 1366 x 640. Tangkapan layar 1366 x 640 diperiksa mata untuk Dashboard, Data Barang, semua kelompok halaman, dan kondisi berisi (Hutang Piutang dengan empat faktur, Koreksi Stok, Kartu Stok).
+- Aksesibilitas: audit axe repo hanya memindai rute katalog, sehingga seluruh 51 rute BO dipindai terpisah pada 1366 x 640 dan 1366 x 768, terang dan gelap; hasilnya 0 pelanggaran dan kini dijaga tes `bo-muat-layar.spec.ts`. Temuan lama yang ikut dibereskan: label kolom isian tanpa tautan, pilihan filter tanpa nama, kotak centang dan isian jumlah pada tabel tanpa nama, kontras teks aksen di atas latar aksen lembut (4,24 : 1), dan area gulir dalam yang tidak bisa dijangkau papan ketik. Pembantunya `src/apps/bo/a11y-refine.ts` dipanggil workspace untuk semua layar BO.
+- Playwright BO (`bo`, `bo-kerangka`, `bo-barang`, `bo-dashboard`, `tinjau-bo`, `flows`, `gaya`, `header`, `jaringan`, `urutan-tab`, `target-sentuh`, `audit`, `bo-muat-layar`) pada `pc-1366x768` dan `tablet-1280x800`: 354 lulus, 76 dilewati (tes khusus desktop pada layar sempit), 2 gagal: audit axe OWN-04 (`.mob-avatar`, aplikasi Owner di luar cakupan putaran ini) pada kedua project. Pada satu putaran sebelumnya `urutan-tab` POS-06 gagal sesekali saat semua spesifikasi paralel dan lulus bila dijalankan sendiri. Kegagalan lama BO (`jaringan` BO-02 sampai 07 dan 09, `urutan-tab` BO-09, `audit` BO-09) kini lulus.
+- Playwright POS (`pos`, `pos-lanjut`, `pos-revisi`, `pos-revisi2`, `pos-revisi3`) pada `tablet-1280x800`: 252 lulus. Spesifikasi `responsif`, `portal`, `owner`, `sales` pada `tablet-1280x800` dan `hp-360x800`: 108 lulus, 2 gagal pada `sales` di `hp-360x800` (pemilih tema mengharapkan enam palet padahal sejak revisi POS ketiga ada delapan); tes itu sudah usang sebelum revisi ini dan tidak disentuh.
+
+Layar yang masih menggulir di dalam panelnya pada 1366 x 640 (halaman tetap tidak menggulir): daftar barang Data Barang, tabel baris Faktur, PO, SO, dan Retur (kolom kiri Retur sebagai satu kesatuan), tabel Daftar Nota, riwayat Beban, laporan Arus Kas dan Laba Rugi bila baris bertambah, tabel Laporan Stok dan Kartu Stok, tabel alokasi dan rincian nota Hutang Piutang pada pihak berfaktur banyak, matriks Hak Akses, Log Aktivitas, Cetak Barcode, serta pratinjau dan pilihan palet pada Tema.
+
+Belum diverifikasi: tata letak kertas hasil Print Data Barang (headless tidak membuka dialog cetak), berkas .xlsx dan .pdf asli (menunggu contoh klien), dan layar BO di bawah 1000 px (BO dirancang untuk desktop).
 
 ## 7. Urutan pengerjaan
 

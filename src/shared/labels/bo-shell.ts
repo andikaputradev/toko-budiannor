@@ -6,4 +6,5 @@ export const boShellLabels = {
   boTabSemua: 'Semua tab',
   boDaftarTab: 'Halaman yang terbuka',
   boHalamanTab: 'Tab halaman',
+  boAreaGulir: 'Area yang dapat digulir',
 };

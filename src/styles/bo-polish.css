@@ -112,9 +112,7 @@
 }
 
 /* ===== Tombol ===== */
-[data-app='bo'] .btn,
-[data-app='bo'] .bo-btn-action,
-[data-app='bo'] .bo-photo-upload-label {
+[data-app='bo'] .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -138,8 +136,7 @@
   transform: translateY(1px);
 }
 
-[data-app='bo'] .btn .icon,
-[data-app='bo'] .bo-btn-action .icon {
+[data-app='bo'] .btn .icon {
   width: 20px;
   height: 20px;
 }
@@ -152,33 +149,28 @@
   background: var(--color-accent-pressed);
 }
 
-[data-app='bo'] .btn--secondary,
-[data-app='bo'] .bo-btn-action {
+[data-app='bo'] .btn--secondary {
   border: 1px solid var(--bo-line-strong);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);
 }
 
-[data-app='bo'] .btn--secondary:hover:not(:disabled),
-[data-app='bo'] .bo-btn-action:hover:not(:disabled) {
+[data-app='bo'] .btn--secondary:hover:not(:disabled) {
   border-color: var(--color-accent-default);
   background: var(--bo-surface-hover);
 }
 
-[data-app='bo'] .btn--secondary:active:not(:disabled),
-[data-app='bo'] .bo-btn-action:active:not(:disabled) {
+[data-app='bo'] .btn--secondary:active:not(:disabled) {
   background: var(--color-accent-soft);
 }
 
-[data-app='bo'] .btn--danger,
-[data-app='bo'] .bo-btn-action--danger {
+[data-app='bo'] .btn--danger {
   border: 1px solid color-mix(in srgb, var(--color-status-danger-fg) 45%, transparent);
   background: var(--color-status-danger-bg);
   color: var(--color-status-danger-fg);
 }
 
-[data-app='bo'] .btn--danger:hover:not(:disabled),
-[data-app='bo'] .bo-btn-action--danger:hover:not(:disabled) {
+[data-app='bo'] .btn--danger:hover:not(:disabled) {
   border-color: var(--color-status-danger-fg);
   background: var(--color-status-danger-bg);
 }
@@ -187,35 +179,13 @@
   background: color-mix(in srgb, var(--color-status-danger-fg) 14%, var(--color-status-danger-bg));
 }
 
-[data-app='bo'] .btn:disabled,
-[data-app='bo'] .bo-btn-action:disabled {
+[data-app='bo'] .btn:disabled {
   border-color: transparent;
   box-shadow: none;
   opacity: 1;
 }
 
 /* Tombol bilah aksi Data Barang: ikon, teks utuh, dan petunjuk pintasan kecil. */
-[data-app='bo'] .bo-btn-action--accent {
-  border-color: var(--color-accent-default);
-  background: var(--color-accent-soft);
-  color: var(--color-text-primary);
-}
-
-[data-app='bo'] .bo-btn-action--primary,
-[data-app='bo'] .bo-btn-action--active {
-  border-color: var(--color-accent-default);
-  background: var(--color-accent-default);
-  color: var(--color-text-on-accent);
-}
-
-[data-app='bo'] .bo-btn-action--primary:hover:not(:disabled),
-[data-app='bo'] .bo-btn-action--active:hover:not(:disabled) {
-  background: var(--color-accent-pressed);
-}
-
-[data-app='bo'] .bo-product-topbar .bo-btn-action {
-  padding: 0 14px;
-}
 
 [data-app='bo'] .bo-btn-kbd {
   display: inline-flex;
@@ -274,8 +244,6 @@
 }
 
 [data-app='bo'] .input,
-[data-app='bo'] .bo-pform-input,
-[data-app='bo'] .bo-pform-select,
 [data-app='bo'] .bo-product-search-input {
   height: 44px;
   padding: 0 14px;
@@ -295,22 +263,17 @@
 }
 
 [data-app='bo'] .input::placeholder,
-[data-app='bo'] .bo-pform-input::placeholder,
 [data-app='bo'] .bo-product-search-input::placeholder {
   color: var(--color-text-secondary);
   font-weight: 400;
   opacity: 0.85;
 }
 
-[data-app='bo'] .input:hover:not(:disabled):not(.is-readonly),
-[data-app='bo'] .bo-pform-input:hover:not(:disabled),
-[data-app='bo'] .bo-pform-select:hover:not(:disabled) {
+[data-app='bo'] .input:hover:not(:disabled):not(.is-readonly) {
   border-color: var(--color-text-secondary);
 }
 
 [data-app='bo'] .input:focus,
-[data-app='bo'] .bo-pform-input:focus,
-[data-app='bo'] .bo-pform-select:focus,
 [data-app='bo'] .bo-product-search-input:focus {
   border-color: var(--color-accent-default);
   background-color: var(--color-bg-surface);
@@ -324,9 +287,7 @@
   box-shadow: 0 0 0 1px var(--color-status-danger-fg);
 }
 
-[data-app='bo'] .input:disabled,
-[data-app='bo'] .bo-pform-input:disabled,
-[data-app='bo'] .bo-pform-select:disabled {
+[data-app='bo'] .input:disabled {
   border-color: var(--bo-line);
   background-color: var(--bo-surface-soft);
   color: var(--color-text-primary);
@@ -362,8 +323,7 @@
   resize: vertical;
 }
 
-[data-app='bo'] select.input,
-[data-app='bo'] select.bo-pform-select {
+[data-app='bo'] select.input {
   padding-right: 40px;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
@@ -689,7 +649,7 @@
 [data-app='bo'] .bo-stat-pill.is-primary,
 [data-app='bo'] .bo-stat-pill.is-info {
   background: var(--color-accent-soft);
-  color: var(--color-accent-default);
+  color: var(--color-accent-pressed);
 }
 
 /* ===== Banner ===== */
@@ -777,7 +737,6 @@
 
 /* ===== Fokus papan ketik ===== */
 [data-app='bo'] .btn:focus-visible,
-[data-app='bo'] .bo-btn-action:focus-visible,
 [data-app='bo'] .bo-tab-btn:focus-visible,
 [data-app='bo'] .chip:focus-visible,
 [data-app='bo'] .bo-icon-button:focus-visible,

@@ -2,6 +2,7 @@ import { el } from '../../shared/dom';
 import { label, message } from '../../shared/messages';
 import { createBanner } from '../../shared/ui/banner';
 import { closeAllModals } from '../../shared/ui/modal';
+import { refineA11y } from './a11y-refine';
 import {
   closeTab,
   initialTabs,
@@ -18,6 +19,7 @@ import { createTabStrip } from './tab-strip';
 
 interface Panel {
   readonly element: HTMLElement;
+  readonly watcher: MutationObserver;
   screen: ScreenHandle | undefined;
   // Naik setiap layar dibangun ulang atau panel dibuang, supaya hasil async yang basi diabaikan.
   token: number;
@@ -58,10 +60,26 @@ export function createWorkspace(
       return;
     }
     panel.token += 1;
+    panel.watcher.disconnect();
     panel.screen?.destroy();
     panel.element.remove();
     panels.delete(key);
   };
+
+  // Tautkan label, beri nama pilihan polos, dan jadikan area gulir dalam bisa difokus, sesudah
+  // layar dibangun atau isinya berubah, saat panel tampil, dan saat ukuran jendela berubah.
+  let refineFrame = 0;
+  const scheduleRefine = (): void => {
+    cancelAnimationFrame(refineFrame);
+    refineFrame = requestAnimationFrame(() => {
+      panels.forEach((panel) => {
+        if (!panel.element.hidden) {
+          refineA11y(panel.element);
+        }
+      });
+    });
+  };
+  window.addEventListener('resize', scheduleRefine);
 
   const mountScreen = (key: string, panel: Panel, path: string): void => {
     panel.screen?.destroy();
@@ -134,11 +152,10 @@ export function createWorkspace(
       const key = tabKey(path);
       let panel = panels.get(key);
       if (panel === undefined) {
-        panel = {
-          element: el('div', { className: 'bo-tabpanel', attrs: { 'data-tab': key } }),
-          screen: undefined,
-          token: 0,
-        };
+        const element = el('div', { className: 'bo-tabpanel', attrs: { 'data-tab': key } });
+        const watcher = new MutationObserver(scheduleRefine);
+        watcher.observe(element, { childList: true, subtree: true });
+        panel = { element, watcher, screen: undefined, token: 0 };
         panels.set(key, panel);
         shell.content.append(panel.element);
         mountScreen(key, panel, path);
@@ -150,6 +167,7 @@ export function createWorkspace(
       });
       shell.setPage(path);
       strip.render(state, titleOf);
+      scheduleRefine();
       if (refocusTab) {
         refocusTab = false;
         strip.focusActive();
@@ -157,6 +175,8 @@ export function createWorkspace(
     },
     destroy: () => {
       destroyed = true;
+      cancelAnimationFrame(refineFrame);
+      window.removeEventListener('resize', scheduleRefine);
       shell.content.removeEventListener(CLOSE_TAB_EVENT, onCloseRequest);
       [...panels.keys()].forEach(dispose);
       strip.destroy();

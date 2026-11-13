@@ -1110,164 +1110,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   box-shadow: var(--bo-shadow);
 }
 
-.bo-photo-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--primitive-space-3);
-  min-height: 176px;
-  padding: var(--primitive-space-4);
-  border: 1px dashed var(--bo-line-strong);
-  border-radius: var(--radius-card);
-  background: var(--bo-surface-soft);
-}
-
-.bo-photo-slot {
-  display: grid;
-  place-items: center;
-  width: 132px;
-  height: 112px;
-}
-
-.bo-photo-slot .mob-photo,
-.bo-photo-slot .bo-product-img {
-  display: block;
-  width: 132px;
-  height: 112px;
-  border-radius: 12px;
-  background: var(--color-bg-table-header);
-  object-fit: cover;
-}
-
-.bo-photo-slot .mob-photo--empty {
-  display: grid;
-  place-items: center;
-  color: var(--color-text-secondary);
-}
-
-.bo-photo-slot .mob-photo--empty .icon {
-  width: 40px;
-  height: 40px;
-}
-
-.bo-photo-upload-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 var(--primitive-space-4);
-  border: 1px solid var(--color-accent-default);
-  border-radius: var(--radius-control);
-  background: var(--color-bg-surface);
-  color: var(--color-accent-default);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color var(--primitive-duration-fast);
-}
-
-.bo-photo-upload-label:hover {
-  background: var(--color-accent-soft);
-}
-
-.bo-photo-box:has(.bo-photo-file:focus-visible) .bo-photo-upload-label {
-  outline: var(--focus-ring-width) solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-.bo-photo-file {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
 /* Formulir barang: label di atas kolom isian, dua kolom. */
-.bo-pform-table {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--primitive-space-3) var(--primitive-space-4);
-}
-
-.bo-pform-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.bo-pform-row:first-child {
-  grid-column: 1 / -1;
-}
-
-.bo-pform-input,
-.bo-pform-select {
-  width: 100%;
-}
-
-.bo-pform-lbl {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.bo-pform-table--supplier .bo-pform-row:first-child {
-  grid-column: auto;
-}
-
-.bo-initial-stock-card {
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-card);
-  background: var(--bo-surface-soft);
-  overflow: hidden;
-}
-
-.bo-initial-stock-header {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  min-height: 56px;
-  padding: 10px var(--primitive-space-4);
-  border: 0;
-  background: transparent;
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--primitive-duration-fast);
-}
-
-.bo-initial-stock-header:hover {
-  background: var(--bo-surface-hover);
-}
-
-.bo-initial-stock-sub {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.bo-initial-stock-body {
-  display: none;
-  padding: var(--primitive-space-3) var(--primitive-space-4);
-  border-top: 1px solid var(--color-border-default);
-  background: var(--color-bg-surface);
-}
-
-.bo-initial-stock-body--open {
-  display: block;
-}
-
-.bo-initial-stock-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--primitive-space-3);
-  font-size: 14px;
-}
 
 .bo-init-label {
   display: block;
@@ -1282,8 +1125,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   min-width: 0;
 }
 
-.bo-product-table-wrapper,
-.bo-price-matrix-wrapper {
+.bo-product-table-wrapper {
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
@@ -1295,16 +1137,14 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   max-height: min(720px, calc(100dvh - 232px));
 }
 
-.bo-product-table,
-.bo-price-matrix-table {
+.bo-product-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
 }
 
-.bo-product-table thead th,
-.bo-price-matrix-table thead th {
+.bo-product-table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -1319,8 +1159,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   white-space: nowrap;
 }
 
-.bo-product-table td,
-.bo-price-matrix-table td {
+.bo-product-table td {
   height: 52px;
   padding: 6px 14px;
   border-bottom: 1px solid var(--color-border-default);
@@ -1340,8 +1179,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   background: var(--bo-zebra);
 }
 
-.bo-product-table tbody tr:last-child td,
-.bo-price-matrix-table tbody tr:last-child td {
+.bo-product-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
@@ -1366,11 +1204,6 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
 .col-num {
   width: 92px;
   text-align: right;
-}
-
-.bo-price-matrix-table th.col-num,
-.bo-price-matrix-table td.col-num {
-  width: 140px;
 }
 
 /* ===== Halaman transaksi (penjualan, pembelian, surat jalan, daftar nota) ===== */
@@ -1840,7 +1673,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
 }
 
 .bo-text-primary {
-  color: var(--color-accent-default);
+  color: var(--color-accent-pressed);
 }
 
 /* ===== Akuntansi ===== */
@@ -2152,9 +1985,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   }
 
   .bo-cards,
-  .bo-stats-grid--4,
-  .bo-pform-table,
-  .bo-initial-stock-grid {
+  .bo-stats-grid--4 {
     grid-template-columns: minmax(0, 1fr);
   }
 

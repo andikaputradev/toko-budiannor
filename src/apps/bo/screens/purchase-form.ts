@@ -4,7 +4,7 @@ import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
-import { linkFieldLabels } from './field-labels';
+import { linkFieldLabels } from '../a11y-refine';
 import type { ScreenHandle } from './login';
 import {
   calculatePurchaseTotals,

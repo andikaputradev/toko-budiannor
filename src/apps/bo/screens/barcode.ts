@@ -162,7 +162,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
 
     filtered.forEach((it) => {
       const chk = el('input', {
-        attrs: { type: 'checkbox' },
+        attrs: { type: 'checkbox', 'aria-label': `Pilih ${it.product.name}` },
       });
       chk.checked = it.selected;
       chk.addEventListener('change', () => {
@@ -177,6 +177,7 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
           min: '1',
           max: '100',
           value: String(it.copies),
+          'aria-label': `Jumlah cetak ${it.product.name}`,
         },
       });
       copyInput.addEventListener('input', () => {
