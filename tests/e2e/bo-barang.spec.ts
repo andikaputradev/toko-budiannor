@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Locator } from '@playwright/test';
 import { loginPos } from './helpers/routes';
 
 test.beforeEach(({ page }) => {
@@ -217,6 +217,41 @@ test.describe('B5 informasi biaya hanya untuk Owner', () => {
     await expect(page.locator('.bo-pd-form')).not.toContainText('HARGA BELI AKHIR');
   });
 
+  // B0004 punya satu dokumen koreksi contoh (KS-0001), jadi tab Koreksi berisi baris untuk kedua peran.
+  async function openInfoB0004(page: Page, user: readonly [string, string]): Promise<Locator> {
+    await openBarang(page, user);
+    await searchFor(page, 'B0004');
+    await page.getByRole('button', { name: 'Info', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Dari').fill('2026-01-01');
+    await dialog.getByRole('button', { name: 'Tampilkan' }).click();
+    await dialog.getByRole('tab', { name: 'Koreksi' }).click();
+    await expect(dialog.locator('[role="tabpanel"]:not([hidden]) tbody tr')).not.toHaveCount(0);
+    return dialog;
+  }
+
+  test('Info barang: Supervisor tidak melihat nilai satuan saldo awal dan kolom Nilai pembelian dan koreksi', async ({
+    page,
+  }) => {
+    const dialog = await openInfoB0004(page, SUPERVISOR);
+    await expect(dialog).not.toContainText('nilai satuan');
+    for (const name of ['Pembelian', 'Koreksi']) {
+      await dialog.getByRole('tab', { name }).click();
+      await expect(
+        dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'Nilai' }),
+      ).toHaveCount(0);
+    }
+    await dialog.getByRole('tab', { name: 'Penjualan' }).click();
+    await expect(dialog.locator('[role="tabpanel"]:not([hidden])')).toBeVisible();
+  });
+
+  test('Info barang: Owner melihat kolom Nilai pada riwayat Koreksi', async ({ page }) => {
+    const dialog = await openInfoB0004(page, OWNER);
+    await expect(
+      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'Nilai' }),
+    ).toHaveCount(1);
+  });
+
   test('Owner melihat keduanya', async ({ page }) => {
     await openBarang(page, OWNER);
     await expect(page.getByLabel('HARGA BELI AKHIR', { exact: true })).toBeVisible();
@@ -242,6 +277,16 @@ test.describe('B6 foto membesar', () => {
     await page.getByRole('button', { name: 'Perbesar foto' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.locator('img')).toBeVisible();
+    const stage = dialog.locator('.bo-pd-zoom');
+    await expect(stage).toHaveAttribute('data-zoom', '1');
+    await expect(dialog.getByRole('button', { name: 'Perkecil', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: 'Perbesar', exact: true }).click();
+    await expect(stage).toHaveAttribute('data-zoom', '2');
+    await dialog.getByRole('button', { name: 'Perbesar', exact: true }).click();
+    await expect(stage).toHaveAttribute('data-zoom', '3');
+    await expect(dialog.getByRole('button', { name: 'Perbesar', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: 'Perkecil', exact: true }).click();
+    await expect(stage).toHaveAttribute('data-zoom', '2');
     await dialog.getByRole('button', { name: 'Tutup' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });

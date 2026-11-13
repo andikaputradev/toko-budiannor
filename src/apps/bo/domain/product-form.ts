@@ -71,7 +71,7 @@ export type ProductIssue =
       readonly row: number;
     }
   | {
-      readonly field: 'commission' | 'promo';
+      readonly field: 'commission' | 'promo' | 'baseUnit';
       readonly messageId: undefined;
       readonly labelKey: LabelKey;
     };
@@ -94,6 +94,7 @@ export function validateProduct(
   draft: ProductDraft,
   products: readonly Pick<Product, 'id' | 'code'>[],
   editingId: string | undefined,
+  editing?: Pick<Product, 'baseUnit'>,
 ): ProductIssue | undefined {
   const code = draft.code.trim();
   if (code === '') {
@@ -114,6 +115,11 @@ export function validateProduct(
     draft.unitRows === undefined ? draft.baseUnit : (normalizeRows(draft.unitRows)[0]?.code ?? '');
   if (baseUnit === '') {
     return { field: 'baseUnit', messageId: 'MSG-061' };
+  }
+  // Stok, HPP, dan harga barang lama tercatat dalam satuan dasarnya; mengganti satuan dasar akan
+  // membuat harga satuan baru bernilai nol, jadi tidak diizinkan dari formulir ini.
+  if (editing !== undefined && baseUnit !== editing.baseUnit) {
+    return { field: 'baseUnit', messageId: undefined, labelKey: 'produkErrSatuanDasarTetap' };
   }
   const unitIssue = draft.unitRows === undefined ? undefined : validateUnitRows(draft.unitRows);
   if (unitIssue !== undefined && unitIssue.field !== 'base') {

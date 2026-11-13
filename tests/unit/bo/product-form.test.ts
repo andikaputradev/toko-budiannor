@@ -265,3 +265,27 @@ describe('menyimpan barang tidak menjatuhkan penanda dan foto bawaan', () => {
     expect(created.photoUrl).toBeUndefined();
   });
 });
+
+describe('satuan dasar barang yang sudah ada', () => {
+  const first = products[0];
+  if (first === undefined) {
+    throw new Error('data kosong');
+  }
+  const row = (code: string, factor = '') => ({ code, factor });
+
+  it('menolak penggantian satuan dasar dan tetap menerima satuan dasar yang sama', () => {
+    const draft = draftOf(first);
+    expect(validateProduct(draft, products, first.id, first)).toBeUndefined();
+    const swapped = { ...draft, unitRows: [row('UJI'), row(first.baseUnit, '10')] };
+    expect(validateProduct(swapped, products, first.id, first)).toEqual({
+      field: 'baseUnit',
+      messageId: undefined,
+      labelKey: 'produkErrSatuanDasarTetap',
+    });
+  });
+
+  it('barang baru bebas memilih satuan dasar', () => {
+    const draft = { ...base, unitRows: [row('Kg')] };
+    expect(validateProduct(draft, products, undefined, undefined)).toBeUndefined();
+  });
+});

@@ -15,10 +15,13 @@ import {
 } from '../domain/product-history';
 import { ledgerFor } from '../domain/stock-correction';
 
+// showValue=false menyembunyikan kolom Nilai: nilai pembelian dan koreksi dihitung dari harga beli
+// dan HPP, yang hanya boleh dilihat Owner.
 function historyTable(
   rows: readonly HistoryRow[],
   partyHeading: LabelKey,
   name: string,
+  showValue: boolean,
 ): HTMLElement {
   if (rows.length === 0) {
     return el('p', { className: 'bo-info__empty', text: label('infoKosong') });
@@ -39,7 +42,7 @@ function historyTable(
           el('th', { text: label('infoKolNomor') }),
           el('th', { text: label(partyHeading) }),
           el('th', { className: 'is-end', text: label('infoKolJumlah') }),
-          el('th', { className: 'is-end', text: label('infoKolNilai') }),
+          showValue ? el('th', { className: 'is-end', text: label('infoKolNilai') }) : false,
         ),
       ),
       el(
@@ -53,7 +56,7 @@ function historyTable(
             el('td', { text: row.number }),
             el('td', { text: row.party }),
             el('td', { className: 'is-end', text: `${formatDecimal(row.quantity)} ${row.unit}` }),
-            el('td', { className: 'is-end', text: formatRupiah(row.amount) }),
+            showValue ? el('td', { className: 'is-end', text: formatRupiah(row.amount) }) : false,
           ),
         ),
       ),
@@ -65,6 +68,7 @@ function historyTable(
 // bisa disaring menurut tanggal. Bawaan 30 hari terakhir; Dari dan Sampai membuka riwayat lebih lama.
 export function openProductInfo(session: BoSession, product: Product): void {
   const store = session.store;
+  const isOwner = store.getState().role === 'owner';
   const today = wibDate(session.now());
   const dateInput = (name: LabelKey, value: string): HTMLInputElement => {
     const control = el('input', {
@@ -97,13 +101,13 @@ export function openProductInfo(session: BoSession, product: Product): void {
       range,
     });
     pembelian.replaceChildren(
-      historyTable(history.pembelian, 'infoKolPemasok', label('infoTabPembelian')),
+      historyTable(history.pembelian, 'infoKolPemasok', label('infoTabPembelian'), isOwner),
     );
     penjualan.replaceChildren(
-      historyTable(history.penjualan, 'infoKolPelanggan', label('infoTabPenjualan')),
+      historyTable(history.penjualan, 'infoKolPelanggan', label('infoTabPenjualan'), true),
     );
     koreksi.replaceChildren(
-      historyTable(history.koreksi, 'infoKolPetugas', label('infoTabKoreksi')),
+      historyTable(history.koreksi, 'infoKolPetugas', label('infoTabKoreksi'), isOwner),
     );
   };
 
@@ -142,12 +146,18 @@ export function openProductInfo(session: BoSession, product: Product): void {
       text:
         initialStock === undefined
           ? label('infoTanpaSaldoAwal')
-          : label('infoSaldoAwal', {
-              tanggal: initialStock.date ?? '-',
-              jumlah: formatDecimal(initialStock.quantity ?? 0),
-              satuan: initialStock.unit ?? product.baseUnit,
-              nilai: formatRupiah(initialStock.unitPrice ?? product.hpp),
-            }),
+          : isOwner
+            ? label('infoSaldoAwal', {
+                tanggal: initialStock.date ?? '-',
+                jumlah: formatDecimal(initialStock.quantity ?? 0),
+                satuan: initialStock.unit ?? product.baseUnit,
+                nilai: formatRupiah(initialStock.unitPrice ?? product.hpp),
+              })
+            : label('infoSaldoAwalTanpaNilai', {
+                tanggal: initialStock.date ?? '-',
+                jumlah: formatDecimal(initialStock.quantity ?? 0),
+                satuan: initialStock.unit ?? product.baseUnit,
+              }),
     }),
   );
 

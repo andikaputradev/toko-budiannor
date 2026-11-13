@@ -58,6 +58,7 @@ for (const size of SIZES) {
         'href',
         `#${route}`,
       );
+      await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-loading')).toHaveCount(0);
       await page.waitForTimeout(250);
       const gap = await page.evaluate(() => {
         const main = document.querySelector('.bo-content');
@@ -113,6 +114,7 @@ test('label kolom isian formulir penjualan tertaut ke kontrolnya', async ({ page
     'href',
     '#/bo/penjualan',
   );
+  await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-loading')).toHaveCount(0);
   const broken = await page.evaluate(() => {
     const result: string[] = [];
     for (const caption of document.querySelectorAll('.bo-form-page .field > label.field__label')) {
@@ -144,6 +146,7 @@ for (const scheme of ['light', 'dark'] as const) {
         'href',
         `#${route}`,
       );
+      await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-loading')).toHaveCount(0);
       await page.waitForTimeout(250);
       const result = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

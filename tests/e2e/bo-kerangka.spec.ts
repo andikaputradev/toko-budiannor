@@ -221,3 +221,33 @@ test.describe('K5 tab halaman', () => {
     await expect(page.locator('.bo-tab--active')).toContainText('Daftar Stok Minim');
   });
 });
+
+test.describe('K5 tab tampil-saja tidak basi', () => {
+  test('Daftar Nota dibangun ulang hanya bila data berubah sejak tab dibuka', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/daftar-nota');
+    const mark = () =>
+      page.evaluate(() => {
+        document
+          .querySelector('.bo-tabpanel:not([hidden]) .bo-form-page')
+          ?.setAttribute('data-probe', '1');
+      });
+    const probe = page.locator('.bo-tabpanel:not([hidden]) .bo-form-page[data-probe]');
+    await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-form-page')).toBeVisible();
+    await mark();
+
+    // Tanpa perubahan data, isi tab dipertahankan.
+    await openPage(page, '/bo/barang');
+    await openPage(page, '/bo/transaksi/daftar-nota');
+    await expect(probe).toHaveCount(1);
+
+    // Data berubah di tab lain: tab dibangun ulang saat dibuka kembali.
+    await openPage(page, '/bo/barang');
+    await page.getByRole('button', { name: 'Panel Simulasi' }).click();
+    await page.getByRole('button', { name: 'Atur ulang data' }).click();
+    await page.getByRole('button', { name: 'Panel Simulasi' }).click();
+    await openPage(page, '/bo/transaksi/daftar-nota');
+    await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-form-page')).toBeVisible();
+    await expect(probe).toHaveCount(0);
+  });
+});

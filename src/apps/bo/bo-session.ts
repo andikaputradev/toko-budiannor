@@ -238,11 +238,11 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
         return fail('MSG-003');
       }
       const all = store.getState().data.products;
-      const issue = validateProduct(draft, all, editingId);
+      const existing = editingId === undefined ? undefined : lookup(editingId);
+      const issue = validateProduct(draft, all, editingId, existing);
       if (issue !== undefined) {
         return { ok: false, issue };
       }
-      const existing = editingId === undefined ? undefined : lookup(editingId);
       // Hanya Owner boleh mengubah harga beli akhir dan HPP rata-rata.
       const product = buildProduct(
         draft,

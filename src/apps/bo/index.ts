@@ -23,6 +23,14 @@ import '../../styles/bo-dashboard.css';
 import '../../styles/bo-dashboard-widgets.css';
 import '../../styles/bo-fit.css';
 
+// Layar tanpa isian pengguna dan tanpa langganan store: dibangun ulang saat tabnya dibuka kembali
+// setelah data berubah (lihat Freshness di workspace.ts).
+const VIEW_ONLY_ROUTES: ReadonlySet<string> = new Set([
+  '/bo/transaksi/daftar-nota',
+  '/bo/laporan/penjualan',
+  '/bo/laporan/pembelian',
+]);
+
 export interface AppContext {
   readonly store: Store;
 }
@@ -525,7 +533,21 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     disposeWorkspace();
     const created = createShell(active, go);
     shell = created;
-    workspace = createWorkspace(created, go, (target) => buildScreen(active, go, target));
+    const { store } = context;
+    workspace = createWorkspace(created, go, (target) => buildScreen(active, go, target), {
+      viewOnly: (target) => VIEW_ONLY_ROUTES.has(target.split('?')[0] ?? target),
+      stamp: () => {
+        const state = store.getState();
+        return [
+          state.data,
+          state.salesOrders,
+          state.purchaseOrders,
+          state.returnNotes,
+          state.depositEntries,
+          state.activity,
+        ];
+      },
+    });
     root.replaceChildren(created.element);
   }
   workspace.show(fullPath);

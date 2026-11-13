@@ -69,7 +69,12 @@ function focusScrollRegions(root: HTMLElement): void {
     return;
   }
   for (const node of root.querySelectorAll<HTMLElement>(CONTAINERS)) {
-    if (node.hasAttribute('tabindex') || node.scrollHeight <= node.clientHeight + 1) {
+    // Elemen yang sudah punya peran sendiri (listbox, tabpanel, dialog, ...) tidak disentuh.
+    if (
+      node.hasAttribute('tabindex') ||
+      node.hasAttribute('role') ||
+      node.scrollHeight <= node.clientHeight + 1
+    ) {
       continue;
     }
     const overflow = getComputedStyle(node).overflowY;
@@ -77,8 +82,12 @@ function focusScrollRegions(root: HTMLElement): void {
       continue;
     }
     node.tabIndex = 0;
-    node.setAttribute('role', 'region');
-    node.setAttribute('aria-label', regionName(node));
+    if (node.tagName === 'DIV' || node.tagName === 'SECTION') {
+      node.setAttribute('role', 'region');
+      if (!node.hasAttribute('aria-label') && !node.hasAttribute('aria-labelledby')) {
+        node.setAttribute('aria-label', regionName(node));
+      }
+    }
   }
 }
 

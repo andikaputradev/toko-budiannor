@@ -21,8 +21,18 @@ interface Panel {
   readonly element: HTMLElement;
   readonly watcher: MutationObserver;
   screen: ScreenHandle | undefined;
+  // Cap data saat layar terakhir dibangun (lihat Freshness).
+  stamp: readonly unknown[];
   // Naik setiap layar dibangun ulang atau panel dibuang, supaya hasil async yang basi diabaikan.
   token: number;
+}
+
+// Layar yang hanya menampilkan data (daftar nota, laporan) tidak berlangganan store;
+// agar tab yang dipertahankan tidak basi, panelnya dibangun ulang saat dibuka kembali bila data
+// berubah sejak dibangun. Layar formulir tidak termasuk supaya isian setengah jadi tetap aman.
+export interface Freshness {
+  readonly viewOnly: (path: string) => boolean;
+  readonly stamp: () => readonly unknown[];
 }
 
 export interface Workspace {
@@ -41,6 +51,7 @@ export function createWorkspace(
   shell: Shell,
   go: (path: string) => void,
   build: (path: string) => Promise<ScreenHandle>,
+  freshness?: Freshness,
 ): Workspace {
   const panels = new Map<string, Panel>();
   let state: TabState | undefined;
@@ -66,8 +77,20 @@ export function createWorkspace(
     panels.delete(key);
   };
 
+  // Panel layar tampil-saja basi bila data berubah sejak layarnya dibangun.
+  const isStale = (panel: Panel, path: string): boolean => {
+    if (freshness?.viewOnly(path) !== true) {
+      return false;
+    }
+    const now = freshness.stamp();
+    return (
+      now.length !== panel.stamp.length || now.some((item, index) => item !== panel.stamp[index])
+    );
+  };
+
   // Tautkan label, beri nama pilihan polos, dan jadikan area gulir dalam bisa difokus, sesudah
   // layar dibangun atau isinya berubah, saat panel tampil, dan saat ukuran jendela berubah.
+
   let refineFrame = 0;
   const scheduleRefine = (): void => {
     cancelAnimationFrame(refineFrame);
@@ -85,6 +108,7 @@ export function createWorkspace(
     panel.screen?.destroy();
     panel.screen = undefined;
     panel.token += 1;
+    panel.stamp = freshness?.stamp() ?? [];
     const token = panel.token;
     panel.element.replaceChildren(
       el(
@@ -155,11 +179,11 @@ export function createWorkspace(
         const element = el('div', { className: 'bo-tabpanel', attrs: { 'data-tab': key } });
         const watcher = new MutationObserver(scheduleRefine);
         watcher.observe(element, { childList: true, subtree: true });
-        panel = { element, watcher, screen: undefined, token: 0 };
+        panel = { element, watcher, screen: undefined, token: 0, stamp: [] };
         panels.set(key, panel);
         shell.content.append(panel.element);
         mountScreen(key, panel, path);
-      } else if (changedQuery) {
+      } else if (changedQuery || isStale(panel, path)) {
         mountScreen(key, panel, path);
       }
       panels.forEach((item, itemKey) => {

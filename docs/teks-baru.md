@@ -1982,3 +1982,5 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1972: "Berkas {nama} diunduh.". Kunci cetakDiunduh.
 - TB-1973: "Pilih minimal satu kolom.". Kunci cetakPilihKolom.
 - TB-1974: "Area yang dapat digulir". Kunci boAreaGulir.
+- TB-1975: "Saldo awal: {tanggal}, {jumlah} {satuan}". Kunci infoSaldoAwalTanpaNilai.
+- TB-1976: "Satuan dasar barang yang sudah ada tidak dapat diganti. Tambahkan satuan lain atau buat barang baru.". Kunci produkErrSatuanDasarTetap.

@@ -5,6 +5,7 @@ import { icon, type IconName } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
 import type { Product } from '../../../shared/data/types';
 import { round3 } from '../../../shared/data/units';
+import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { createProductPhoto, productPhotoUrl } from '../../../shared/ui/product-photo';
 import { showToast } from '../../../shared/ui/toast';
@@ -704,12 +705,41 @@ export function renderProducts(session: BoSession): ScreenHandle {
     if (url === undefined) {
       return;
     }
+    // Zoom 1x, 2x, dan 3x: lebar foto berubah lewat data-zoom (CSS), area foto menggulir bila meluap.
+    const steps = [1, 2, 3] as const;
+    let zoom = 0;
+    const stage = el(
+      'div',
+      { className: 'bo-pd-zoom' },
+      el('img', { attrs: { src: url, alt: product?.name ?? '' } }),
+    );
+    const zoomOut = createButton({
+      text: label('perkecil'),
+      variant: 'secondary',
+      icon: 'zoom-out',
+    });
+    const zoomIn = createButton({ text: label('perbesar'), variant: 'secondary', icon: 'zoom-in' });
+    const paintZoom = (): void => {
+      stage.dataset['zoom'] = String(steps[zoom]);
+      zoomOut.disabled = zoom === 0;
+      zoomIn.disabled = zoom === steps.length - 1;
+    };
+    zoomOut.addEventListener('click', () => {
+      zoom = Math.max(0, zoom - 1);
+      paintZoom();
+    });
+    zoomIn.addEventListener('click', () => {
+      zoom = Math.min(steps.length - 1, zoom + 1);
+      paintZoom();
+    });
+    paintZoom();
     openModal({
       title: product?.name ?? label('boPerbesarFoto'),
       body: el(
         'div',
-        { className: 'bo-pd-zoom' },
-        el('img', { attrs: { src: url, alt: product?.name ?? '' } }),
+        { className: 'bo-pd-zoombox' },
+        el('div', { className: 'bo-pd-zoombar' }, zoomOut, zoomIn),
+        stage,
       ),
       actions: [{ text: label('tutup'), variant: 'secondary' }],
     });
@@ -726,7 +756,8 @@ export function renderProducts(session: BoSession): ScreenHandle {
 
   // --- Pintasan papan ketik (hanya saat tab Data Barang tampil) ---
   const onKey = (event: KeyboardEvent): void => {
-    if (!screenActive(container)) {
+    // Pintasan tidak berlaku saat modal (Info, Cetak, foto, konfirmasi) terbuka di atas layar.
+    if (!screenActive(container) || document.querySelector('.modal-overlay') !== null) {
       return;
     }
     const key = event.key.toLowerCase();

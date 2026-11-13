@@ -2,6 +2,8 @@
 export const boBarangLabels = {
   produkErrSatuanGanda: 'Satuan tidak boleh sama dengan satuan lain pada barang ini.',
   produkErrKonversi: 'Isi angka konversi satuan lebih dari 0.',
+  produkErrSatuanDasarTetap:
+    'Satuan dasar barang yang sudah ada tidak dapat diganti. Tambahkan satuan lain atau buat barang baru.',
   produkErrKomisi: 'Komisi sales harus berupa persen 0 sampai 100.',
   produkErrPromo: 'Promo harus berupa persen 0 sampai 100.',
   produkErrKodePendek: 'Kode barang minimal 3 karakter.',
@@ -39,6 +41,7 @@ export const boBarangLabels = {
   infoStokRingkas: 'Stok: Toko {toko}, Gudang {gudang} ({satuan})',
   infoRak: 'No Rak: {rak}',
   infoSaldoAwal: 'Saldo awal: {tanggal}, {jumlah} {satuan}, nilai satuan {nilai}',
+  infoSaldoAwalTanpaNilai: 'Saldo awal: {tanggal}, {jumlah} {satuan}',
   infoTanpaSaldoAwal: 'Saldo awal: belum tercatat',
   // Cetak info barang
   cetakJudul: 'Cetak Info Barang',

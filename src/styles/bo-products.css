@@ -359,15 +359,45 @@
   clip-path: inset(50%);
 }
 
+.bo-pd-zoombox {
+  display: grid;
+  gap: 8px;
+}
+
+.bo-pd-zoombar {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
 .bo-pd-zoom {
   display: grid;
   place-items: center;
+  max-width: min(80vw, 720px);
+  max-height: 60vh;
+  overflow: auto;
 }
 
 .bo-pd-zoom img {
-  max-width: min(80vw, 720px);
-  max-height: 66vh;
+  width: min(80vw, 720px);
+  max-width: none;
+  max-height: none;
+  height: auto;
   object-fit: contain;
+}
+
+.bo-pd-zoom[data-zoom='1'] img {
+  max-height: 58vh;
+  width: auto;
+  max-width: min(80vw, 720px);
+}
+
+.bo-pd-zoom[data-zoom='2'] img {
+  width: calc(min(80vw, 720px) * 2);
+}
+
+.bo-pd-zoom[data-zoom='3'] img {
+  width: calc(min(80vw, 720px) * 3);
 }
 
 /* ===== Kanan: tombol, pencarian, daftar, matriks harga ===== */
