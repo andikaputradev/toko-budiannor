@@ -188,7 +188,8 @@ export function createLinesTable(options: LinesTableOptions): LinesTable {
 }
 
 export interface TotalsBoxOptions {
-  readonly onChange: () => void;
+  // `source` menyebut isian yang diketik, supaya pemanggil tahu Total Biaya diubah pengguna.
+  readonly onChange: (source: 'discount' | 'extra') => void;
 }
 
 export interface TotalsBox {
@@ -231,7 +232,9 @@ export function createTotalsBox(options: TotalsBoxOptions): TotalsBox {
       control,
     );
   for (const input of [discount, extra]) {
-    input.addEventListener('input', options.onChange);
+    input.addEventListener('input', () => {
+      options.onChange(input === extra ? 'extra' : 'discount');
+    });
     input.addEventListener('blur', () => {
       const value = parsePriceText(input.value);
       input.value = formatDecimal(Number.isFinite(value) && value > 0 ? value : 0, 2);

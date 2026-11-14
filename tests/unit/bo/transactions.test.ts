@@ -16,6 +16,8 @@ import {
   createPurchaseInvoiceDraft,
   getSupplierDebtInfo,
   importFromPurchaseOrder,
+  purchaseFromDocLine,
+  purchaseToDocLine,
 } from '../../../src/apps/bo/domain/purchase-transaction';
 import {
   createDefaultExpeditionFromInvoice,
@@ -164,6 +166,7 @@ describe('domain transaksi back-office (Tahap 4)', () => {
           quantity: 10,
           unitPrice: 200_000,
           discountExpr: '3+2.5', // 10 x 200.000 = 2.000.000 -> -3% = 1.940.000 -> -2.5% = 1.891.500
+          shipping: 0,
         },
       ];
       // Subtotal = 1.891.500
@@ -485,5 +488,76 @@ describe('baris faktur penjualan dan DocLine (gambar 9)', () => {
   it('himpunan SO yang sudah diimpor dan benih Surat Jalan dimulai kosong', () => {
     expect(importedSoNumbers.size).toBe(0);
     expect(expeditionSeeds.size).toBe(0);
+  });
+});
+
+describe('baris faktur pembelian dan DocLine (gambar 9, varian pembelian)', () => {
+  const invoiceLine = {
+    id: 'L-5',
+    productId: 'P-5',
+    productName: 'SEMEN GRESIK 40KG',
+    productCode: '0001',
+    destination: 'toko' as const,
+    unit: 'SAK',
+    quantity: 10,
+    unitPrice: 55_000,
+    discountExpr: '5%',
+    shipping: 5000,
+    lastPurchasePrice: 54_000,
+    lastPurchaseDate: '2026-09-12',
+  };
+
+  it('purchaseToDocLine memetakan tujuan masuk stok ke gudang dan membawa ongkos kirim', () => {
+    expect(purchaseToDocLine(invoiceLine)).toEqual({
+      id: 'L-5',
+      productId: 'P-5',
+      productName: 'SEMEN GRESIK 40KG',
+      code: '0001',
+      warehouse: 'toko',
+      unit: 'SAK',
+      quantity: 10,
+      unitPrice: 55_000,
+      discountExpr: '5%',
+      shipping: 5000,
+      koli: false,
+    });
+    expect(purchaseToDocLine({ ...invoiceLine, destination: 'gudang' }).warehouse).toBe('gudang');
+  });
+
+  it('purchaseFromDocLine membalik tanpa kehilangan nilai inti baris', () => {
+    const back = purchaseFromDocLine(purchaseToDocLine(invoiceLine));
+    expect(back).toMatchObject({
+      id: 'L-5',
+      productCode: '0001',
+      destination: 'toko',
+      unit: 'SAK',
+      quantity: 10,
+      unitPrice: 55_000,
+      discountExpr: '5%',
+      shipping: 5000,
+    });
+  });
+
+  it('baris hasil impor PO membawa ongkos kirim nol', () => {
+    const supplier = dataset.suppliers[0];
+    const product = dataset.products[0];
+    if (supplier === undefined || product === undefined) {
+      throw new Error('dataset kosong');
+    }
+    const draft = importFromPurchaseOrder(
+      {
+        id: 'PO-X',
+        number: 'PO26109999',
+        createdAt: '2026-10-19T03:00:00.000Z',
+        createdBy: 'U-1',
+        supplierId: supplier.id,
+        warehouse: 'besar',
+        lines: [{ productId: product.id, unit: product.baseUnit, quantity: 2, unitPrice: 1000 }],
+        total: 2000,
+        status: 'dipesan',
+      },
+      dataset,
+    );
+    expect(draft.lines[0]?.shipping).toBe(0);
   });
 });

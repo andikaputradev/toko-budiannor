@@ -50,7 +50,18 @@
 }
 
 .bo-trx .bo-trx-head__control {
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+}
+
+/* Awalan [data-app] menaikkan spesifisitas di atas min-width 150px bawaan isian tanggal BO. */
+[data-app='bo'] .bo-trx .bo-trx-head input[type='date'] {
+  width: 100%;
+  min-width: 0;
+  padding-right: 6px;
+  padding-left: 8px;
 }
 
 .bo-trx .bo-trx-head .input,

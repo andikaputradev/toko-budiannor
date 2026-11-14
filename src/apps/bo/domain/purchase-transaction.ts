@@ -1,4 +1,5 @@
 import type { Dataset, PurchaseOrder, Supplier } from '../../../shared/data/types';
+import type { DocLine } from './doc-line';
 import { calculateTieredDiscount } from './discount';
 
 export interface PurchaseInvoiceLine {
@@ -11,6 +12,8 @@ export interface PurchaseInvoiceLine {
   readonly quantity: number;
   readonly unitPrice: number;
   readonly discountExpr: string;
+  // Ongkos kirim barang ini (dialog Rincian Barang pembelian), Rupiah.
+  readonly shipping: number;
   readonly lastPurchasePrice?: number | undefined;
   readonly lastPurchaseDate?: string | undefined;
 }
@@ -100,6 +103,38 @@ export function createPurchaseInvoiceDraft(
   };
 }
 
+// Baris faktur pembelian dan baris dokumen bersama saling berubah bentuk.
+export function purchaseToDocLine(line: PurchaseInvoiceLine): DocLine {
+  return {
+    id: line.id,
+    productId: line.productId,
+    productName: line.productName,
+    code: line.productCode,
+    warehouse: line.destination,
+    unit: line.unit,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountExpr: line.discountExpr,
+    shipping: line.shipping,
+    koli: false,
+  };
+}
+
+export function purchaseFromDocLine(line: DocLine): PurchaseInvoiceLine {
+  return {
+    id: line.id,
+    productId: line.productId,
+    productName: line.productName,
+    productCode: line.code,
+    destination: line.warehouse,
+    unit: line.unit,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountExpr: line.discountExpr,
+    shipping: line.shipping,
+  };
+}
+
 export function getSupplierDebtInfo(supplier: Supplier): SupplierDebtInfo {
   const totalHutang = supplier.payable;
   // Perkiraan hutang jatuh tempo (50% dari hutang jika ada hutang)
@@ -124,6 +159,7 @@ export function importFromPurchaseOrder(po: PurchaseOrder, dataset: Dataset): Pu
       quantity: l.quantity,
       unitPrice: l.unitPrice,
       discountExpr: '',
+      shipping: 0,
       lastPurchasePrice: prod?.lastPurchasePrice ?? l.unitPrice,
       lastPurchaseDate: prod?.lastPurchaseDate ?? '2026-09-12',
     };

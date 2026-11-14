@@ -397,3 +397,130 @@ test.describe('T3 Faktur Penjualan (gambar 9)', () => {
     await expect(dialogOf(page).getByText('Harga Histori Jual')).toBeVisible();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Faktur Pembelian (gambar 9, varian pembelian)
+// ---------------------------------------------------------------------------
+
+test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
+  test('kepala berlabel sebaris, kartu Info Hutang Pemasok, tanpa Koli dan Isi SJ', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    const root = active(page);
+    for (const name of [
+      'Tanggal',
+      'Tgl Terima',
+      'No. Invoice',
+      'No. PO',
+      'No. Faktur Pemasok',
+      'Pemasok',
+      'Alamat',
+      'Telepon',
+      'Syarat Bayar',
+      'Tempo',
+      'Metode Pembayaran',
+      'Keterangan',
+    ]) {
+      await expect(root.getByLabel(name).first()).toBeVisible();
+    }
+    const card = root.locator('.bo-trx-head__aside');
+    await expect(card).toContainText('Info Hutang Pemasok');
+    await expect(card.getByText('Total Hutang')).toBeVisible();
+    await expect(card.getByText('Hutang Jatuh Tempo')).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Isi SJ Ekspedisi' })).toHaveCount(0);
+    expect(await root.locator('.bo-trx-table--lines thead th').allTextContents()).toEqual([
+      'Urut',
+      'Nama Barang',
+      'Kode #',
+      'Gudang',
+      'Kuantitas',
+      'Satuan',
+      '@Harga',
+      'Diskon',
+      'Total Harga',
+    ]);
+    await expect(countText(page)).toHaveText('0 Barang (0)');
+    await root.getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await expect(root.getByLabel('Telepon')).not.toHaveValue('');
+  });
+
+  test('Rincian Barang pembelian memuat Ongkos Kirim dan Harga Histori Beli untuk Owner', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    await expect(dialog.getByLabel('Ongkos Kirim')).toBeVisible();
+    await expect(dialog.getByText('Harga Histori Beli')).toBeVisible();
+    await expect(dialog.getByText('Harga Histori Jual')).toHaveCount(0);
+  });
+
+  test('Supervisor mengisi harga sendiri tetapi tidak melihat riwayat harga beli', async ({
+    page,
+  }) => {
+    await loginBo(page, SUPERVISOR);
+    await openPage(page, '/bo/pembelian');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    await expect(dialog.getByLabel('@Harga')).toBeVisible();
+    await expect(dialog.getByLabel('Ongkos Kirim')).toBeVisible();
+    await expect(dialog.getByText('Harga Histori Beli')).toHaveCount(0);
+    await dialog.getByLabel('Kuantitas', { exact: true }).fill('2');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(countText(page)).toHaveText('1 Barang (2)');
+    await expect(rowsOf(page).first().locator('td').nth(6)).toHaveText(/\d/);
+  });
+
+  test('Ongkos Kirim per baris otomatis masuk Total Biaya sampai pengguna mengubahnya', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    await dialog.getByLabel('Kuantitas', { exact: true }).fill('1');
+    await dialog.getByLabel('Ongkos Kirim').fill('5000');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    const totals = active(page).locator('.bo-trx-totals');
+    await expect(totals.getByLabel('Total Biaya')).toHaveValue('5.000');
+    const sub = rupiah(await totals.locator('.bo-trx-totals__value').first().textContent());
+    await expect(totals.locator('.bo-trx-totals__value.is-total')).toHaveText(
+      `Rp ${idr(sub + 5000)}`,
+    );
+    await totals.getByLabel('Total Biaya').fill('7000');
+    await addItem(page, 'semen', '1', 1);
+    await expect(totals.getByLabel('Total Biaya')).toHaveValue(/^7\.?000$/);
+  });
+
+  test('Simpan tanpa barang ditolak; dengan barang berhasil', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Faktur pembelian belum memiliki item barang.')).toBeVisible();
+    await addItem(page, 'semen', '1');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText(/Faktur Pembelian FB\d+ berhasil disimpan\./)).toBeVisible();
+  });
+
+  test('muat satu layar di 1280x640: tabel punya ruang, halaman tidak menggulir', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    for (let index = 0; index < 8; index += 1) {
+      await addItem(page, 'semen', '1', index % 8);
+    }
+    await expect(rowsOf(page)).toHaveCount(8);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+  });
+});
