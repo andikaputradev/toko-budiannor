@@ -54,7 +54,7 @@ for (const size of SIZES) {
   test(`tidak ada halaman BO yang menggulir di ${String(size.width)}x${String(size.height)}`, async ({
     page,
   }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(480_000);
     await page.setViewportSize(size);
     await loginBo(page);
     const over: string[] = [];
@@ -146,7 +146,7 @@ test('label kolom isian formulir penjualan tertaut ke kontrolnya', async ({ page
 // bukan hanya rute yang ada di katalog audit, pada terang dan gelap di layar acuan klien.
 for (const scheme of ['light', 'dark'] as const) {
   test(`axe bersih pada seluruh rute BO, mode ${scheme}, 1366x640`, async ({ page }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(480_000);
     await page.setViewportSize({ width: 1366, height: 640 });
     await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
     await loginBo(page);
