@@ -416,7 +416,8 @@
   font-size: 13px;
 }
 
-/* Panel Simulasi (peluncur ulasan) tidak boleh menutupi menu: sisakan jalur di dasar laci. */
+/* Panel Simulasi (peluncur ulasan) tidak boleh menutupi menu: sisakan jalur di dasar laci. Pada
+   layar lebar peluncur ada di header, jadi jalur itu tidak diperlukan (lihat blok min-width 1100px). */
 body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   padding-bottom: 56px;
 }
@@ -437,6 +438,29 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
 
 [data-app='bo'] .sim__body {
   max-height: calc(100dvh - 72px);
+}
+
+/* Layar lebar: peluncur pindah ke ruang kosong di tengah header supaya tidak menutupi isi halaman
+   (pojok kiri bawah dipakai tabel dan tombol). Di bawah 1100 px header terlalu rapat, jadi peluncur
+   tetap di pojok kiri bawah. */
+@media (min-width: 1100px) {
+  body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
+    padding-bottom: var(--primitive-space-3);
+  }
+
+  [data-app='bo'] .toast-host {
+    bottom: var(--primitive-space-4);
+  }
+
+  [data-app='bo'] .sim {
+    top: 8px;
+    bottom: auto;
+    left: calc(50% - 64px);
+  }
+
+  [data-app='bo'] .sim__launcher {
+    border-radius: var(--radius-control);
+  }
 }
 
 /* ===== Pilih tema dan mode ===== */

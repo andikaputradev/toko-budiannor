@@ -248,8 +248,11 @@
 }
 
 [data-app='bo'] .bo-dep-stat {
-  gap: 2px;
-  padding: 6px 12px;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px;
 }
 
 [data-app='bo'] .bo-dep-stat__value {
@@ -309,6 +312,218 @@
   gap: 10px;
   padding: 12px 16px;
   overflow: visible;
+}
+
+/* Retur: kolom kiri memuat Faktur Asal (satu baris isian) dan tabel barang yang mengisi sisa tinggi;
+   kolom kanan bergantian antara Penyelesaian dan Daftar Retur. Tidak ada gulir halaman maupun gulir
+   kolom: hanya tabel barang dan daftar retur yang menggulir di dalam kotaknya. */
+[data-app='bo'] .bo-ret-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(420px, 40vw, 520px);
+}
+
+[data-app='bo'] .bo-ret-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+}
+
+[data-app='bo'] .bo-ret-main > .bo-ret-card:last-child {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+[data-app='bo'] .bo-ret-main .bo-ret-table-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+[data-app='bo'] .bo-ret-table th {
+  height: 38px;
+}
+
+[data-app='bo'] .bo-ret-table td {
+  height: 48px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+[data-app='bo'] .bo-ret-source {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.1fr);
+  gap: 8px 12px;
+}
+
+[data-app='bo'] .bo-ret-source > .field:last-child {
+  grid-column: auto;
+  max-width: none;
+}
+
+[data-app='bo'] .bo-ret-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 16px;
+  padding: 6px 14px;
+}
+
+[data-app='bo'] .bo-ret-fact {
+  gap: 0;
+}
+
+[data-app='bo'] .bo-ret-fact dt {
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-ret-fact dd {
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-ret-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-ret-aside__modes {
+  flex: none;
+}
+
+[data-app='bo'] .bo-ret-aside__modes .bo-dep-seg__item {
+  flex: 1 1 0;
+}
+
+[data-app='bo'] .bo-ret-aside > [hidden] {
+  display: none;
+}
+
+[data-app='bo'] .bo-ret-aside > .bo-ret-card,
+[data-app='bo'] .bo-ret-aside > .bo-ret-side {
+  position: static;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+[data-app='bo'] .bo-ret-aside .bo-ret-card__title {
+  font-size: 16px;
+}
+
+[data-app='bo'] .bo-ret-aside .bo-ret-settle {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+[data-app='bo'] .bo-ret-settle__fields {
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-ret-pair {
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-ret-reason {
+  min-height: 52px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-ret-chips {
+  gap: 6px;
+  margin-top: 6px;
+}
+
+[data-app='bo'] .bo-ret-reason-chip {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-ret-summary {
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+[data-app='bo'] .bo-ret-total {
+  padding: 6px 12px;
+}
+
+[data-app='bo'] .bo-ret-total__value {
+  font-size: 22px;
+}
+
+[data-app='bo'] .bo-ret-impact {
+  gap: 4px;
+}
+
+/* Deposit: kartu saldo dipadatkan dan formulir setor memakai dua baris (Tanggal, Cara Bayar, Jumlah;
+   lalu Keterangan dan tombol) supaya panel kanan muat tanpa gulir pada layar 640 px. */
+[data-app='bo'] .bo-dep-tiles {
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-dep-tile {
+  gap: 0;
+  padding: 8px 14px;
+}
+
+[data-app='bo'] .bo-dep-tile strong {
+  font-size: 19px;
+}
+
+[data-app='bo'] .bo-dep-form--topup {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px 10px;
+  align-items: end;
+}
+
+[data-app='bo'] .bo-dep-form--topup > .bo-dep-form__row {
+  display: contents;
+}
+
+[data-app='bo'] .bo-dep-form--topup .bo-dep-form__row > *,
+[data-app='bo'] .bo-dep-form--topup > .field:nth-child(2) {
+  grid-column: span 2;
+}
+
+[data-app='bo'] .bo-dep-form--topup > .field:nth-child(3) {
+  grid-column: span 4;
+}
+
+[data-app='bo'] .bo-dep-form--topup > .bo-dep-error {
+  grid-column: 1 / -1;
+}
+
+[data-app='bo'] .bo-dep-form--topup > .bo-dep-actions {
+  grid-column: span 2;
+}
+
+[data-app='bo'] .bo-dep-form--topup .bo-dep-amount .input {
+  font-size: 16px;
+}
+
+/* Nama dan kode pelanggan satu baris; riwayat mutasi di bawah formulir butuh ruang. */
+[data-app='bo'] .bo-dep-person > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+}
+
+[data-app='bo'] .bo-dep-person__meta {
+  margin: 0;
+}
+
+@media (max-height: 700px) {
+  [data-app='bo'] .bo-dep-head .bo-ret-sub {
+    display: none;
+  }
+
+  [data-app='bo'] .bo-dep-head {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
 }
 
 /* ===== Surat jalan: daftar koli mengisi sisa tinggi, tanda tangan dipadatkan ===== */

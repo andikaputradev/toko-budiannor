@@ -36,7 +36,7 @@
 .bo-trx .bo-trx-head__grid {
   display: grid;
   flex: 1 1 auto;
-  grid-template-columns: repeat(var(--head-cols, 3), max-content minmax(0, 1fr));
+  grid-template-columns: var(--head-tpl, repeat(var(--head-cols, 3), max-content minmax(0, 1fr)));
   gap: 6px 10px;
   align-items: center;
   min-width: 0;
@@ -74,9 +74,19 @@
   font-size: 14px;
 }
 
+/* Pilihan di kepala dokumen: bantalan panah dirapatkan supaya teks pilihan ("KAS TOKO", "-- Pilih
+   Pelanggan --") tidak terpotong pada kolom yang sempit. */
+.bo-trx .bo-trx-head select.input {
+  padding-right: 28px;
+  padding-left: 8px;
+  background-position:
+    calc(100% - 15px) calc(50% - 1px),
+    calc(100% - 9px) calc(50% - 1px);
+}
+
 .bo-trx .bo-trx-head__aside {
   flex: none;
-  width: 250px;
+  width: 226px;
 }
 
 .bo-trx .bo-trx-head__aside .bo-credit-box {
@@ -325,6 +335,13 @@
 .bo-trx-table__empty td {
   height: 56px;
   color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.bo-trx-table__hint td {
+  padding: 0 12px 24px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
   text-align: center;
 }
 

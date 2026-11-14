@@ -219,6 +219,7 @@ export function renderOrderForm(
     ],
     undefined,
     copy.judul,
+    [0.9, 1.3, 0.8, 1.5],
   );
 
   // --- Barang dan total ---

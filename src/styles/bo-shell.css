@@ -106,11 +106,13 @@
   display: none;
 }
 
+/* Tab tidak menyusut: judul selalu terbaca, tab berlebih digeser mendatar (roda tetikus juga
+   menggeser) dan seluruh tab terbuka tetap terdaftar di tombol jumlah. */
 .bo-tab {
   display: flex;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   align-items: center;
-  min-width: 96px;
+  min-width: 132px;
   max-width: 220px;
   height: 36px;
   border: 1px solid var(--color-border-default);

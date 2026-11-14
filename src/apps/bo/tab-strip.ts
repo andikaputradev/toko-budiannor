@@ -72,6 +72,18 @@ export function createTabStrip(options: { onClose(key: string): void }): TabStri
   document.addEventListener('click', onDocumentClick);
   document.addEventListener('keydown', onKeydown);
 
+  // Roda tetikus vertikal di atas bilah menggeser tab mendatar.
+  list.addEventListener(
+    'wheel',
+    (event) => {
+      if (list.scrollWidth > list.clientWidth && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        list.scrollLeft += event.deltaY;
+        event.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+
   let activeLink: HTMLElement | undefined;
 
   const scrollToActive = (item: HTMLElement): void => {
@@ -92,7 +104,7 @@ export function createTabStrip(options: { onClose(key: string): void }): TabStri
         'a',
         {
           className: 'bo-tab__link',
-          attrs: { href: `#${entry.path}`, 'aria-current': active ? 'page' : false },
+          attrs: { href: `#${entry.path}`, 'aria-current': active ? 'page' : false, title },
         },
         el('span', { className: 'bo-tab__title', text: title }),
       );

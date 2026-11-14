@@ -149,6 +149,7 @@ export function renderPurchaseForm(
     ],
     aside,
     TEXT.kepala,
+    [1.05, 1.2, 0.95, 1.1],
   );
 
   // --- Barang dan total ---

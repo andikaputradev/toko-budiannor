@@ -22,10 +22,18 @@ export function createDocHead(
   fields: readonly HeadField[],
   aside?: HTMLElement,
   title?: string,
+  // Bobot lebar tiap kolom isian (label tetap selebar teksnya); tanpa bobot semua kolom sama lebar.
+  weights?: readonly number[],
 ): DocHead {
   const columns = Math.max(1, ...fields.map((item) => item.col + (item.span ?? 1) - 1));
   const grid = el('div', { className: 'bo-trx-head__grid' });
   grid.style.setProperty('--head-cols', String(columns));
+  if (weights?.length === columns) {
+    grid.style.setProperty(
+      '--head-tpl',
+      weights.map((weight) => `max-content minmax(0, ${String(weight)}fr)`).join(' '),
+    );
+  }
   const controls: Record<string, HTMLElement> = {};
   for (const item of fields) {
     if (item.control.id === '') {

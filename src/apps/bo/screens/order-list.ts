@@ -173,6 +173,19 @@ export function renderOrderList(
           { className: 'bo-trx-table__empty' },
           el('td', { text: none ? TEXT.kosong : TEXT.tidakCocok, attrs: { colspan: '6' } }),
         ),
+        // Petunjuk langkah pertama hanya saat belum ada pesanan sama sekali (bukan saat filter kosong).
+        ...(none
+          ? [
+              el(
+                'tr',
+                { className: 'bo-trx-table__hint' },
+                el('td', {
+                  text: `Klik "${copy.buat}" untuk membuat pesanan pertama.`,
+                  attrs: { colspan: '6' },
+                }),
+              ),
+            ]
+          : []),
       );
       return;
     }

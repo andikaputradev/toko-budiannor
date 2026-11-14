@@ -396,19 +396,55 @@ export function renderReturnForm(
   );
 
   const list = createReturnList(session, kind);
-  const main = el(
+  const main = el('div', { className: 'bo-ret-main' }, errorHost, sourceCard, itemsCard);
+  // Panel kanan menampilkan Penyelesaian atau Daftar Retur bergantian: layar 640 px tidak memuat
+  // keduanya bertumpuk tanpa gulir. Memilih faktur atau gagal simpan membuka Penyelesaian; simpan
+  // berhasil membuka daftar supaya nota yang baru tampak.
+  type AsideMode = 'selesai' | 'daftar';
+  const asideButtons = new Map<AsideMode, HTMLButtonElement>();
+  const asideButton = (mode: AsideMode, text: string): HTMLButtonElement => {
+    const button = el('button', {
+      className: 'bo-dep-seg__item',
+      text,
+      attrs: { type: 'button', 'aria-pressed': String(mode === 'selesai') },
+    });
+    button.addEventListener('click', () => {
+      showAside(mode);
+    });
+    asideButtons.set(mode, button);
+    return button;
+  };
+  const showAside = (mode: AsideMode): void => {
+    settleCard.hidden = mode !== 'selesai';
+    list.element.hidden = mode !== 'daftar';
+    for (const [key, button] of asideButtons) {
+      button.setAttribute('aria-pressed', String(key === mode));
+    }
+  };
+  const aside = el(
     'div',
-    { className: 'bo-ret-main' },
-    errorHost,
-    sourceCard,
-    itemsCard,
+    { className: 'bo-ret-aside' },
+    el(
+      'div',
+      {
+        className: 'bo-dep-seg bo-ret-aside__modes',
+        attrs: { role: 'group', 'aria-label': label('boReturPenyelesaian') },
+      },
+      asideButton('selesai', label('boReturPenyelesaian')),
+      asideButton(
+        'daftar',
+        label(kind === 'penjualan' ? 'boReturDaftarPenjualan' : 'boReturDaftarPembelian'),
+      ),
+    ),
     settleCard,
+    list.element,
   );
+  showAside('selesai');
   const container = el(
     'div',
     { className: 'bo-form-page bo-ret' },
     head,
-    el('div', { className: 'bo-ret-layout' }, main, list.element),
+    el('div', { className: 'bo-ret-layout' }, main, aside),
   );
 
   // ---------- Perilaku ----------
@@ -609,6 +645,7 @@ export function renderReturnForm(
   function loadSource(number: string): void {
     source = sources.find((item) => item.number === number);
     warehouseTouched = false;
+    showAside('selesai');
     renderFacts();
     renderRows();
     renderSettlementOptions();
@@ -678,6 +715,7 @@ export function renderReturnForm(
       warehouse: selectedWarehouse(),
     });
     if (!result.ok) {
+      showAside('selesai');
       showError(result.text);
       const target =
         result.index === undefined
@@ -700,6 +738,7 @@ export function renderReturnForm(
     });
     reset(true);
     list.refresh();
+    showAside('daftar');
     openReturnNote(session, result.note);
   }
 

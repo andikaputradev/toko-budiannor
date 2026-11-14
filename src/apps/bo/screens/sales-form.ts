@@ -165,6 +165,7 @@ export function renderSalesForm(
     ],
     aside,
     TEXT.kepala,
+    [1.1, 1.25, 1, 0.9],
   );
 
   // --- Barang dan total ---

@@ -416,7 +416,7 @@ export function renderDeposit(session: BoSession): ScreenHandle {
     });
     return el(
       'div',
-      { className: 'bo-dep-form' },
+      { className: 'bo-dep-form bo-dep-form--topup' },
       el(
         'div',
         { className: 'bo-dep-form__row' },

@@ -42,8 +42,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 34px;
-  padding-bottom: 4px;
+  min-height: 32px;
+  padding-bottom: 3px;
   border-bottom: 1px solid var(--color-border-default);
 }
 
@@ -82,7 +82,7 @@
   flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
-  padding-top: 6px;
+  padding-top: 4px;
 }
 
 /* ===== Kontrol kecil ===== */
@@ -156,7 +156,7 @@
   color: var(--color-text-primary);
   font-size: 11.5px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -419,7 +419,13 @@
 
 /* ===== Peringkat dan Monitoring HPP ===== */
 .bo-dx-rank {
-  gap: 4px;
+  gap: 2px;
+}
+
+/* Panah periode lebih pendek supaya tiga peringkat teratas tampak utuh pada layar 640 px. */
+.bo-dx-period .bo-dx-icon-btn {
+  width: 24px;
+  height: 20px;
 }
 
 .bo-dx-period {
@@ -434,10 +440,10 @@
 
 .bo-dx-rank__item {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .bo-dx-rank__main {
@@ -450,6 +456,7 @@
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
+  line-height: 1.25;
 }
 
 .bo-dx-rank__name {
@@ -471,7 +478,7 @@
 .bo-dx-bar {
   display: block;
   height: 4px;
-  margin-top: 3px;
+  margin-top: 2px;
   overflow: hidden;
   border-radius: 2px;
   background: var(--bo-surface-soft);
@@ -500,8 +507,8 @@
 .bo-dx-medal {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   color: var(--color-text-secondary);
   font-size: 12px;

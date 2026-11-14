@@ -302,30 +302,27 @@ export function renderMasterData(
                   : `bo-master__metric is-${metric.tone}`,
             },
             el('dt', { text: label(metric.label) }),
-            el('dd', { text: metric.value }),
+            // Capaian Sales: batang kemajuan menggantikan angka polos di kartu yang sama, bukan baris tambahan.
+            row.progress !== undefined && metric.label === 'masterMetCapaian'
+              ? el(
+                  'dd',
+                  { className: 'bo-master__progress' },
+                  el('progress', {
+                    attrs: {
+                      max: '100',
+                      value: String(row.progress),
+                      'aria-label': label('masterMetCapaian'),
+                    },
+                  }),
+                  el('strong', { text: metric.value }),
+                )
+              : el('dd', { text: metric.value }),
           ),
         ),
       ),
     );
-    if (row.progress !== undefined) {
-      summary.append(
-        el(
-          'div',
-          { className: 'bo-master__progress' },
-          el('span', { text: label('masterMetCapaian') }),
-          el('progress', {
-            attrs: {
-              max: '100',
-              value: String(row.progress),
-              'aria-label': label('masterMetCapaian'),
-            },
-          }),
-          el('strong', { text: `${String(row.progress)}%` }),
-        ),
-      );
-      if (row.usage === 0) {
-        summary.append(el('p', { className: 'bo-master__hint', text: label('masterSalesKosong') }));
-      }
+    if (row.progress !== undefined && row.usage === 0) {
+      summary.append(el('p', { className: 'bo-master__hint', text: label('masterSalesKosong') }));
     }
   };
 
