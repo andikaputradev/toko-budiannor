@@ -757,3 +757,144 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
     await expect(orderList(page).getByRole('button', { name: 'Buat SO Baru' })).toBeVisible();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Surat Jalan Ekspedisi dan Packing Koli (gambar 13)
+// ---------------------------------------------------------------------------
+
+test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
+  const sjRows = (page: Page): Locator =>
+    active(page).locator('.bo-trx-table--lines tbody tr[data-id]');
+
+  async function openFromFaktur(page: Page): Promise<void> {
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'semen', '10');
+    await addItem(page, 'semen', '15', 1);
+    await rowsOf(page).nth(0).getByRole('checkbox').check();
+    await rowsOf(page).nth(1).getByRole('checkbox').check();
+    await active(page).getByRole('button', { name: 'Isi SJ Ekspedisi' }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?inv=FJ\d+$/);
+    await expect(sjRows(page)).toHaveCount(2);
+  }
+
+  test('baris awal berasal dari barang Koli faktur dan kepala memuat data faktur', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openFromFaktur(page);
+    const root = active(page);
+    await expect(
+      root.getByRole('heading', { name: 'Surat Jalan Ekspedisi & Packing Koli' }),
+    ).toBeVisible();
+    await expect(root.getByLabel('No. Surat Jalan')).toHaveValue(/^SJ26/);
+    await expect(root.getByLabel('Faktur Penjualan')).toHaveValue(/^FJ\d+$/);
+    await expect(root.getByLabel('Nama Ekspedisi')).toHaveValue('JNE Cargo');
+    for (const name of ['Tanggal', 'No. Polisi / Driver', 'Penerima & Alamat Kirim']) {
+      await expect(root.getByLabel(name)).toBeVisible();
+    }
+    expect(await root.locator('.bo-trx-table--lines thead th').allTextContents()).toEqual([
+      'Jumlah',
+      'Satuan',
+      'Nama Barang',
+    ]);
+    await expect(sjRows(page).first().locator('td').nth(0)).toHaveText('10');
+    for (const name of ['Simpan', 'Batal', 'Hapus']) {
+      await expect(root.getByRole('button', { name, exact: true })).toBeVisible();
+    }
+    for (const name of ['Jumlah', 'Satuan', 'Nama Koli Barang']) {
+      await expect(root.getByLabel(name, { exact: true })).toBeVisible();
+    }
+  });
+
+  test('Simpan menambah baris; klik baris memuatnya untuk diubah; Hapus dan Batal bekerja', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openFromFaktur(page);
+    const root = active(page);
+    await root.getByLabel('Jumlah', { exact: true }).fill('20');
+    await root.getByLabel('Satuan', { exact: true }).fill('krg');
+    await root.getByLabel('Nama Koli Barang').fill('baut unc 3/8 x 7 @50kg');
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(sjRows(page)).toHaveCount(3);
+    await expect(sjRows(page).nth(2).locator('td').nth(1)).toHaveText('KRG');
+    await expect(sjRows(page).nth(2).locator('td').nth(2)).toContainText('BAUT UNC');
+    await expect(root.getByLabel('Jumlah', { exact: true })).toHaveValue('');
+
+    await sjRows(page).nth(2).click();
+    await expect(root.getByLabel('Jumlah', { exact: true })).toHaveValue('20');
+    await expect(root.getByLabel('Satuan', { exact: true })).toHaveValue('KRG');
+    await root.getByLabel('Jumlah', { exact: true }).fill('25');
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(sjRows(page)).toHaveCount(3);
+    await expect(sjRows(page).nth(2).locator('td').nth(0)).toHaveText('25');
+
+    await sjRows(page).nth(2).click();
+    await root.getByRole('button', { name: 'Batal', exact: true }).click();
+    await expect(root.getByLabel('Jumlah', { exact: true })).toHaveValue('');
+    await expect(sjRows(page)).toHaveCount(3);
+
+    await root.getByRole('button', { name: 'Hapus', exact: true }).click();
+    await expect(page.getByText('Pilih baris koli yang akan dihapus.')).toBeVisible();
+    await sjRows(page).nth(2).click();
+    await root.getByRole('button', { name: 'Hapus', exact: true }).click();
+    await expect(sjRows(page)).toHaveCount(2);
+  });
+
+  test('jumlah nol, satuan kosong, atau nama kosong ditolak dengan pesan', async ({ page }) => {
+    await loginBo(page);
+    await openFromFaktur(page);
+    const root = active(page);
+    await root.getByLabel('Jumlah', { exact: true }).fill('0');
+    await root.getByLabel('Satuan', { exact: true }).fill('KRG');
+    await root.getByLabel('Nama Koli Barang').fill('BAUT');
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Isi jumlah lebih dari 0.')).toBeVisible();
+    await root.getByLabel('Jumlah', { exact: true }).fill('2');
+    await root.getByLabel('Satuan', { exact: true }).fill('');
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Isi satuan.')).toBeVisible();
+    await root.getByLabel('Satuan', { exact: true }).fill('KRG');
+    await root.getByLabel('Nama Koli Barang').fill('');
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Isi nama koli barang.')).toBeVisible();
+    await expect(sjRows(page)).toHaveCount(2);
+  });
+
+  test('tombol Isi Data Faktur Penjualan kembali ke faktur', async ({ page }) => {
+    await loginBo(page);
+    await openFromFaktur(page);
+    await active(page).getByRole('button', { name: 'Isi Data Faktur Penjualan' }).click();
+    await expect(page).toHaveURL(/#\/bo\/penjualan$/);
+  });
+
+  test('dibuka langsung tanpa faktur menampilkan contoh gambar 13', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/surat-jalan');
+    await expect(sjRows(page)).toHaveCount(3);
+    await expect(active(page).getByLabel('Penerima & Alamat Kirim')).not.toHaveValue('');
+  });
+
+  test('muat satu layar di 1280x640 dengan banyak baris', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/surat-jalan');
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
+    for (let index = 0; index < 12; index += 1) {
+      await active(page)
+        .getByLabel('Jumlah', { exact: true })
+        .fill(String(index + 1));
+      await active(page).getByLabel('Satuan', { exact: true }).fill('KRG');
+      await active(page)
+        .getByLabel('Nama Koli Barang')
+        .fill(`BARANG ${String(index + 1)}`);
+      await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    }
+    await expect(sjRows(page)).toHaveCount(15);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    expect(await lines.evaluate((node) => node.scrollHeight - node.clientHeight)).toBeGreaterThan(
+      0,
+    );
+  });
+});

@@ -20,10 +20,6 @@ import {
   purchaseToDocLine,
 } from '../../../src/apps/bo/domain/purchase-transaction';
 import {
-  createDefaultExpeditionFromInvoice,
-  addKoliPackage,
-} from '../../../src/apps/bo/domain/expedition';
-import {
   buildTransactionRows,
   calculateTransactionAgeDays,
   computeTransactionMetrics,
@@ -208,66 +204,6 @@ describe('domain transaksi back-office (Tahap 4)', () => {
       expect(draft.supplierId).toBe(supplier.id);
       expect(draft.lines).toHaveLength(1);
       expect(draft.lines[0]?.quantity).toBe(50);
-    });
-  });
-
-  describe('Surat Jalan Ekspedisi & Koli (forn-surat-jalan-ekspedisi.png)', () => {
-    it('mengelompokkan barang ke dalam packing koli secara otomatis', () => {
-      const salesDraft = {
-        ...createSalesInvoiceDraft(dataset, '2026-10-25'),
-        invoiceNumber: 'FJ26101234',
-        customerName: 'Bu Sherly Tjoandra',
-        customerAddress: 'Jl. Rajawali No 17',
-        customerPhone: '0811230988',
-        expedition: 'JNE Cargo',
-        lines: [
-          {
-            id: '1',
-            productId: 'P-1',
-            productName: 'Kuas Roll',
-            aliasName: '',
-            warehouse: 'toko' as const,
-            unit: 'PCS',
-            quantity: 5,
-            unitPrice: 20000,
-            discountExpr: '',
-          },
-          {
-            id: '2',
-            productId: 'P-2',
-            productName: 'Obeng Bolak Balik',
-            aliasName: '',
-            warehouse: 'toko' as const,
-            unit: 'PCS',
-            quantity: 3,
-            unitPrice: 35000,
-            discountExpr: '',
-          },
-        ],
-      };
-
-      const sj = createDefaultExpeditionFromInvoice(salesDraft);
-      expect(sj.noteNumber).toMatch(/^SJ26/);
-      expect(sj.invoiceNumber).toBe('FJ26101234');
-      expect(sj.totalKoli).toBeGreaterThanOrEqual(1);
-    });
-
-    it('mendukung penambahan koli baru (barang campur)', () => {
-      const initial = createDefaultExpeditionFromInvoice(
-        createSalesInvoiceDraft(dataset, '2026-10-25'),
-      );
-      const updated = addKoliPackage(initial, {
-        koliIndex: 2,
-        packageType: 'Karung',
-        title: 'Barang Campur (Kuas / Obeng / Engsel)',
-        weightKg: 15,
-        items: [
-          { name: 'Kuas Roll', quantity: 5, unit: 'PCS' },
-          { name: 'Engsel Bellucci', quantity: 10, unit: 'SET' },
-        ],
-      });
-      expect(updated.koliList).toHaveLength(initial.koliList.length + 1);
-      expect(updated.totalKoli).toBe(initial.totalKoli + 1);
     });
   });
 

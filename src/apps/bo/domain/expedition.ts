@@ -1,35 +1,29 @@
-import type { SalesInvoiceDraft } from './sales-transaction';
+import { nextLineId } from './doc-line';
+import { parseQuantityText } from './line-detail';
 
-export interface KoliItem {
-  readonly name: string;
+export { expeditionSeeds, type ExpeditionSeed } from './session-drafts';
+
+// Surat Jalan Ekspedisi dan Packing Koli (gambar klien 13): tabel datar Jumlah, Satuan, Nama Barang.
+export interface ExpeditionLine {
+  readonly id: string;
   readonly quantity: number;
   readonly unit: string;
-}
-
-export interface KoliPackage {
-  readonly koliIndex: number;
-  readonly packageType: string;
-  readonly title: string;
-  readonly weightKg: number;
-  readonly items: readonly KoliItem[];
+  readonly name: string;
 }
 
 export interface ExpeditionNote {
   readonly noteNumber: string;
   readonly invoiceNumber: string;
   readonly date: string;
+  // Driver dan nomor polisi dalam satu isian, mis. "Pak Budi (DA 8812 PB)".
+  readonly vehicle: string;
   readonly expeditionName: string;
-  readonly driverName: string;
-  readonly vehiclePlate: string;
-  readonly recipientName: string;
-  readonly destinationAddress: string;
-  readonly recipientPhone: string;
-  readonly koliList: readonly KoliPackage[];
-  readonly totalKoli: number;
-  readonly totalWeightKg: number;
+  // "Nama - Alamat (Telepon)"; bagian yang kosong dilewati.
+  readonly recipient: string;
+  readonly lines: readonly ExpeditionLine[];
 }
 
-export { expeditionSeeds, type ExpeditionSeed } from './session-drafts';
+export type LineIssue = 'ok' | 'quantity' | 'unit' | 'name';
 
 let sjCounter = 58;
 
@@ -38,59 +32,90 @@ export function generateExpeditionNoteNumber(): string {
   return `SJ2610${String(sjCounter).padStart(4, '0')}`;
 }
 
-export function createDefaultExpeditionFromInvoice(
-  invoice: SalesInvoiceDraft,
-  date = invoice.date,
+function recipientText(invoice: {
+  readonly customerName: string;
+  readonly customerAddress: string;
+  readonly customerPhone: string;
+}): string {
+  const name = invoice.customerName.trim();
+  const address = invoice.customerAddress.trim();
+  const phone = invoice.customerPhone.trim();
+  const base = [name, address].filter((part) => part !== '').join(' - ');
+  return phone === '' ? base : `${base} (${phone})`.trim();
+}
+
+// Catatan baru dari faktur: satu baris datar per barang yang ditandai Koli di Faktur Penjualan.
+export function createExpeditionNote(
+  invoice: {
+    readonly invoiceNumber: string;
+    readonly date: string;
+    readonly expedition: string;
+    readonly customerName: string;
+    readonly customerAddress: string;
+    readonly customerPhone: string;
+  },
+  koliLines: readonly {
+    readonly productName: string;
+    readonly quantity: number;
+    readonly unit: string;
+  }[],
 ): ExpeditionNote {
-  const noteNumber = generateExpeditionNoteNumber();
-
-  // Buat default koli dari baris faktur
-  const items: KoliItem[] = invoice.lines.map((l) => ({
-    name: l.productName,
-    quantity: l.quantity,
-    unit: l.unit,
-  }));
-
-  const defaultKoli: KoliPackage = {
-    koliIndex: 1,
-    packageType: 'Dus / Campur',
-    title:
-      items.length > 0
-        ? `Barang Campur (${items
-            .map((i) => i.name)
-            .slice(0, 3)
-            .join(' / ')})`
-        : 'Barang Campur',
-    weightKg: Math.max(
-      5,
-      items.reduce((acc, curr) => acc + curr.quantity * 2, 0),
-    ),
-    items,
-  };
-
   return {
-    noteNumber,
+    noteNumber: generateExpeditionNoteNumber(),
     invoiceNumber: invoice.invoiceNumber,
-    date,
-    expeditionName: invoice.expedition || 'JNE Cargo',
-    driverName: 'Pak Budi',
-    vehiclePlate: 'DA 8812 PB',
-    recipientName: invoice.customerName || 'Pelanggan',
-    destinationAddress: invoice.customerAddress || 'Alamat Proyek',
-    recipientPhone: invoice.customerPhone || '',
-    koliList: items.length > 0 ? [defaultKoli] : [],
-    totalKoli: items.length > 0 ? 1 : 0,
-    totalWeightKg: items.length > 0 ? defaultKoli.weightKg : 0,
+    date: invoice.date,
+    vehicle: 'Pak Budi (DA 8812 PB)',
+    expeditionName: invoice.expedition === '' ? 'JNE Cargo' : invoice.expedition,
+    recipient: recipientText(invoice),
+    lines: koliLines.map((line) => ({
+      id: nextLineId(),
+      quantity: line.quantity,
+      unit: line.unit,
+      name: line.productName,
+    })),
   };
 }
 
-export function addKoliPackage(current: ExpeditionNote, pkg: KoliPackage): ExpeditionNote {
-  const nextList = [...current.koliList, pkg];
-  const totalWeightKg = nextList.reduce((acc, k) => acc + (k.weightKg || 0), 0);
+// Tanpa id (atau id tak dikenal) menambah baris di akhir; dengan id mengganti di tempatnya.
+export function upsertLine(
+  note: ExpeditionNote,
+  line: Omit<ExpeditionLine, 'id'> & { readonly id?: string },
+): ExpeditionNote {
+  const known = line.id !== undefined && note.lines.some((item) => item.id === line.id);
+  if (known) {
+    return {
+      ...note,
+      lines: note.lines.map((item) =>
+        item.id === line.id
+          ? { id: item.id, quantity: line.quantity, unit: line.unit, name: line.name }
+          : item,
+      ),
+    };
+  }
   return {
-    ...current,
-    koliList: nextList,
-    totalKoli: nextList.length,
-    totalWeightKg,
+    ...note,
+    lines: [
+      ...note.lines,
+      { id: nextLineId(), quantity: line.quantity, unit: line.unit, name: line.name },
+    ],
   };
+}
+
+export function removeLine(note: ExpeditionNote, id: string): ExpeditionNote {
+  return { ...note, lines: note.lines.filter((item) => item.id !== id) };
+}
+
+export function validateLine(input: {
+  readonly quantity: string;
+  readonly unit: string;
+  readonly name: string;
+}): LineIssue {
+  const quantity = parseQuantityText(input.quantity);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return 'quantity';
+  }
+  if (input.unit.trim() === '') {
+    return 'unit';
+  }
+  return input.name.trim() === '' ? 'name' : 'ok';
 }

@@ -1,399 +1,318 @@
-import { el } from '../../../shared/dom';
+import '../../../styles/bo-trx.css';
+import { el, nextId } from '../../../shared/dom';
+import { wibDate } from '../../../shared/data/receivable';
 import { formatDecimal } from '../../../shared/format';
-import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
-import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
 import type { ScreenHandle } from './login';
 import {
-  createDefaultExpeditionFromInvoice,
-  addKoliPackage,
+  createExpeditionNote,
+  expeditionSeeds,
+  removeLine,
+  upsertLine,
+  validateLine,
   type ExpeditionNote,
-  type KoliPackage,
 } from '../domain/expedition';
-import { createSalesInvoiceDraft } from '../domain/sales-transaction';
+import { parseQuantityText } from '../domain/line-detail';
+import { createDocHead } from './trx/doc-head';
 
+const TEXT = {
+  judul: 'Surat Jalan Ekspedisi & Packing Koli',
+  isiFaktur: 'Isi Data Faktur Penjualan',
+  noSj: 'No. Surat Jalan',
+  faktur: 'Faktur Penjualan',
+  tanggal: 'Tanggal',
+  sopir: 'No. Polisi / Driver',
+  ekspedisi: 'Nama Ekspedisi',
+  penerima: 'Penerima & Alamat Kirim',
+  jumlah: 'Jumlah',
+  satuan: 'Satuan',
+  namaKoli: 'Nama Koli Barang',
+  namaBarang: 'Nama Barang',
+  simpan: 'Simpan',
+  batal: 'Batal',
+  hapus: 'Hapus',
+  daftar: 'Daftar koli surat jalan',
+  kosong: 'Belum ada koli. Isi jumlah, satuan, dan nama koli lalu Simpan.',
+  tersimpan: 'Baris koli disimpan.',
+  terhapus: 'Baris koli dihapus.',
+  pilihHapus: 'Pilih baris koli yang akan dihapus.',
+  errJumlah: 'Isi jumlah lebih dari 0.',
+  errSatuan: 'Isi satuan.',
+  errNama: 'Isi nama koli barang.',
+  bacaBaris: 'Ubah baris koli {nama}',
+} as const;
+
+const KOLI_UNITS = ['KOLI', 'IKAT', 'KRG', 'DUS', 'SAK', 'KARUNG', 'PALET'] as const;
+
+// Contoh gambar klien 13, dipakai saat Surat Jalan dibuka tanpa melewati Faktur Penjualan.
+const SAMPLE_LINES = [
+  { productName: 'Barang Campuran ( Engsel, Grendel, Hak Angin )', quantity: 2, unit: 'KOLI' },
+  { productName: 'Pipa PVC 3/4 @25BTG', quantity: 5, unit: 'IKAT' },
+  { productName: 'Baut UNC 3/8 X 7 @50KG', quantity: 20, unit: 'KRG' },
+] as const;
+
+// Surat Jalan Ekspedisi dan Packing Koli (gambar klien 13): kepala dokumen, satu baris isian
+// Jumlah, Satuan, Nama Koli Barang dengan Simpan, Batal, Hapus, dan tabel datar koli. Klik baris
+// memuatnya ke isian untuk diubah atau dihapus. Baris awal berasal dari barang Koli faktur.
 export function renderExpeditionForm(
   session: BoSession,
   go: (path: string) => void,
   invoiceNumber?: string,
 ): ScreenHandle {
-  const store = session.store;
-  // Kamus memuat tanda plus di awal; tombol sudah punya ikon plus sendiri.
-  const addKoliText = label('tombolTambahKoli').replace(/^\+\s*/, '');
-  const dataset = store.getState().data;
+  const today = wibDate(session.now());
+  const seed = invoiceNumber === undefined ? undefined : expeditionSeeds.get(invoiceNumber);
+  let note: ExpeditionNote =
+    seed === undefined
+      ? createExpeditionNote(
+          {
+            invoiceNumber: invoiceNumber ?? 'FJ26101237',
+            date: today,
+            expedition: 'JNE Cargo',
+            customerName: 'Bu Sherly Tjoandra',
+            customerAddress: 'Jl. Rajawali No 17',
+            customerPhone: '0811230988',
+          },
+          SAMPLE_LINES,
+        )
+      : createExpeditionNote(seed, seed.koliLines);
+  let selectedId: string | undefined;
 
-  // Siapkan draft faktur dasar untuk referensi ekspedisi
-  const salesDraft = createSalesInvoiceDraft(dataset);
-  let expeditionNote: ExpeditionNote = createDefaultExpeditionFromInvoice({
-    ...salesDraft,
-    invoiceNumber: invoiceNumber ?? salesDraft.invoiceNumber,
-    customerName: 'Bu Sherly Tjoandra',
-    customerAddress: 'Jl. Rajawali No 17',
-    customerPhone: '0811230988',
-    expedition: 'JNE Cargo',
-    lines: [
-      {
-        id: '1',
-        productId: 'P-01',
-        productName: 'Kuas Roll 9 Inch',
-        aliasName: '',
-        warehouse: 'toko',
-        unit: 'PCS',
-        quantity: 10,
-        unitPrice: 25000,
-        discountExpr: '',
-      },
-      {
-        id: '2',
-        productId: 'P-02',
-        productName: 'Obeng Bolak Balik Magnet',
-        aliasName: '',
-        warehouse: 'toko',
-        unit: 'PCS',
-        quantity: 6,
-        unitPrice: 35000,
-        discountExpr: '',
-      },
-      {
-        id: '3',
-        productId: 'P-03',
-        productName: 'Engsel Pintu Bellucci SN5',
-        aliasName: '',
-        warehouse: 'toko',
-        unit: 'PASANG',
-        quantity: 12,
-        unitPrice: 45000,
-        discountExpr: '',
-      },
+  // --- Kepala dokumen ---
+  const readonlyInput = (value: string): HTMLInputElement =>
+    el('input', {
+      className: 'input is-readonly',
+      attrs: { type: 'text', readonly: 'true', value },
+    });
+  const textInput = (value: string): HTMLInputElement =>
+    el('input', { className: 'input', attrs: { type: 'text', value } });
+  const sjEl = readonlyInput(note.noteNumber);
+  const invoiceEl = readonlyInput(note.invoiceNumber);
+  const dateEl = el('input', { className: 'input', attrs: { type: 'date', value: note.date } });
+  const vehicleEl = textInput(note.vehicle);
+  const expeditionEl = textInput(note.expeditionName);
+  const recipientEl = textInput(note.recipient);
+  const head = createDocHead(
+    [
+      { key: 'sj', label: TEXT.noSj, control: sjEl, col: 1, row: 1 },
+      { key: 'invoice', label: TEXT.faktur, control: invoiceEl, col: 2, row: 1 },
+      { key: 'date', label: TEXT.tanggal, control: dateEl, col: 3, row: 1 },
+      { key: 'vehicle', label: TEXT.sopir, control: vehicleEl, col: 4, row: 1 },
+      { key: 'expedition', label: TEXT.ekspedisi, control: expeditionEl, col: 1, row: 2 },
+      { key: 'recipient', label: TEXT.penerima, control: recipientEl, col: 2, row: 2, span: 3 },
     ],
-  });
+    undefined,
+    TEXT.judul,
+  );
 
-  const container = el('div', { className: 'bo-form-page' });
+  const titleBar = el(
+    'section',
+    { className: 'bo-trx-sjhead' },
+    el('h1', { className: 'bo-trx-listhead__heading', text: TEXT.judul }),
+    createButton({
+      text: TEXT.isiFaktur,
+      variant: 'secondary',
+      icon: 'arrow-left',
+      onClick: () => {
+        go('/bo/penjualan');
+      },
+    }),
+  );
 
-  // Inputs
-  const sjNumberEl = el('input', {
-    className: 'input is-readonly',
-    attrs: { type: 'text', readonly: 'true', value: expeditionNote.noteNumber },
+  // --- Isian satu baris koli ---
+  const quantityId = nextId('sj-jumlah');
+  const unitId = nextId('sj-satuan');
+  const nameId = nextId('sj-nama');
+  const unitListId = nextId('sj-satuan-daftar');
+  const quantityEl = el('input', {
+    className: 'input is-num',
+    attrs: { id: quantityId, type: 'text', inputmode: 'decimal', autocomplete: 'off' },
   });
-  const invNumberEl = el('input', {
-    className: 'input is-readonly',
-    attrs: { type: 'text', readonly: 'true', value: expeditionNote.invoiceNumber },
-  });
-  const dateEl = el('input', {
+  const unitEl = el('input', {
     className: 'input',
-    attrs: { type: 'date', value: expeditionNote.date },
+    attrs: { id: unitId, type: 'text', list: unitListId, autocomplete: 'off' },
   });
-  const expeditionNameEl = el('input', {
+  const unitList = el(
+    'datalist',
+    { attrs: { id: unitListId } },
+    ...KOLI_UNITS.map((unit) => el('option', { attrs: { value: unit } })),
+  );
+  const nameEl = el('input', {
     className: 'input',
-    attrs: { type: 'text', value: expeditionNote.expeditionName },
+    attrs: { id: nameId, type: 'text', autocomplete: 'off' },
   });
-  const driverEl = el('input', {
-    className: 'input',
-    attrs: { type: 'text', value: `${expeditionNote.driverName} (${expeditionNote.vehiclePlate})` },
-  });
-  const recipientEl = el('input', {
-    className: 'input',
-    attrs: {
-      type: 'text',
-      value: `${expeditionNote.recipientName} - ${expeditionNote.destinationAddress} (${expeditionNote.recipientPhone})`,
-    },
-  });
-
-  const koliContainerEl = el('div', { className: 'bo-koli-container' });
-  const totalKoliBadgeEl = el('span', { className: 'bo-stat-pill is-primary', text: '1 Koli' });
-  const totalWeightBadgeEl = el('span', { className: 'bo-stat-pill is-info', text: '0 Kg' });
-
-  function renderKoliList(): void {
-    koliContainerEl.replaceChildren();
-
-    expeditionNote.koliList.forEach((koli) => {
-      const itemsTable = el(
-        'table',
-        { className: 'pos-table is-compact' },
-        el(
-          'thead',
-          {},
-          el(
-            'tr',
-            {},
-            el('th', { text: label('namaBarang') }),
-            el('th', { text: label('satuanDasar') }),
-            el('th', { className: 'is-end', text: label('kolomKuantitas') }),
-          ),
-        ),
-        el(
-          'tbody',
-          {},
-          ...koli.items.map((it) =>
-            el(
-              'tr',
-              {},
-              el('td', { text: it.name }),
-              el('td', { text: it.unit }),
-              el('td', { className: 'is-end is-bold', text: formatDecimal(it.quantity) }),
-            ),
-          ),
-        ),
-      );
-
-      const koliCard = el(
-        'div',
-        { className: 'bo-panel bo-koli-card' },
-        el(
-          'div',
-          { className: 'bo-koli-card__header' },
-          el(
-            'div',
-            { className: 'bo-koli-card__title' },
-            el('span', { className: 'bo-badge is-toko', text: `Koli #${koli.koliIndex}` }),
-            el('strong', { text: koli.title }),
-          ),
-          el(
-            'div',
-            { className: 'bo-koli-card__meta' },
-            el('span', { className: 't-label', text: `Kemasan: ${koli.packageType}` }),
-            el('span', { className: 'bo-badge is-disc', text: `${koli.weightKg} Kg` }),
-          ),
-        ),
-        itemsTable,
-      );
-
-      koliContainerEl.appendChild(koliCard);
-    });
-
-    totalKoliBadgeEl.textContent = `${expeditionNote.totalKoli} Koli`;
-    totalWeightBadgeEl.textContent = `${expeditionNote.totalWeightKg} Kg`;
-  }
-
-  function openAddKoliModal(): void {
-    const titleInput = el('input', {
-      className: 'input',
-      attrs: { type: 'text', placeholder: 'Contoh: Barang Campur (Kuas/Obeng)' },
-    });
-    const typeSelect = el('select', { className: 'input is-select' });
-    ['Dus Karton', 'Karung Goni', 'Ikat / Bundel', 'Palet Kayu'].forEach((t) => {
-      typeSelect.appendChild(el('option', { text: t, attrs: { value: t } }));
-    });
-    const weightInput = el('input', {
-      className: 'input',
-      attrs: { type: 'number', min: '1', value: '10' },
-    });
-    const itemNameInput = el('input', {
-      className: 'input',
-      attrs: { type: 'text', placeholder: 'Nama Barang' },
-    });
-    const itemQtyInput = el('input', {
-      className: 'input',
-      attrs: { type: 'number', min: '1', value: '1' },
-    });
-    const itemUnitInput = el('input', {
-      className: 'input',
-      attrs: { type: 'text', value: 'PCS' },
-    });
-
-    const modalBody = el(
+  const field = (id: string, text: string, control: HTMLElement, className: string): HTMLElement =>
+    el(
       'div',
-      { className: 'bo-dialog-form' },
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: 'Judul / Label Koli' }),
-        titleInput,
-      ),
-      el(
-        'div',
-        { className: 'bo-form-row-2' },
-        el(
-          'div',
-          { className: 'field' },
-          el('label', { className: 'field__label', text: 'Jenis Kemasan' }),
-          typeSelect,
-        ),
-        el(
-          'div',
-          { className: 'field' },
-          el('label', { className: 'field__label', text: 'Estimasi Berat (Kg)' }),
-          weightInput,
-        ),
-      ),
-      el('h4', { className: 'bo-modal-sec-title', text: 'Item Utama Koli' }),
-      el(
-        'div',
-        { className: 'bo-form-row-2' },
-        el(
-          'div',
-          { className: 'field' },
-          el('label', { className: 'field__label', text: 'Nama Barang' }),
-          itemNameInput,
-        ),
-        el(
-          'div',
-          { className: 'field' },
-          el('label', { className: 'field__label', text: 'Qty' }),
-          itemQtyInput,
-        ),
-      ),
+      { className: `bo-trx-koli-field ${className}` },
+      el('label', { className: 'bo-trx-head__label', text, attrs: { for: id } }),
+      control,
     );
 
-    openModal({
-      title: addKoliText,
-      body: modalBody,
-      actions: [
-        {
-          text: 'Tambahkan ke Packing List',
-          variant: 'primary',
-          onClick: () => {
-            const nextIdx = expeditionNote.koliList.length + 1;
-            const newKoli: KoliPackage = {
-              koliIndex: nextIdx,
-              packageType: typeSelect.value,
-              title: titleInput.value.trim() || `Koli #${nextIdx}`,
-              weightKg: parseFloat(weightInput.value) || 10,
-              items: [
-                {
-                  name: itemNameInput.value.trim() || 'Barang Campur Logistik',
-                  quantity: parseFloat(itemQtyInput.value) || 1,
-                  unit: itemUnitInput.value.trim() || 'PCS',
-                },
-              ],
-            };
-            expeditionNote = addKoliPackage(expeditionNote, newKoli);
-            renderKoliList();
-            showToast({ kind: 'success', text: `Koli #${nextIdx} berhasil ditambahkan.` });
+  // --- Tabel koli ---
+  const body = el('tbody', {});
+  const table = el(
+    'div',
+    {
+      className: 'bo-trx__lines',
+      attrs: { tabindex: '0', role: 'region', 'aria-label': TEXT.daftar },
+    },
+    el(
+      'table',
+      { className: 'bo-trx-table bo-trx-table--lines bo-trx-table--koli' },
+      el(
+        'thead',
+        {},
+        el(
+          'tr',
+          {},
+          el('th', { className: 'is-center', text: TEXT.jumlah }),
+          el('th', { className: 'is-center', text: TEXT.satuan }),
+          el('th', { text: TEXT.namaBarang }),
+        ),
+      ),
+      body,
+    ),
+  );
+
+  function clearEntry(): void {
+    selectedId = undefined;
+    quantityEl.value = '';
+    unitEl.value = '';
+    nameEl.value = '';
+    paint();
+  }
+
+  function loadRow(id: string): void {
+    const line = note.lines.find((item) => item.id === id);
+    if (line === undefined) {
+      return;
+    }
+    selectedId = id;
+    quantityEl.value = String(line.quantity).replace('.', ',');
+    unitEl.value = line.unit;
+    nameEl.value = line.name;
+    paint();
+    quantityEl.focus();
+  }
+
+  function paint(): void {
+    if (note.lines.length === 0) {
+      body.replaceChildren(
+        el(
+          'tr',
+          { className: 'bo-trx-table__empty' },
+          el('td', { text: TEXT.kosong, attrs: { colspan: '3' } }),
+        ),
+      );
+      return;
+    }
+    body.replaceChildren(
+      ...note.lines.map((line) => {
+        const selected = line.id === selectedId;
+        const pick = el('button', {
+          className: 'bo-trx-table__name',
+          text: line.name,
+          attrs: {
+            type: 'button',
+            title: line.name,
+            'aria-pressed': selected ? 'true' : 'false',
           },
-        },
-        { text: label('batal'), variant: 'secondary' },
-      ],
-    });
+        });
+        pick.addEventListener('click', (event) => {
+          event.stopPropagation();
+          loadRow(line.id);
+        });
+        const row = el(
+          'tr',
+          {
+            className: selected ? 'is-selected' : '',
+            attrs: { 'data-id': line.id },
+          },
+          el('td', { className: 'is-center is-bold', text: formatDecimal(line.quantity) }),
+          el('td', { className: 'is-center is-bold', text: line.unit }),
+          el('td', { className: 'bo-trx-table__nameCell' }, pick),
+        );
+        row.addEventListener('click', () => {
+          loadRow(line.id);
+        });
+        return row;
+      }),
+    );
   }
 
-  function printOfficialSuratJalan(): void {
-    window.print();
-  }
+  const fail = (text: string, control: HTMLElement): void => {
+    showToast({ kind: 'info', text });
+    control.focus();
+  };
 
-  // Action Buttons
-  const btnTambahKoli = createButton({
-    text: addKoliText,
-    variant: 'secondary',
-    icon: 'plus',
-    onClick: openAddKoliModal,
-  });
-
-  const btnCetak = createButton({
-    text: 'Cetak Surat Jalan',
+  const saveButton = createButton({
+    text: TEXT.simpan,
     variant: 'primary',
-    icon: 'printer',
-    onClick: printOfficialSuratJalan,
-  });
-
-  const btnKembali = createButton({
-    text: 'Kembali Ke Penjualan',
-    variant: 'secondary',
-    icon: 'arrow-left',
     onClick: () => {
-      go('/bo/penjualan');
+      const issue = validateLine({
+        quantity: quantityEl.value,
+        unit: unitEl.value,
+        name: nameEl.value,
+      });
+      if (issue === 'quantity') {
+        fail(TEXT.errJumlah, quantityEl);
+        return;
+      }
+      if (issue === 'unit') {
+        fail(TEXT.errSatuan, unitEl);
+        return;
+      }
+      if (issue === 'name') {
+        fail(TEXT.errNama, nameEl);
+        return;
+      }
+      note = upsertLine(note, {
+        ...(selectedId === undefined ? {} : { id: selectedId }),
+        quantity: parseQuantityText(quantityEl.value),
+        unit: unitEl.value.trim(),
+        name: nameEl.value.trim(),
+      });
+      showToast({ kind: 'success', text: TEXT.tersimpan });
+      clearEntry();
+    },
+  });
+  const cancelButton = createButton({
+    text: TEXT.batal,
+    variant: 'secondary',
+    onClick: clearEntry,
+  });
+  const deleteButton = createButton({
+    text: TEXT.hapus,
+    variant: 'danger',
+    onClick: () => {
+      if (selectedId === undefined) {
+        showToast({ kind: 'info', text: TEXT.pilihHapus });
+        return;
+      }
+      note = removeLine(note, selectedId);
+      showToast({ kind: 'success', text: TEXT.terhapus });
+      clearEntry();
     },
   });
 
-  const topBar = el(
+  const entry = el(
     'div',
-    { className: 'bo-toolbar' },
-    el(
-      'div',
-      { className: 'bo-toolbar__left' },
-      el('h1', { className: 'bo-page-title', text: label('suratJalanJudul') }),
-      el('div', { className: 'bo-summary-pills' }, totalKoliBadgeEl, totalWeightBadgeEl),
-    ),
-    el('div', { className: 'bo-toolbar__right' }, btnTambahKoli, btnCetak, btnKembali),
+    { className: 'bo-trx-koli-entry' },
+    field(quantityId, TEXT.jumlah, quantityEl, 'is-qty'),
+    field(unitId, TEXT.satuan, el('span', {}, unitEl, unitList), 'is-unit'),
+    field(nameId, TEXT.namaKoli, nameEl, 'is-name'),
+    el('div', { className: 'bo-trx-koli-actions' }, saveButton, cancelButton, deleteButton),
   );
 
-  // Metadata Card
-  const metaCard = el(
+  paint();
+  const container = el(
     'div',
-    { className: 'bo-panel bo-form-meta-grid' },
-    el(
-      'div',
-      { className: 'bo-form-col' },
-      el('h3', { className: 'bo-form-sec-title', text: 'Identitas Dokumen' }),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: label('labelNoSuratJalan') }),
-        sjNumberEl,
-      ),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: 'Faktur Penjualan' }),
-        invNumberEl,
-      ),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: label('tanggal') }),
-        dateEl,
-      ),
-    ),
-    el(
-      'div',
-      { className: 'bo-form-col is-grow-2' },
-      el('h3', { className: 'bo-form-sec-title', text: 'Ekspedisi & Penerima' }),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: label('labelNamaEkspedisi') }),
-        expeditionNameEl,
-      ),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: label('labelNoPolisiSupir') }),
-        driverEl,
-      ),
-      el(
-        'div',
-        { className: 'field' },
-        el('label', { className: 'field__label', text: label('labelPenerimaTujuan') }),
-        recipientEl,
-      ),
-    ),
+    { className: 'bo-form-page bo-trx bo-trx-doc bo-trx-sj' },
+    titleBar,
+    el('div', { className: 'bo-trx-sjcard' }, head.root, entry),
+    el('div', { className: 'bo-trx__body' }, table),
   );
-
-  // Signatures Section (3 Signature boxes for logistics)
-  const signatureSection = el(
-    'div',
-    { className: 'bo-panel bo-signature-grid' },
-    el(
-      'div',
-      { className: 'bo-sig-box' },
-      el('span', { className: 'bo-sig-box__role', text: label('labelTtdPengirim') }),
-      el('div', { className: 'bo-sig-box__line' }),
-      el('span', { className: 'bo-sig-box__name', text: 'Toko Budiannor' }),
-    ),
-    el(
-      'div',
-      { className: 'bo-sig-box' },
-      el('span', { className: 'bo-sig-box__role', text: label('labelTtdEkspedisi') }),
-      el('div', { className: 'bo-sig-box__line' }),
-      el('span', { className: 'bo-sig-box__name', text: expeditionNote.driverName }),
-    ),
-    el(
-      'div',
-      { className: 'bo-sig-box' },
-      el('span', { className: 'bo-sig-box__role', text: label('labelTtdPenerima') }),
-      el('div', { className: 'bo-sig-box__line' }),
-      el('span', { className: 'bo-sig-box__name', text: expeditionNote.recipientName }),
-    ),
-  );
-
-  renderKoliList();
-
-  container.replaceChildren(topBar, metaCard, koliContainerEl, signatureSection);
-
-  return {
-    element: container,
-    destroy: () => undefined,
-  };
+  return { element: container, destroy: () => undefined };
 }

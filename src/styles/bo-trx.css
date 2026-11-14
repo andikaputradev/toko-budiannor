@@ -778,3 +778,112 @@
 .modal:has(.bo-trx-dlg) .modal__actions:empty {
   display: none;
 }
+
+/* ===== Surat Jalan Ekspedisi dan Packing Koli ===== */
+.bo-trx .bo-trx-sjhead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx .bo-trx-sjhead .btn {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.bo-trx .bo-trx-sjcard {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx .bo-trx-sjcard .bo-trx-head {
+  padding-bottom: 0;
+  border: 0;
+}
+
+.bo-trx-koli-entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 0 12px 10px;
+}
+
+.bo-trx-koli-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bo-trx-koli-field.is-qty {
+  flex: 0 0 150px;
+}
+
+.bo-trx-koli-field.is-unit {
+  flex: 0 0 170px;
+}
+
+.bo-trx-koli-field.is-name {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.bo-trx-koli-field > .input,
+.bo-trx-koli-field > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bo-trx-koli-field > span .input {
+  width: 100%;
+}
+
+.bo-trx .bo-trx-koli-entry .input {
+  height: 30px;
+  min-height: 30px;
+  font-size: 14px;
+}
+
+.bo-trx-koli-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.bo-trx .bo-trx-koli-actions .btn {
+  height: 34px;
+  min-height: 34px;
+  font-size: 14px;
+}
+
+.bo-trx-table tbody tr.is-selected {
+  background: var(--color-accent-soft);
+}
+
+.bo-trx-table--koli {
+  table-layout: fixed;
+}
+
+.bo-trx-table--koli th:nth-child(1) {
+  width: 120px;
+}
+
+.bo-trx-table--koli th:nth-child(2) {
+  width: 140px;
+}
+
+.bo-trx-table--koli .bo-trx-table__name {
+  max-width: 100%;
+}
