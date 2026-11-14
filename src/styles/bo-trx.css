@@ -1,0 +1,538 @@
+/* Layar Transaksi Back-Office (revisi putaran ketiga, gambar klien 8 sampai 13): kepala berlabel
+   sebaris, kotak cari barang, tabel baris, kotak total, dialog Rincian Barang. Dimuat malas bersama
+   layar Transaksi dan sengaja tidak menyentuh layar lain. Tinggi halaman tetap satu layar: hanya
+   tabel baris yang menggulir di dalam panelnya. */
+
+.bo-trx-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ===== Halaman dokumen ===== */
+.bo-form-page.bo-trx {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.bo-trx .bo-trx-head {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx .bo-trx-head__grid {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(var(--head-cols, 3), max-content minmax(0, 1fr));
+  gap: 6px 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.bo-trx .bo-trx-head__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bo-trx .bo-trx-head__control {
+  min-width: 0;
+}
+
+.bo-trx .bo-trx-head .input,
+.bo-trx .bo-trx-totals .input,
+.bo-trx-dlg .input {
+  height: 30px;
+  min-height: 30px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 14px;
+}
+
+.bo-trx .bo-trx-head__aside {
+  flex: none;
+  width: 250px;
+}
+
+.bo-trx .bo-trx-head__aside .bo-credit-box {
+  gap: 2px;
+  height: 100%;
+  min-height: 0;
+  padding: 4px 10px;
+}
+
+.bo-trx .bo-trx__body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx .bo-trx__bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bo-trx .bo-trx__bar .btn {
+  height: 34px;
+  min-height: 34px;
+  font-size: 14px;
+}
+
+.bo-trx .bo-trx__count {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ===== Kotak cari barang ===== */
+.bo-trx-search {
+  position: relative;
+  flex: 0 1 340px;
+  min-width: 220px;
+}
+
+.bo-trx-search__input {
+  width: 100%;
+  padding-right: 34px;
+}
+
+.bo-trx-search__icon {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.bo-trx-search__list {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  max-height: 320px;
+  margin: 4px 0 0;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  list-style: none;
+}
+
+.bo-trx-search__list[hidden] {
+  display: none;
+}
+
+.bo-trx-search__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border-default);
+  cursor: pointer;
+}
+
+.bo-trx-search__option.is-active {
+  background: var(--color-accent-soft);
+}
+
+.bo-trx-search__name mark {
+  padding: 0;
+  background: #fff176;
+  color: #1c2024;
+}
+
+.bo-trx-search__code {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.bo-trx-search__empty {
+  padding: 10px 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ===== Tabel baris ===== */
+.bo-trx .bo-trx__lines {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+}
+
+.bo-trx-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.bo-trx-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 6px 10px;
+  background: var(--primitive-color-ink-600);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.bo-trx-table th.is-center,
+.bo-trx-table td.is-center {
+  text-align: center;
+}
+
+.bo-trx-table th.is-end,
+.bo-trx-table td.is-end {
+  text-align: right;
+}
+
+.bo-trx-table td {
+  height: 34px;
+  padding: 0 10px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-default);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bo-trx-table tbody tr {
+  cursor: pointer;
+}
+
+.bo-trx-table tbody tr:hover {
+  background: var(--color-bg-selected);
+}
+
+.bo-trx-table .is-bold {
+  font-weight: 700;
+}
+
+.bo-trx-col-handle {
+  width: 40px;
+  padding-right: 0;
+  padding-left: 6px;
+}
+
+.bo-trx-col-koli {
+  width: 56px;
+  text-align: center;
+}
+
+.bo-trx-col-kode {
+  width: 96px;
+}
+
+.bo-trx-col-gudang {
+  width: 96px;
+}
+
+.bo-trx-col-qty {
+  width: 104px;
+}
+
+.bo-trx-col-satuan {
+  width: 84px;
+}
+
+.bo-trx-col-harga {
+  width: 112px;
+}
+
+.bo-trx-col-diskon {
+  width: 92px;
+}
+
+.bo-trx-col-total {
+  width: 124px;
+}
+
+.bo-trx-table__code {
+  color: var(--color-text-secondary);
+}
+
+.bo-trx-table__nameCell {
+  min-width: 0;
+}
+
+.bo-trx-table__name {
+  display: inline-block;
+  max-width: calc(100% - 64px);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bo-trx-table__name:hover {
+  text-decoration: underline;
+}
+
+.bo-trx-table__empty td {
+  height: 56px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.bo-trx-table tbody tr.bo-trx-table__empty {
+  cursor: default;
+}
+
+.bo-trx-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: grab;
+}
+
+.bo-trx-handle:focus-visible,
+.bo-trx-table__name:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+
+.bo-trx-table input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.bo-trx-badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-pressed);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* ===== Kotak total ===== */
+.bo-trx-totals {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(4, minmax(128px, auto));
+  align-self: flex-end;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx-totals__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 14px 6px;
+  border-right: 1px solid var(--color-border-default);
+}
+
+.bo-trx-totals__cell:last-child {
+  border-right: 0;
+}
+
+.bo-trx-totals__label {
+  font-size: 14px;
+}
+
+.bo-trx-totals__value {
+  font-size: 16px;
+  text-align: right;
+}
+
+.bo-trx-totals__value.is-total {
+  font-size: 18px;
+}
+
+/* ===== Dialog Rincian Barang ===== */
+.modal:has(.bo-trx-dlg) {
+  width: min(480px, calc(100% - 32px));
+  max-width: none;
+}
+
+.bo-trx-dlg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bo-trx-dlg__row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.bo-trx-dlg__label {
+  font-size: 14px;
+}
+
+.bo-trx-dlg__control {
+  min-width: 0;
+}
+
+.bo-trx-dlg__code {
+  color: var(--color-accent-pressed);
+}
+
+.bo-trx-dlg__name,
+.bo-trx-dlg__pair {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bo-trx-dlg__pair > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.bo-trx-dlg__name .input {
+  flex: 1 1 auto;
+}
+
+.bo-trx-dlg__clear {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.bo-trx-dlg__money {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx-dlg__prefix {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 8px;
+  background: var(--color-bg-table-header);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.bo-trx-dlg__money .input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  text-align: right;
+}
+
+.bo-trx-dlg__total {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-selected);
+  font-weight: 700;
+  text-align: right;
+}
+
+.bo-trx-dlg__stock {
+  color: var(--color-status-success-fg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bo-trx-dlg__history {
+  margin-top: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-bg-selected);
+  font-size: 14px;
+}
+
+.bo-trx-dlg__history[hidden] {
+  display: none;
+}
+
+.bo-trx-dlg__history-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.bo-trx-dlg__history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 24px;
+}
+
+.bo-trx-dlg__history-empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.bo-trx-dlg__error {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--color-status-danger-fg);
+  font-size: 13px;
+}
+
+.bo-trx-dlg__actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-default);
+}

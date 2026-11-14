@@ -19,6 +19,7 @@ import {
 import { ledgerFor } from '../domain/stock-correction';
 import type { WarehouseFilter } from '../domain/stock-view';
 import { movementSourcesFor } from '../movement-sources';
+import { shortDate } from '../short-date';
 
 // Teks modal ini hanya dipakai di sini, jadi ikut dimuat malas bersama layar Data Barang (label
 // bersama dimuat semua aplikasi dan anggaran JS POS hampir habis).
@@ -53,12 +54,6 @@ type TabKey = 'pembelian' | 'penjualan' | 'koreksi' | 'mutasi';
 interface Column {
   readonly text: string;
   readonly end?: boolean;
-}
-
-// Tanggal gambar klien: hari/bulan/tahun menurut WIB.
-function shortDate(at: string): string {
-  const [year = '', month = '', day = ''] = wibDate(new Date(at)).split('-');
-  return `${day}/${month}/${year}`;
 }
 
 // Kepala tabel selalu tampil, seperti gambar klien; tanpa baris, pesan kosong muncul di bawahnya.
