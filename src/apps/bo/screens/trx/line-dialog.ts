@@ -42,7 +42,7 @@ const finiteOr = (value: number, fallback: number): number =>
 // baris tabel diklik. Lanjut memvalidasi lalu mengirim baris; Hapus membuang baris yang diubah.
 export function openLineDialog(options: LineDialogOptions): void {
   const { kind, product, session } = options;
-  const base = options.line ?? createDocLine(product, kind);
+  const base = options.line ?? createDocLine(product, kind, options.canSeeCost);
   const units = unitOptions(product);
   let expr = base.discountExpr;
 
@@ -198,8 +198,11 @@ export function openLineDialog(options: LineDialogOptions): void {
   qtyInput.addEventListener('input', paintTotals);
   warehouseSelect.addEventListener('change', paintTotals);
   unitSelect.addEventListener('change', () => {
-    // Harga tiap satuan berbeda: ikut harga eceran satuan yang dipilih, tetap bisa diubah lagi.
-    priceInput.value = formatDecimal(unitPriceFor(product, unitSelect.value), 2);
+    // Penjualan: harga tiap satuan berbeda, jadi ikut harga eceran satuan yang dipilih (tetap bisa
+    // diubah lagi). Pembelian: harga beli yang sudah diketik tidak ditimpa harga jual.
+    if (kind === 'jual') {
+      priceInput.value = formatDecimal(unitPriceFor(product, unitSelect.value), 2);
+    }
     syncDiscount('price');
     paintTotals();
     paintHistory();
@@ -285,6 +288,8 @@ export function openLineDialog(options: LineDialogOptions): void {
       quantity: qtyInput.value,
       unitPrice: priceInput.value,
       allowDecimal: product.allowDecimal,
+      discountExpr: expr,
+      shipping: kind === 'beli' ? shippingInput.value : '',
     });
     if (issue === 'quantity') {
       fail(T.errKuantitas, qtyInput);
@@ -296,6 +301,14 @@ export function openLineDialog(options: LineDialogOptions): void {
     }
     if (issue === 'price') {
       fail(T.errHarga, priceInput);
+      return;
+    }
+    if (issue === 'discount') {
+      fail(T.errDiskon, percentInput);
+      return;
+    }
+    if (issue === 'shipping') {
+      fail(T.errOngkos, shippingInput);
       return;
     }
     options.onCommit({

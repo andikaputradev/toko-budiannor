@@ -104,6 +104,44 @@ describe('validateDetail', () => {
   });
 });
 
+describe('validateDetail: diskon dan ongkos kirim', () => {
+  const base = { quantity: '1', unitPrice: '1000', allowDecimal: false };
+
+  it('diskon persen di atas 100 ditolak, tepat 100 lolos', () => {
+    expect(validateDetail({ ...base, discountExpr: '150%' })).toBe('discount');
+    expect(validateDetail({ ...base, discountExpr: '100%' })).toBe('ok');
+  });
+
+  it('diskon nominal per satuan melebihi harga ditolak, sama dengan harga lolos', () => {
+    expect(validateDetail({ ...base, discountExpr: 'Rp 5000' })).toBe('discount');
+    expect(validateDetail({ ...base, discountExpr: 'Rp 1001' })).toBe('discount');
+    expect(validateDetail({ ...base, discountExpr: 'Rp 1000' })).toBe('ok');
+    expect(validateDetail({ ...base, discountExpr: 'Rp 999' })).toBe('ok');
+  });
+
+  it('diskon bertingkat dengan tingkat di atas 100 ditolak', () => {
+    expect(validateDetail({ ...base, discountExpr: '50+120' })).toBe('discount');
+    expect(validateDetail({ ...base, discountExpr: '5+5' })).toBe('ok');
+  });
+
+  it('tanpa diskon lolos', () => {
+    expect(validateDetail({ ...base, discountExpr: '' })).toBe('ok');
+    expect(validateDetail(base)).toBe('ok');
+  });
+
+  it('ongkos kirim negatif ditolak; nol dan kosong lolos', () => {
+    expect(validateDetail({ ...base, shipping: '-5000' })).toBe('shipping');
+    expect(validateDetail({ ...base, shipping: 'abc' })).toBe('shipping');
+    expect(validateDetail({ ...base, shipping: '0' })).toBe('ok');
+    expect(validateDetail({ ...base, shipping: '' })).toBe('ok');
+  });
+
+  it('kuantitas dan harga tetap diperiksa lebih dulu', () => {
+    expect(validateDetail({ ...base, quantity: '0', discountExpr: '150%' })).toBe('quantity');
+    expect(validateDetail({ ...base, unitPrice: '-1', discountExpr: '150%' })).toBe('price');
+  });
+});
+
 describe('satuan, harga, dan stok barang', () => {
   const dataset = generateDataset();
   const product = need(

@@ -89,7 +89,7 @@ Kolom Tes: `U` uji unit (Vitest), `E` e2e Playwright, `M` ukur ulang layar (`uku
 ## 6. Keputusan dan asumsi
 
 1. **Menu PO dan SO membuka daftar dahulu**, tombol "Buat PO Baru" atau "Buat SO Baru" membuka formulir; Simpan atau Batal kembali ke daftar. Menu Faktur Penjualan dan Faktur Pembelian tetap membuka formulir langsung (sesuai tab klien pada gambar 13) dan daftarnya lewat menu Daftar Nota.
-2. **Rute baru** untuk formulir PO dan SO: `/bo/transaksi/po-pembelian/baru` dan `/bo/transaksi/so-penjualan/baru` (query `?no=` untuk membuka yang ada). Rute `/bo/transaksi/po-pembelian` dan `/bo/transaksi/so-penjualan` menjadi daftar. Tab halaman menyimpan satu tab per rute seperti putaran kedua.
+2. **Rute baru** untuk formulir PO dan SO: `/bo/transaksi/po-pembelian/baru` dan `/bo/transaksi/so-penjualan/baru` (query `?no=` untuk membuka yang ada, tampil-saja). Rute `/bo/transaksi/po-pembelian` dan `/bo/transaksi/so-penjualan` menjadi daftar. Satu tab per rute seperti putaran kedua, jadi daftar dan formulir adalah dua tab (judul tab formulir "PO Baru" dan "SO Baru"). Dalam pelaksanaan sempat satu rute dengan `?baru=1`; tinjauan akhir menunjukkan formulir tertimpa saat daftar dibuka, sehingga dikembalikan ke rute terpisah.
 3. **Kolom aksi Daftar Nota dihapus** (Buka, Cetak, WA tidak ada pada gambar 8). Nomor invoice menjadi tautan yang membuka faktur; Cetak dan WA tetap ada di formulir faktur. Tombol "Cetak Laporan" juga dihapus (tidak ada pada gambar).
 4. **Aturan hitung diskon BO tetap** (persen atas harga satuan, nominal per satuan, bertingkat `5+5`). Angka contoh pada gambar 9 (diskon 2.000 pada 10 sak) tidak dipakai. Dialog Rincian Barang memetakan isian % dan Rp ke ekspresi diskon yang sama; mengisi salah satu mengosongkan yang lain dan menampilkan padanannya.
 5. **Status PO** dipetakan dari data: `draf` dan `dipesan` menjadi On Proses, `diterima-sebagian` menjadi Partial, `diterima` menjadi Selesai. **Status SO**: seluruh SO berstatus `draf` pada model data, ditampilkan On Proses; SO yang sudah diimpor ke faktur pada sesi berjalan ditampilkan Selesai.
@@ -138,3 +138,16 @@ Cabang `revisi-bo-3`, satu commit per tahap; setiap tahap lulus `typecheck`, `li
 4. Daftar dan formulir PO dan SO.
 5. Surat Jalan.
 6. Verifikasi menyeluruh, tes lama disesuaikan, dokumen asumsi dan teks baru, build produksi, anggaran, ukur akhir.
+
+## 9. Hasil verifikasi
+
+Dijalankan terhadap build produksi pada 14 November 2026, ulang sesudah perbaikan temuan tinjauan akhir (tautan nota, diskon melebihi harga, data basi pada tab yang dipertahankan, versi benih Surat Jalan, harga awal pembelian, rute formulir PO dan SO, tanggal pesanan, tampil-saja pesanan lama, tombol Cetak dan gaya cetak).
+
+- Statis: `npm run lint` dan `npm run lint:teks` (528 berkas, 0 pelanggaran) dan `npm run typecheck` bersih. `npm test`: 100 berkas, 1054 tes lulus.
+- Anggaran: `npm run budget` lolos (JS gzip POS 69,42 KB dari 70, BO 66,47, Owner 63,61, Sales 65,95, Portal 53,67; CSS BO 19,12 KB dari 25). `npm run kontras`: 37 pasangan, 0 gagal.
+- Tanpa scroll dan isi terlihat: `node scripts/ukur-bo.mjs` melaporkan 0 dari 53 rute melebihi layar pada 1366 x 640, 1280 x 640, 1280 x 720, 1366 x 768, dan 1920 x 1080, termasuk syarat tabel baris minimal 150 px. Tes `bo-muat-layar.spec.ts` menjaga hal yang sama dan audit axe seluruh rute BO terang dan gelap (0 pelanggaran).
+- Playwright BO (`bo`, `bo-kerangka`, `bo-barang`, `bo-dashboard`, `bo-trx`, `tinjau-bo`, `flows`, `gaya`, `header`, `jaringan`, `urutan-tab`, `target-sentuh`, `audit`, `bo-muat-layar`) pada `pc-1366x768`: seluruhnya lulus kecuali audit axe OWN-04 (`.mob-avatar`, aplikasi Owner di luar cakupan, kegagalan lama). `tablet-1280x800`: lulus. `urutan-tab` BO-09 pernah gagal sekali saat semua spesifikasi paralel dan lulus sendiri berulang kali.
+- Regresi aplikasi lain pada `tablet-1280x800`: POS (`pos`, `pos-lanjut`, `pos-revisi` sampai `pos-revisi4`) 284 lulus; `responsif`, `portal`, `owner`, `sales` lulus.
+- Diperiksa mata pada 1280 x 640: Info barang empat tab, Daftar Nota (penjualan dan pembelian), Faktur Penjualan dan Pembelian (kosong, berisi, dan dialog Rincian Barang), Daftar dan formulir PO, Surat Jalan.
+
+Belum diverifikasi: hasil cetak fisik atau PDF (hanya diperiksa lewat emulasi media cetak), berkas .xlsx dan .pdf asli untuk Info barang (menunggu contoh klien), dan layar BO di bawah 1000 px.

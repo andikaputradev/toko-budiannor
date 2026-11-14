@@ -31,6 +31,8 @@ export const TRX_TEXT = {
   errDesimal:
     'Kuantitas harus bilangan bulat (maksimal tiga desimal untuk barang yang boleh pecahan).',
   errHarga: 'Isi harga satuan 0 atau lebih.',
+  errDiskon: 'Diskon tidak boleh melebihi harga satuan atau 100 persen.',
+  errOngkos: 'Ongkos kirim tidak boleh negatif.',
   // Tabel baris
   urut: 'Urut',
   urutBaris: 'Urutkan baris {nama}',

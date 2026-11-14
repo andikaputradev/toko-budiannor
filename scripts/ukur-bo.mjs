@@ -16,11 +16,7 @@ const TOLERANCE = 1;
 // Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.
 const MIN_LINES_HEIGHT = 150;
 // Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Nota Pembelian) ikut diukur.
-const EXTRA_ROUTES = [
-  '/bo/transaksi/po-pembelian?baru=1',
-  '/bo/transaksi/so-penjualan?baru=1',
-  '/bo/transaksi/daftar-nota?tab=pembelian',
-];
+const EXTRA_ROUTES = ['/bo/transaksi/daftar-nota?tab=pembelian'];
 
 function option(name, fallback) {
   const index = process.argv.indexOf(`--${name}`);

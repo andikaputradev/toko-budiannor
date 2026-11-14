@@ -1,5 +1,6 @@
 import type { Dataset, PurchaseOrder, Supplier } from '../../../shared/data/types';
 import type { DocLine } from './doc-line';
+import { buildTransactionRows } from './transaction-list';
 import { calculateTieredDiscount } from './discount';
 
 export interface PurchaseInvoiceLine {
@@ -77,14 +78,11 @@ export function generatePurchaseInvoiceNumber(): string {
   return `FB2610${String(purchaseCounter).padStart(4, '0')}`;
 }
 
-export function createPurchaseInvoiceDraft(
-  dataset: Dataset,
-  defaultDate = dataset.referenceDate.slice(0, 10),
-): PurchaseInvoiceDraft {
+function emptyPurchaseDraft(invoiceNumber: string, date: string): PurchaseInvoiceDraft {
   return {
-    invoiceNumber: generatePurchaseInvoiceNumber(),
-    date: defaultDate,
-    receivedDate: defaultDate,
+    invoiceNumber,
+    date,
+    receivedDate: date,
     poNumber: '',
     supplierId: undefined,
     supplierName: '',
@@ -100,6 +98,37 @@ export function createPurchaseInvoiceDraft(
     expeditionFee: 0,
     invoiceDiscount: 0,
     grandTotal: 0,
+  };
+}
+
+export function createPurchaseInvoiceDraft(
+  dataset: Dataset,
+  defaultDate = dataset.referenceDate.slice(0, 10),
+): PurchaseInvoiceDraft {
+  return emptyPurchaseDraft(generatePurchaseInvoiceNumber(), defaultDate);
+}
+
+// Faktur untuk tautan nomor di Daftar Nota: kepala saja (tanggal, pemasok, PO asal, syarat,
+// keterangan), karena nota pembelian pada daftar tidak memuat barisnya.
+export function purchaseDraftFromNumber(
+  dataset: Dataset,
+  number: string,
+): PurchaseInvoiceDraft | undefined {
+  const row = buildTransactionRows(dataset).find(
+    (item) => item.type === 'pembelian' && item.number === number,
+  );
+  if (row === undefined) {
+    return undefined;
+  }
+  const supplier = dataset.suppliers.find((item) => item.name === row.partyName);
+  return {
+    ...emptyPurchaseDraft(row.number, row.date),
+    poNumber: row.refNumber,
+    supplierId: supplier?.id,
+    supplierName: supplier?.name ?? row.partyName,
+    supplierPhone: supplier?.phone ?? '',
+    notes: row.notes,
+    paymentTerms: row.paymentTerms.startsWith('Hutang') ? 'hutang' : 'tunai',
   };
 }
 

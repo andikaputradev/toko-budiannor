@@ -5,9 +5,9 @@ import { label, message, type LabelKey } from '../../shared/messages';
 import { createBanner } from '../../shared/ui/banner';
 import type { Role } from '../../shared/data/types';
 import type { BoSession } from './bo-session';
-import { entryFor, groupFor, menuFor, type MenuEntry, type MenuGroup } from './domain/menu';
+import { groupFor, menuFor, type MenuEntry, type MenuGroup } from './domain/menu';
 import { countBelowMinimum } from './domain/stock-view';
-import { tabTitleKey } from './domain/tabs';
+import { tabEntryFor, tabTitleKey, tabTitleText } from './domain/tabs';
 
 export interface Shell {
   readonly element: HTMLElement;
@@ -298,11 +298,13 @@ export function createShell(session: BoSession, go: (path: string) => void): She
 
     dateEl.textContent = formatDayDateTime(session.now());
 
-    const entry = entryFor(activePath);
+    const entry = tabEntryFor(activePath);
     const group = entry === undefined ? undefined : groupFor(entry.group);
     const titleKey = tabTitleKey(activePath);
     breadcrumbEl.textContent = group === undefined ? '' : `${label(group.label)} /`;
-    titleEl.textContent = titleKey === undefined ? label('menuBackOffice') : label(titleKey);
+    titleEl.textContent =
+      tabTitleText(activePath) ??
+      (titleKey === undefined ? label('menuBackOffice') : label(titleKey));
 
     userEl.replaceChildren(
       el('div', { className: 'bo-user-avatar' }, icon('user-round')),
@@ -323,7 +325,7 @@ export function createShell(session: BoSession, go: (path: string) => void): She
 
   const setPage = (path: string): void => {
     activePath = path;
-    const entry = entryFor(path);
+    const entry = tabEntryFor(path);
     if (entry !== undefined) {
       openGroups.add(entry.group);
     }

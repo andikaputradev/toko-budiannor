@@ -64,10 +64,23 @@ export function isPromoExpr(product: Pick<Product, 'promo'>, expr: string): bool
   return promo !== '' && (expr === promo || expr === `${promo}%`);
 }
 
-// Baris baru dari barang terpilih. Penjualan membawa diskon promo barang; pembelian tidak.
-export function createDocLine(product: Product, kind: 'jual' | 'beli'): DocLine {
+// Baris baru dari barang terpilih. Penjualan membawa harga eceran dan diskon promo barang.
+// Pembelian mulai dari harga beli terakhir (hanya bila pengguna boleh melihat biaya, yaitu Owner),
+// selain itu kosong supaya Supervisor mengetik sendiri tanpa melihat harga beli.
+export function createDocLine(
+  product: Product,
+  kind: 'jual' | 'beli',
+  canSeeCost = false,
+): DocLine {
   const unit = product.defaultUnit ?? product.baseUnit;
   const promo = kind === 'jual' ? promoDiscountExpr(product) : '';
+  const factor = product.units.find((item) => item.code === unit)?.factor ?? 1;
+  const unitPrice =
+    kind === 'jual'
+      ? unitPriceFor(product, unit)
+      : canSeeCost
+        ? Math.round((product.lastPurchasePrice ?? 0) * factor)
+        : 0;
   return {
     id: nextLineId(),
     productId: product.id,
@@ -76,7 +89,7 @@ export function createDocLine(product: Product, kind: 'jual' | 'beli'): DocLine 
     warehouse: product.stock.display > 0 ? 'toko' : 'gudang',
     unit,
     quantity: 1,
-    unitPrice: unitPriceFor(product, unit),
+    unitPrice,
     discountExpr: promo === '' ? '' : `${promo}%`,
     shipping: 0,
     koli: false,

@@ -9,6 +9,7 @@ import {
   openTab,
   tabKey,
   tabTitleKey,
+  tabTitleText,
   type TabEntry,
   type TabState,
 } from './domain/tabs';
@@ -41,6 +42,10 @@ export interface Workspace {
 }
 
 function titleOf(entry: TabEntry): string {
+  const text = tabTitleText(entry.path);
+  if (text !== undefined) {
+    return text;
+  }
   const key = tabTitleKey(entry.path);
   return key === undefined ? (entry.key.split('/').pop() ?? entry.key) : label(key);
 }

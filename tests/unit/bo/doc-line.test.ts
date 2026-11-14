@@ -80,6 +80,18 @@ describe('createDocLine dan isPromoExpr', () => {
     expect(isPromoExpr(promoted, '1%')).toBe(false);
   });
 
+  it('baris pembelian: harga awal = harga beli terakhir bagi Owner, kosong bagi Supervisor', () => {
+    const bought = need(dataset.products.find((product) => (product.lastPurchasePrice ?? 0) > 0));
+    expect(createDocLine(bought, 'beli', true).unitPrice).toBe(bought.lastPurchasePrice);
+    expect(createDocLine(bought, 'beli', false).unitPrice).toBe(0);
+    expect(createDocLine(bought, 'beli').unitPrice).toBe(0);
+  });
+
+  it('baris penjualan tetap memakai harga eceran, tidak peduli hak lihat biaya', () => {
+    const created = createDocLine(plain, 'jual', false);
+    expect(created.unitPrice).toBe(plain.prices[plain.defaultUnit ?? plain.baseUnit]?.eceran ?? 0);
+  });
+
   it('baris pembelian tidak membawa promo', () => {
     expect(createDocLine(promoted, 'beli').discountExpr).toBe('');
   });

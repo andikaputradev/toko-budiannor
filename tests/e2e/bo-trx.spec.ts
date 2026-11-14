@@ -577,7 +577,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian');
     await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
-    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian\?baru=1$/);
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian\/baru$/);
     const root = active(page);
     for (const name of [
       'Tanggal',
@@ -605,7 +605,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     page,
   }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
     const root = active(page);
     await root.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(toast(page, 'Pilih pemasok dahulu.')).toBeVisible();
@@ -638,7 +638,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     page,
   }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
     await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
     await addItem(page, 'semen', '1');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
@@ -663,7 +663,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian');
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
-    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
     const lines = active(page).locator('.bo-trx__lines');
     expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
@@ -687,7 +687,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
       'Total',
     ]);
     await root.getByRole('button', { name: 'Buat SO Baru' }).click();
-    await expect(page).toHaveURL(/#\/bo\/transaksi\/so-penjualan\?baru=1$/);
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/so-penjualan\/baru$/);
     for (const name of [
       'Tanggal',
       'No SO',
@@ -709,7 +709,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
     await loginBo(page);
     // Faktur Penjualan dibuka lebih dulu: tab-nya tetap hidup saat SO dibuat.
     await openPage(page, '/bo/penjualan');
-    await openPage(page, '/bo/transaksi/so-penjualan?baru=1');
+    await openPage(page, '/bo/transaksi/so-penjualan/baru');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(toast(page, 'Pilih pelanggan dahulu.')).toBeVisible();
     await active(page).getByLabel('Pelanggan', { exact: true }).selectOption({ index: 1 });
@@ -743,7 +743,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
     await loginBo(page);
     await openPage(page, '/bo/transaksi/so-penjualan');
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
-    await openPage(page, '/bo/transaksi/so-penjualan?baru=1');
+    await openPage(page, '/bo/transaksi/so-penjualan/baru');
     const lines = active(page).locator('.bo-trx__lines');
     expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
@@ -773,7 +773,7 @@ test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
     await rowsOf(page).nth(0).getByRole('checkbox').check();
     await rowsOf(page).nth(1).getByRole('checkbox').check();
     await active(page).getByRole('button', { name: 'Isi SJ Ekspedisi' }).click();
-    await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?inv=FJ\d+$/);
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?inv=FJ\d+&v=\d+$/);
     await expect(sjRows(page)).toHaveCount(2);
   }
 
@@ -951,7 +951,7 @@ test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () 
   }) => {
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
     await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
     await addItem(page, 'semen', '1');
     await active(page).getByLabel('Keterangan').fill('URGEN DITUNGGU DEVELOPER '.repeat(20));
@@ -965,5 +965,261 @@ test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () 
       .evaluate((node) => node.scrollWidth - node.clientWidth);
     expect(horizontal).toBeLessThanOrEqual(1);
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Perbaikan hasil tinjauan akhir cabang
+// ---------------------------------------------------------------------------
+
+test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harga beli', () => {
+  const customerShown = (page: Page): Promise<string> =>
+    active(page)
+      .getByLabel('Pelanggan', { exact: true })
+      .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
+
+  test('nomor di Daftar Nota membuka faktur itu: penjualan POS memuat baris dan pelanggan', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/daftar-nota');
+    const link = orderList(page).getByRole('link', { name: 'T-000131', exact: true });
+    await expect(link).toHaveAttribute('href', '#/bo/penjualan?no=T-000131');
+    await link.click();
+    await expect(page).toHaveURL(/#\/bo\/penjualan\?no=T-000131$/);
+    await expect(active(page).getByLabel('No. Invoice')).toHaveValue('T-000131');
+    await expect(rowsOf(page).first()).toBeVisible();
+    expect(await customerShown(page)).toContain('UD Tiga Saudara');
+    await expect(countText(page)).not.toHaveText('0 Barang (0)');
+  });
+
+  test('nomor draf proposal membuka kepala faktur dengan pelanggan dan No. SO', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/daftar-nota');
+    await orderList(page).getByRole('link', { name: 'FJ26101234', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/penjualan\?no=FJ26101234$/);
+    await expect(active(page).getByLabel('No. Invoice')).toHaveValue('FJ26101234');
+    expect(await customerShown(page)).toContain('Bu Sherly Tjoandra');
+    await expect(active(page).getByLabel('Tanggal', { exact: true })).toHaveValue('2026-10-25');
+  });
+
+  test('nomor pembelian membuka Faktur Pembelian dengan pemasok dan PO asal', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/daftar-nota?tab=pembelian');
+    await orderList(page).getByRole('link', { name: 'FB26101234', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/pembelian\?no=FB26101234$/);
+    await expect(active(page).getByLabel('No. Invoice')).toHaveValue('FB26101234');
+    const supplier = await active(page)
+      .getByLabel('Pemasok', { exact: true })
+      .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
+    expect(supplier).toContain('PT Sejati Raya');
+  });
+
+  test('diskon melebihi harga atau 100 persen ditolak dengan pesan dan dialog tetap terbuka', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    await dialog.getByLabel('Diskon persen').fill('150');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Diskon tidak boleh melebihi harga satuan atau 100 persen.',
+    );
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Diskon persen').fill('');
+    await dialog.getByLabel('@Harga').fill('1000');
+    await dialog.getByLabel('Diskon rupiah').fill('5000');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      'Diskon tidak boleh melebihi harga satuan atau 100 persen.',
+    );
+    await expect(rowsOf(page)).toHaveCount(0);
+    await dialog.getByLabel('Diskon rupiah').fill('1000');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(rowsOf(page)).toHaveCount(1);
+  });
+
+  test('ongkos kirim negatif pada pembelian ditolak', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    await dialog.getByLabel('Ongkos Kirim').fill('-5000');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(dialog.getByRole('alert')).toHaveText('Ongkos kirim tidak boleh negatif.');
+    await expect(rowsOf(page)).toHaveCount(0);
+  });
+
+  test('barang baru dari tab Data Barang bisa ditambahkan, diubah, dan dihapus di faktur yang sudah terbuka', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await openPage(page, '/bo/barang');
+    await page.getByRole('button', { name: 'Tambah Barang' }).click();
+    await page.getByLabel('Kode barang').fill('B9200');
+    await page.getByLabel('Nama barang').fill('Barang Baru Tab');
+    const unit = page.getByLabel('Satuan dasar', { exact: true });
+    await unit.click();
+    await unit.fill('Pcs');
+    await unit.press('Enter');
+    const prices = page.locator('.bo-pd-prices__input');
+    await prices.nth(0).fill('1000');
+    await prices.nth(1).fill('900');
+    await page.getByRole('button', { name: 'Simpan Barang' }).click();
+    await expect(page.getByText('Barang tersimpan.')).toBeVisible();
+
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'barang baru tab', '2');
+    await expect(rowsOf(page)).toHaveCount(1);
+    await rowsOf(page).first().locator('td').nth(3).click();
+    const dialog = dialogOf(page);
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Hapus' }).click();
+    await expect(rowsOf(page)).toHaveCount(0);
+  });
+
+  test('Isi SJ Ekspedisi lagi untuk faktur yang sama membangun ulang Surat Jalan dengan benih terbaru', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'semen', '10');
+    await addItem(page, 'semen', '15', 1);
+    await addItem(page, 'semen', '5', 2);
+    await rowsOf(page).nth(0).getByRole('checkbox').check();
+    await rowsOf(page).nth(1).getByRole('checkbox').check();
+    await active(page).getByRole('button', { name: 'Isi SJ Ekspedisi' }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?inv=FJ\d+&v=\d+$/);
+    await expect(active(page).locator('.bo-trx-table--lines tbody tr[data-id]')).toHaveCount(2);
+
+    await active(page).getByRole('button', { name: 'Isi Data Faktur Penjualan' }).click();
+    await rowsOf(page).nth(2).getByRole('checkbox').check();
+    await active(page).getByRole('button', { name: 'Isi SJ Ekspedisi' }).click();
+    await expect(active(page).locator('.bo-trx-table--lines tbody tr[data-id]')).toHaveCount(3);
+  });
+
+  test('harga awal pembelian: Owner dari harga beli terakhir, Supervisor kosong; ganti satuan tidak menimpa harga ketikan', async ({
+    page,
+  }) => {
+    await loginBo(page, SUPERVISOR);
+    await openPage(page, '/bo/pembelian');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const price = dialogOf(page).getByLabel('@Harga');
+    await expect(price).toHaveValue('0');
+    await price.fill('62000');
+    const unitSelect = dialogOf(page).getByLabel('Satuan', { exact: true });
+    const options = await unitSelect.locator('option').allTextContents();
+    if (options.length > 1) {
+      await unitSelect.selectOption({ index: 1 });
+      await expect(price).toHaveValue(/^62\.?000/);
+    }
+  });
+
+  test('Owner melihat harga beli terakhir sebagai harga awal pembelian', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const priceOwner = await dialogOf(page).getByLabel('@Harga').inputValue();
+    expect(priceOwner).not.toBe('');
+    await dialogOf(page).getByRole('button', { name: 'Hapus' }).click();
+    await openPage(page, '/bo/penjualan');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const priceSale = await dialogOf(page).getByLabel('@Harga').inputValue();
+    expect(priceOwner).not.toBe(priceSale);
+  });
+
+  test('Faktur Pembelian punya tombol Cetak; tanpa barang memberi pesan', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pembelian');
+    await active(page).getByRole('button', { name: 'Cetak', exact: true }).click();
+    await expect(page.getByText('Belum ada barang untuk dicetak.')).toBeVisible();
+  });
+
+  test('tampilan cetak: tabel baris tidak terpotong dan bilah serta menu disembunyikan', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
+    for (let index = 0; index < 12; index += 1) {
+      await addItem(page, 'semen', '1', index % 8);
+    }
+    await page.emulateMedia({ media: 'print' });
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => getComputedStyle(node).overflowY)).toBe('visible');
+    expect(
+      await lines.evaluate((node) => node.scrollHeight - node.getBoundingClientRect().height),
+    ).toBeLessThanOrEqual(1);
+    await expect(page.locator('.bo-topbar')).toBeHidden();
+    await expect(active(page).locator('.bo-trx__bar')).toBeHidden();
+    await page.emulateMedia({ media: 'screen' });
+  });
+});
+
+test.describe('Tinjauan akhir: formulir PO dan SO memakai tab sendiri dan tanggal isian', () => {
+  test('daftar dan formulir adalah dua tab; isian formulir tetap ada saat membuka daftar', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
+    await expect(page.locator('.bo-tab--active')).toContainText('PO Baru');
+    await active(page).getByLabel('Keterangan').fill('Draf belum disimpan');
+    await openPage(page, '/bo/transaksi/po-pembelian');
+    await expect(page.locator('.bo-tab--active')).toContainText('PO Pembelian');
+    await expect(page.locator('.bo-tab', { hasText: 'PO Baru' })).toHaveCount(1);
+    await page.locator('.bo-tab__link', { hasText: 'PO Baru' }).click();
+    await expect(active(page).getByLabel('Keterangan')).toHaveValue('DRAF BELUM DISIMPAN');
+    await expect(page.locator('.bo-topbar__breadcrumb')).toHaveText('Transaksi /');
+  });
+
+  test('isian Tanggal menjadi tanggal PO di daftar', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
+    await active(page).getByLabel('Tanggal', { exact: true }).fill('2026-10-01');
+    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await addItem(page, 'semen', '1');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
+    await expect(
+      orderList(page).locator('tbody tr[data-number]').first().locator('td').nth(1),
+    ).toHaveText('2026-10-01');
+  });
+
+  test('PO yang sudah ada dibuka tampil-saja: isian terkunci, tanpa Simpan, tetap bisa Cetak', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian/baru');
+    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await addItem(page, 'semen', '2');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
+    const number =
+      (await orderList(page).locator('tbody tr[data-number] td').first().textContent()) ?? '';
+    await orderList(page).getByRole('link', { name: number, exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian\/baru\?no=PO\d{8}$/);
+    const root = active(page);
+    await expect(root.getByLabel('No PO')).toHaveValue(number);
+    await expect(root.getByLabel('Pemasok', { exact: true })).toBeDisabled();
+    await expect(root.getByLabel('Keterangan')).toBeDisabled();
+    await expect(root.getByRole('button', { name: 'Simpan', exact: true })).toHaveCount(0);
+    await expect(root.getByRole('button', { name: 'Cetak', exact: true })).toBeVisible();
+    await expect(
+      root.getByRole('combobox', { name: 'Cari atau pilih barang dan jasa' }),
+    ).toBeDisabled();
+    await expect(countText(page)).toHaveText('1 Barang (2)');
+    await rowsOf(page).first().locator('td').nth(2).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

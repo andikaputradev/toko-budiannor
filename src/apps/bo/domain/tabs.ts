@@ -1,5 +1,5 @@
 import type { LabelKey } from '../../../shared/messages';
-import { entryFor } from './menu';
+import { entryFor, type MenuEntry } from './menu';
 
 export const DASHBOARD_PATH = '/bo/dashboard';
 export const MAX_TABS = 10;
@@ -26,6 +26,15 @@ const TITLE_ALIASES: Readonly<Record<string, string>> = {
   '/bo/pengaturan/rekening': '/bo/pengaturan/profil',
   '/bo/pengaturan/printer': '/bo/pengaturan/lainnya',
   '/bo/pengaturan/backup': '/bo/pengaturan/lainnya',
+  '/bo/transaksi/po-pembelian/baru': '/bo/transaksi/po-pembelian',
+  '/bo/transaksi/so-penjualan/baru': '/bo/transaksi/so-penjualan',
+};
+
+// Tab formulir PO dan SO memakai rute sendiri agar tidak menimpa tab daftarnya; judulnya berupa
+// teks tetap supaya tidak menambah label bersama.
+const TITLE_TEXTS: Readonly<Record<string, string>> = {
+  '/bo/transaksi/po-pembelian/baru': 'PO Baru',
+  '/bo/transaksi/so-penjualan/baru': 'SO Baru',
 };
 
 export function tabKey(path: string): string {
@@ -114,4 +123,15 @@ export function closeTab(
 export function tabTitleKey(path: string): LabelKey | undefined {
   const key = tabKey(path);
   return (entryFor(key) ?? entryFor(TITLE_ALIASES[key] ?? ''))?.label;
+}
+
+// Entri menu untuk rute (termasuk rute alias di luar menu); dasar grup pada breadcrumb.
+export function tabEntryFor(path: string): MenuEntry | undefined {
+  const key = tabKey(path);
+  return entryFor(key) ?? entryFor(TITLE_ALIASES[key] ?? '');
+}
+
+// Judul tab berupa teks tetap, bila rute punya satu; selain itu undefined (pakai tabTitleKey).
+export function tabTitleText(path: string): string | undefined {
+  return TITLE_TEXTS[tabKey(path)];
 }

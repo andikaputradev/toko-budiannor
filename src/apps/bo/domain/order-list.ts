@@ -100,6 +100,16 @@ export function filterOrderRows(rows: readonly OrderRow[], filter: OrderFilter):
   });
 }
 
+// Waktu pembuatan pesanan dari isian Tanggal: hari ini memakai jam sekarang, tanggal lain memakai
+// tengah hari WIB pada tanggal itu, dan isian kosong atau tidak valid jatuh ke saat ini.
+export function orderCreatedAt(date: string, now: Date): string {
+  const parsed = new Date(`${date}T12:00:00+07:00`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsed.getTime())) {
+    return now.toISOString();
+  }
+  return date === wibDate(now) ? now.toISOString() : parsed.toISOString();
+}
+
 export function validateOrderDraft(input: {
   readonly partyId: string | undefined;
   readonly lines: number;

@@ -31,26 +31,9 @@ const VIEW_ONLY_ROUTES: ReadonlySet<string> = new Set([
   '/bo/transaksi/daftar-nota',
   '/bo/laporan/penjualan',
   '/bo/laporan/pembelian',
-]);
-
-// Daftar PO dan SO berbagi rute dan tab dengan formulirnya (?baru=1 atau ?no=): hanya tampilan
-// daftar yang tampil-saja.
-const ORDER_LIST_ROUTES: ReadonlySet<string> = new Set([
   '/bo/transaksi/po-pembelian',
   '/bo/transaksi/so-penjualan',
 ]);
-
-function isViewOnly(target: string): boolean {
-  const [path = '', search = ''] = target.split('?');
-  if (VIEW_ONLY_ROUTES.has(path)) {
-    return true;
-  }
-  if (!ORDER_LIST_ROUTES.has(path)) {
-    return false;
-  }
-  const query = new URLSearchParams(search);
-  return query.get('baru') === null && query.get('no') === null;
-}
 
 export interface AppContext {
   readonly store: Store;
@@ -130,14 +113,16 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-09',
     load: async () => {
       const { renderSalesForm } = await import('./screens/sales-form');
-      return (session, go, query) => renderSalesForm(session, go, query.get('so') ?? undefined);
+      return (session, go, query) =>
+        renderSalesForm(session, go, query.get('so') ?? undefined, query.get('no') ?? undefined);
     },
   },
   '/bo/pembelian': {
     id: 'BO-08',
     load: async () => {
       const { renderPurchaseForm } = await import('./screens/purchase-form');
-      return (session, go, query) => renderPurchaseForm(session, go, query.get('po') ?? undefined);
+      return (session, go, query) =>
+        renderPurchaseForm(session, go, query.get('po') ?? undefined, query.get('no') ?? undefined);
     },
   },
   '/bo/transaksi/surat-jalan': {
@@ -184,28 +169,31 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/bo/transaksi/so-penjualan': {
     id: 'BO-09',
     load: async () => {
-      const [{ renderOrderList }, { renderOrderForm }] = await Promise.all([
-        import('./screens/order-list'),
-        import('./screens/order-form'),
-      ]);
-      // Daftar dan formulir berbagi satu tab: ?baru=1 atau ?no=NOMOR membuka formulir.
+      const { renderOrderList } = await import('./screens/order-list');
+      return (session, go) => renderOrderList(session, go, 'so');
+    },
+  },
+  '/bo/transaksi/so-penjualan/baru': {
+    id: 'BO-09',
+    load: async () => {
+      const { renderOrderForm } = await import('./screens/order-form');
       return (session, go, query) =>
-        query.get('baru') !== null || query.get('no') !== null
-          ? renderOrderForm(session, go, 'so', query.get('no') ?? undefined)
-          : renderOrderList(session, go, 'so');
+        renderOrderForm(session, go, 'so', query.get('no') ?? undefined);
     },
   },
   '/bo/transaksi/po-pembelian': {
     id: 'BO-08',
     load: async () => {
-      const [{ renderOrderList }, { renderOrderForm }] = await Promise.all([
-        import('./screens/order-list'),
-        import('./screens/order-form'),
-      ]);
+      const { renderOrderList } = await import('./screens/order-list');
+      return (session, go) => renderOrderList(session, go, 'po');
+    },
+  },
+  '/bo/transaksi/po-pembelian/baru': {
+    id: 'BO-08',
+    load: async () => {
+      const { renderOrderForm } = await import('./screens/order-form');
       return (session, go, query) =>
-        query.get('baru') !== null || query.get('no') !== null
-          ? renderOrderForm(session, go, 'po', query.get('no') ?? undefined)
-          : renderOrderList(session, go, 'po');
+        renderOrderForm(session, go, 'po', query.get('no') ?? undefined);
     },
   },
   '/bo/laporan/penjualan': {
@@ -564,7 +552,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     shell = created;
     const { store } = context;
     workspace = createWorkspace(created, go, (target) => buildScreen(active, go, target), {
-      viewOnly: isViewOnly,
+      viewOnly: (target) => VIEW_ONLY_ROUTES.has(target.split('?')[0] ?? target),
       stamp: () => {
         const state = store.getState();
         return [

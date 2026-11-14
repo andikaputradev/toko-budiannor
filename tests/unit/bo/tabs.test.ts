@@ -5,8 +5,10 @@ import {
   closeTab,
   initialTabs,
   openTab,
+  tabEntryFor,
   tabKey,
   tabTitleKey,
+  tabTitleText,
   type TabState,
 } from '../../../src/apps/bo/domain/tabs';
 
@@ -133,5 +135,38 @@ describe('tabTitleKey', () => {
 
   it('mengembalikan undefined untuk rute tak dikenal', () => {
     expect(tabTitleKey('/bo/tidak-ada')).toBeUndefined();
+  });
+});
+
+describe('rute formulir PO dan SO memakai tab sendiri (/baru)', () => {
+  it('judul menu tetap dari alias, tetapi tab formulir berjudul PO Baru atau SO Baru', () => {
+    expect(tabTitleKey('/bo/transaksi/po-pembelian/baru')).toBe('menuPoPembelian');
+    expect(tabTitleKey('/bo/transaksi/so-penjualan/baru?no=SO26101001')).toBe('menuSoPenjualan');
+    expect(tabTitleText('/bo/transaksi/po-pembelian/baru')).toBe('PO Baru');
+    expect(tabTitleText('/bo/transaksi/so-penjualan/baru?baru=1')).toBe('SO Baru');
+  });
+
+  it('daftar PO dan SO tidak berjudul literal; rute lain tidak berjudul literal', () => {
+    expect(tabTitleText('/bo/transaksi/po-pembelian')).toBeUndefined();
+    expect(tabTitleText('/bo/barang')).toBeUndefined();
+  });
+
+  it('entri menu untuk rute alias memberi grup Transaksi', () => {
+    expect(tabEntryFor('/bo/transaksi/po-pembelian/baru')?.group).toBe('transaksi');
+    expect(tabEntryFor('/bo/barang')?.group).toBe('master-data');
+    expect(tabEntryFor('/bo/tidak-ada')).toBeUndefined();
+  });
+
+  it('daftar dan formulir membuka dua tab berbeda', () => {
+    const opened = openTab(
+      initialTabs('/bo/transaksi/po-pembelian'),
+      '/bo/transaksi/po-pembelian/baru',
+    );
+    expect(opened.state.tabs.map((tab) => tab.key)).toEqual([
+      DASHBOARD_PATH,
+      '/bo/transaksi/po-pembelian',
+      '/bo/transaksi/po-pembelian/baru',
+    ]);
+    expect(opened.changedQuery).toBe(false);
   });
 });

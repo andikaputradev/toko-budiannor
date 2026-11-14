@@ -887,3 +887,41 @@
 .bo-trx-table--koli .bo-trx-table__name {
   max-width: 100%;
 }
+
+/* ===== Cetak halaman dokumen Transaksi (Cetak PO, SO, dan Faktur Pembelian) ===== */
+@media print {
+  .bo:has(.bo-tabpanel:not([hidden]) > .bo-trx),
+  .bo:has(.bo-tabpanel:not([hidden]) > .bo-trx) :is(.bo-body, .bo-content),
+  .bo:has(.bo-tabpanel:not([hidden]) > .bo-trx) .bo-tabpanel:not([hidden]) {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .bo-trx,
+  .bo-trx .bo-trx__body,
+  .bo-trx .bo-trx__lines {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .bo-trx .bo-trx__bar,
+  .bo-trx .bo-trx-iconbtn,
+  .bo-trx .bo-trx-handle,
+  .bo-trx .bo-trx-koli-actions {
+    display: none !important;
+  }
+
+  .bo-trx-table th {
+    position: static;
+    background: #eee;
+    color: #000;
+  }
+
+  .bo-trx-table tr {
+    break-inside: avoid;
+  }
+}

@@ -11,6 +11,7 @@ import {
   createPurchaseInvoiceDraft,
   getSupplierDebtInfo,
   importFromPurchaseOrder,
+  purchaseDraftFromNumber,
   purchaseToDocLine,
   type PurchaseInvoiceDraft,
 } from '../domain/purchase-transaction';
@@ -42,6 +43,8 @@ const TEXT = {
   catatan: 'Catatan penerimaan barang ...',
   simpan: 'Simpan',
   baru: 'Baru',
+  cetak: 'Cetak',
+  belumCetak: 'Belum ada barang untuk dicetak.',
   infoHutang: 'Info Hutang Pemasok',
   belumBarang: 'Faktur pembelian belum memiliki item barang.',
   fakturBaru: 'Faktur pembelian baru siap diisi.',
@@ -64,6 +67,7 @@ export function renderPurchaseForm(
   session: BoSession,
   _go: (path: string) => void,
   initialPoNumber?: string,
+  invoiceNumber?: string,
 ): ScreenHandle {
   const store = session.store;
   let dataset = store.getState().data;
@@ -75,7 +79,8 @@ export function renderPurchaseForm(
   let lines: DocLine[] = [];
   // Total Biaya mengikuti jumlah ongkos kirim baris sampai pengguna mengetikkan nilainya sendiri.
   let extraTouched = false;
-  const productOf = (id: string) => dataset.products.find((item) => item.id === id);
+  // Dibaca dari store tiap kali: barang bisa dibuat di tab lain selagi formulir ini terbuka.
+  const productOf = (id: string) => store.getState().data.products.find((item) => item.id === id);
 
   // --- Kepala ---
   const dateEl = el('input', { className: 'input', attrs: { type: 'date', value: draft.date } });
@@ -253,7 +258,9 @@ export function renderPurchaseForm(
     invoiceNumEl.value = source.invoiceNumber;
     dateEl.value = source.date;
     receivedEl.value = source.receivedDate;
-    supplierSelectEl.value = source.supplierId ?? '';
+    selectSupplier(source.supplierId, source.supplierName);
+    extraTouched = false;
+    totals.discount.value = formatDecimal(source.invoiceDiscount, 2);
     addressEl.value = source.supplierAddress;
     phoneEl.value = source.supplierPhone;
     supplierInvNoEl.value = source.supplierInvoiceNumber;
@@ -265,12 +272,42 @@ export function renderPurchaseForm(
     recalc();
   }
 
-  function refreshDropdowns(): void {
+  // Nota contoh Daftar Nota memuat nama pemasok yang belum tentu ada di master: pilihannya
+  // bernilai "@Nama" supaya nama tetap tampil.
+  const NAMED = '@';
+
+  function selectSupplier(id: string | undefined, name: string): void {
+    if (id !== undefined && dataset.suppliers.some((item) => item.id === id)) {
+      supplierSelectEl.value = id;
+      return;
+    }
+    if (name === '') {
+      supplierSelectEl.value = '';
+      return;
+    }
+    const value = `${NAMED}${name}`;
+    if (![...supplierSelectEl.options].some((item) => item.value === value)) {
+      supplierSelectEl.append(option(name, value));
+    }
+    supplierSelectEl.value = value;
+  }
+
+  function refreshSupplierOptions(): void {
     dataset = store.getState().data;
+    const chosen = supplierSelectEl.value;
+    const chosenText = supplierSelectEl.selectedOptions[0]?.textContent ?? '';
     supplierSelectEl.replaceChildren(
       option(TEXT.pilihPemasok, ''),
       ...dataset.suppliers.map((s) => option(`${s.name} (${s.phone || '-'})`, s.id)),
     );
+    if (chosen.startsWith(NAMED)) {
+      supplierSelectEl.append(option(chosenText, chosen));
+    }
+    supplierSelectEl.value = chosen;
+  }
+
+  function refreshDropdowns(): void {
+    refreshSupplierOptions();
     refreshPoOptions();
   }
 
@@ -305,6 +342,18 @@ export function renderPurchaseForm(
       });
     },
   });
+  const printButton = createButton({
+    text: TEXT.cetak,
+    variant: 'secondary',
+    icon: 'printer',
+    onClick: () => {
+      if (lines.length === 0) {
+        showToast({ kind: 'info', text: TEXT.belumCetak });
+        return;
+      }
+      window.print();
+    },
+  });
   const newButton = createButton({
     text: TEXT.baru,
     variant: 'secondary',
@@ -329,6 +378,7 @@ export function renderPurchaseForm(
     search.focus();
   });
 
+  supplierSelectEl.addEventListener('focus', refreshSupplierOptions);
   supplierSelectEl.addEventListener('change', () => {
     const supplier = dataset.suppliers.find((item) => item.id === supplierSelectEl.value);
     addressEl.value = supplier === undefined ? '' : 'Jl. Pergudangan Industri No. 8';
@@ -354,6 +404,7 @@ export function renderPurchaseForm(
     { className: 'bo-trx__bar' },
     search.root,
     saveButton,
+    printButton,
     newButton,
     findButton,
     countEl,
@@ -370,6 +421,13 @@ export function renderPurchaseForm(
     if (order !== undefined) {
       poSelectEl.value = order.number;
       fillFromDraft(importFromPurchaseOrder(order, dataset));
+    }
+  }
+
+  if (invoiceNumber !== undefined) {
+    const found = purchaseDraftFromNumber(dataset, invoiceNumber);
+    if (found !== undefined) {
+      fillFromDraft(found);
     }
   }
 

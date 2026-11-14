@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createExpeditionNote,
+  nextSeedVersion,
   removeLine,
   upsertLine,
   validateLine,
@@ -111,5 +112,14 @@ describe('validateLine', () => {
     expect(validateLine({ ...ok, unit: '  ' })).toBe('unit');
     expect(validateLine({ ...ok, name: '' })).toBe('name');
     expect(validateLine({ ...ok, name: '   ' })).toBe('name');
+  });
+});
+
+describe('nextSeedVersion', () => {
+  it('naik setiap kali dipanggil sehingga tautan Surat Jalan yang sama bisa membangun ulang panel', () => {
+    const first = nextSeedVersion();
+    const second = nextSeedVersion();
+    expect(second).toBe(first + 1);
+    expect(first).toBeGreaterThan(0);
   });
 });

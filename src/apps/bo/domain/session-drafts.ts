@@ -22,6 +22,15 @@ export const expeditionSeeds = new Map<string, ExpeditionSeed>();
 // Nomor SO yang sudah diimpor ke Faktur Penjualan pada sesi ini (Daftar SO menampilkannya Selesai).
 export const importedSoNumbers = new Set<string>();
 
+// Versi benih Surat Jalan: dipakai sebagai query supaya "Isi SJ Ekspedisi" yang diklik lagi untuk
+// faktur yang sama membangun ulang panel Surat Jalan dengan benih terbaru.
+let seedVersion = 0;
+
+export function nextSeedVersion(): number {
+  seedVersion += 1;
+  return seedVersion;
+}
+
 export function resetSessionDrafts(): void {
   expeditionSeeds.clear();
   importedSoNumbers.clear();

@@ -4,6 +4,7 @@ import {
   buildSalesOrderRows,
   filterOrderRows,
   nextOrderNumber,
+  orderCreatedAt,
   validateOrderDraft,
   type OrderRow,
 } from '../../../src/apps/bo/domain/order-list';
@@ -159,5 +160,23 @@ describe('nextOrderNumber', () => {
 
   it('mengabaikan nomor berformat lain seperti SO-0001 dari aplikasi Owner dan Sales', () => {
     expect(nextOrderNumber('so', ['SO-0001', 'SO-0002'], '2026-10-19')).toBe('SO26101001');
+  });
+});
+
+describe('orderCreatedAt', () => {
+  const now = new Date('2026-10-19T03:30:00.000Z');
+
+  it('tanggal hari ini memakai jam sekarang', () => {
+    expect(orderCreatedAt('2026-10-19', now)).toBe('2026-10-19T03:30:00.000Z');
+  });
+
+  it('tanggal lain memakai tengah hari WIB pada tanggal itu', () => {
+    expect(orderCreatedAt('2026-11-01', now)).toBe('2026-11-01T05:00:00.000Z');
+    expect(orderCreatedAt('2026-10-01', now)).toBe('2026-10-01T05:00:00.000Z');
+  });
+
+  it('tanggal kosong atau tidak valid jatuh ke saat ini', () => {
+    expect(orderCreatedAt('', now)).toBe('2026-10-19T03:30:00.000Z');
+    expect(orderCreatedAt('bukan-tanggal', now)).toBe('2026-10-19T03:30:00.000Z');
   });
 });

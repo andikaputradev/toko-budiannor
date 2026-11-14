@@ -25,6 +25,12 @@ export const ORDER_PATH: Readonly<Record<OrderKind, string>> = {
   so: '/bo/transaksi/so-penjualan',
 };
 
+// Formulir PO dan SO punya tab sendiri supaya tidak menimpa tab daftarnya.
+export const ORDER_FORM_PATH: Readonly<Record<OrderKind, string>> = {
+  po: '/bo/transaksi/po-pembelian/baru',
+  so: '/bo/transaksi/so-penjualan/baru',
+};
+
 const COPY = {
   po: {
     judul: 'Daftar Pesanan Pembelian ( PO )',
@@ -84,7 +90,6 @@ export function renderOrderList(
 ): ScreenHandle {
   const store = session.store;
   const copy = COPY[kind];
-  const path = ORDER_PATH[kind];
   const today = wibDate(session.now());
 
   const allRows = (): OrderRow[] =>
@@ -182,7 +187,7 @@ export function renderOrderList(
             el('a', {
               className: 'bo-trx-link',
               text: row.number,
-              attrs: { href: `#${path}?no=${encodeURIComponent(row.number)}` },
+              attrs: { href: `#${ORDER_FORM_PATH[kind]}?no=${encodeURIComponent(row.number)}` },
             }),
           ),
           el('td', { className: 'bo-nowrap', text: row.date }),
@@ -212,7 +217,7 @@ export function renderOrderList(
     kpis: [],
     createText: copy.buat,
     onCreate: () => {
-      go(`${path}?baru=1`);
+      go(ORDER_FORM_PATH[kind]);
     },
     refresh: createRefreshButton(TEXT.segarkan, () => {
       rebuildPartyFilter();

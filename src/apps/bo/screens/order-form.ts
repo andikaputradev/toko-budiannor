@@ -16,7 +16,12 @@ import {
   nextLineId,
   type DocLine,
 } from '../domain/doc-line';
-import { nextOrderNumber, validateOrderDraft, type OrderKind } from '../domain/order-list';
+import {
+  nextOrderNumber,
+  orderCreatedAt,
+  validateOrderDraft,
+  type OrderKind,
+} from '../domain/order-list';
 import { createDocHead } from './trx/doc-head';
 import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
@@ -42,7 +47,6 @@ const COPY = {
     pilihDulu: 'Pilih pemasok dahulu.',
     kosong: 'PO belum memiliki item barang.',
     simpan: (number: string) => `PO ${number} berhasil disimpan.`,
-    ubah: (number: string) => `PO ${number} diperbarui.`,
     terms: [
       ['hutang', 'HUTANG'],
       ['tunai', 'TUNAI'],
@@ -57,7 +61,6 @@ const COPY = {
     pilihDulu: 'Pilih pelanggan dahulu.',
     kosong: 'SO belum memiliki item barang.',
     simpan: (number: string) => `SO ${number} berhasil disimpan.`,
-    ubah: (number: string) => `SO ${number} diperbarui.`,
     terms: [
       ['piutang', 'PIUTANG'],
       ['tunai', 'TUNAI'],
@@ -140,7 +143,7 @@ export function renderOrderForm(
   const store = session.store;
   const copy = COPY[kind];
   const buy = kind === 'po';
-  const dataset = store.getState().data;
+  let dataset = store.getState().data;
   const isOwner = store.getState().role === 'owner';
   const today = wibDate(session.now());
   const existingNumbers = (): string[] =>
@@ -156,9 +159,12 @@ export function renderOrderForm(
         : store.getState().salesOrders.find((order) => order.number === existingNumber);
   const number = existing?.number ?? nextOrderNumber(kind, existingNumbers(), today);
 
+  // Pesanan yang sudah ada dibuka tampil-saja: store tidak punya aksi ubah PO dan SO.
+  const viewOnly = existing !== undefined;
   let lines: DocLine[] = [];
   let extraTouched = false;
-  const productOf = (id: string) => dataset.products.find((item) => item.id === id);
+  // Dibaca dari store tiap kali: barang bisa dibuat di tab lain selagi formulir ini terbuka.
+  const productOf = (id: string) => store.getState().data.products.find((item) => item.id === id);
 
   // --- Kepala ---
   const dateEl = el('input', { className: 'input', attrs: { type: 'date', value: today } });
@@ -167,12 +173,19 @@ export function renderOrderForm(
     attrs: { type: 'text', readonly: 'true', value: number },
   });
   const partyEl = el('select', { className: 'input is-select' });
-  partyEl.append(
-    option(copy.pilihPihak, ''),
-    ...(buy ? dataset.suppliers : dataset.customers).map((party) =>
-      option(`${party.name} (${party.phone || '-'})`, party.id),
-    ),
-  );
+  function refreshPartyOptions(): void {
+    dataset = store.getState().data;
+    const chosen = partyEl.value;
+    partyEl.replaceChildren(
+      option(copy.pilihPihak, ''),
+      ...(buy ? dataset.suppliers : dataset.customers).map((party) =>
+        option(`${party.name} (${party.phone || '-'})`, party.id),
+      ),
+    );
+    partyEl.value = chosen;
+  }
+  refreshPartyOptions();
+  partyEl.addEventListener('focus', refreshPartyOptions);
   const staffEl = el('input', {
     className: 'input',
     attrs: {
@@ -222,10 +235,14 @@ export function renderOrderForm(
     mode: 'order',
     lines: () => lines,
     onEdit: (id) => {
-      editLine(id);
+      if (!viewOnly) {
+        editLine(id);
+      }
     },
     onReorder: (from, to) => {
-      lines = moveLine(lines, from, to);
+      if (!viewOnly) {
+        lines = moveLine(lines, from, to);
+      }
     },
   });
   const dialogKind = buy ? 'beli' : 'jual';
@@ -299,15 +316,13 @@ export function renderOrderForm(
       return;
     }
     if (existing !== undefined) {
-      showToast({ kind: 'success', text: copy.ubah(existing.number) });
-      go(ORDER_PATH[kind]);
       return;
     }
     // Nomor dibuat ulang bila sudah dipakai formulir lain yang disimpan lebih dulu.
     const saved = existingNumbers().includes(number)
       ? nextOrderNumber(kind, existingNumbers(), today)
       : number;
-    const createdAt = session.now().toISOString();
+    const createdAt = orderCreatedAt(dateEl.value, session.now());
     const createdBy = session.state().user?.id ?? '';
     const total = grandTotal();
     const notes = notesEl.value;
@@ -388,6 +403,8 @@ export function renderOrderForm(
   if (existing !== undefined) {
     dateEl.value = wibDate(new Date(existing.createdAt));
     notesEl.value = existing.notes ?? '';
+    staffEl.value =
+      dataset.users.find((user) => user.id === existing.createdBy)?.name ?? existing.createdBy;
     if ('supplierId' in existing) {
       partyEl.value = existing.supplierId;
       lines = linesOfPurchaseOrder(existing, dataset);
@@ -395,6 +412,24 @@ export function renderOrderForm(
       partyEl.value = existing.customerId ?? '';
       termsEl.value = existing.payment === 'tunai' ? 'tunai' : 'piutang';
       lines = linesOfSalesOrder(existing, dataset);
+    }
+  }
+
+  if (viewOnly) {
+    for (const control of [
+      dateEl,
+      partyEl,
+      staffEl,
+      termsEl,
+      tempoEl,
+      expeditionEl,
+      notesEl,
+      search.input,
+      totals.discount,
+      totals.extra,
+      findButton,
+    ]) {
+      control.disabled = true;
     }
   }
 
@@ -410,7 +445,7 @@ export function renderOrderForm(
         'div',
         { className: 'bo-trx__bar' },
         search.root,
-        saveButton,
+        ...(viewOnly ? [] : [saveButton]),
         printButton,
         findButton,
         countEl,

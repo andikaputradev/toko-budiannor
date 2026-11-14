@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
+import { need } from './support';
 import {
   calculateSalesTotals,
   createSalesInvoiceDraft,
@@ -8,6 +9,7 @@ import {
   buildSalesInvoiceWhatsAppMessage,
   fromDocLine,
   importedSoNumbers,
+  salesDraftFromNumber,
   toDocLine,
 } from '../../../src/apps/bo/domain/sales-transaction';
 import { expeditionSeeds } from '../../../src/apps/bo/domain/expedition';
@@ -16,6 +18,7 @@ import {
   createPurchaseInvoiceDraft,
   getSupplierDebtInfo,
   importFromPurchaseOrder,
+  purchaseDraftFromNumber,
   purchaseFromDocLine,
   purchaseToDocLine,
 } from '../../../src/apps/bo/domain/purchase-transaction';
@@ -495,5 +498,69 @@ describe('baris faktur pembelian dan DocLine (gambar 9, varian pembelian)', () =
       dataset,
     );
     expect(draft.lines[0]?.shipping).toBe(0);
+  });
+});
+
+describe('faktur dari nomor nota (tautan Daftar Nota)', () => {
+  it('nomor penjualan POS memuat baris, pelanggan, dan diskon baris', () => {
+    const sale = dataset.sales.find((item) => item.lines.length > 0);
+    if (sale === undefined) {
+      throw new Error('dataset tanpa penjualan berbaris');
+    }
+    const draft = salesDraftFromNumber(dataset, sale.number);
+    expect(draft?.invoiceNumber).toBe(sale.number);
+    expect(draft?.lines.map((line) => line.productId)).toEqual(
+      sale.lines.map((line) => line.productId),
+    );
+    expect(draft?.lines.map((line) => line.quantity)).toEqual(
+      sale.lines.map((line) => line.quantity),
+    );
+    const customer = dataset.customers.find((item) => item.id === sale.customerId);
+    expect(draft?.customerName).toBe(customer?.name ?? '');
+  });
+
+  it('diskon baris persen dan nominal menjadi ekspresi diskon BO', () => {
+    const base = need(dataset.sales.find((item) => item.lines.length > 0));
+    const first = need(base.lines[0]);
+    const sale = {
+      ...base,
+      number: 'T-DISKON',
+      lines: [
+        { ...first, discount: { kind: 'persen' as const, value: 10 } },
+        { ...first, discount: { kind: 'nominal' as const, value: 500 } },
+        { ...first, discount: undefined },
+      ],
+    };
+    const draft = salesDraftFromNumber({ ...dataset, sales: [sale] }, 'T-DISKON');
+    expect(draft?.lines.map((line) => line.discountExpr)).toEqual(['10%', 'Rp 500', '']);
+  });
+
+  it('nomor draf proposal memuat kepala tanpa baris', () => {
+    const draft = salesDraftFromNumber(dataset, 'FJ26101234');
+    expect(draft).toMatchObject({
+      invoiceNumber: 'FJ26101234',
+      date: '2026-10-25',
+      customerName: 'Bu Sherly Tjoandra',
+      paymentTerms: 'piutang',
+      soNumber: '26101234',
+    });
+    expect(draft?.lines).toEqual([]);
+  });
+
+  it('nomor penjualan tak dikenal menghasilkan undefined', () => {
+    expect(salesDraftFromNumber(dataset, 'FJ-TIDAK-ADA')).toBeUndefined();
+  });
+
+  it('nomor pembelian memuat pemasok, PO asal, dan syarat hutang', () => {
+    const draft = purchaseDraftFromNumber(dataset, 'FB26101234');
+    expect(draft).toMatchObject({
+      invoiceNumber: 'FB26101234',
+      date: '2026-10-25',
+      supplierName: 'PT Sejati Raya',
+      poNumber: 'PO26101234',
+      paymentTerms: 'hutang',
+    });
+    expect(draft?.lines).toEqual([]);
+    expect(purchaseDraftFromNumber(dataset, 'FB-TIDAK-ADA')).toBeUndefined();
   });
 });

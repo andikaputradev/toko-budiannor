@@ -14,7 +14,7 @@ export interface DiscountFields {
   readonly nominal: string;
 }
 
-export type DetailIssue = 'ok' | 'quantity' | 'decimal' | 'price';
+export type DetailIssue = 'ok' | 'quantity' | 'decimal' | 'price' | 'discount' | 'shipping';
 
 export interface PriceHistoryRow {
   readonly at: string;
@@ -81,10 +81,30 @@ export function lineTotal(unitPrice: number, quantity: number, expr: string): nu
   return Math.max(0, calculateTieredDiscount(unitPrice, expr, quantity).finalTotal);
 }
 
+// Diskon yang melebihi harga: persen di atas 100 (juga tiap tingkat), atau nominal per satuan di
+// atas harga satuan. Ekspresi kosong tidak melebihi apa pun.
+export function discountExceedsPrice(expr: string, unitPrice: number): boolean {
+  const clean = expr.trim();
+  if (clean === '') {
+    return false;
+  }
+  const rupiah = /^rp\s*(\d+(?:[.,]\d+)?)$/i.exec(clean);
+  if (rupiah?.[1] !== undefined) {
+    return Number(rupiah[1].replace(',', '.')) > unitPrice;
+  }
+  return clean
+    .replace(/%/g, '')
+    .split('+')
+    .map((part) => Number(part.trim().replace(',', '.')))
+    .some((tier) => Number.isFinite(tier) && tier > 100);
+}
+
 export function validateDetail(input: {
   readonly quantity: string;
   readonly unitPrice: string;
   readonly allowDecimal: boolean;
+  readonly discountExpr?: string;
+  readonly shipping?: string;
 }): DetailIssue {
   const quantity = parseQuantityText(input.quantity);
   if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -95,7 +115,17 @@ export function validateDetail(input: {
     return 'decimal';
   }
   const price = parsePriceText(input.unitPrice);
-  return Number.isFinite(price) && price >= 0 ? 'ok' : 'price';
+  if (!Number.isFinite(price) || price < 0) {
+    return 'price';
+  }
+  if (discountExceedsPrice(input.discountExpr ?? '', price)) {
+    return 'discount';
+  }
+  const shipping = parsePriceText(input.shipping ?? '');
+  if ((input.shipping ?? '').trim() !== '' && (!Number.isFinite(shipping) || shipping < 0)) {
+    return 'shipping';
+  }
+  return 'ok';
 }
 
 export function unitOptions(product: Product): { code: string; factor: number }[] {

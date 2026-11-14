@@ -1,6 +1,7 @@
 import { formatRupiah } from '../../../shared/format';
 import type { Customer, Dataset, SalesOrder } from '../../../shared/data/types';
 import type { DocLine } from './doc-line';
+import { buildTransactionRows } from './transaction-list';
 import { calculateTieredDiscount } from './discount';
 
 export interface SalesInvoiceLine {
@@ -113,14 +114,10 @@ export function generateSalesInvoiceNumber(): string {
   return `FJ2610${String(invoiceCounter).padStart(4, '0')}`;
 }
 
-export function createSalesInvoiceDraft(
-  dataset: Dataset,
-  defaultDate = dataset.referenceDate.slice(0, 10),
-): SalesInvoiceDraft {
-  const invoiceNumber = generateSalesInvoiceNumber();
+function emptyDraft(invoiceNumber: string, date: string): SalesInvoiceDraft {
   return {
     invoiceNumber,
-    date: defaultDate,
+    date,
     soNumber: '',
     customerId: undefined,
     customerName: '',
@@ -137,6 +134,75 @@ export function createSalesInvoiceDraft(
     invoiceDiscount: 0,
     expeditionFee: 0,
     grandTotal: 0,
+  };
+}
+
+export function createSalesInvoiceDraft(
+  dataset: Dataset,
+  defaultDate = dataset.referenceDate.slice(0, 10),
+): SalesInvoiceDraft {
+  return emptyDraft(generateSalesInvoiceNumber(), defaultDate);
+}
+
+// Faktur untuk tautan nomor di Daftar Nota. Penjualan POS memuat barisnya; draf proposal contoh
+// klien hanya memuat kepala (tanggal, pelanggan, syarat, No. SO, keterangan). Tidak mengubah
+// pencacah nomor faktur.
+export function salesDraftFromNumber(
+  dataset: Dataset,
+  number: string,
+): SalesInvoiceDraft | undefined {
+  const sale = dataset.sales.find((item) => item.number === number);
+  if (sale !== undefined) {
+    const customer = dataset.customers.find((item) => item.id === sale.customerId);
+    const lines: SalesInvoiceLine[] = sale.lines.map((line, index) => {
+      const product = dataset.products.find((item) => item.id === line.productId);
+      const discount = line.discount;
+      return {
+        id: `INV-${String(index + 1)}`,
+        productId: line.productId,
+        productName: product?.name ?? line.productId,
+        aliasName: product?.name ?? '',
+        warehouse: 'toko',
+        unit: line.unit,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        discountExpr:
+          discount === undefined
+            ? ''
+            : discount.kind === 'persen'
+              ? `${String(discount.value)}%`
+              : `Rp ${String(discount.value)}`,
+        lastSalePrice: line.unitPrice,
+      };
+    });
+    const totals = calculateSalesTotals(lines, sale.discount ?? 0, 0);
+    return {
+      ...emptyDraft(sale.number, sale.createdAt.slice(0, 10)),
+      customerId: customer?.id,
+      customerName: customer?.name ?? '',
+      customerAddress: customer?.address ?? '',
+      customerPhone: customer?.phone ?? '',
+      paymentTerms: sale.payment === 'piutang' ? 'piutang' : 'tunai',
+      lines,
+      ...totals,
+    };
+  }
+  const row = buildTransactionRows(dataset).find(
+    (item) => item.type === 'penjualan' && item.number === number,
+  );
+  if (row === undefined) {
+    return undefined;
+  }
+  const customer = dataset.customers.find((item) => item.name === row.partyName);
+  return {
+    ...emptyDraft(row.number, row.date),
+    soNumber: row.refNumber,
+    customerId: customer?.id,
+    customerName: customer?.name ?? row.partyName,
+    customerAddress: customer?.address ?? '',
+    customerPhone: customer?.phone ?? '',
+    notes: row.notes,
+    paymentTerms: row.paymentTerms.startsWith('Piutang') ? 'piutang' : 'tunai',
   };
 }
 

@@ -1,6 +1,6 @@
 import '../../../styles/bo-trx.css';
 import { el } from '../../../shared/dom';
-import { formatRupiah } from '../../../shared/format';
+import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { icon } from '../../../shared/icons';
@@ -17,11 +17,12 @@ import {
   getCustomerCreditInfo,
   importedSoNumbers,
   importFromSalesOrder,
+  salesDraftFromNumber,
   toDocLine,
   type SalesInvoiceDraft,
 } from '../domain/sales-transaction';
 import { docGrandTotal, docSummary, isPromoExpr, moveLine, type DocLine } from '../domain/doc-line';
-import { expeditionSeeds } from '../domain/expedition';
+import { expeditionSeeds, nextSeedVersion } from '../domain/expedition';
 import { createDocHead } from './trx/doc-head';
 import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
@@ -82,6 +83,7 @@ export function renderSalesForm(
   session: BoSession,
   go: (path: string) => void,
   initialSoNumber?: string,
+  invoiceNumber?: string,
 ): ScreenHandle {
   const store = session.store;
   let dataset = store.getState().data;
@@ -91,7 +93,8 @@ export function renderSalesForm(
 
   let draft: SalesInvoiceDraft = createSalesInvoiceDraft(dataset);
   let lines: DocLine[] = [];
-  const productOf = (id: string) => dataset.products.find((item) => item.id === id);
+  // Dibaca dari store tiap kali: barang bisa dibuat di tab lain selagi formulir ini terbuka.
+  const productOf = (id: string) => store.getState().data.products.find((item) => item.id === id);
   const codeOf = (id: string): string => productOf(id)?.code ?? '';
 
   // --- Kepala ---
@@ -282,11 +285,12 @@ export function renderSalesForm(
     const invoiceLines = lines.map(fromDocLine);
     const sums = calculateSalesTotals(invoiceLines, values.discount, values.extra);
     const customer = dataset.customers.find((item) => item.id === customerSelectEl.value);
+    const named = customerSelectEl.value.startsWith(NAMED);
     return {
       ...draft,
       date: dateEl.value,
       customerId: customer?.id,
-      customerName: customer?.name ?? '',
+      customerName: named ? customerSelectEl.value.slice(NAMED.length) : (customer?.name ?? ''),
       customerAddress: addressEl.value,
       customerPhone: phoneEl.value,
       notes: notesEl.value,
@@ -304,7 +308,8 @@ export function renderSalesForm(
     draft = source;
     invoiceNumEl.value = source.invoiceNumber;
     dateEl.value = source.date;
-    customerSelectEl.value = source.customerId ?? '';
+    selectCustomer(source.customerId, source.customerName);
+    totals.discount.value = formatDecimal(source.invoiceDiscount, 2);
     addressEl.value = source.customerAddress;
     phoneEl.value = source.customerPhone;
     notesEl.value = source.notes;
@@ -313,12 +318,42 @@ export function renderSalesForm(
     recalc();
   }
 
-  function refreshDropdowns(): void {
+  // Nota contoh Daftar Nota memuat nama pelanggan yang belum tentu ada di master: pilihannya
+  // bernilai "@Nama" supaya nama tetap tampil dan ikut tersimpan pada salinan faktur.
+  const NAMED = '@';
+
+  function selectCustomer(id: string | undefined, name: string): void {
+    if (id !== undefined && dataset.customers.some((item) => item.id === id)) {
+      customerSelectEl.value = id;
+      return;
+    }
+    if (name === '') {
+      customerSelectEl.value = '';
+      return;
+    }
+    const value = `${NAMED}${name}`;
+    if (![...customerSelectEl.options].some((item) => item.value === value)) {
+      customerSelectEl.append(option(name, value));
+    }
+    customerSelectEl.value = value;
+  }
+
+  function refreshCustomerOptions(): void {
     dataset = store.getState().data;
+    const chosen = customerSelectEl.value;
+    const chosenText = customerSelectEl.selectedOptions[0]?.textContent ?? '';
     customerSelectEl.replaceChildren(
       option(TEXT.pilihPelanggan, ''),
       ...dataset.customers.map((c) => option(`${c.name} (${c.phone || '-'})`, c.id)),
     );
+    if (chosen.startsWith(NAMED)) {
+      customerSelectEl.append(option(chosenText, chosen));
+    }
+    customerSelectEl.value = chosen;
+  }
+
+  function refreshDropdowns(): void {
+    refreshCustomerOptions();
     refreshSoOptions();
   }
 
@@ -447,7 +482,7 @@ export function renderSalesForm(
           unit: line.unit,
         })),
       });
-      go(`/bo/transaksi/surat-jalan?inv=${current.invoiceNumber}`);
+      go(`/bo/transaksi/surat-jalan?inv=${current.invoiceNumber}&v=${String(nextSeedVersion())}`);
     },
   });
   const newButton = createButton({
@@ -477,6 +512,7 @@ export function renderSalesForm(
   });
 
   // --- Peristiwa kepala ---
+  customerSelectEl.addEventListener('focus', refreshCustomerOptions);
   customerSelectEl.addEventListener('change', () => {
     const customer = dataset.customers.find((item) => item.id === customerSelectEl.value);
     addressEl.value = customer?.address ?? '';
@@ -521,6 +557,13 @@ export function renderSalesForm(
       soSelectEl.value = order.number;
       importedSoNumbers.add(order.number);
       fillFromDraft(importFromSalesOrder(order, dataset));
+    }
+  }
+
+  if (invoiceNumber !== undefined) {
+    const found = salesDraftFromNumber(dataset, invoiceNumber);
+    if (found !== undefined) {
+      fillFromDraft(found);
     }
   }
 
