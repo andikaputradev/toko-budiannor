@@ -128,7 +128,7 @@ describe('tabTitleKey', () => {
     expect(tabTitleKey('/bo/laporan/arus-kas')).toBe('menuArusKas');
     expect(tabTitleKey('/bo/laporan/neraca')).toBe('menuNeraca');
     expect(tabTitleKey('/bo/master/cetak-barcode')).toBe('menuCetakBarcode');
-    expect(tabTitleKey('/bo/pengaturan/rekening')).toBe('menuNoRekening');
+    expect(tabTitleKey('/bo/pengaturan/rekening')).toBe('menuProfilToko');
   });
 
   it('mengembalikan undefined untuk rute tak dikenal', () => {

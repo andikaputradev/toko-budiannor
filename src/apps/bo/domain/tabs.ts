@@ -23,7 +23,7 @@ const TITLE_ALIASES: Readonly<Record<string, string>> = {
   '/bo/laporan/arus-kas': '/bo/akuntansi/arus-kas',
   '/bo/laporan/neraca': '/bo/akuntansi/neraca',
   '/bo/master/cetak-barcode': '/bo/pengaturan/barcode',
-  '/bo/pengaturan/rekening': '/bo/master/rekening',
+  '/bo/pengaturan/rekening': '/bo/pengaturan/profil',
   '/bo/pengaturan/printer': '/bo/pengaturan/lainnya',
   '/bo/pengaturan/backup': '/bo/pengaturan/lainnya',
 };

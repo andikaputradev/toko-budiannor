@@ -77,12 +77,6 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         group: 'master-data',
         screenId: 'BO-12',
       },
-      {
-        path: '/bo/master/rekening',
-        label: 'menuNoRekening',
-        group: 'master-data',
-        screenId: 'BO-22',
-      },
     ],
   },
   {

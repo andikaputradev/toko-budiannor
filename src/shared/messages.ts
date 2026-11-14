@@ -1198,7 +1198,6 @@ export const labels = {
   menuPelanggan: 'Pelanggan',
   menuSales: 'Sales',
   menuEkspedisi: 'Ekspedisi',
-  menuNoRekening: 'No Rekening',
   menuPoPembelian: 'PO Pembelian',
   menuFakturPembelian: 'Faktur Pembelian',
   menuReturPembelian: 'Retur Pembelian',

@@ -355,13 +355,6 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
       return (session, go) => renderSettingsScreen(session, go, 'rekening');
     },
   },
-  '/bo/master/rekening': {
-    id: 'BO-22',
-    load: async () => {
-      const { renderSettingsScreen } = await import('./screens/settings');
-      return (session, go) => renderSettingsScreen(session, go, 'rekening');
-    },
-  },
   '/bo/pengaturan/printer': {
     id: 'BO-22',
     load: async () => {

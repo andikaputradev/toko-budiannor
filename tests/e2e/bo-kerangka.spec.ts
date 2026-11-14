@@ -251,3 +251,23 @@ test.describe('K5 tab tampil-saja tidak basi', () => {
     await expect(probe).toHaveCount(0);
   });
 });
+
+test.describe('M2 No Rekening dipindah ke Profil Toko', () => {
+  test('menu Master Data tidak memuat No Rekening', async ({ page }) => {
+    await loginBo(page);
+    await page.getByRole('button', { name: 'Buka menu' }).click();
+    await page.getByRole('button', { name: 'Master Data' }).click();
+    await expect(page.getByRole('link', { name: 'Data Barang', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Ekspedisi', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: /No Rekening/ })).toHaveCount(0);
+  });
+
+  test('Profil Toko memuat tab No. Rekening Toko berisi rekening contoh', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/pengaturan/profil');
+    await page.getByRole('button', { name: 'No. Rekening Toko' }).click();
+    await expect(page.getByText('Bank BCA')).toBeVisible();
+    await expect(page.getByText('Bank Mandiri')).toBeVisible();
+    await expect(page.getByText('Bank BRI')).toBeVisible();
+  });
+});

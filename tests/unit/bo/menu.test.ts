@@ -49,6 +49,21 @@ describe('Menu Navigasi Back-Office', () => {
     expect(akuntansi?.entries.map((e) => e.label)).toContain('menuJurnalOtomatis');
   });
 
+  it('menu Master Data tanpa No Rekening: rekening toko dipakai dari Profil Toko (M2)', () => {
+    const master = groupFor('master-data');
+    expect(master?.entries.map((entry) => entry.path)).toEqual([
+      '/bo/barang',
+      '/bo/master/kategori',
+      '/bo/master/merk',
+      '/bo/master/pemasok',
+      '/bo/master/pelanggan',
+      '/bo/master/sales',
+      '/bo/master/ekspedisi',
+    ]);
+    expect(entryFor('/bo/master/rekening')).toBeUndefined();
+    expect(entryFor('/bo/pengaturan/profil')?.group).toBe('pengaturan');
+  });
+
   it('hanya menampilkan menu penuh untuk peran yang berwenang (owner dan supervisor)', () => {
     expect(menuFor('owner').length).toBe(8);
     expect(menuFor('supervisor').length).toBe(8);
