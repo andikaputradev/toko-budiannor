@@ -36,7 +36,6 @@ export const posRevisi3Labels = {
   nominalPenerimaan: 'Nominal Penerimaan',
   pilihCaraNonTunai: 'Pilih QRIS, Transfer, atau EDC terlebih dahulu.',
   splitMaksimalTiga: 'Split Payment dibatasi tiga pembayaran.',
-  pecahanUang: 'Pecahan uang',
   diskonPerSatuanLabel: 'Nilai diskon per satuan (dikali jumlah)',
   diskonTandaNominalSatuan: '-{nilai}/{satuan}',
   pilihDiskonAtauHarga: 'Pilih Berikan Diskon atau Ubah Harga.',

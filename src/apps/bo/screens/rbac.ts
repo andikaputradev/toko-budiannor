@@ -239,7 +239,7 @@ export function renderRbacScreen(
     });
     const usernameInput = el('input', {
       className: 'input',
-      attrs: { placeholder: 'Username login...' },
+      attrs: { placeholder: 'Username login...', 'data-keep-case': '' },
     });
     const roleSelect = el('select', { className: 'input is-select' });
     [

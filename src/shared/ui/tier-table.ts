@@ -8,7 +8,6 @@ import { label, type LabelKey } from '../messages';
 const TIER_LABEL: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 // Tabel harga bertingkat: satu baris per satuan jual, satu kolom per tier. `highlight` menyorot tier.

@@ -317,9 +317,11 @@
   white-space: nowrap;
 }
 
+/* Stok kartu: tiga kolom sama lebar (Toko, Gudang, No Rak). Kolom tidak bergantung pada isi, jadi
+   tulisan No Rak selalu berada di tempat yang sama pada setiap kartu. */
 .pos-card__stock {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--primitive-space-2);
   margin: 0;
   padding: 6px var(--primitive-space-3);
@@ -330,7 +332,6 @@
 
 .pos-card__stockrow {
   display: flex;
-  flex: 1 1 0;
   flex-direction: column;
   min-width: 0;
 }
@@ -341,8 +342,10 @@
 
 .pos-card__stockrow dd {
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
   font-weight: var(--primitive-font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Pita PROMO di pojok kiri atas kartu. */
@@ -496,6 +499,11 @@
 
 .pos-bill__code {
   flex: none;
+}
+
+/* Nama barang tanpa aksi (daftar pesanan di layar bayar): tampil sama dengan keranjang. */
+.pos-bill__name--static {
+  cursor: default;
 }
 
 /* Tanda PROMO pada baris keranjang barang yang diskonnya masih diskon promo bawaan. */

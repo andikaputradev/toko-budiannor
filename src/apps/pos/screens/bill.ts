@@ -90,7 +90,7 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
       session,
       kind: 'draft',
       reference: bill.number,
-      build: (width) => billReceipt(session, bill, width),
+      build: () => billReceipt(session, bill),
     });
   };
 

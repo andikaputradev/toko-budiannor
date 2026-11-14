@@ -117,18 +117,25 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     },
   });
 
-  // Catatan opsional dipakai bersama semua tab pembayaran dan ikut tersimpan pada penjualan.
-  const noteInput = el('input', {
+  // Catatan opsional: satu kolom yang sama di semua tab pembayaran (baris sendiri di atas Kembali dan
+  // Bayar, dua baris teks) dan ikut tersimpan pada penjualan.
+  const noteInput = el('textarea', {
     className: 'input pos-pay__note-input',
     attrs: {
       id: noteId,
-      type: 'text',
+      rows: '2',
       maxlength: String(PAYMENT_NOTE_MAX),
       autocomplete: 'off',
     },
   });
   noteInput.value = session.state().paymentNote;
+  noteInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+  });
   noteInput.addEventListener('input', () => {
+    noteInput.value = noteInput.value.replace(/[\r\n]+/g, ' ');
     session.setPaymentNote(noteInput.value);
   });
   const noteField = el(
@@ -207,8 +214,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
     NON_CASH,
   );
   nonCash.classList.add('pos-pay__noncash');
-  const nonCashNote = el('div', { className: 'pos-pay__noncash-note' });
-  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, nonCash, nonCashNote);
+  const nonCashPanel = el('div', { className: 'pos-pay__mode' }, nonCash);
 
   // Tab Split: tiga slot tetap (Pembayaran 1 sampai 3); masing-masing membuka modal Pembayaran N.
   const parts = el('ul', { className: 'pos-pay__parts' });
@@ -265,7 +271,12 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
   );
   const daysInput = el('input', {
     className: 'input pos-pay__days',
-    attrs: { id: daysId, inputmode: 'numeric', autocomplete: 'off' },
+    attrs: {
+      id: daysId,
+      inputmode: 'numeric',
+      autocomplete: 'off',
+      'aria-label': label('hariLainnya'),
+    },
   });
   const dpInput = el('input', {
     className: 'input pos-pay__amount',
@@ -282,25 +293,26 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       el('p', { className: 't-label', text: label(key) }),
       output,
     );
-  const field = (key: LabelKey, id: string, input: HTMLElement): HTMLElement =>
-    el(
-      'div',
-      { className: 'pos-pay__field' },
-      el('label', { className: 'field__label', text: label(key), attrs: { for: id } }),
-      input,
-    );
-  // Piutang dua kolom: tempo di kiri, uang muka di kanan, lalu tiga angka ringkasan.
+  // Piutang: baris tempo (7, 14, 30 hari, kolom hari bebas dengan satuan "hari"), baris DP (label,
+  // isian, cara bayar DP sejajar), lalu tiga angka ringkasan.
   const piutangPanel = el(
     'div',
     { className: 'pos-pay__mode pos-pay__credit' },
     el(
       'div',
-      { className: 'pos-pay__credit-col' },
+      { className: 'pos-pay__credit-row' },
       termChips,
-      field('hariLainnya', daysId, daysInput),
-      daysError,
+      daysInput,
+      el('span', { className: 'pos-pay__unit', text: label('hariSatuan') }),
     ),
-    el('div', { className: 'pos-pay__credit-col' }, field('dpLabel', dpId, dpInput), dpMethods),
+    daysError,
+    el(
+      'div',
+      { className: 'pos-pay__credit-row pos-pay__credit-row--dp' },
+      el('label', { className: 'pos-pay__dp-label', text: label('dpLabel'), attrs: { for: dpId } }),
+      dpInput,
+      dpMethods,
+    ),
     el(
       'div',
       { className: 'pos-pay__figures' },
@@ -434,20 +446,6 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
       panels[item.id].hidden = !selected;
     }
     result.hidden = tab === 'piutang';
-    // Catatan satu kolom bersama: di bawah pilihan pada tab Non-Tunai, di baris bawah pada tab lain.
-    const noteHome = tab === 'nontunai' ? nonCashNote : footer;
-    if (noteField.parentElement !== noteHome) {
-      const hadFocus = document.activeElement === noteInput;
-      if (noteHome === footer) {
-        footer.insertBefore(noteField, finish);
-      } else {
-        noteHome.append(noteField);
-      }
-      noteField.classList.toggle('pos-pay__note--inline', noteHome === nonCashNote);
-      if (hadFocus) {
-        noteInput.focus();
-      }
-    }
     if (document.activeElement !== noteInput && noteInput.value !== state.paymentNote) {
       noteInput.value = state.paymentNote;
     }
@@ -593,7 +591,6 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
         go('/pos/jual');
       },
     }),
-    noteField,
     finish,
   );
   const element = el(
@@ -621,6 +618,7 @@ export function renderPay(session: PosSession, go: (path: string) => void): Scre
         tablist,
         ...TABS.map((item) => panels[item.id]),
         messageBox,
+        noteField,
         footer,
       ),
     ),

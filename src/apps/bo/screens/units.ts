@@ -26,13 +26,9 @@ function isPc(): boolean {
   );
 }
 
-const TIER_FIELDS: readonly (readonly [
-  PricingField,
-  'tierEceran' | 'tierGrosir' | 'tierKontraktor',
-])[] = [
+const TIER_FIELDS: readonly (readonly [PricingField, 'tierEceran' | 'tierGrosir'])[] = [
   ['eceran', 'tierEceran'],
   ['grosir', 'tierGrosir'],
-  ['kontraktor', 'tierKontraktor'],
 ];
 
 export function renderUnits(session: BoSession, query: URLSearchParams): ScreenHandle {
@@ -309,7 +305,6 @@ export function renderUnits(session: BoSession, query: URLSearchParams): ScreenH
           barcode: '',
           eceran: '',
           grosir: '',
-          kontraktor: '',
           isBase: false,
           isNew: true,
         },

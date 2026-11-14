@@ -97,12 +97,12 @@ describe('barang dan harga', () => {
     });
     const { store, session } = loggedIn('haris.owner', 'Kunci2026A');
     const rows = rowsOf(first(store)).map((row, index) =>
-      index === 0 ? { ...row, eceran: '100', grosir: '90', kontraktor: '80' } : row,
+      index === 0 ? { ...row, eceran: '100', grosir: '90' } : row,
     );
     const asked = session.savePricing(first(store).id, rows, false);
     expect(asked).toMatchObject({ ok: false, kind: 'confirm', rows: [0] });
     expect(session.savePricing(first(store).id, rows, true)).toEqual({ ok: true });
-    expect(first(store).prices['Kg']).toEqual({ eceran: 100, grosir: 90, kontraktor: 80 });
+    expect(first(store).prices['Kg']).toEqual({ eceran: 100, grosir: 90 });
     const entry = store.getState().activity.at(-1);
     expect(entry?.kind).toBe('harga');
     expect(entry?.detail).toContain('Kg eceran');

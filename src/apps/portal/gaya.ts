@@ -89,7 +89,6 @@ function inputSection(): HTMLElement {
     options: [
       { value: 'eceran', text: label('tierEceran') },
       { value: 'grosir', text: label('tierGrosir') },
-      { value: 'kontraktor', text: label('tierKontraktor') },
     ],
   });
   return section(
@@ -108,7 +107,6 @@ function chipSection(): HTMLElement {
     createChip({ text: label('semua'), selected: true }),
     createChip({ text: label('tierEceran') }),
     createChip({ text: label('tierGrosir') }),
-    createChip({ text: label('tierKontraktor') }),
   );
   return section('bagianChip', group);
 }
@@ -168,7 +166,6 @@ function tabSection(): HTMLElement {
     createTabs(label('kategoriHarga'), [
       { text: label('tierEceran'), panel: panel(1337000) },
       { text: label('tierGrosir'), panel: panel(1250000) },
-      { text: label('tierKontraktor'), panel: panel(1190000) },
     ]),
   );
 }

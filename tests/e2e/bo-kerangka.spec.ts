@@ -116,7 +116,7 @@ test.describe('K5 tab halaman', () => {
 
     await page.locator('.bo-tab__link', { hasText: 'Faktur Penjualan' }).click();
     await expect(page).toHaveURL(/#\/bo\/penjualan$/);
-    await expect(address).toHaveValue('Jl. Uji Tab 1');
+    await expect(address).toHaveValue('JL. UJI TAB 1');
     await expect(tabs(page)).toHaveCount(3);
   });
 

@@ -11,7 +11,7 @@ function dayOf(iso: string, offsetDays = 0): string {
 }
 
 function tiers(eceran: number, grosir: number = eceran): TierPrices {
-  return { eceran, grosir, kontraktor: grosir };
+  return { eceran, grosir };
 }
 
 interface ProductSpec {

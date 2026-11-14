@@ -2,10 +2,10 @@ import type { Sale } from '../../../shared/data/types';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 
-export type PaperWidth = 58 | 80;
 export type ReceiptKind = 'draft' | 'sale' | 'copy' | 'retur';
 
-export const PAPER_CHARS: Readonly<Record<PaperWidth, number>> = { 58: 32, 80: 48 };
+// Kertas thermal yang dipakai hanya 80 mm: 48 karakter per baris.
+export const RECEIPT_CHARS = 48;
 
 export interface ReceiptItem {
   readonly name: string;
@@ -24,7 +24,6 @@ export interface ReceiptPayment {
 
 export interface ReceiptInput {
   readonly kind: ReceiptKind;
-  readonly width: PaperWidth;
   readonly number: string;
   readonly at: Date;
   readonly cashier: string;
@@ -80,7 +79,7 @@ export function wrapText(text: string, width: number): string[] {
 }
 
 export function buildReceipt(input: ReceiptInput): string[] {
-  const width = PAPER_CHARS[input.width];
+  const width = RECEIPT_CHARS;
   const rule = (char: string): string => char.repeat(width);
   const lines: string[] = [center(label('tokoNama'), width), rule('=')];
   if (input.kind === 'draft') {

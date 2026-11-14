@@ -244,17 +244,12 @@ const amountOf = (text: string | undefined): number => {
 const nonEmpty = (text: string | undefined): string | undefined =>
   text === undefined || text === '' ? undefined : text;
 
-const tierOf = (eceran: number, grosir: number): TierPrices => ({
-  eceran,
-  grosir,
-  kontraktor: Math.round(grosir * 0.95),
-});
+const tierOf = (eceran: number, grosir: number): TierPrices => ({ eceran, grosir });
 
 // Harga satuan baru yang belum diisi mengikuti harga satuan dasar dikali konversi.
 const derivedTier = (base: TierPrices | undefined, factor: number): TierPrices => ({
   eceran: Math.round((base?.eceran ?? 0) * factor),
   grosir: Math.round((base?.grosir ?? 0) * factor),
-  kontraktor: Math.round((base?.kontraktor ?? 0) * factor),
 });
 
 // Isian persen: tidak dikirim berarti dipertahankan; kosong atau nol berarti dihapus.

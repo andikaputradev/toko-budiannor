@@ -29,6 +29,7 @@ import {
 } from './theme';
 import { renderLogin, type ScreenHandle } from './screens/login';
 import { renderSell } from './screens/sell';
+import { installUppercaseInputs } from '../../shared/uppercase-input';
 
 export interface AppContext {
   readonly store: Store;
@@ -114,6 +115,7 @@ function sessionFor(store: Store): PosSession {
 export function mount(root: HTMLElement, path: string, context: AppContext): void {
   const active = sessionFor(context.store);
   document.documentElement.dataset['app'] = 'pos';
+  installUppercaseInputs();
   migrateLegacyTheme();
   // Pilihan yang sudah terpasang di akar menang atas penyimpanan: bila penyimpanan menolak tulisan,
   // pilihan baru hanya hidup di atribut akar dan tidak boleh kembali ke nilai lama saat berpindah layar.

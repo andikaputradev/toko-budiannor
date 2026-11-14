@@ -67,18 +67,16 @@ describe('perubahan stok pada store', () => {
     );
   });
 
-  it('menyimpan status printer dan lebar kertas pada sesi', () => {
+  it('menyimpan status printer pada sesi', () => {
     const store = createStore({ dataset });
     expect(store.getState().printerConnected).toBe(true);
-    expect(store.getState().paperWidth).toBe(80);
     store.setPrinter(false);
-    store.setPaperWidth(58);
-    expect(store.getState()).toMatchObject({ printerConnected: false, paperWidth: 58 });
+    expect(store.getState()).toMatchObject({ printerConnected: false });
     store.resetData();
-    expect(store.getState()).toMatchObject({ printerConnected: true, paperWidth: 58 });
+    expect(store.getState()).toMatchObject({ printerConnected: true });
   });
 
-  it('memberi nilai bawaan printer dan lebar kertas pada sesi lama', () => {
+  it('memberi nilai bawaan printer pada sesi lama', () => {
     const parsed = parseSession({
       version: 1,
       role: 'kasir',
@@ -88,6 +86,7 @@ describe('perubahan stok pada store', () => {
       negativeReview: [],
       stockOverrides: {},
     });
-    expect(parsed).toMatchObject({ printerConnected: true, paperWidth: 80 });
+    expect(parsed).toMatchObject({ printerConnected: true });
+    expect(parsed).not.toHaveProperty('paperWidth');
   });
 });

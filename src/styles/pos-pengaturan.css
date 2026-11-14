@@ -150,7 +150,7 @@
 
 .pos-grid--daftar .pos-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px;
+  grid-template-columns: minmax(0, 1fr) 176px;
   align-items: stretch;
 }
 
@@ -159,7 +159,7 @@
   grid-template-areas:
     'photo head'
     'photo prices';
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
   grid-template-rows: auto auto;
   gap: var(--primitive-space-2) var(--primitive-space-3);
   align-content: center;
@@ -170,8 +170,8 @@
 .pos-grid--daftar .pos-card__main .pos-photo {
   grid-area: photo;
   align-self: center;
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
 }
 
 .pos-grid--daftar .pos-card__main .pos-photo--initials {
@@ -204,29 +204,38 @@
   content: ')';
 }
 
+/* Semua harga satuan selalu satu baris, tidak pernah turun ke baris kedua: huruf chip mengikuti lebar
+   baris (satuan dan harga paling lebar, tiga satuan, tetap muat di layar 1280 px). */
 .pos-grid--daftar .pos-card__prices {
   grid-area: prices;
-  flex-flow: row wrap;
-  gap: var(--primitive-space-2);
+  flex-flow: row nowrap;
+  gap: var(--primitive-space-1);
   margin: 0;
+  container-type: inline-size;
 }
 
 .pos-grid--daftar .pos-card__price {
   flex: 0 1 auto;
-  gap: var(--primitive-space-3);
+  gap: var(--primitive-space-1);
+  min-width: 0;
   min-height: 36px;
-  padding: 0 var(--primitive-space-3);
+  padding: 0 6px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-control);
   background: var(--color-accent-soft);
 }
 
+.pos-grid--daftar .pos-card__unit {
+  font-size: clamp(10px, calc((100cqw - 66px) / 40), 13px);
+}
+
 .pos-grid--daftar .pos-card__amount {
   color: var(--color-accent-pressed);
-  font-size: 15px;
+  font-size: clamp(10px, calc((100cqw - 66px) / 35), 15px);
 }
 
 .pos-grid--daftar .pos-card__stock {
+  display: flex;
   flex-direction: column;
   gap: 2px;
   margin: var(--primitive-space-2);
@@ -260,13 +269,12 @@
   }
 
   .pos-grid--daftar .pos-card__stock {
-    flex-direction: row;
+    display: grid;
     margin: 0;
     border-radius: 0;
   }
 
   .pos-grid--daftar .pos-card__stockrow {
-    flex: 1 1 0;
     flex-direction: column;
   }
 }

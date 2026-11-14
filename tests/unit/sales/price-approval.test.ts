@@ -93,20 +93,20 @@ describe('harga SO di bawah harga tier', () => {
 
   it('memakai tier pilihan katalog untuk pelanggan Umum saat menghitung harga tier', () => {
     const { session, store, product } = setup();
-    session.setCatalogTier('kontraktor');
+    session.setCatalogTier('grosir');
     session.addLine(product, 'Sak');
-    const kontraktor = unitPrice(product, 'Sak', 'kontraktor');
+    const grosir = unitPrice(product, 'Sak', 'grosir');
     session.setDraft({
-      lines: [{ ...need(session.state().draft.lines[0]), price: String(kontraktor + 100) }],
+      lines: [{ ...need(session.state().draft.lines[0]), price: String(grosir + 100) }],
     });
     expect(session.saveOrder()).toMatchObject({ ok: true });
     expect(need(store.getState().salesOrders[0]).lines[0]).toMatchObject({
-      unitPrice: kontraktor + 100,
-      listPrice: kontraktor,
+      unitPrice: grosir + 100,
+      listPrice: grosir,
     });
     session.addLine(product, 'Sak');
     session.saveOrder();
-    expect(need(store.getState().salesOrders[1]).total).toBe(kontraktor);
+    expect(need(store.getState().salesOrders[1]).total).toBe(grosir);
   });
 
   it('menolak harga nol dengan pesan harga umum pada baris yang bersangkutan', () => {

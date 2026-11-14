@@ -144,14 +144,13 @@ describe('barang proposal', () => {
     expect(engsel.minByWarehouse?.display).toBe(12);
   });
 
-  it('Grosir hanya berbeda pada Engsel dan Kontraktor mengikuti Grosir', () => {
+  it('Grosir hanya berbeda pada Engsel', () => {
     const engsel = product('ENGSEL BELLUCCI SN 5');
     expect(engsel.prices['PSG']?.grosir).toBe(55000);
     expect(engsel.prices['LSN']?.grosir).toBe(630000);
     expect(engsel.prices['DOS']?.grosir).toBe(6000000);
     for (const item of PROPOSAL_PRODUCTS) {
       for (const prices of Object.values(item.prices)) {
-        expect(prices.kontraktor).toBe(prices.grosir);
         if (item !== engsel) {
           expect(prices.grosir).toBe(prices.eceran);
         }

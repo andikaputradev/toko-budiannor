@@ -95,12 +95,9 @@ export function rowToProduct(row: ImportRowData, index: number): Product {
   }
 
   const prices: Record<string, TierPrices> = {};
-  const contractorFactor = 0.95;
-
   prices[baseUnit] = {
     eceran: row.retailPrice1,
     grosir: row.wholesalePrice1 || row.retailPrice1,
-    kontraktor: Math.round((row.wholesalePrice1 || row.retailPrice1) * contractorFactor),
   };
 
   if (row.unit2) {
@@ -110,11 +107,7 @@ export function rowToProduct(row: ImportRowData, index: number): Product {
       (row.wholesalePrice2 ?? 0) > 0
         ? (row.wholesalePrice2 ?? 0)
         : row.wholesalePrice1 * (row.ratio2 ?? 1);
-    prices[row.unit2.trim()] = {
-      eceran: ecer,
-      grosir,
-      kontraktor: Math.round(grosir * contractorFactor),
-    };
+    prices[row.unit2.trim()] = { eceran: ecer, grosir };
   }
 
   if (row.unit3) {
@@ -124,11 +117,7 @@ export function rowToProduct(row: ImportRowData, index: number): Product {
       (row.wholesalePrice3 ?? 0) > 0
         ? (row.wholesalePrice3 ?? 0)
         : row.wholesalePrice1 * (row.ratio3 ?? 1);
-    prices[row.unit3.trim()] = {
-      eceran: ecer,
-      grosir,
-      kontraktor: Math.round(grosir * contractorFactor),
-    };
+    prices[row.unit3.trim()] = { eceran: ecer, grosir };
   }
 
   const id = `IMP-${String(index + 1).padStart(4, '0')}`;

@@ -58,9 +58,6 @@ describe('konversi satuan bertingkat', () => {
     const eceran = unitPrice(semen, 'Sak', 'eceran');
     const grosir = unitPrice(semen, 'Sak', 'grosir');
     expect(eceran).toBeGreaterThan(grosir);
-    expect(unitPrice(semen, 'Kg', 'kontraktor')).toBeLessThanOrEqual(
-      unitPrice(semen, 'Kg', 'grosir'),
-    );
   });
 
   it('memecah stok dasar menjadi satuan terbesar lebih dahulu', () => {

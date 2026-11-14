@@ -22,7 +22,6 @@ import type { ScreenHandle } from './login';
 const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 // POS-08 Pelanggan: daftar per huruf awal dengan avatar inisial dan kolom cari di kiri, informasi

@@ -9,13 +9,12 @@ if (product === undefined) {
 }
 
 describe('tierRows', () => {
-  it('memberi satu baris per satuan dengan tiga tier', () => {
+  it('memberi satu baris per satuan dengan dua tier', () => {
     const rows = tierRows(product);
     expect(rows).toHaveLength(product.units.length);
     for (const row of rows) {
-      expect(Object.keys(row.prices).sort()).toEqual(['eceran', 'grosir', 'kontraktor']);
+      expect(Object.keys(row.prices).sort()).toEqual(['eceran', 'grosir']);
       expect(row.prices.eceran).toBeGreaterThanOrEqual(row.prices.grosir);
-      expect(row.prices.grosir).toBeGreaterThanOrEqual(row.prices.kontraktor);
     }
   });
 });

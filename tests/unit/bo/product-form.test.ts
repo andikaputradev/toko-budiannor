@@ -70,7 +70,7 @@ describe('formulir barang', () => {
     );
     expect(product.id).toBe('P-3601');
     expect(product.units).toEqual([{ code: 'Pcs', name: 'Pcs', factor: 1 }]);
-    expect(product.prices['Pcs']).toEqual({ eceran: 0, grosir: 0, kontraktor: 0 });
+    expect(product.prices['Pcs']).toEqual({ eceran: 0, grosir: 0 });
     expect(product.minStock).toBe(10.5);
     expect(product.minByWarehouse).toEqual({ display: 3, besar: 7.5 });
     expect(product.stock).toEqual({ display: 0, besar: 0 });
@@ -131,8 +131,8 @@ describe('formulir barang: satuan bertahap, komisi, promo, dan biaya', () => {
       ['LSN', 12],
       ['DOS', 60],
     ]);
-    expect(product.prices['Pcs']).toEqual({ eceran: 1000, grosir: 900, kontraktor: 855 });
-    expect(product.prices['LSN']).toEqual({ eceran: 12_000, grosir: 10_800, kontraktor: 10_260 });
+    expect(product.prices['Pcs']).toEqual({ eceran: 1000, grosir: 900 });
+    expect(product.prices['LSN']).toEqual({ eceran: 12_000, grosir: 10_800 });
     expect(product.prices['DOS']?.eceran).toBe(60_000);
   });
 

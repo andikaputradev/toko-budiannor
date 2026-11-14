@@ -78,7 +78,6 @@ export const boBarangLabels = {
   expMinStok: 'Minimal Stok',
   expHargaEcer: 'Harga Eceran',
   expHargaGrosir: 'Harga Grosir',
-  expHargaKontraktor: 'Harga Kontraktor',
   expHpp: 'HPP',
   expHargaBeliAkhir: 'Harga Beli Akhir',
   expTglBeliAkhir: 'Tgl Beli Akhir',

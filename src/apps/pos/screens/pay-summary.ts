@@ -2,10 +2,10 @@ import { el, nextId } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label } from '../../../shared/messages';
-import { discountAmount, lineGross, lineSubtotal } from '../domain/bill';
+import { discountAmount, lineGross } from '../domain/bill';
 import { customerLabel, initialsOf } from '../domain/catalog-view';
 import type { PosSession } from '../pos-session';
-import { discountTag, priceNodes } from './line-price';
+import { createOrderItem } from './order-item';
 
 export interface PaySummary {
   readonly element: HTMLElement;
@@ -18,7 +18,10 @@ export function createPaySummary(session: PosSession): PaySummary {
   const detailId = nextId('rincian-bayar');
   const chip = el('p', { className: 'pos-pay__customer' });
   const heading = el('h2', { className: 't-section-title' });
-  const list = el('ul', { className: 'pos-pay__items' });
+  const list = el('ul', {
+    className: 'pos-pay__items',
+    attrs: { 'aria-label': label('daftarBarang'), tabindex: '0' },
+  });
   const barAmount = el('output', { className: 'pos-pay__subtotal-amount' });
   const subtotalRow = el('output', { className: 'is-end' });
   const discountValue = el('output', { className: 'is-end pos-pay__discount' });
@@ -90,31 +93,9 @@ export function createPaySummary(session: PosSession): PaySummary {
     );
     heading.textContent = label('pesananJumlah', { jumlah: state.lines.length });
     list.replaceChildren(
-      ...state.lines.map((line) => {
-        const tag = discountTag(line);
-        const changed = line.listPrice !== undefined || tag !== undefined;
-        return el(
-          'li',
-          { className: 'pos-pay__item' },
-          el('span', { text: session.product(line.productId)?.name ?? line.productId }),
-          el('span', {
-            className: 't-label',
-            text: `${String(line.quantity).replace('.', ',')} ${line.unit}`,
-          }),
-          el('span', { className: 'is-end', text: formatRupiah(lineSubtotal(line)) }),
-          changed
-            ? el(
-                'span',
-                { className: 'pos-pay__item-price t-label' },
-                document.createTextNode('@'),
-                ...priceNodes(line),
-                tag === undefined
-                  ? false
-                  : el('span', { className: 'pos-order__flag', text: ` ${tag}` }),
-              )
-            : false,
-        );
-      }),
+      ...state.lines.map((line) =>
+        createOrderItem({ line, product: session.product(line.productId) }),
+      ),
     );
     const gross = state.lines.reduce((sum, line) => sum + lineGross(line), 0);
     const discount = state.lines.reduce((sum, line) => sum + discountAmount(line), 0);

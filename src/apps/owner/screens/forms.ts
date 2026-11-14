@@ -33,7 +33,6 @@ const METHODS: readonly (readonly [
 const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 // Bilah bawah yang menempel: total dan tombol simpan tetap terlihat saat daftar barang panjang.

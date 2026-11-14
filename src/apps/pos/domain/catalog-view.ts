@@ -85,7 +85,6 @@ export function clipName(name: string, max: number = NAME_MAX): string {
 const TIER_TEXT: Readonly<Record<Tier, string>> = {
   eceran: 'ECERAN',
   grosir: 'GROSIR',
-  kontraktor: 'KONTRAKTOR',
 };
 
 // Pelanggan terpilih tampil "KODE - NAMA (KATEGORI)"; pelanggan Umum tidak punya kode.

@@ -16,7 +16,6 @@ export type ExportColumnId =
   | 'minStok'
   | 'hargaEcer'
   | 'hargaGrosir'
-  | 'hargaKontraktor'
   | 'hpp'
   | 'hargaBeliAkhir'
   | 'tglBeliAkhir'
@@ -41,7 +40,6 @@ const COLUMN_ORDER: readonly ExportColumnId[] = [
   'minStok',
   'hargaEcer',
   'hargaGrosir',
-  'hargaKontraktor',
   'hpp',
   'hargaBeliAkhir',
   'tglBeliAkhir',
@@ -66,7 +64,6 @@ const COLUMN_LABELS: Readonly<Record<ExportColumnId, LabelKey>> = {
   minStok: 'expMinStok',
   hargaEcer: 'expHargaEcer',
   hargaGrosir: 'expHargaGrosir',
-  hargaKontraktor: 'expHargaKontraktor',
   hpp: 'expHpp',
   hargaBeliAkhir: 'expHargaBeliAkhir',
   tglBeliAkhir: 'expTglBeliAkhir',
@@ -138,7 +135,6 @@ const CELLS: Readonly<Record<ExportColumnId, (product: Product) => string>> = {
   minStok: (product) => number(product.minStock),
   hargaEcer: (product) => pricesOf(product, 'eceran'),
   hargaGrosir: (product) => pricesOf(product, 'grosir'),
-  hargaKontraktor: (product) => pricesOf(product, 'kontraktor'),
   hpp: (product) => money(product.hpp),
   hargaBeliAkhir: (product) =>
     product.lastPurchasePrice === undefined ? '' : money(product.lastPurchasePrice),

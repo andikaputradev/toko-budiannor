@@ -48,7 +48,6 @@ export const LIMIT_PERMISSION: PermissionKey = { screen: 'BO-11', action: 'Ubah 
 const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 const SUPPLIER_SAMPLES: readonly MasterValues[] = [
@@ -87,7 +86,7 @@ const CUSTOMER_SAMPLES: readonly MasterValues[] = [
     code: '',
     phone: '081355500412',
     address: 'Jl. Dharmahusada Indah No. 9, Surabaya',
-    tier: 'kontraktor',
+    tier: 'grosir',
     limit: '25.000.000',
     dueDays: '45',
   },
@@ -294,7 +293,7 @@ export const supplierAdapter: KindAdapter = {
 };
 
 function isTier(value: string | undefined): value is Tier {
-  return value === 'eceran' || value === 'grosir' || value === 'kontraktor';
+  return value === 'eceran' || value === 'grosir';
 }
 
 function customerRows(ctx: MasterContext): readonly MasterRow[] {

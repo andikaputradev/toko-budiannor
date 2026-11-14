@@ -29,7 +29,6 @@ const DEBOUNCE_MS = 300;
 const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 const WAREHOUSES: readonly (readonly [WarehouseFilter, LabelKey])[] = [

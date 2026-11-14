@@ -442,7 +442,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
             session,
             kind: 'retur',
             reference: record.number,
-            build: (width) => returnReceipt(session, record, width),
+            build: () => returnReceipt(session, record),
           });
         },
       }),
@@ -636,7 +636,7 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
             session,
             kind: 'copy',
             reference: sale.number,
-            build: (width) => saleReceipt(session, sale, 'copy', width),
+            build: () => saleReceipt(session, sale, 'copy'),
           });
         },
       }),

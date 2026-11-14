@@ -552,3 +552,21 @@
 .gaya {
   padding: var(--primitive-space-6) var(--primitive-space-4);
 }
+
+/* Isian teks di POS dan Back-Office huruf kapital (catatan tambahan "Revisi Final POS"); kata sandi,
+   nama pengguna, email, dan isian angka tidak diubah. Teks petunjuk (placeholder) tetap huruf biasa. */
+:is(:root[data-app='pos'], :root[data-app='bo'])
+  :is(input:not([type]), input[type='text'], input[type='search'], textarea):not(
+    [autocomplete='username'],
+    [inputmode='email'],
+    [inputmode='numeric'],
+    [inputmode='decimal'],
+    [data-keep-case]
+  ) {
+  text-transform: uppercase;
+}
+
+:root[data-app='pos'] :is(input, textarea)::placeholder,
+:root[data-app='bo'] :is(input, textarea)::placeholder {
+  text-transform: none;
+}

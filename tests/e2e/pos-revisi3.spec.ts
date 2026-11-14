@@ -490,7 +490,7 @@ test.describe('C. Pembayaran', () => {
   test('C1: Tunai memberi Uang Pas dan dua pecahan di atas total', async ({ page }) => {
     await toPay(page);
     const quick = page.getByRole('group', { name: 'Nominal Penerimaan' });
-    await expect(quick.getByRole('button')).toHaveText(['Uang Pas', '50.000', '100.000']);
+    await expect(quick.getByRole('button')).toHaveText(['Uang Pas', '30.000', '50.000']);
     await quick.getByRole('button', { name: '50.000', exact: true }).click();
     await expect(page.locator('.pos-pay__change')).toHaveText('Rp 23.000');
     await quick.getByRole('button', { name: 'Uang Pas' }).click();
@@ -609,12 +609,13 @@ test.describe('C. Pembayaran', () => {
     await page.getByRole('tab', { name: 'Non-Tunai' }).click();
     await note.fill('Titip di pos satpam');
     await page.getByRole('tab', { name: 'Tunai', exact: true }).click();
-    await expect(note).toHaveValue('Titip di pos satpam');
+    // Isian teks di POS dan BO huruf kapital (catatan tambahan Revisi Final POS).
+    await expect(note).toHaveValue('TITIP DI POS SATPAM');
     await page.getByRole('button', { name: 'Uang Pas' }).click();
     await page.getByRole('button', { name: 'Bayar', exact: true }).click();
     await finishPaymentDialog(page);
     await openDrawerItem(page, 'Riwayat Penjualan');
-    await expect(page.locator('.pos-history__note')).toContainText('Titip di pos satpam');
+    await expect(page.locator('.pos-history__note')).toContainText('TITIP DI POS SATPAM');
   });
 
   for (const size of SIZES) {

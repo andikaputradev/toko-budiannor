@@ -51,7 +51,7 @@ export function openPaymentDone(session: PosSession, sale: Sale, go: (path: stri
               session,
               kind: 'sale',
               reference: sale.number,
-              build: (width) => saleReceipt(session, sale, 'sale', width),
+              build: () => saleReceipt(session, sale, 'sale'),
             });
           },
         }),

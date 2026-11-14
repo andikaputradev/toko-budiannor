@@ -1,8 +1,8 @@
-export type Tier = 'eceran' | 'grosir' | 'kontraktor';
+export type Tier = 'eceran' | 'grosir';
 export type WarehouseId = 'display' | 'besar';
 export type Role = 'owner' | 'supervisor' | 'kasir' | 'frontliner' | 'sales';
 
-export const TIERS: readonly Tier[] = ['eceran', 'grosir', 'kontraktor'];
+export const TIERS: readonly Tier[] = ['eceran', 'grosir'];
 export const WAREHOUSES: readonly WarehouseId[] = ['display', 'besar'];
 export const ROLES: readonly Role[] = ['owner', 'supervisor', 'kasir', 'frontliner', 'sales'];
 

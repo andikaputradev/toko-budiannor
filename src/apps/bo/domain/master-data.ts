@@ -82,7 +82,6 @@ const CODE_COLUMN: ColumnDef = { key: 'code', label: 'masterFieldKode' };
 const TIER_OPTIONS = [
   { value: 'eceran', label: 'tierEceran' },
   { value: 'grosir', label: 'tierGrosir' },
-  { value: 'kontraktor', label: 'tierKontraktor' },
 ] as const;
 
 const ROLE_OPTIONS = [

@@ -10,7 +10,6 @@ import { discountAmount, lineGross } from '../domain/bill';
 import {
   buildReceipt,
   changeOf,
-  type PaperWidth,
   type ReceiptInput,
   type ReceiptItem,
   type ReceiptKind,
@@ -73,15 +72,9 @@ function paymentsOf(sale: Sale): ReceiptPayment[] {
     }));
 }
 
-export function saleReceipt(
-  session: PosSession,
-  sale: Sale,
-  kind: ReceiptKind,
-  width: PaperWidth,
-): ReceiptInput {
+export function saleReceipt(session: PosSession, sale: Sale, kind: ReceiptKind): ReceiptInput {
   return {
     kind,
-    width,
     number: sale.number,
     at: new Date(sale.createdAt),
     cashier: session.userName(sale.cashierId),
@@ -97,11 +90,7 @@ export function saleReceipt(
   };
 }
 
-export function returnReceipt(
-  session: PosSession,
-  record: ReturnRecord,
-  width: PaperWidth,
-): ReceiptInput {
+export function returnReceipt(session: PosSession, record: ReturnRecord): ReceiptInput {
   const sale = session.state().sales.find((item) => item.number === record.saleNumber);
   const items = record.lines.flatMap((entry): ReceiptItem[] => {
     const line = sale?.lines[entry.index];
@@ -120,7 +109,6 @@ export function returnReceipt(
   const refund = record.refund;
   return {
     kind: 'retur',
-    width,
     number: record.number,
     at: new Date(record.at),
     cashier: session.userName(session.store.getState().userId),
@@ -135,10 +123,9 @@ export function returnReceipt(
   };
 }
 
-export function billReceipt(session: PosSession, bill: HeldBill, width: PaperWidth): ReceiptInput {
+export function billReceipt(session: PosSession, bill: HeldBill): ReceiptInput {
   return {
     kind: 'draft',
-    width,
     number: bill.number,
     at: new Date(bill.createdAt),
     cashier: session.userName(bill.userId),
@@ -154,53 +141,20 @@ export interface PreviewOptions {
   readonly session: PosSession;
   readonly kind: ReceiptKind;
   readonly reference: string;
-  readonly build: (width: PaperWidth) => ReceiptInput;
+  readonly build: () => ReceiptInput;
 }
 
 export function openReceiptPreview(options: PreviewOptions): void {
   const { session, kind } = options;
-  let width: PaperWidth = session.store.getState().paperWidth;
   const sheet = el('pre', {
     className: 'pos-receipt',
     attrs: { tabindex: '0', 'aria-label': label('pratinjauStruk') },
   });
   const notice = el('div', { className: 'pos-receipt__notice', attrs: { role: 'alert' } });
-  const chips = new Map<PaperWidth, HTMLButtonElement>();
-  const group = el('div', {
-    className: 'pos-receipt__widths',
-    attrs: { role: 'group', 'aria-label': label('lebarKertas') },
-  });
-  const paint = (): void => {
-    sheet.textContent = buildReceipt(options.build(width)).join('\n');
-    sheet.dataset['width'] = String(width);
-    for (const [value, chip] of chips) {
-      chip.setAttribute('aria-pressed', value === width ? 'true' : 'false');
-    }
-  };
-  for (const value of [58, 80] as const) {
-    const chip = el('button', {
-      className: 'chip',
-      text: label(value === 58 ? 'lebar58' : 'lebar80'),
-      attrs: { type: 'button', 'aria-pressed': 'false' },
-    });
-    chip.addEventListener('click', () => {
-      width = value;
-      session.store.setPaperWidth(value);
-      paint();
-    });
-    chips.set(value, chip);
-    group.append(chip);
-  }
+  sheet.textContent = buildReceipt(options.build()).join('\n');
   const handle = openModal({
     title: label('pratinjauStruk'),
-    body: el(
-      'div',
-      { className: 'pos-receipt__body' },
-      el('p', { className: 't-label', text: label('lebarKertas') }),
-      group,
-      sheet,
-      notice,
-    ),
+    body: el('div', { className: 'pos-receipt__body' }, sheet, notice),
     actions: [],
   });
   handle.dialog.append(
@@ -229,8 +183,7 @@ export function openReceiptPreview(options: PreviewOptions): void {
       }),
     ),
   );
-  paint();
-  group.querySelector<HTMLElement>('button')?.focus();
+  sheet.focus();
 }
 
 // Pratinjau struk draf untuk pesanan yang sedang berjalan (menu Cetak Struk Draf dan Cetak Kode QR).
@@ -248,6 +201,6 @@ export function openDraftPreview(session: PosSession): void {
     session,
     kind: 'draft',
     reference: draft.number,
-    build: (width) => billReceipt(session, draft, width),
+    build: () => billReceipt(session, draft),
   });
 }

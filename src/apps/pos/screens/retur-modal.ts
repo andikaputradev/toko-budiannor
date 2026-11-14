@@ -83,7 +83,7 @@ export function openReturnDone(
               session,
               kind: 'retur',
               reference: record.number,
-              build: (width) => returnReceipt(session, record, width),
+              build: () => returnReceipt(session, record),
             });
           },
         }),

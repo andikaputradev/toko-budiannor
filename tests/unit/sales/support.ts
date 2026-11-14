@@ -58,8 +58,8 @@ export function fixtureProduct(overrides: Partial<Product> = {}): Product {
       { code: 'Sak', name: 'Sak', factor: 40 },
     ],
     prices: {
-      Kg: { eceran: 1400, grosir: 1300, kontraktor: 1200 },
-      Sak: { eceran: 54900, grosir: 51000, kontraktor: 48300 },
+      Kg: { eceran: 1400, grosir: 1300 },
+      Sak: { eceran: 54900, grosir: 51000 },
     },
     hpp: 1000,
     minStock: 800,

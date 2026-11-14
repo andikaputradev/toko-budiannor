@@ -123,9 +123,9 @@ describe('draf dan Sales Order', () => {
     expect(session.tier()).toBe(
       need(store.getState().data.customers.find((item) => item.id === 'C-001')).tier,
     );
-    session.setCatalogTier('kontraktor');
+    session.setCatalogTier('grosir');
     session.setDraft({ customerId: '' });
-    expect(session.tier()).toBe('kontraktor');
+    expect(session.tier()).toBe('grosir');
   });
 
   it('meminta persetujuan Owner bila piutang melebihi limit dan menyimpan SO sebagai Draf terkait', () => {

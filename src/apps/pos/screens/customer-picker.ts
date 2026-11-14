@@ -12,7 +12,6 @@ import type { PosSession } from '../pos-session';
 const TIER_KEYS = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 } as const satisfies Record<Tier, string>;
 
 export function openCustomerPicker(

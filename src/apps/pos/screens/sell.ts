@@ -1,11 +1,10 @@
 import { el, nextId } from '../../../shared/dom';
-import { isPromoLine } from '../../../shared/domain/promo';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
 import { accessFor, canOpenScreen, isAllowed } from '../../../shared/permissions';
 import { createSearchIndex, type SearchIndex } from '../../../shared/data/search-index';
-import type { BillLine, Product, Role, UnitDef } from '../../../shared/data/types';
+import type { Product, Role, UnitDef } from '../../../shared/data/types';
 import { unitPrice } from '../../../shared/data/units';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
@@ -15,7 +14,6 @@ import { createIllustration } from '../../../shared/ui/illustration';
 import { createMenuButton, type MenuItem } from '../../../shared/ui/menu';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
-import { lineSubtotal } from '../domain/bill';
 import {
   categoriesOf,
   clipName,
@@ -36,7 +34,7 @@ import type { ScreenHandle } from './login';
 import { needsShift } from '../domain/shift';
 import { loadCatalogView } from '../settings';
 import { guardWithShift } from './shift';
-import { discountTag } from './line-price';
+import { createOrderItem } from './order-item';
 
 const RESULT_LIMIT = 60;
 const LONG_PRESS_MS = 500;
@@ -416,21 +414,6 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     }
   };
 
-  const orderQuantity = (line: BillLine): HTMLElement => {
-    const tag = discountTag(line);
-    return el(
-      'span',
-      { className: 'pos-order__qty' },
-      document.createTextNode(
-        label('qtyBaris', {
-          jumlah: formatDecimal(line.quantity, 3, 0),
-          harga: formatRupiah(line.unitPrice).replace('Rp ', ''),
-        }),
-      ),
-      tag === undefined ? false : el('span', { className: 'pos-order__flag', text: ` ${tag}` }),
-    );
-  };
-
   const renderOrder = (): void => {
     const state = session.state();
     const frontliner = role() === 'frontliner';
@@ -439,45 +422,18 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     const total = session.total();
     const items = state.lines.map((line, position) => {
       const product = session.product(line.productId);
-      const short = product !== undefined && isShort(state.lines, product, 0);
-      const fullName = product?.name ?? line.productId;
-      const open = el(
-        'button',
-        { className: 'pos-bill__name', attrs: { type: 'button' } },
-        el('span', {
-          className: 'pos-bill__text',
-          text: clipName(fullName),
-          attrs: { title: fullName },
-        }),
-        product === undefined
-          ? false
-          : el('span', { className: 'pos-bill__code t-label', text: product.code }),
-        product !== undefined &&
-          isPromoLine(line, product) &&
-          el('span', { className: 'pos-order__promo', text: label('promoTanda') }),
-        short &&
-          el(
-            'span',
-            { className: 'pos-short' },
-            icon('triangle-alert'),
-            el('span', { text: label('stokKurang') }),
-          ),
-      );
-      open.addEventListener('click', () => {
-        if (product !== undefined) {
-          void import('./line-detail').then(({ openLineDetail }) => {
-            openLineDetail({ session, product, lineIndex: position, onDone: refocus });
-          });
-        }
+      return createOrderItem({
+        line,
+        product,
+        short: product !== undefined && isShort(state.lines, product, 0),
+        onOpen: () => {
+          if (product !== undefined) {
+            void import('./line-detail').then(({ openLineDetail }) => {
+              openLineDetail({ session, product, lineIndex: position, onDone: refocus });
+            });
+          }
+        },
       });
-      return el(
-        'li',
-        { className: 'pos-order__item' },
-        open,
-        orderQuantity(line),
-        el('span', { className: 'pos-order__unit t-label', text: line.unit }),
-        el('output', { className: 'pos-order__amount', text: formatRupiah(lineSubtotal(line)) }),
-      );
     });
 
     // Tiga pilihan di titik tiga: Open Bill (sama dengan Tahan Bill), Diskon Transaksi, dan Mulai

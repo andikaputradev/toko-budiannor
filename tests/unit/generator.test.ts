@@ -23,7 +23,7 @@ describe('generator data fiktif', () => {
     );
   });
 
-  it('memberi satuan bertingkat naik, dasar berfaktor 1, dan tiga tier harga berurutan', () => {
+  it('memberi satuan bertingkat naik, dasar berfaktor 1, dan dua tier harga berurutan', () => {
     for (const product of dataset.products) {
       expect(product.units[0]?.factor).toBe(1);
       expect(product.units[0]?.code).toBe(product.baseUnit);
@@ -34,9 +34,8 @@ describe('generator data fiktif', () => {
         expect(prices).toBeDefined();
         if (prices !== undefined) {
           expect(Object.keys(prices).sort()).toEqual([...TIERS].sort());
-          expect(prices.kontraktor).toBeLessThanOrEqual(prices.grosir);
           expect(prices.grosir).toBeLessThanOrEqual(prices.eceran);
-          expect(prices.kontraktor).toBeGreaterThan(0);
+          expect(prices.grosir).toBeGreaterThan(0);
         }
       }
     }

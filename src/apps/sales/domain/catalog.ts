@@ -9,7 +9,6 @@ import type { LabelKey } from '../../../shared/messages';
 export const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 export interface CatalogFilter {
@@ -49,7 +48,7 @@ export interface TierPrice {
   readonly active: boolean;
 }
 
-// Harga ketiga tier untuk satu satuan jual; tier aktif (pelanggan atau pilihan Sales) ditandai.
+// Harga kedua tier untuk satu satuan jual; tier aktif (pelanggan atau pilihan Sales) ditandai.
 export function tierPrices(product: Product, unit: string, active: Tier): readonly TierPrice[] {
   return TIERS.map((tier) => ({
     tier,

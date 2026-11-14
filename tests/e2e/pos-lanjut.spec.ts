@@ -32,7 +32,7 @@ async function lineLengths(page: Page): Promise<number[]> {
 }
 
 test.describe('POS-05 sampai POS-10', () => {
-  test('F-04: tahan bill, cetak struk draf 58 dan 80 mm, lalu panggil bill', async ({ page }) => {
+  test('F-04: tahan bill, cetak struk draf 80 mm, lalu panggil bill', async ({ page }) => {
     await login(page, 'Dewi');
     await page.locator('.pos-card__name').nth(0).click();
     await page.locator('.pos-card__name').nth(1).click();
@@ -70,11 +70,8 @@ test.describe('POS-05 sampai POS-10', () => {
     const sheet = page.locator('.pos-receipt');
     await expect(sheet).toContainText('STRUK DRAF, BUKAN BUKTI BAYAR');
     await expect(sheet).not.toContainText('Rp');
-    await page.getByRole('button', { name: '58 mm' }).click();
-    await expect(sheet).toHaveAttribute('data-width', '58');
-    expect(Math.max(...(await lineLengths(page)))).toBeLessThanOrEqual(32);
-    await page.getByRole('button', { name: '80 mm' }).click();
-    await expect(sheet).toHaveAttribute('data-width', '80');
+    // Kertas thermal hanya 80 mm: tidak ada pilihan lebar, 48 karakter per baris.
+    await expect(page.getByRole('button', { name: '58 mm' })).toHaveCount(0);
     expect(Math.max(...(await lineLengths(page)))).toBeLessThanOrEqual(48);
 
     await simulate(page, 'Printer');

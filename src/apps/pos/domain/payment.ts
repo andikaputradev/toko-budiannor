@@ -42,21 +42,22 @@ export const METHODS: readonly PaymentMethod[] = [
   'piutang',
 ];
 export const CASH_METHODS: readonly PaidMethod[] = ['tunai', 'qris', 'edc', 'transfer'];
-const NOTES: readonly number[] = [1000, 2000, 5000, 10000, 20000, 50000, 100000];
+const SMALL_STEP = 5000;
 const BIG_STEP = 50000;
 
-// Dua pecahan uang di atas total untuk tombol cepat Tunai (di samping Uang Pas). Pecahan pertama
-// adalah lembar tunggal terkecil yang lebih besar dari total (kelipatan 50.000 bila total sudah
-// 100.000 ke atas); pecahan kedua adalah kelipatan 50.000 berikutnya yang lebih besar dari pertama.
-// Contoh: 3.500 jadi 5.000 dan 50.000; 8.000 jadi 10.000 dan 50.000; 141.000 jadi 150.000 dan 200.000.
+// Dua nominal uang yang paling mungkin diberikan pelanggan untuk tombol cepat Tunai (di samping
+// Uang Pas): kelipatan 5.000 berikutnya dan kelipatan 50.000 berikutnya. Bila keduanya sama atau
+// sama dengan total, dipakai kelipatan 50.000 sesudahnya. Contoh: 16.000 jadi 20.000 dan 50.000;
+// 24.000 jadi 25.000 dan 50.000; 56.000 jadi 60.000 dan 100.000; 416.000 jadi 420.000 dan 450.000;
+// 1.556.100 jadi 1.560.000 dan 1.600.000.
 export function cashSuggestions(total: number): readonly number[] {
   if (!(total > 0) || !Number.isFinite(total)) {
     return [];
   }
-  const nextBig = (above: number): number => (Math.floor(above / BIG_STEP) + 1) * BIG_STEP;
-  const note = NOTES.find((value) => value > total);
-  const first = note ?? nextBig(total);
-  return [first, nextBig(first)];
+  const roundUp = (step: number): number => Math.ceil(total / step) * step;
+  const big = roundUp(BIG_STEP);
+  const options = [roundUp(SMALL_STEP), big, big + BIG_STEP, big + 2 * BIG_STEP];
+  return options.filter((value, at) => value > total && options.indexOf(value) === at).slice(0, 2);
 }
 
 const PAID_METHODS = new Set<PaymentMethod>(['tunai', 'qris', 'edc', 'transfer', 'dp']);

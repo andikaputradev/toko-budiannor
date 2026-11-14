@@ -36,7 +36,6 @@ export interface Session {
   readonly online: boolean;
   readonly reviewMode: boolean;
   readonly printerConnected: boolean;
-  readonly paperWidth: 58 | 80;
   readonly scenario: Scenario;
   readonly negativeReview: readonly string[];
   readonly stockOverrides: Readonly<Record<string, Stock>>;
@@ -77,7 +76,6 @@ export interface Store {
   setOnline(online: boolean): void;
   setReviewMode(reviewMode: boolean): void;
   setPrinter(connected: boolean): void;
-  setPaperWidth(width: 58 | 80): void;
   applyStockChange(changes: Readonly<Record<string, number>>): string[];
   addCustomer(customer: Customer): void;
   logActivity(event: Omit<ActivityEvent, 'id'>): ActivityEvent;
@@ -164,7 +162,6 @@ export function parseSession(raw: unknown): Session | undefined {
     online: raw['online'],
     reviewMode: raw['reviewMode'],
     printerConnected: typeof raw['printerConnected'] === 'boolean' ? raw['printerConnected'] : true,
-    paperWidth: raw['paperWidth'] === 58 ? 58 : 80,
     scenario: {
       limitCustomerId: typeof limitCustomerId === 'string' ? limitCustomerId : undefined,
       limitAmount: LIMIT_SCENARIO_AMOUNT,
@@ -207,7 +204,6 @@ function toSession(state: AppState, overrides: Readonly<Record<string, Stock>>):
     online: state.online,
     reviewMode: state.reviewMode,
     printerConnected: state.printerConnected,
-    paperWidth: state.paperWidth,
     scenario: state.scenario,
     negativeReview: state.negativeReview,
     stockOverrides: overrides,
@@ -258,7 +254,6 @@ export function createStore(options: StoreOptions = {}): Store {
     online: saved?.online ?? true,
     reviewMode: options.reviewMode ?? saved?.reviewMode ?? false,
     printerConnected: saved?.printerConnected ?? true,
-    paperWidth: saved?.paperWidth ?? 80,
     scenario: saved?.scenario ?? EMPTY_SCENARIO,
     negativeReview: saved?.negativeReview ?? [],
     data: compose(),
@@ -288,7 +283,6 @@ export function createStore(options: StoreOptions = {}): Store {
       online: incoming.online,
       reviewMode: incoming.reviewMode,
       printerConnected: incoming.printerConnected,
-      paperWidth: incoming.paperWidth,
       scenario: incoming.scenario,
       negativeReview: incoming.negativeReview,
       data: compose(),
@@ -328,10 +322,6 @@ export function createStore(options: StoreOptions = {}): Store {
     },
     setPrinter: (printerConnected) => {
       state = { ...state, printerConnected };
-      publish(true);
-    },
-    setPaperWidth: (paperWidth) => {
-      state = { ...state, paperWidth };
       publish(true);
     },
     applyStockChange: (changes) => {
@@ -525,7 +515,6 @@ export function createStore(options: StoreOptions = {}): Store {
         online: true,
         reviewMode: state.reviewMode,
         printerConnected: true,
-        paperWidth: state.paperWidth,
         scenario: EMPTY_SCENARIO,
         negativeReview: [],
         data: baseData,

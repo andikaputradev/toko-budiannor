@@ -118,13 +118,13 @@ describe('customerLabel dan initialsOf', () => {
     expect(customerLabel(undefined)).toBe(`${label('pelangganUmum').toUpperCase()} (ECERAN)`);
   });
 
-  it('menulis tier Grosir dan Kontraktor dengan huruf besar', () => {
+  it('menulis tier Eceran dan Grosir dengan huruf besar', () => {
     const base = PROPOSAL_CUSTOMERS[0];
     if (base === undefined) {
       throw new Error('pelanggan kosong');
     }
     expect(customerLabel({ ...base, tier: 'grosir' })).toContain('(GROSIR)');
-    expect(customerLabel({ ...base, tier: 'kontraktor' })).toContain('(KONTRAKTOR)');
+    expect(customerLabel({ ...base, tier: 'eceran' })).toContain('(ECERAN)');
   });
 
   it('inisial dari dua kata pertama', () => {

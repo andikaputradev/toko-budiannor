@@ -386,7 +386,7 @@ test.describe('kerangka Sales', () => {
 });
 
 test.describe('SALES-02 Katalog dan cek stok', () => {
-  test('30 kartu, stok toko dan gudang, harga tiga tier, satuan, filter gudang, pencarian, dan tambah ke order', async ({
+  test('30 kartu, stok toko dan gudang, harga dua tier, satuan, filter gudang, pencarian, dan tambah ke order', async ({
     page,
   }) => {
     await loginSales(page);
@@ -394,7 +394,7 @@ test.describe('SALES-02 Katalog dan cek stok', () => {
     await expect(cards).toHaveCount(30);
     const first = cards.first();
     await expect(first.locator('.sls-stock__label')).toHaveText(['STOK TOKO', 'STOK GUDANG']);
-    await expect(first.locator('.sls-price__tier')).toHaveText(['Eceran', 'Grosir', 'Kontraktor']);
+    await expect(first.locator('.sls-price__tier')).toHaveText(['Eceran', 'Grosir']);
     const active = first.locator('.sls-price[data-active="true"]');
     await expect(active.locator('.sls-price__tier')).toHaveText('Eceran');
     const eceran = await active.locator('.sls-price__value').innerText();
@@ -446,7 +446,7 @@ test.describe('SALES-02 Katalog dan cek stok', () => {
     await expect(page.getByText(/Tier harga mengikuti pelanggan/)).toBeVisible();
     await expect(
       cards.first().locator('.sls-price[data-active="true"] .sls-price__tier'),
-    ).toHaveText('Kontraktor');
+    ).toHaveText('Grosir');
     await cards
       .first()
       .getByRole('button', { name: /^Tambah ke Order/ })
@@ -458,7 +458,7 @@ test.describe('SALES-02 Katalog dan cek stok', () => {
     await expect(page.locator('.sls-line')).toHaveCount(1);
   });
 
-  test('foto barang membuka penampil yang dapat diperbesar dan menampilkan harga tiga tier', async ({
+  test('foto barang membuka penampil yang dapat diperbesar dan menampilkan harga dua tier', async ({
     page,
   }) => {
     await loginSales(page);
@@ -470,16 +470,10 @@ test.describe('SALES-02 Katalog dan cek stok', () => {
     await expect(viewer.getByRole('img', { name })).toBeVisible();
 
     const table = viewer.getByRole('table', { name: 'Harga bertingkat' });
-    await expect(table.getByRole('columnheader')).toHaveText([
-      'Satuan',
-      'Eceran',
-      'Grosir',
-      'Kontraktor',
-    ]);
+    await expect(table.getByRole('columnheader')).toHaveText(['Satuan', 'Eceran', 'Grosir']);
     const sak = table.getByRole('row', { name: /^Sak/ });
     await expect(sak).toContainText('Rp 54.900');
     await expect(sak).toContainText('Rp 51.000');
-    await expect(sak).toContainText('Rp 48.300');
     await expect(table.getByRole('row')).toHaveCount(3);
     await expect(viewer.locator('.mob-tier th[data-active="true"]')).toHaveText('Eceran');
 

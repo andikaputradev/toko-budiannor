@@ -10,12 +10,11 @@ export interface PriceRow {
   readonly barcode: string;
   readonly eceran: string;
   readonly grosir: string;
-  readonly kontraktor: string;
   readonly isBase: boolean;
   readonly isNew: boolean;
 }
 
-export type PricingField = 'factor' | 'name' | 'barcode' | 'eceran' | 'grosir' | 'kontraktor';
+export type PricingField = 'factor' | 'name' | 'barcode' | 'eceran' | 'grosir';
 
 export type PricingIssue =
   | { readonly row: number; readonly field: PricingField; readonly messageId: SystemMessageId }
@@ -29,7 +28,7 @@ function text(value: number): string {
 
 export function rowsOf(product: Product): PriceRow[] {
   return product.units.map((unit, index) => {
-    const prices = product.prices[unit.code] ?? { eceran: 0, grosir: 0, kontraktor: 0 };
+    const prices = product.prices[unit.code] ?? { eceran: 0, grosir: 0 };
     return {
       key: `u${String(index)}`,
       code: unit.code,
@@ -38,7 +37,6 @@ export function rowsOf(product: Product): PriceRow[] {
       barcode: unit.barcode ?? '',
       eceran: String(prices.eceran),
       grosir: String(prices.grosir),
-      kontraktor: String(prices.kontraktor),
       isBase: unit.factor === 1 && index === 0,
       isNew: false,
     };
@@ -85,7 +83,6 @@ export function validatePricing(rows: readonly PriceRow[]): PricingIssue | undef
     const tiers = [
       ['eceran', parsePrice(row.eceran)],
       ['grosir', parsePrice(row.grosir)],
-      ['kontraktor', parsePrice(row.kontraktor)],
     ] as const;
     for (const [field, value] of tiers) {
       if (value <= 0) {
@@ -107,10 +104,7 @@ export function belowHpp(rows: readonly PriceRow[], hpp: number): number[] {
   const flagged: number[] = [];
   rows.forEach((row, index) => {
     const floor = hpp * factorOf(row);
-    if (
-      floor > 0 &&
-      [row.eceran, row.grosir, row.kontraktor].some((value) => parsePrice(value) < floor)
-    ) {
+    if (floor > 0 && [row.eceran, row.grosir].some((value) => parsePrice(value) < floor)) {
       flagged.push(index);
     }
   });
@@ -146,7 +140,6 @@ export function buildUnits(rows: readonly PriceRow[]): {
     prices[code] = {
       eceran: parsePrice(row.eceran),
       grosir: parsePrice(row.grosir),
-      kontraktor: parsePrice(row.kontraktor),
     };
   }
   return { units, prices };
@@ -165,7 +158,7 @@ export function describeChanges(product: Product, rows: readonly PriceRow[]): st
       notes.push(`${unit.code} baru`);
       continue;
     }
-    for (const tier of ['eceran', 'grosir', 'kontraktor'] as const) {
+    for (const tier of ['eceran', 'grosir'] as const) {
       if (before[tier] !== after[tier]) {
         notes.push(`${unit.code} ${tier} ${String(before[tier])} menjadi ${String(after[tier])}`);
       }

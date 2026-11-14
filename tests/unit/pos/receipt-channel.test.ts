@@ -28,7 +28,7 @@ function sellByTransfer() {
 describe('kanal pada struk dan bukti retur', () => {
   it('struk penjualan memuat kanal pada baris pembayaran', () => {
     const { session, sale } = sellByTransfer();
-    const receipt = saleReceipt(session, sale, 'sale', 58);
+    const receipt = saleReceipt(session, sale, 'sale');
     expect(receipt.payments).toEqual([{ method: 'Transfer BCA', amount: 140000 }]);
   });
 
@@ -45,7 +45,7 @@ describe('kanal pada struk dan bukti retur', () => {
     if (record === undefined) {
       throw new Error('retur tidak tersimpan');
     }
-    expect(returnReceipt(session, record, 58).payments).toEqual([
+    expect(returnReceipt(session, record).payments).toEqual([
       { method: 'Transfer BCA', amount: 70000 },
     ]);
   });
@@ -62,7 +62,7 @@ describe('kanal pada struk dan bukti retur', () => {
     if (sale === undefined) {
       throw new Error('penjualan gagal');
     }
-    expect(saleReceipt(session, sale, 'sale', 58).payments).toEqual([
+    expect(saleReceipt(session, sale, 'sale').payments).toEqual([
       { method: 'Transfer', amount: 70000 },
     ]);
   });

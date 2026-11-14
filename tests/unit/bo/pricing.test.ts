@@ -18,7 +18,7 @@ function fresh(): PriceRow[] {
 }
 
 describe('harga bertingkat', () => {
-  it('memuat satuan dasar terlebih dahulu dengan harga tiga tier', () => {
+  it('memuat satuan dasar terlebih dahulu dengan harga dua tier', () => {
     const rows = fresh();
     expect(rows.map((row) => row.name)).toEqual(['Kg', 'Sak']);
     expect(rows[0]?.isBase).toBe(true);
@@ -39,18 +39,18 @@ describe('harga bertingkat', () => {
 
   it('menolak harga kosong atau nol dan Grosir lebih tinggi dari Eceran', () => {
     const rows = fresh();
-    const withPrice = (field: 'eceran' | 'grosir' | 'kontraktor', value: string): PriceRow[] =>
+    const withPrice = (field: 'eceran' | 'grosir', value: string): PriceRow[] =>
       rows.map((row, index) => (index === 0 ? { ...row, [field]: value } : row));
     expect(validatePricing(withPrice('eceran', '0'))).toMatchObject({
       field: 'eceran',
       messageId: 'MSG-066',
     });
-    expect(validatePricing(withPrice('kontraktor', ''))).toMatchObject({
-      field: 'kontraktor',
+    expect(validatePricing(withPrice('grosir', ''))).toMatchObject({
+      field: 'grosir',
       messageId: 'MSG-066',
     });
     const higher = rows.map((row, index) =>
-      index === 0 ? { ...row, eceran: '1000', grosir: '1001', kontraktor: '900' } : row,
+      index === 0 ? { ...row, eceran: '1000', grosir: '1001' } : row,
     );
     expect(validatePricing(higher)).toMatchObject({ field: 'grosir', messageId: 'MSG-067' });
   });
@@ -68,7 +68,7 @@ describe('harga bertingkat', () => {
   it('menandai harga di bawah HPP per satuan dan menghitung margin Eceran', () => {
     const rows = fresh();
     expect(belowHpp(rows, 0)).toEqual([]);
-    const cheap = rows.map((row) => ({ ...row, kontraktor: '1' }));
+    const cheap = rows.map((row) => ({ ...row, eceran: '1', grosir: '1' }));
     expect(belowHpp(cheap, semen.hpp)).toEqual([0, 1]);
     expect(marginPercent(1000, 800)).toBe(20);
     expect(marginPercent(0, 800)).toBeUndefined();
@@ -87,7 +87,6 @@ describe('harga bertingkat', () => {
         barcode: '12345678',
         eceran: '2000',
         grosir: '1800',
-        kontraktor: '1700',
         isBase: false,
         isNew: true,
       },
@@ -95,7 +94,7 @@ describe('harga bertingkat', () => {
     const built = buildUnits(rows);
     expect(built.units.map((unit) => unit.code)).toEqual(['Kg', 'Zak Kecil', 'Sak']);
     expect(built.units[1]).toMatchObject({ factor: 0.5, barcode: '12345678' });
-    expect(built.prices['Zak Kecil']).toEqual({ eceran: 2000, grosir: 1800, kontraktor: 1700 });
+    expect(built.prices['Zak Kecil']).toEqual({ eceran: 2000, grosir: 1800 });
     const notes = describeChanges(semen, rows);
     expect(notes).toContain('Zak Kecil baru');
     const changed = rows.map((row, index) => (index === 0 ? { ...row, eceran: '999999' } : row));

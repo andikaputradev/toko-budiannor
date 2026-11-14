@@ -1149,7 +1149,7 @@ test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () 
     await expect(dialog).toBeHidden();
     await page.getByRole('button', { name: /^Bayar Rp/ }).click();
     await expect(page).toHaveURL(/#\/pos\/bayar$/);
-    const item = page.locator('.pos-pay__item').first();
+    const item = page.locator('.pos-pay__items .pos-order__item').first();
     await expect(item).toContainText('Rp 63.000');
     await expect(item.locator('.pos-order__flag')).toHaveText('-10%');
     await expect(page.locator('.pos-pay__grand')).toHaveText('Rp 63.000');
@@ -1169,7 +1169,7 @@ test.describe('diskon dan perubahan harga sampai bayar, struk, dan riwayat', () 
     await page.getByRole('button', { name: /^Subtotal/ }).click();
     await expect(page.locator('.pos-pay__breakdown')).toBeVisible();
     await expect(page.locator('.pos-pay__discount')).toBeHidden();
-    await expect(page.locator('.pos-pay__item .pos-order__flag')).toHaveCount(0);
+    await expect(page.locator('.pos-pay__items .pos-order__flag')).toHaveCount(0);
   });
 
   test('struk memuat baris Diskon dan riwayat menampilkan Subtotal, Diskon, dan Grand Total yang konsisten', async ({
@@ -1747,7 +1747,7 @@ test.describe('Biaya sesuai PDF', () => {
     await expect(detail.locator('[data-row="dibuat-oleh"]')).toContainText('Dewi');
     await expect(detail.locator('[data-row="jenis"]')).toContainText('Uang Makan Karyawan');
     await expect(detail.locator('[data-row="nominal"]')).toContainText('Rp 5.000');
-    await expect(detail.locator('[data-row="catatan"]')).toContainText('Makan siang gudang');
+    await expect(detail.locator('[data-row="catatan"]')).toContainText('MAKAN SIANG GUDANG');
     await expect(detail.getByRole('button', { name: 'Cetak Struk' })).toBeVisible();
     const search = page.getByRole('searchbox', { name: 'Cari transaksi' });
     await search.fill('zzz');

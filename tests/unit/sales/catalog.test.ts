@@ -64,13 +64,12 @@ describe('stok dan harga pada kartu katalog', () => {
     expect(stockTone(lowStore, 'besar')).toBe('sukses');
   });
 
-  it('menyusun harga ketiga tier untuk satuan terpilih dan menandai tier aktif', () => {
+  it('menyusun harga kedua tier untuk satuan terpilih dan menandai tier aktif', () => {
     expect(tierPrices(plenty, 'Sak', 'grosir')).toEqual([
       { tier: 'eceran', price: 54900, active: false },
       { tier: 'grosir', price: 51000, active: true },
-      { tier: 'kontraktor', price: 48300, active: false },
     ]);
-    expect(tierPrices(plenty, 'Kg', 'kontraktor').find((row) => row.active)?.price).toBe(1200);
+    expect(tierPrices(plenty, 'Kg', 'eceran').find((row) => row.active)?.price).toBe(1400);
   });
 
   it('menjelaskan isi satuan terhadap satuan dasar', () => {

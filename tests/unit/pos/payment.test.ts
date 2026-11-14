@@ -204,35 +204,37 @@ describe('baris pembayaran berkanal', () => {
   });
 });
 
-describe('cashSuggestions (Uang Pas dan dua pecahan di atasnya)', () => {
-  it('mengikuti contoh klien: 3.500, 8.000, dan 141.000', () => {
-    expect(cashSuggestions(3500)).toEqual([5000, 50000]);
-    expect(cashSuggestions(8000)).toEqual([10000, 50000]);
-    expect(cashSuggestions(141000)).toEqual([150000, 200000]);
-    expect(cashSuggestions(110000)).toEqual([150000, 200000]);
+describe('cashSuggestions (Uang Pas dan dua nominal yang paling mungkin dibayar)', () => {
+  it('mengikuti contoh klien pada dokumen Revisi Final POS', () => {
+    expect(cashSuggestions(1_556_100)).toEqual([1_560_000, 1_600_000]);
+    expect(cashSuggestions(16_000)).toEqual([20_000, 50_000]);
+    expect(cashSuggestions(24_000)).toEqual([25_000, 50_000]);
+    expect(cashSuggestions(56_000)).toEqual([60_000, 100_000]);
+    expect(cashSuggestions(416_000)).toEqual([420_000, 450_000]);
+    expect(cashSuggestions(536_000)).toEqual([540_000, 550_000]);
   });
 
-  it('memakai lembar tunggal terkecil di atas total untuk total di bawah 100.000', () => {
-    expect(cashSuggestions(1)).toEqual([1000, 50000]);
-    expect(cashSuggestions(1000)).toEqual([2000, 50000]);
-    expect(cashSuggestions(4999)).toEqual([5000, 50000]);
-    expect(cashSuggestions(5000)).toEqual([10000, 50000]);
-    expect(cashSuggestions(19999)).toEqual([20000, 50000]);
-    expect(cashSuggestions(20000)).toEqual([50000, 100000]);
-    expect(cashSuggestions(45000)).toEqual([50000, 100000]);
-    expect(cashSuggestions(50000)).toEqual([100000, 150000]);
-    expect(cashSuggestions(99999)).toEqual([100000, 150000]);
+  it('pecahan pertama kelipatan 5.000 berikutnya dan kedua kelipatan 50.000 berikutnya', () => {
+    expect(cashSuggestions(1)).toEqual([5000, 50_000]);
+    expect(cashSuggestions(3500)).toEqual([5000, 50_000]);
+    expect(cashSuggestions(8000)).toEqual([10_000, 50_000]);
+    expect(cashSuggestions(141_000)).toEqual([145_000, 150_000]);
+    expect(cashSuggestions(111_000)).toEqual([115_000, 150_000]);
+    expect(cashSuggestions(1_234_567)).toEqual([1_235_000, 1_250_000]);
   });
 
-  it('memakai kelipatan 50.000 berikutnya mulai 100.000', () => {
-    expect(cashSuggestions(100000)).toEqual([150000, 200000]);
-    expect(cashSuggestions(149999)).toEqual([150000, 200000]);
-    expect(cashSuggestions(150000)).toEqual([200000, 250000]);
-    expect(cashSuggestions(1234567)).toEqual([1250000, 1300000]);
+  it('melewati nominal yang sama dengan total atau kembar dengan pecahan pertama', () => {
+    expect(cashSuggestions(5000)).toEqual([50_000, 100_000]);
+    expect(cashSuggestions(20_000)).toEqual([50_000, 100_000]);
+    expect(cashSuggestions(49_000)).toEqual([50_000, 100_000]);
+    expect(cashSuggestions(50_000)).toEqual([100_000, 150_000]);
+    expect(cashSuggestions(70_000)).toEqual([100_000, 150_000]);
+    expect(cashSuggestions(100_000)).toEqual([150_000, 200_000]);
+    expect(cashSuggestions(110_000)).toEqual([150_000, 200_000]);
   });
 
-  it('selalu memberi dua pecahan yang lebih besar dari total dan saling berbeda', () => {
-    for (const total of [1, 999, 1500, 9999, 25000, 48500, 75000, 99000, 101000, 987654]) {
+  it('selalu memberi dua nominal yang lebih besar dari total dan saling berbeda', () => {
+    for (const total of [1, 999, 1500, 9999, 25_000, 48_500, 75_000, 99_000, 101_000, 987_654]) {
       const [first, second] = cashSuggestions(total);
       expect(first, String(total)).toBeGreaterThan(total);
       expect(second, String(total)).toBeGreaterThan(first ?? 0);

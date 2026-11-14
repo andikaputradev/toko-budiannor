@@ -6,7 +6,7 @@ import { createButton } from '../../../shared/ui/button';
 import { createTextField, type TextField } from '../../../shared/ui/field';
 import { showToast } from '../../../shared/ui/toast';
 import { backupFileName, buildBackup } from '../domain/backup';
-import type { PaperWidth, ReceiptInput } from '../domain/receipt';
+import type { ReceiptInput } from '../domain/receipt';
 import { failureText } from '../failure';
 import type { PosSession } from '../pos-session';
 import { ROLE_LABELS } from '../roles';
@@ -79,9 +79,8 @@ export function renderSettings(session: PosSession, go: (path: string) => void):
   const detail = el('section', { className: 'pos-settings-panel' });
   const pane = createSplitPane({ list: menu, detail, backLabel: 'kembali' });
 
-  const sampleReceipt = (width: PaperWidth): ReceiptInput => ({
+  const sampleReceipt = (): ReceiptInput => ({
     kind: 'sale',
-    width,
     number: SAMPLE_REFERENCE,
     at: session.now(),
     cashier: session.userName(session.store.getState().userId),

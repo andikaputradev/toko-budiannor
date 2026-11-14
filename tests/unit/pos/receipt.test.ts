@@ -6,19 +6,17 @@ import { discountAmount } from '../../../src/apps/pos/domain/bill';
 import { saleBreakdown } from '../../../src/apps/pos/domain/history';
 import {
   buildReceipt,
-  PAPER_CHARS,
+  RECEIPT_CHARS,
   wrapText,
-  type PaperWidth,
   type ReceiptInput,
   type ReceiptItem,
 } from '../../../src/apps/pos/domain/receipt';
 import { createPosSession } from '../../../src/apps/pos/pos-session';
 import { returnReceipt, saleReceipt } from '../../../src/apps/pos/screens/receipt-preview';
 
-function input(kind: ReceiptInput['kind'], width: PaperWidth): ReceiptInput {
+function input(kind: ReceiptInput['kind']): ReceiptInput {
   return {
     kind,
-    width,
     number: kind === 'draft' ? 'B-0003' : 'T-000103',
     at: new Date('2026-10-19T03:00:00Z'),
     cashier: 'Dewi',
@@ -39,40 +37,35 @@ function input(kind: ReceiptInput['kind'], width: PaperWidth): ReceiptInput {
   };
 }
 
-describe('struk 58 mm dan 80 mm', () => {
-  it('memakai 32 dan 48 karakter per baris', () => {
-    expect(PAPER_CHARS[58]).toBe(32);
-    expect(PAPER_CHARS[80]).toBe(48);
+describe('struk 80 mm', () => {
+  it('memakai 48 karakter per baris', () => {
+    expect(RECEIPT_CHARS).toBe(48);
   });
 
-  for (const width of [58, 80] as const) {
-    for (const kind of ['draft', 'sale', 'copy'] as const) {
-      it(`tidak melebihi lebar kertas untuk ${kind} ${String(width)} mm`, () => {
-        const lines = buildReceipt(input(kind, width));
-        for (const line of lines) {
-          expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[width]);
-        }
-      });
-    }
+  for (const kind of ['draft', 'sale', 'copy'] as const) {
+    it(`tidak melebihi lebar kertas untuk ${kind}`, () => {
+      const lines = buildReceipt(input(kind));
+      for (const line of lines) {
+        expect(line.length).toBeLessThanOrEqual(RECEIPT_CHARS);
+      }
+    });
   }
 
   it('menulis judul struk draf persis dan tanpa harga atau harga modal', () => {
-    for (const width of [58, 80] as const) {
-      const text = buildReceipt(input('draft', width)).join('\n');
-      expect(text).toContain('STRUK DRAF, BUKAN BUKTI BAYAR');
-      expect(text).toContain('B-0003');
-      expect(text).not.toContain('Rp');
-      expect(text).toContain('1,5 Sak');
-    }
+    const text = buildReceipt(input('draft')).join('\n');
+    expect(text).toContain('STRUK DRAF, BUKAN BUKTI BAYAR');
+    expect(text).toContain('B-0003');
+    expect(text).not.toContain('Rp');
+    expect(text).toContain('1,5 Sak');
   });
 
   it('menandai salinan dan memuat total, pembayaran, dan kembalian pada struk penjualan', () => {
-    const copy = buildReceipt(input('copy', 58)).join('\n');
+    const copy = buildReceipt(input('copy')).join('\n');
     expect(copy).toContain('SALINAN');
     expect(copy).toContain('Rp 820.500');
     expect(copy).toContain('Rp 900.000');
     expect(copy).toContain('Rp 79.500');
-    expect(buildReceipt(input('sale', 80)).join('\n')).not.toContain('SALINAN');
+    expect(buildReceipt(input('sale')).join('\n')).not.toContain('SALINAN');
   });
 
   it('membungkus nama panjang tanpa memotong kata pendek', () => {
@@ -81,33 +74,25 @@ describe('struk 58 mm dan 80 mm', () => {
     expect(wrapText('A'.repeat(40), 10)).toEqual(['A'.repeat(10)]);
     expect(wrapText('', 10)).toEqual([]);
   });
-
-  it('memberi lebih banyak baris bungkus pada 58 mm daripada 80 mm', () => {
-    const narrow = buildReceipt(input('draft', 58)).length;
-    const wide = buildReceipt(input('draft', 80)).length;
-    expect(narrow).toBeGreaterThan(wide);
-  });
 });
 
 describe('struk bukti retur', () => {
-  for (const width of [58, 80] as const) {
-    it(`memuat judul BUKTI RETUR, tanpa kembalian, dan muat ${String(PAPER_CHARS[width])} karakter`, () => {
-      const lines = buildReceipt({
-        ...input('retur', width),
-        number: 'R-0001',
-        total: 140000,
-        payments: [{ method: 'QRIS', amount: 140000 }],
-        change: 0,
-      });
-      const text = lines.join('\n');
-      expect(text).toContain('BUKTI RETUR');
-      expect(text).toContain('R-0001');
-      expect(text).not.toContain('Kembalian');
-      for (const line of lines) {
-        expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[width]);
-      }
+  it('memuat judul BUKTI RETUR, tanpa kembalian, dan muat 48 karakter', () => {
+    const lines = buildReceipt({
+      ...input('retur'),
+      number: 'R-0001',
+      total: 140000,
+      payments: [{ method: 'QRIS', amount: 140000 }],
+      change: 0,
     });
-  }
+    const text = lines.join('\n');
+    expect(text).toContain('BUKTI RETUR');
+    expect(text).toContain('R-0001');
+    expect(text).not.toContain('Kembalian');
+    for (const line of lines) {
+      expect(line.length).toBeLessThanOrEqual(RECEIPT_CHARS);
+    }
+  });
 });
 
 describe('struk dengan diskon dan perubahan harga', () => {
@@ -124,7 +109,6 @@ describe('struk dengan diskon dan perubahan harga', () => {
   ];
   const base: ReceiptInput = {
     kind: 'sale',
-    width: 58,
     number: 'T-000141',
     at: new Date('2026-10-19T03:00:00Z'),
     cashier: 'Dewi',
@@ -160,7 +144,7 @@ describe('struk dengan diskon dan perubahan harga', () => {
     expect(lines.some((line) => /^\s*Diskon\s+-Rp 19\.500$/.test(line))).toBe(true);
     expect(text).toContain('Rp 175.500');
     for (const line of lines) {
-      expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[58]);
+      expect(line.length).toBeLessThanOrEqual(RECEIPT_CHARS);
     }
   });
 
@@ -183,7 +167,6 @@ describe('struk dengan diskon dan perubahan harga', () => {
   it('struk 80 mm menaruh Diskon rata kanan tanpa melebihi 48 karakter', () => {
     const lines = buildReceipt({
       ...base,
-      width: 80,
       items: [{ ...semenItem, discount: 21000 }],
       total: 189000,
       payments: [{ method: 'Tunai', amount: 189000 }],
@@ -191,7 +174,7 @@ describe('struk dengan diskon dan perubahan harga', () => {
     });
     const discount = lines.find((line) => line.includes('Diskon'));
     expect(discount).toBeDefined();
-    expect(discount?.length).toBe(PAPER_CHARS[80]);
+    expect(discount?.length).toBe(RECEIPT_CHARS);
     expect(discount?.endsWith('-Rp 21.000')).toBe(true);
   });
 });
@@ -220,7 +203,7 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
 
   it('saleReceipt memuat jumlah kotor, diskon, dan total setelah diskon tanpa harga asli', () => {
     const { session, sale } = sellDiscounted();
-    const receipt = saleReceipt(session, sale, 'sale', 58);
+    const receipt = saleReceipt(session, sale, 'sale');
     expect(sale.total).toBe(175500);
     expect(receipt.total).toBe(175500);
     expect(receipt.items[0]).toMatchObject({
@@ -264,7 +247,7 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
       transactionDiscount: 0,
       grandTotal: 140000,
     });
-    expect(saleReceipt(session, sale, 'sale', 58).items[0]).not.toHaveProperty('discount');
+    expect(saleReceipt(session, sale, 'sale').items[0]).not.toHaveProperty('discount');
   });
 
   it('bukti retur atas baris berdiskon memuat nilai proporsional', () => {
@@ -280,7 +263,7 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
     if (record === undefined) {
       throw new Error('retur tidak tersimpan');
     }
-    const receipt = returnReceipt(session, record, 58);
+    const receipt = returnReceipt(session, record);
     expect(receipt.items[0]?.subtotal).toBe(58500);
     expect(receipt.total).toBe(58500);
   });
@@ -289,7 +272,6 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
 describe('struk: Diskon Transaksi dan catatan', () => {
   const base: ReceiptInput = {
     kind: 'sale',
-    width: 58,
     number: 'T-000150',
     at: new Date('2026-10-19T03:00:00Z'),
     cashier: 'Dewi',
@@ -310,7 +292,7 @@ describe('struk: Diskon Transaksi dan catatan', () => {
     expect(text).toContain('Catatan: Titip di satpam');
     expect(text.indexOf('Kembalian')).toBeLessThan(text.indexOf('Catatan:'));
     for (const line of lines) {
-      expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[58]);
+      expect(line.length).toBeLessThanOrEqual(RECEIPT_CHARS);
     }
   });
 
@@ -327,7 +309,7 @@ describe('struk: Diskon Transaksi dan catatan', () => {
       note: 'Barang diantar sore hari ke gudang belakang lewat pintu samping',
     });
     for (const line of lines) {
-      expect(line.length).toBeLessThanOrEqual(PAPER_CHARS[58]);
+      expect(line.length).toBeLessThanOrEqual(RECEIPT_CHARS);
     }
     expect(lines.filter((line) => /Catatan|gudang|samping/.test(line)).length).toBeGreaterThan(1);
   });

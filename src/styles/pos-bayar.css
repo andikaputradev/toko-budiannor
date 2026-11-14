@@ -551,10 +551,6 @@
   }
 }
 
-.pos-pay__item-price {
-  grid-column: 1 / -1;
-}
-
 /* Tab Tunai: tampilan nominal dan tombol pecahan di kiri, papan angka di kanan. */
 .pos-pay__cash {
   display: grid;
@@ -627,26 +623,25 @@
   font-size: 18px;
 }
 
-/* Tab Piutang: dua kolom (tempo, uang muka) lalu angka ringkasan. */
-.pos-pay__credit {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--primitive-space-2) var(--primitive-space-4);
-  align-items: start;
-}
-
-.pos-pay__credit-col {
+/* Tab Piutang: baris tempo (7, 14, 30 hari dan kolom hari bebas dengan satuan "hari"), baris DP
+   (label, isian, dan cara bayar DP sejajar), lalu angka ringkasan. */
+.pos-pay__credit-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--primitive-space-2);
 }
 
 .pos-pay__credit .pos-pay__terms {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  gap: var(--primitive-space-2);
+}
+
+.pos-pay__credit .pos-pay__terms .pos-pay__method {
+  width: 100px;
 }
 
 .pos-pay__credit .pos-pay__methods {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 76px);
 }
 
 .pos-pay__credit .pos-pay__method {
@@ -655,19 +650,32 @@
   font-size: 14px;
 }
 
-.pos-pay__credit .pos-pay__days,
-.pos-pay__credit .pos-pay__amount {
-  width: 100%;
+.pos-pay__credit .pos-pay__days {
+  flex: none;
+  width: 100px;
   height: 48px;
+}
+
+.pos-pay__credit .pos-pay__amount {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+}
+
+.pos-pay__unit {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.pos-pay__dp-label {
+  flex: none;
+  padding-right: var(--primitive-space-1);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
 }
 
 .pos-pay__credit .pos-pay__error {
   min-height: 0;
-}
-
-.pos-pay__credit .pos-pay__figures,
-.pos-pay__credit .pos-pay__limit {
-  grid-column: 1 / -1;
 }
 
 .pos-pay__credit .pos-pay__figure {
@@ -684,46 +692,32 @@
   line-height: 28px;
 }
 
-/* Catatan pembayaran ada di baris bawah bersama tombol Kembali dan Bayar, untuk semua tab. */
-.pos-pay__footer {
-  align-items: flex-end;
-}
-
+/* Catatan pembayaran: kolom yang sama di semua tab, satu baris sendiri di atas Kembali dan Bayar,
+   dua baris teks huruf kapital tebal. */
 .pos-pay__note {
   display: flex;
-  flex: 1 1 0;
+  flex: none;
   flex-direction: column;
   gap: 2px;
-  min-width: 0;
+  margin-top: auto;
 }
 
 .pos-pay__note .field__label {
   font-size: 12px;
-}
-
-.pos-pay__note-input {
-  height: 48px;
-}
-
-/* Di tab Non-Tunai catatan berada tepat di bawah pilihan, seperti contoh gambar 4. */
-.pos-pay__noncash-note {
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-1);
-  margin-top: var(--primitive-space-2);
-}
-
-.pos-pay__noncash-note .pos-pay__note {
-  flex: none;
-}
-
-.pos-pay__noncash-note .field__label {
-  font-size: 14px;
   font-weight: var(--primitive-font-weight-semibold);
 }
 
-.pos-pay__noncash-note .pos-pay__note-input {
-  height: 56px;
+.pos-pay__note-input {
+  height: 58px;
+  padding-block: 6px;
+  font-weight: var(--primitive-font-weight-semibold);
+  line-height: 20px;
+  resize: none;
+}
+
+.pos-pay__panel > .pos-pay__footer {
+  align-items: stretch;
+  margin-top: 0;
 }
 
 .pos-pay__footer .btn--pay {
@@ -763,17 +757,8 @@
     grid-template-rows: none;
   }
 
-  .pos-pay__credit {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .pos-pay__footer {
+  .pos-pay__credit-row {
     flex-wrap: wrap;
-  }
-
-  .pos-pay__note {
-    flex: 1 1 100%;
-    order: -1;
   }
 }
 

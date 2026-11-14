@@ -651,7 +651,6 @@ test.describe('OWN-03 Cek Stok', () => {
     await expect(first).toContainText('STOK GUDANG');
     await expect(first).toContainText('Eceran');
     await expect(first).toContainText('Grosir');
-    await expect(first).toContainText('Kontraktor');
     await expect(first.locator('.trx-prices tbody tr').first()).toContainText(/\d\.\d{3}/);
     await search.fill('');
     await page.getByRole('button', { name: 'Di bawah minimum' }).click();

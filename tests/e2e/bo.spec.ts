@@ -295,7 +295,6 @@ test.describe('BO-04 Satuan dan Harga', () => {
       page.getByText('Harga Grosir lebih tinggi dari Eceran. Periksa kembali.'),
     ).toBeVisible();
     await cell(0, 'grosir').fill('90');
-    await cell(0, 'kontraktor').fill('80');
     await save.click();
     await expect(
       page.getByText(
@@ -311,10 +310,10 @@ test.describe('BO-04 Satuan dan Harga', () => {
     await save.click();
     await expect(page.getByText('Isi satuan harus lebih dari 0.')).toBeVisible();
     await cell(2, 'factor').fill('0,02');
-    for (const tier of ['eceran', 'grosir', 'kontraktor']) {
+    for (const tier of ['eceran', 'grosir']) {
       await cell(2, tier).fill('100000');
     }
-    for (const tier of ['eceran', 'grosir', 'kontraktor']) {
+    for (const tier of ['eceran', 'grosir']) {
       await cell(1, tier).fill('30000');
     }
     await save.click();

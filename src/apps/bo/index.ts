@@ -6,6 +6,7 @@ import { label, message } from '../../shared/messages';
 import { canOpenScreen } from '../../shared/permissions';
 import { navigate } from '../../shared/router';
 import type { Store } from '../../shared/store/store';
+import { installUppercaseInputs } from '../../shared/uppercase-input';
 import { createBanner } from '../../shared/ui/banner';
 import { createButton } from '../../shared/ui/button';
 import { closeAllModals } from '../../shared/ui/modal';
@@ -480,6 +481,7 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
     disposeWorkspace();
   }
   document.documentElement.dataset['app'] = 'bo';
+  installUppercaseInputs();
 
   // Sinkronisasi tema POS ke Back-Office
   const currentTheme = loadTheme();

@@ -65,22 +65,21 @@ describe('isi dan filter ekspor', () => {
         { code: 'DOS', name: 'DOS', factor: 60 },
       ],
       prices: {
-        Pcs: { eceran: 1000, grosir: 900, kontraktor: 855 },
-        LSN: { eceran: 12_000, grosir: 10_800, kontraktor: 10_260 },
-        DOS: { eceran: 60_000, grosir: 54_000, kontraktor: 51_300 },
+        Pcs: { eceran: 1000, grosir: 900 },
+        LSN: { eceran: 12_000, grosir: 10_800 },
+        DOS: { eceran: 60_000, grosir: 54_000 },
       },
     });
     const result = buildExport(
       [multi],
-      params({ columns: ['hargaEcer', 'hargaGrosir', 'hargaKontraktor', 'satuan'] }),
+      params({ columns: ['hargaEcer', 'hargaGrosir', 'satuan'] }),
       'owner',
     );
-    expect(result.columns).toEqual(['Satuan', 'Harga Eceran', 'Harga Grosir', 'Harga Kontraktor']);
+    expect(result.columns).toEqual(['Satuan', 'Harga Eceran', 'Harga Grosir']);
     expect(result.rows[0]).toEqual([
       'Pcs; LSN = 12; DOS = 60',
       'Pcs 1.000; LSN 12.000; DOS 60.000',
       'Pcs 900; LSN 10.800; DOS 54.000',
-      'Pcs 855; LSN 10.260; DOS 51.300',
     ]);
   });
 

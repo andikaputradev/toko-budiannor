@@ -127,7 +127,6 @@ function createProduct(index: number, random: Random): Product {
     prices[unit.code] = {
       eceran: roundPrice(raw),
       grosir: roundPrice(raw * 0.93),
-      kontraktor: roundPrice(raw * 0.88),
     };
   }
   const scale = family.stockScale;
@@ -263,7 +262,7 @@ function createCustomers(random: Random, base: Date): Customer[] {
   const sequence = { value: 0 };
   return Array.from({ length: CUSTOMER_COUNT }, (_, index) => {
     const name = customerName(index);
-    const tier: Tier = index >= 40 ? 'eceran' : name.startsWith('Toko') ? 'grosir' : 'kontraktor';
+    const tier: Tier = index >= 40 ? 'eceran' : 'grosir';
     const limit = random.pick(LIMITS);
     return {
       id: `C-${String(index + 1).padStart(3, '0')}`,

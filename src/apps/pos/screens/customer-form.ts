@@ -15,7 +15,6 @@ import type { ScreenHandle } from './login';
 const TIERS: readonly (readonly [Tier, LabelKey])[] = [
   ['eceran', 'tierEceran'],
   ['grosir', 'tierGrosir'],
-  ['kontraktor', 'tierKontraktor'],
 ];
 
 function isPc(): boolean {

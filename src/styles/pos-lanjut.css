@@ -332,7 +332,7 @@
 }
 
 .modal:has(.pos-receipt__body) {
-  width: min(560px, 94vw);
+  width: min(480px, 94vw);
 }
 
 .pos-return__qty {
@@ -345,29 +345,27 @@
   resize: none;
 }
 
-.pos-receipt__widths {
-  display: flex;
-  gap: var(--primitive-space-2);
+/* Kertas thermal 80 mm = 48 karakter. Lebar sheet pas untuk 48 karakter ditambah isian dan jalur
+   gulir tegak (18 px), sehingga tidak pernah ada scroll bar menyamping. Di wadah yang lebih sempit
+   huruf diperkecil lewat satuan wadah (rata-rata lebar karakter monospace 0,62 em). */
+.pos-receipt__body {
+  container-type: inline-size;
 }
 
 .pos-receipt {
-  margin: var(--primitive-space-3) 0 0;
+  box-sizing: border-box;
+  width: min(100%, calc(48ch + 2 * var(--primitive-space-3) + 18px));
+  max-height: 56vh;
+  margin: var(--primitive-space-3) auto 0;
   padding: var(--primitive-space-3);
-  overflow: auto;
-  max-height: 46vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   border: 1px dashed var(--color-text-secondary);
   background: var(--color-bg-page);
   color: var(--color-text-primary);
   font-family: ui-monospace, 'Courier New', monospace;
-  font-size: 13px;
+  font-size: min(13px, calc((100cqw - 2 * var(--primitive-space-3) - 18px) / 29.8));
   line-height: 1.35;
   white-space: pre;
-}
-
-.pos-receipt[data-width='58'] {
-  width: calc(32ch + 2 * var(--primitive-space-3));
-}
-
-.pos-receipt[data-width='80'] {
-  width: calc(48ch + 2 * var(--primitive-space-3));
 }

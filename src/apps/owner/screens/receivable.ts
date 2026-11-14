@@ -30,7 +30,6 @@ const HOME = '/owner/piutang';
 const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
   eceran: 'tierEceran',
   grosir: 'tierGrosir',
-  kontraktor: 'tierKontraktor',
 };
 
 type Tab = 'piutang' | 'hutang';

@@ -39,7 +39,8 @@ html:not([data-pos-scheme='gelap']) .mob-avatar {
 
 .sls-seg {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   gap: 4px;
   padding: 4px;
   border-radius: 14px;
@@ -192,7 +193,8 @@ html:not([data-pos-scheme='gelap']) .mob-avatar {
 
 .sls-prices__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   gap: var(--primitive-space-2);
 }
 
