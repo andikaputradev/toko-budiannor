@@ -90,7 +90,10 @@ export function openLineDialog(options: LineDialogOptions): void {
     icon('x'),
   );
   const qtyInput = textInput(ids.qty, String(base.quantity).replace('.', ','), 'decimal');
-  const unitSelect = el('select', { className: 'input is-select', attrs: { id: ids.unit } });
+  const unitSelect = el('select', {
+    className: 'input is-select',
+    attrs: { id: ids.unit, 'aria-label': T.satuan },
+  });
   for (const unit of units) {
     unitSelect.append(el('option', { text: unit.code, attrs: { value: unit.code } }));
   }
@@ -99,7 +102,9 @@ export function openLineDialog(options: LineDialogOptions): void {
     : (units[0]?.code ?? '');
   const priceInput = textInput(ids.price, formatDecimal(base.unitPrice, 2), 'numeric');
   const percentInput = textInput(ids.percent, '', 'decimal');
+  percentInput.setAttribute('aria-label', T.diskonPersen);
   const nominalInput = textInput(ids.nominal, '', 'numeric');
+  nominalInput.setAttribute('aria-label', T.diskonRupiah);
   const totalBox = el('div', { className: 'bo-trx-dlg__total' });
   const warehouseSelect = el('select', {
     className: 'input is-select',

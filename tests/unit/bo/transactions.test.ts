@@ -6,7 +6,11 @@ import {
   getCustomerCreditInfo,
   importFromSalesOrder,
   buildSalesInvoiceWhatsAppMessage,
+  fromDocLine,
+  importedSoNumbers,
+  toDocLine,
 } from '../../../src/apps/bo/domain/sales-transaction';
+import { expeditionSeeds } from '../../../src/apps/bo/domain/expedition';
 import {
   calculatePurchaseTotals,
   createPurchaseInvoiceDraft,
@@ -441,5 +445,45 @@ describe('domain transaksi back-office (Tahap 4)', () => {
       expect(metrics.totalBelumLunas).toBe(3_000_000);
       expect(metrics.totalJatuhTempo).toBe(2_000_000);
     });
+  });
+});
+
+describe('baris faktur penjualan dan DocLine (gambar 9)', () => {
+  const invoiceLine = {
+    id: 'L-9',
+    productId: 'P-9',
+    productName: 'SEMEN GRESIK 40KG',
+    aliasName: 'SEMEN GRESIK 40KG',
+    warehouse: 'gudang' as const,
+    unit: 'SAK',
+    quantity: 10,
+    unitPrice: 70_000,
+    discountExpr: 'Rp 2000',
+    lastSalePrice: 70_000,
+  };
+
+  it('toDocLine membawa kode, tanpa tanda Koli dan tanpa ongkos kirim', () => {
+    expect(toDocLine(invoiceLine, '0001')).toEqual({
+      id: 'L-9',
+      productId: 'P-9',
+      productName: 'SEMEN GRESIK 40KG',
+      code: '0001',
+      warehouse: 'gudang',
+      unit: 'SAK',
+      quantity: 10,
+      unitPrice: 70_000,
+      discountExpr: 'Rp 2000',
+      shipping: 0,
+      koli: false,
+    });
+  });
+
+  it('fromDocLine membalik toDocLine tanpa kehilangan nilai baris faktur', () => {
+    expect(fromDocLine(toDocLine(invoiceLine, '0001'))).toEqual(invoiceLine);
+  });
+
+  it('himpunan SO yang sudah diimpor dan benih Surat Jalan dimulai kosong', () => {
+    expect(importedSoNumbers.size).toBe(0);
+    expect(expeditionSeeds.size).toBe(0);
   });
 });

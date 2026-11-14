@@ -119,6 +119,12 @@
   padding-right: 34px;
 }
 
+.bo-trx-search__input::-webkit-search-cancel-button,
+.bo-trx-searchbox__input::-webkit-search-cancel-button {
+  display: none;
+  appearance: none;
+}
+
 .bo-trx-search__icon {
   position: absolute;
   top: 50%;
@@ -599,11 +605,21 @@
   font-size: 18px;
 }
 
+/* Angka peringatan memakai pil berlatar (kontras terjaga di mode gelap), seperti gambar klien 8. */
+.bo-trx-kpi__value.is-warn,
+.bo-trx-kpi__value.is-danger {
+  align-self: center;
+  padding: 0 14px;
+  border-radius: 12px;
+}
+
 .bo-trx-kpi__value.is-warn {
+  background: var(--color-status-warning-bg);
   color: var(--color-status-warning-fg);
 }
 
 .bo-trx-kpi__value.is-danger {
+  background: var(--color-status-danger-bg);
   color: var(--color-status-danger-fg);
 }
 
@@ -723,19 +739,31 @@
   color: var(--color-status-danger-fg);
 }
 
-/* Status berupa teks tebal berwarna (Daftar PO dan SO). */
-.bo-trx-state {
+.bo-trx .bo-trx-head__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bo-trx-head__asidetitle {
+  margin: 0;
+  font-size: 13px;
   font-weight: 700;
 }
 
-.bo-trx-state.is-danger {
-  color: var(--color-status-danger-fg);
+.bo-trx .bo-trx-head__aside .bo-credit-box {
+  flex: 1 1 auto;
+  height: auto;
 }
 
-.bo-trx-state.is-warning {
-  color: var(--color-status-warning-fg);
+/* Sel pegangan dan Koli memuat kontrol, bukan teks: tanpa pemotongan elipsis. */
+.bo-trx-table td.bo-trx-col-handle,
+.bo-trx-table td.bo-trx-col-koli {
+  overflow: visible;
+  text-overflow: clip;
 }
 
-.bo-trx-state.is-success {
-  color: var(--color-status-success-fg);
+/* Dialog Rincian Barang memuat tombolnya sendiri; blok aksi bawaan modal dibuang. */
+.modal:has(.bo-trx-dlg) .modal__actions:empty {
+  display: none;
 }

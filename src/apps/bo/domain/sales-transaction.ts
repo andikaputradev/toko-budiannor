@@ -1,5 +1,6 @@
 import { formatRupiah } from '../../../shared/format';
 import type { Customer, Dataset, SalesOrder } from '../../../shared/data/types';
+import type { DocLine } from './doc-line';
 import { calculateTieredDiscount } from './discount';
 
 export interface SalesInvoiceLine {
@@ -34,6 +35,41 @@ export interface SalesInvoiceDraft {
   readonly invoiceDiscount: number;
   readonly expeditionFee: number;
   readonly grandTotal: number;
+}
+
+// Nomor SO yang sudah diimpor ke Faktur Penjualan pada sesi ini (Daftar SO menampilkannya Selesai).
+export const importedSoNumbers = new Set<string>();
+
+// Baris faktur dan baris dokumen bersama saling berubah bentuk; kode barang dipasok pemanggil.
+export function toDocLine(line: SalesInvoiceLine, code: string): DocLine {
+  return {
+    id: line.id,
+    productId: line.productId,
+    productName: line.productName,
+    code,
+    warehouse: line.warehouse,
+    unit: line.unit,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountExpr: line.discountExpr,
+    shipping: 0,
+    koli: false,
+  };
+}
+
+export function fromDocLine(line: DocLine): SalesInvoiceLine {
+  return {
+    id: line.id,
+    productId: line.productId,
+    productName: line.productName,
+    aliasName: line.productName,
+    warehouse: line.warehouse,
+    unit: line.unit,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountExpr: line.discountExpr,
+    lastSalePrice: line.unitPrice,
+  };
 }
 
 export interface CustomerCreditInfo {

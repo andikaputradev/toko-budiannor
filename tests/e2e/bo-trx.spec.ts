@@ -9,6 +9,7 @@ test.beforeEach(({ page }) => {
 });
 
 const OWNER = ['haris.owner', 'Kunci2026A'] as const;
+const SUPERVISOR = ['sinta.spv', 'Kunci2026B'] as const;
 
 async function loginBo(
   page: Page,
@@ -162,5 +163,237 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
       .locator('.bo-trx__lines')
       .evaluate((node) => node.clientHeight);
     expect(height).toBeGreaterThanOrEqual(170);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dokumen: Faktur Penjualan (gambar 9) dan dialog Rincian Barang (gambar 12)
+// ---------------------------------------------------------------------------
+
+const searchBox = (page: Page): Locator =>
+  active(page).getByRole('combobox', { name: 'Cari atau pilih barang dan jasa' });
+const optionsOf = (page: Page): Locator =>
+  active(page)
+    .getByRole('listbox', { name: 'Cari atau pilih barang dan jasa' })
+    .getByRole('option');
+const dialogOf = (page: Page): Locator => page.getByRole('dialog', { name: 'Rincian Barang' });
+const rowsOf = (page: Page): Locator =>
+  active(page).locator('.bo-trx-table--lines tbody tr[data-id]');
+const countText = (page: Page): Locator => active(page).locator('.bo-trx__count');
+
+async function addItem(page: Page, query: string, quantity: string, pick = 0): Promise<void> {
+  await searchBox(page).fill(query);
+  await optionsOf(page).nth(pick).click();
+  const dialog = dialogOf(page);
+  await dialog.getByLabel('Kuantitas', { exact: true }).fill(quantity);
+  await dialog.getByRole('button', { name: 'Lanjut' }).click();
+  await expect(dialog).toHaveCount(0);
+}
+
+function rupiah(text: string | null): number {
+  return Number((text ?? '').replace(/[^0-9]/g, ''));
+}
+
+const idr = (value: number): string => new Intl.NumberFormat('id-ID').format(value);
+
+test.describe('T3 Faktur Penjualan (gambar 9)', () => {
+  test('kepala berlabel sebaris dan kartu Info Piutang Pelanggan', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    const root = active(page);
+    for (const name of [
+      'Tanggal',
+      'No. Invoice',
+      'No. SO',
+      'Keterangan',
+      'Pelanggan',
+      'Alamat',
+      'Telepon',
+      'Syarat Bayar',
+      'Tempo',
+      'Metode Pembayaran',
+      'Sales',
+      'Ekspedisi',
+    ]) {
+      await expect(root.getByLabel(name)).toHaveCount(1);
+    }
+    const card = root.locator('.bo-trx-head__aside');
+    await expect(card).toContainText('Info Piutang Pelanggan');
+    for (const text of ['Total Piutang', 'Piutang Jatuh Tempo', 'Plafon Kredit', 'Sisa Plafon']) {
+      await expect(card.getByText(text)).toBeVisible();
+    }
+    await expect(root.getByPlaceholder('Alamat Pengiriman')).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Simpan', exact: true })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Cetak', exact: true })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Isi SJ Ekspedisi' })).toBeVisible();
+    await expect(countText(page)).toHaveText('0 Barang (0)');
+    expect(await root.locator('.bo-trx-table--lines thead th').allTextContents()).toEqual([
+      'Urut',
+      'Koli',
+      'Nama Barang',
+      'Kode #',
+      'Gudang',
+      'Kuantitas',
+      'Satuan',
+      '@Harga',
+      'Diskon',
+      'Total Harga',
+    ]);
+    await root.getByLabel('Pelanggan', { exact: true }).selectOption({ index: 1 });
+    await expect(root.getByLabel('Telepon')).not.toHaveValue('');
+  });
+
+  test('cari barang menyorot teks cocok, memilih membuka Rincian Barang, Lanjut menambah baris', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await searchBox(page).fill('semen');
+    const first = optionsOf(page).first();
+    await expect(first.locator('mark').first()).toHaveText(/semen/i);
+    await expect(first.locator('.bo-trx-search__code')).toHaveText(/\S+/);
+    await first.click();
+    const dialog = dialogOf(page);
+    await expect(dialog).toBeVisible();
+    for (const text of ['Kode #', 'Nama Barang', 'Kuantitas', '@Harga', 'Diskon', 'Total Harga']) {
+      await expect(dialog.getByText(text, { exact: true }).first()).toBeVisible();
+    }
+    await expect(dialog.getByLabel('Gudang')).toBeVisible();
+    await expect(dialog.getByText(/^Stok : /)).toBeVisible();
+    await expect(dialog.getByText('Harga Histori Jual')).toBeVisible();
+    await dialog.getByLabel('Kuantitas', { exact: true }).fill('3');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(countText(page)).toHaveText('1 Barang (3)');
+    await expect(rowsOf(page)).toHaveCount(1);
+  });
+
+  test('kuantitas nol atau bukan angka ditolak dan dialog tetap terbuka', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    for (const bad of ['0', 'abc', '-2']) {
+      await dialog.getByLabel('Kuantitas', { exact: true }).fill(bad);
+      await dialog.getByRole('button', { name: 'Lanjut' }).click();
+      await expect(dialog.getByRole('alert')).toHaveText('Isi kuantitas lebih dari 0.');
+      await expect(dialog).toBeVisible();
+    }
+    await expect(rowsOf(page)).toHaveCount(0);
+  });
+
+  test('diskon persen dan rupiah saling melengkapi dan mengubah Total Harga', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    const dialog = dialogOf(page);
+    await dialog.getByLabel('Kuantitas', { exact: true }).fill('2');
+    await dialog.getByLabel('Diskon persen').fill('');
+    await dialog.getByLabel('Diskon rupiah').fill('');
+    const price = rupiah(await dialog.getByLabel('@Harga').inputValue());
+    const total = dialog.locator('.bo-trx-dlg__total');
+    await expect(total).toHaveText(`Rp ${idr(price * 2)}`);
+    await dialog.getByLabel('Diskon persen').fill('10');
+    await expect(dialog.getByLabel('Diskon rupiah')).not.toHaveValue('');
+    expect(rupiah(await total.textContent())).toBe(Math.round(price * 0.9) * 2);
+    await dialog.getByLabel('Diskon rupiah').fill('1000');
+    expect(rupiah(await total.textContent())).toBe((price - 1000) * 2);
+  });
+
+  test('klik baris membuka Rincian Barang terisi; Hapus membuang baris', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'semen', '4');
+    await rowsOf(page).first().locator('.bo-trx-table__name').click();
+    const dialog = dialogOf(page);
+    await expect(dialog.getByLabel('Kuantitas', { exact: true })).toHaveValue('4');
+    await dialog.getByLabel('Kuantitas', { exact: true }).fill('6');
+    await dialog.getByRole('button', { name: 'Lanjut' }).click();
+    await expect(countText(page)).toHaveText('1 Barang (6)');
+    await rowsOf(page).first().locator('td').nth(3).click();
+    await dialogOf(page).getByRole('button', { name: 'Hapus' }).click();
+    await expect(rowsOf(page)).toHaveCount(0);
+    await expect(countText(page)).toHaveText('0 Barang (0)');
+  });
+
+  test('mengurut baris dengan Alt+panah pada pegangan', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'semen', '1');
+    await addItem(page, 'paku', '1');
+    const names = (): Promise<string[]> =>
+      rowsOf(page).locator('.bo-trx-table__name').allTextContents();
+    const before = await names();
+    expect(before).toHaveLength(2);
+    await rowsOf(page).first().locator('.bo-trx-handle').focus();
+    await page.keyboard.press('Alt+ArrowDown');
+    expect(await names()).toEqual([before[1], before[0]]);
+  });
+
+  test('kotak total: Sub Total, Diskon, Total Biaya, dan Total', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'semen', '2');
+    const totals = active(page).locator('.bo-trx-totals');
+    const sub = rupiah(await totals.locator('.bo-trx-totals__value').first().textContent());
+    expect(sub).toBeGreaterThan(2000);
+    await totals.getByLabel('Diskon', { exact: true }).fill('1000');
+    await totals.getByLabel('Total Biaya').fill('500');
+    await expect(totals.locator('.bo-trx-totals__value.is-total')).toHaveText(
+      `Rp ${idr(sub - 1000 + 500)}`,
+    );
+  });
+
+  test('Isi SJ Ekspedisi: tanpa barang Koli ada pesan, dengan Koli membuka Surat Jalan', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await addItem(page, 'semen', '2');
+    await active(page).getByRole('button', { name: 'Isi SJ Ekspedisi' }).click();
+    await expect(page.getByText('Tandai barang pada kolom Koli dahulu.')).toBeVisible();
+    await expect(page).toHaveURL(/#\/bo\/penjualan$/);
+    await rowsOf(page).first().getByRole('checkbox').check();
+    await active(page).getByRole('button', { name: 'Isi SJ Ekspedisi' }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?inv=FJ/);
+  });
+
+  test('Simpan tanpa barang ditolak; dengan barang membuka dialog cetak', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Faktur belum memiliki item barang.')).toBeVisible();
+    await addItem(page, 'semen', '1');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+  });
+
+  test('muat satu layar di 1280x640 dengan banyak baris: tabel menggulir, halaman tidak', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
+    const total = 9;
+    for (let index = 0; index < total; index += 1) {
+      await addItem(page, 'semen', '1', index % 8);
+    }
+    await expect(rowsOf(page)).toHaveCount(total);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    expect(await lines.evaluate((node) => node.scrollHeight - node.clientHeight)).toBeGreaterThan(
+      0,
+    );
+  });
+
+  test('Supervisor memakai Faktur Penjualan dan melihat Harga Histori Jual', async ({ page }) => {
+    await loginBo(page, SUPERVISOR);
+    await openPage(page, '/bo/penjualan');
+    await searchBox(page).fill('semen');
+    await optionsOf(page).first().click();
+    await expect(dialogOf(page).getByText('Harga Histori Jual')).toBeVisible();
   });
 });
