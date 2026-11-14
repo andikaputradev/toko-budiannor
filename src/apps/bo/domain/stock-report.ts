@@ -221,9 +221,10 @@ export interface MovementSources {
   readonly extra: readonly StockMovement[];
 }
 
-// Faktur pembelian hanya bertanggal; dicatat pukul 12.00 WIB agar urutan harian wajar.
+// Faktur pembelian hanya bertanggal; dicatat pukul 12.00 WIB agar urutan harian wajar. Bagian
+// jam pada tanggal ISO penuh dibuang.
 function noon(date: string): string {
-  return new Date(`${date}T12:00:00+07:00`).toISOString();
+  return new Date(`${date.slice(0, 10)}T12:00:00+07:00`).toISOString();
 }
 
 function baseOf(product: Product, unit: string, quantity: number): number | undefined {

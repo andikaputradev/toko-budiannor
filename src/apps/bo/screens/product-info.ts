@@ -106,8 +106,22 @@ export function openProductInfo(session: BoSession, product: Product): void {
     penjualan.replaceChildren(
       historyTable(history.penjualan, 'infoKolPelanggan', label('infoTabPenjualan'), true),
     );
+    // Sementara: bentuk lama (selisih bertanda); Task 2 menggantinya dengan tabel gambar klien.
     koreksi.replaceChildren(
-      historyTable(history.koreksi, 'infoKolPetugas', label('infoTabKoreksi'), isOwner),
+      historyTable(
+        history.koreksi.map((row) => ({
+          at: row.at,
+          number: row.number,
+          party: '-',
+          quantity: row.action === 'kurang' ? -row.qty : row.qty,
+          unit: row.unit,
+          amount: 0,
+          unitPrice: 0,
+        })),
+        'infoKolPetugas',
+        label('infoTabKoreksi'),
+        false,
+      ),
     );
   };
 

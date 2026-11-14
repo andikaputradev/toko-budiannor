@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildMutationHistory,
   buildProductHistory,
   defaultRange,
+  filterByParty,
   normalizeRange,
 } from '../../../src/apps/bo/domain/product-history';
+import type { MovementSources } from '../../../src/apps/bo/domain/stock-report';
+import { stockIn } from '../../../src/apps/bo/domain/stock-view';
 import type { CorrectionDoc, CorrectionLine } from '../../../src/apps/bo/domain/stock-correction';
 import { generateDataset } from '../../../src/shared/data/generator';
 import type { Dataset, Product, Sale, Supplier } from '../../../src/shared/data/types';
-import { createStore } from '../../../src/shared/store/store';
+import { createStore, type AppState } from '../../../src/shared/store/store';
 
 const RANGE = { from: '2026-10-01', to: '2026-10-19' };
 const IN_RANGE = '2026-10-10T03:00:00.000Z';
@@ -115,9 +119,11 @@ function fixture() {
 }
 
 describe('rentang riwayat', () => {
-  it('rentang bawaan adalah 30 hari terakhir sampai hari ini', () => {
-    expect(defaultRange('2026-10-19')).toEqual({ from: '2026-09-19', to: '2026-10-19' });
-    expect(defaultRange('2026-03-05')).toEqual({ from: '2026-02-03', to: '2026-03-05' });
+  it('rentang bawaan: tanggal 1 pada tiga bulan sebelumnya sampai hari ini (gambar klien)', () => {
+    expect(defaultRange('2026-11-12')).toEqual({ from: '2026-08-01', to: '2026-11-12' });
+    expect(defaultRange('2026-10-19')).toEqual({ from: '2026-07-01', to: '2026-10-19' });
+    expect(defaultRange('2026-02-10')).toEqual({ from: '2025-11-01', to: '2026-02-10' });
+    expect(defaultRange('2026-01-05')).toEqual({ from: '2025-10-01', to: '2026-01-05' });
   });
 
   it('menukar rentang yang terbalik dan membiarkan rentang yang benar', () => {
@@ -156,7 +162,7 @@ describe('buildProductHistory', () => {
     expect(history.penjualan[1]?.amount).toBe(10_000);
   });
 
-  it('koreksi memuat selisih jumlah (boleh negatif), nilai, dan petugas', () => {
+  it('koreksi memuat qty awal, aksi, qty mutlak, dan qty akhir', () => {
     const { store, target, corrections } = fixture();
     const history = buildProductHistory({
       product: target,
@@ -167,10 +173,40 @@ describe('buildProductHistory', () => {
     expect(history.koreksi).toHaveLength(1);
     expect(history.koreksi[0]).toMatchObject({
       number: 'KS-IN',
-      party: 'Ibu Sinta',
-      quantity: -3,
-      amount: -300,
+      qtyBefore: 10,
+      action: 'kurang',
+      qty: 3,
+      qtyAfter: 7,
+      unit: target.baseUnit,
     });
+  });
+
+  it('koreksi yang menambah stok bernilai aksi tambah dengan qty positif', () => {
+    const { store, other, corrections } = fixture();
+    const history = buildProductHistory({
+      product: other,
+      state: store.getState(),
+      corrections,
+      range: RANGE,
+    });
+    expect(history.koreksi[0]).toMatchObject({
+      action: 'tambah',
+      qty: 1,
+      qtyBefore: 10,
+      qtyAfter: 11,
+    });
+  });
+
+  it('harga satuan baris adalah jumlah dibagi kuantitas, dibulatkan', () => {
+    const { store, target, corrections } = fixture();
+    const history = buildProductHistory({
+      product: target,
+      state: store.getState(),
+      corrections,
+      range: RANGE,
+    });
+    expect(history.penjualan.map((row) => row.unitPrice)).toEqual([5000, 5000]);
+    expect(history.pembelian.map((row) => row.unitPrice)).toEqual([1200, 1000]);
   });
 
   it('rentang yang lebih lama memuat riwayat lama, dan rentang terbalik ditukar', () => {
@@ -207,5 +243,119 @@ describe('buildProductHistory', () => {
       range: RANGE,
     });
     expect(history).toEqual({ pembelian: [], penjualan: [], koreksi: [] });
+  });
+});
+
+describe('filterByParty', () => {
+  const rows = [
+    {
+      at: '',
+      number: 'A',
+      party: 'PT Aica Indira',
+      quantity: 1,
+      unit: 'PCS',
+      amount: 1,
+      unitPrice: 1,
+    },
+    { at: '', number: 'B', party: 'PT ABC', quantity: 1, unit: 'PCS', amount: 1, unitPrice: 1 },
+  ];
+
+  it('menyaring sebagian nama tanpa membedakan huruf besar dan kecil', () => {
+    expect(filterByParty(rows, 'aica').map((row) => row.number)).toEqual(['A']);
+    expect(filterByParty(rows, 'PT').map((row) => row.number)).toEqual(['A', 'B']);
+  });
+
+  it('teks kosong atau spasi mengembalikan semua baris', () => {
+    expect(filterByParty(rows, '')).toHaveLength(2);
+    expect(filterByParty(rows, '   ')).toHaveLength(2);
+  });
+
+  it('tanpa kecocokan menghasilkan daftar kosong', () => {
+    expect(filterByParty(rows, 'zzz')).toEqual([]);
+  });
+});
+
+describe('buildMutationHistory', () => {
+  function sourcesOf(state: AppState, corrections: readonly CorrectionDoc[]): MovementSources {
+    return {
+      sales: state.data.sales,
+      customers: state.data.customers,
+      suppliers: state.data.suppliers,
+      purchaseOrders: state.purchaseOrders,
+      transfers: [],
+      opname: undefined,
+      corrections,
+      extra: [],
+    };
+  }
+
+  it('barang tanpa gerak: satu baris SALDO AWAL bersaldo stok sekarang', () => {
+    const { store, corrections } = fixture();
+    const product = store.getState().data.products.at(-1);
+    if (product === undefined) {
+      throw new Error('dataset kosong');
+    }
+    const result = buildMutationHistory({
+      product,
+      sources: sourcesOf(store.getState(), corrections),
+      range: RANGE,
+      warehouse: 'semua',
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({ kind: 'saldo-awal', name: 'SALDO AWAL' });
+    expect(result.rows[0]?.balance).toBe(stockIn(product, 'semua'));
+    expect(result.opening).toBe(stockIn(product, 'semua'));
+  });
+
+  it('gudang toko: saldo berjalan berakhir di stok toko sekarang', () => {
+    const { store, target, corrections } = fixture();
+    const result = buildMutationHistory({
+      product: target,
+      sources: sourcesOf(store.getState(), corrections),
+      range: RANGE,
+      warehouse: 'display',
+    });
+    expect(result.rows.map((row) => row.kind)).toEqual([
+      'saldo-awal',
+      'koreksi',
+      'penjualan',
+      'penjualan',
+    ]);
+    expect(result.rows.slice(1).map((row) => row.number)).toEqual(['KS-IN', 'T-IN-1', 'T-IN-2']);
+    expect(result.rows[0]?.balance).toBe(target.stock.display + 6);
+    expect(result.rows.at(-1)?.balance).toBe(target.stock.display);
+    expect(result.rows[2]).toMatchObject({ outQty: 2, inQty: 0 });
+    expect(result.rows[1]).toMatchObject({ name: 'KOREKSI', outQty: 3 });
+  });
+
+  it('gudang besar hanya memuat gerak gudang besar (pembelian dengan nama pemasok)', () => {
+    const { store, target, corrections } = fixture();
+    const result = buildMutationHistory({
+      product: target,
+      sources: sourcesOf(store.getState(), corrections),
+      range: RANGE,
+      warehouse: 'besar',
+    });
+    expect(result.rows.map((row) => row.kind)).toEqual(['saldo-awal', 'pembelian']);
+    expect(result.rows[1]).toMatchObject({ number: 'FB-IN', inQty: 10 });
+    expect(result.rows[1]?.name).not.toBe('');
+  });
+
+  it('semua gudang memuat gerak kedua gudang dan satuan dasar barang', () => {
+    const { store, target, corrections } = fixture();
+    const result = buildMutationHistory({
+      product: target,
+      sources: sourcesOf(store.getState(), corrections),
+      range: RANGE,
+      warehouse: 'semua',
+    });
+    expect(result.rows.map((row) => row.kind)).toEqual([
+      'saldo-awal',
+      'koreksi',
+      'penjualan',
+      'pembelian',
+      'penjualan',
+    ]);
+    expect(result.unit).toBe(target.baseUnit);
   });
 });

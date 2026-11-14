@@ -15,7 +15,6 @@ import { createSelectField } from '../../../shared/ui/field';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
 import { openExportPreview, type ExportKind } from '../export-preview';
-import { ledgerFor } from '../domain/stock-correction';
 import {
   addDays,
   ALL_CATEGORIES,
@@ -23,7 +22,6 @@ import {
   buildStockRows,
   categoriesOf,
   clampPage,
-  extraMovements,
   monthStart,
   movementsFor,
   pageCount,
@@ -40,6 +38,7 @@ import {
   type StockCard,
   type StockReportRow,
 } from '../domain/stock-report';
+import { movementSourcesFor } from '../movement-sources';
 import { createProductPicker } from '../picker';
 import { findProducts } from '../search';
 import type { ScreenHandle } from './login';
@@ -241,19 +240,7 @@ export function renderStockReport(
     id === null || id === undefined
       ? undefined
       : store.getState().data.products.find((item) => item.id === id);
-  const sources = (): MovementSources => {
-    const state = store.getState();
-    return {
-      sales: state.data.sales,
-      customers: state.data.customers,
-      suppliers: state.data.suppliers,
-      purchaseOrders: state.purchaseOrders,
-      transfers: session.state().transfers,
-      opname: session.state().opname,
-      corrections: ledgerFor(store).docs(),
-      extra: extraMovements(),
-    };
-  };
+  const sources = (): MovementSources => movementSourcesFor(session);
 
   let tab: Tab = query.get('tab') === 'kartu' ? 'kartu' : 'posisi';
   // posisi stok
