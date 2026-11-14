@@ -667,6 +667,101 @@
   color: var(--color-text-secondary);
 }
 
+/* Info barang gambar klien: baris tab empat kotak, nama barang di tengah, filter satu baris. */
+.bo-info__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bo-info__tab {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-right: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bo-info__tab:last-child {
+  border-right: 0;
+}
+
+.bo-info__tab[aria-selected='true'] {
+  background: var(--color-accent-soft);
+}
+
+.bo-info__tab:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: -2px;
+}
+
+.bo-info__panels {
+  min-height: 150px;
+}
+
+.bo-info__product {
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bo-info__filter {
+  align-items: center;
+}
+
+.bo-info__sep {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.bo-info__party {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.bo-info__party[hidden] {
+  display: none;
+}
+
+.bo-info__party label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bo-info__party-input,
+.bo-info__warehouse {
+  width: 220px;
+}
+
+.bo-info__hint {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.bo-info__table th {
+  background: var(--color-accent-soft);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.bo-info__table td {
+  text-align: center;
+}
+
 /* ===== Modal Cetak info barang ===== */
 .bo-cetak {
   display: grid;
