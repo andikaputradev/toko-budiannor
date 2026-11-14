@@ -13,6 +13,14 @@ import { chromium } from '@playwright/test';
 
 const DEFAULT_SIZES = '1366x640,1280x720,1366x768,1920x1080';
 const TOLERANCE = 1;
+// Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.
+const MIN_LINES_HEIGHT = 150;
+// Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Nota Pembelian) ikut diukur.
+const EXTRA_ROUTES = [
+  '/bo/transaksi/po-pembelian?baru=1',
+  '/bo/transaksi/so-penjualan?baru=1',
+  '/bo/transaksi/daftar-nota?tab=pembelian',
+];
 
 function option(name, fallback) {
   const index = process.argv.indexOf(`--${name}`);
@@ -26,7 +34,7 @@ function allRoutes() {
     ...menu.matchAll(/path: '(\/bo\/[^']*)'/g),
     ...index.matchAll(/^ {2}'(\/bo\/[^']+)': \{/gm),
   ].map((match) => match[1]);
-  return [...new Set(paths)];
+  return [...new Set([...paths, ...EXTRA_ROUTES])];
 }
 
 const base = option('base', 'http://127.0.0.1:4173');
@@ -66,13 +74,18 @@ for (const size of sizes) {
     await page.waitForTimeout(600);
     const gap = await page.evaluate(() => {
       const main = document.querySelector('.bo-content');
+      const lines = document.querySelector('.bo-tabpanel:not([hidden]) .bo-trx__lines');
       return {
         page: document.documentElement.scrollHeight - window.innerHeight,
         content: main === null ? 0 : main.scrollHeight - main.clientHeight,
+        lines: lines === null ? undefined : lines.clientHeight,
       };
     });
     if (gap.page > TOLERANCE || gap.content > TOLERANCE) {
       over.push(`${route}  halaman=${gap.page} konten=${gap.content}`);
+    }
+    if (gap.lines !== undefined && gap.lines < MIN_LINES_HEIGHT) {
+      over.push(`${route}  isi tidak terlihat: tabel baris hanya ${gap.lines} px`);
     }
     if (shots.includes(route)) {
       const name = route.replace(/[^a-z0-9]+/gi, '_');

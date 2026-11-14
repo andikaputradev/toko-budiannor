@@ -898,3 +898,72 @@ test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Fokus tinjauan: banyak baris dan teks sangat panjang
+// ---------------------------------------------------------------------------
+
+test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () => {
+  test('30 baris pada Faktur Penjualan: halaman tidak menggulir, tabel menggulir di dalam', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/penjualan');
+    for (let index = 0; index < 30; index += 1) {
+      await addItem(page, 'semen', '1', index % 8);
+    }
+    await expect(rowsOf(page)).toHaveCount(30);
+    await expect(countText(page)).toHaveText('30 Barang (30)');
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
+    expect(await lines.evaluate((node) => node.scrollHeight - node.clientHeight)).toBeGreaterThan(
+      0,
+    );
+  });
+
+  test('nama koli sangat panjang tetap satu baris berelipsis dan layar tidak menggulir', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/surat-jalan');
+    const root = active(page);
+    const long = 'BARANG CAMPURAN '.repeat(20);
+    await root.getByLabel('Jumlah', { exact: true }).fill('1');
+    await root.getByLabel('Satuan', { exact: true }).fill('KOLI');
+    await root.getByLabel('Nama Koli Barang').fill(long);
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    const row = root.locator('.bo-trx-table--lines tbody tr[data-id]').last();
+    await expect(row).toBeVisible();
+    expect(await row.evaluate((node) => node.getBoundingClientRect().height)).toBeLessThan(50);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    const horizontal = await root
+      .locator('.bo-trx__lines')
+      .evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(horizontal).toBeLessThanOrEqual(1);
+  });
+
+  test('keterangan sangat panjang pada Daftar PO terpotong rapi tanpa menggeser tabel', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await addItem(page, 'semen', '1');
+    await active(page).getByLabel('Keterangan').fill('URGEN DITUNGGU DEVELOPER '.repeat(20));
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
+    const row = orderList(page).locator('tbody tr[data-number]').first();
+    await expect(row).toBeVisible();
+    expect(await row.evaluate((node) => node.getBoundingClientRect().height)).toBeLessThan(60);
+    const horizontal = await orderList(page)
+      .locator('.bo-trx__lines')
+      .evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(horizontal).toBeLessThanOrEqual(1);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+  });
+});

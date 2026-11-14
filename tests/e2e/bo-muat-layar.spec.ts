@@ -15,6 +15,16 @@ const SIZES = [
 
 const TOLERANCE = 1;
 
+// Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Nota Pembelian) ikut diukur.
+const EXTRA_ROUTES = [
+  '/bo/transaksi/po-pembelian?baru=1',
+  '/bo/transaksi/so-penjualan?baru=1',
+  '/bo/transaksi/daftar-nota?tab=pembelian',
+];
+
+// Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.
+const MIN_LINES_HEIGHT = 150;
+
 function boRoutes(): string[] {
   const menu = readFileSync(new URL('../../src/apps/bo/domain/menu.ts', import.meta.url), 'utf8');
   const index = readFileSync(new URL('../../src/apps/bo/index.ts', import.meta.url), 'utf8');
@@ -22,7 +32,7 @@ function boRoutes(): string[] {
     ...menu.matchAll(/path: '(\/bo\/[^']*)'/g),
     ...index.matchAll(/^ {2}'(\/bo\/[^']+)': \{/gm),
   ].map((match) => match[1] ?? '');
-  return [...new Set(paths)].filter((path) => path !== '');
+  return [...new Set([...paths, ...EXTRA_ROUTES])].filter((path) => path !== '');
 }
 
 async function loginBo(page: Page): Promise<void> {
@@ -62,13 +72,18 @@ for (const size of SIZES) {
       await page.waitForTimeout(250);
       const gap = await page.evaluate(() => {
         const main = document.querySelector('.bo-content');
+        const lines = document.querySelector('.bo-tabpanel:not([hidden]) .bo-trx__lines');
         return {
           page: document.documentElement.scrollHeight - window.innerHeight,
           content: main === null ? 0 : main.scrollHeight - main.clientHeight,
+          lines: lines === null ? undefined : lines.clientHeight,
         };
       });
       if (gap.page > TOLERANCE || gap.content > TOLERANCE) {
         over.push(`${route} halaman=${String(gap.page)} konten=${String(gap.content)}`);
+      }
+      if (gap.lines !== undefined && gap.lines < MIN_LINES_HEIGHT) {
+        over.push(`${route} isi tidak terlihat: tabel baris hanya ${String(gap.lines)} px`);
       }
     }
     expect(over, `rute yang melebihi layar:\n${over.join('\n')}`).toEqual([]);
