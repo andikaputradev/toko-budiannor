@@ -524,3 +524,236 @@ test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Daftar dan formulir PO dan SO (gambar 10 dan 11)
+// ---------------------------------------------------------------------------
+
+const orderList = (page: Page): Locator => active(page).locator('.bo-trx-list');
+const orderHeaders = (page: Page): Promise<string[]> =>
+  orderList(page).locator('thead th').allTextContents();
+const toast = (page: Page, text: string | RegExp): Locator => page.getByText(text);
+
+const ORDER_LINE_HEADERS = [
+  'Urut',
+  'Nama Barang',
+  'Kode #',
+  'Gudang',
+  'Kuantitas',
+  'Satuan',
+  '@Harga',
+  'Diskon',
+  'Total Harga',
+];
+
+test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
+  test('menu PO Pembelian membuka daftar dengan kolom gambar 10', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian');
+    const root = orderList(page);
+    await expect(
+      root.getByRole('heading', { name: 'Daftar Pesanan Pembelian ( PO )' }),
+    ).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Buat PO Baru' })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Segarkan' })).toBeVisible();
+    for (const name of ['Tanggal', 'Pemasok', 'Status']) {
+      await expect(root.getByLabel(name, { exact: true })).toBeVisible();
+    }
+    await expect(root.getByRole('searchbox', { name: /Cari No PO/ })).toBeVisible();
+    expect(await orderHeaders(page)).toEqual([
+      'No. PO',
+      'Tanggal',
+      'Pemasok',
+      'Keterangan',
+      'Status',
+      'Total',
+    ]);
+    await expect(root.locator('.bo-trx-table__empty')).toHaveText('Belum ada pesanan.');
+  });
+
+  test('Buat PO Baru membuka formulir berlabel gambar 11 dengan tombol Simpan dan Cetak', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian');
+    await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian\?baru=1$/);
+    const root = active(page);
+    for (const name of [
+      'Tanggal',
+      'No PO',
+      'Pemasok',
+      'Pemesan',
+      'Syarat Bayar',
+      'Tempo',
+      'Ekspedisi',
+      'Keterangan',
+    ]) {
+      await expect(root.getByLabel(name, { exact: false }).first()).toBeVisible();
+    }
+    await expect(root.getByLabel('No PO')).toHaveValue(/^PO\d{8}$/);
+    await expect(root.getByLabel('Pemesan')).not.toHaveValue('');
+    await expect(root.getByRole('button', { name: 'Simpan', exact: true })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Cetak', exact: true })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Isi SJ Ekspedisi' })).toHaveCount(0);
+    expect(await root.locator('.bo-trx-table--lines thead th').allTextContents()).toEqual(
+      ORDER_LINE_HEADERS,
+    );
+  });
+
+  test('Simpan ditolak tanpa pemasok lalu tanpa barang; berhasil tampil di daftar On Proses', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    const root = active(page);
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(toast(page, 'Pilih pemasok dahulu.')).toBeVisible();
+    await root.getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    const supplier = await root
+      .getByLabel('Pemasok', { exact: true })
+      .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
+    await root.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(toast(page, 'PO belum memiliki item barang.')).toBeVisible();
+
+    // Penolakan tidak menambah PO.
+    await openPage(page, '/bo/transaksi/po-pembelian');
+    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+
+    await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
+    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await addItem(page, 'semen', '2');
+    await active(page).getByLabel('Keterangan').fill('Urgen Developer');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
+    const row = orderList(page).locator('tbody tr').first();
+    await expect(row.locator('td').nth(0)).toHaveText(/^PO\d{8}$/);
+    await expect(row.locator('td').nth(2)).toHaveText(supplier.replace(/\s*\(.*\)$/, ''));
+    await expect(row.locator('td').nth(3)).toHaveText('URGEN DEVELOPER');
+    await expect(row.locator('td').nth(4)).toHaveText('On Proses');
+    await expect(row.locator('td').nth(5)).toHaveText(/^Rp /);
+  });
+
+  test('filter Status menyisihkan baris dan pencarian tanpa hasil memberi pesan kosong', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await addItem(page, 'semen', '1');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
+    await expect(orderList(page).locator('tbody tr[data-number]')).toHaveCount(1);
+    await orderList(page)
+      .getByLabel('Status', { exact: true })
+      .selectOption({ label: 'Status: Selesai' });
+    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+    await orderList(page)
+      .getByLabel('Status', { exact: true })
+      .selectOption({ label: 'Status: On Proses' });
+    await expect(orderList(page).locator('tbody tr[data-number]')).toHaveCount(1);
+    await orderList(page)
+      .getByRole('searchbox', { name: /Cari No PO/ })
+      .fill('zzzz-tidak-ada');
+    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+  });
+
+  test('muat satu layar di 1280x640: daftar dan formulir PO', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/po-pembelian');
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    await openPage(page, '/bo/transaksi/po-pembelian?baru=1');
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () => {
+  test('menu SO Penjualan membuka daftar; Buat SO Baru membuka formulir SO', async ({ page }) => {
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/so-penjualan');
+    const root = orderList(page);
+    await expect(
+      root.getByRole('heading', { name: 'Daftar Pesanan Penjualan ( SO )' }),
+    ).toBeVisible();
+    expect(await orderHeaders(page)).toEqual([
+      'No. SO',
+      'Tanggal',
+      'Pelanggan',
+      'Keterangan',
+      'Status',
+      'Total',
+    ]);
+    await root.getByRole('button', { name: 'Buat SO Baru' }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/so-penjualan\?baru=1$/);
+    for (const name of [
+      'Tanggal',
+      'No SO',
+      'Pelanggan',
+      'Sales',
+      'Syarat Bayar',
+      'Tempo',
+      'Ekspedisi',
+      'Keterangan',
+    ]) {
+      await expect(active(page).getByLabel(name, { exact: false }).first()).toBeVisible();
+    }
+    await expect(active(page).getByLabel('No SO')).toHaveValue(/^SO\d{8}$/);
+  });
+
+  test('SO tersimpan muncul di Daftar SO, di pilihan SO Faktur Penjualan, dan Selesai setelah diimpor', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    // Faktur Penjualan dibuka lebih dulu: tab-nya tetap hidup saat SO dibuat.
+    await openPage(page, '/bo/penjualan');
+    await openPage(page, '/bo/transaksi/so-penjualan?baru=1');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(toast(page, 'Pilih pelanggan dahulu.')).toBeVisible();
+    await active(page).getByLabel('Pelanggan', { exact: true }).selectOption({ index: 1 });
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(toast(page, 'SO belum memiliki item barang.')).toBeVisible();
+    await addItem(page, 'semen', '3');
+    await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/transaksi\/so-penjualan$/);
+    const row = orderList(page).locator('tbody tr').first();
+    const number = (await row.locator('td').nth(0).textContent()) ?? '';
+    expect(number).toMatch(/^SO\d{8}$/);
+    await expect(row.locator('td').nth(4)).toHaveText('On Proses');
+
+    await openPage(page, '/bo/penjualan');
+    const select = active(page).getByLabel('No. SO');
+    await select.focus();
+    await expect(select.locator('option', { hasText: number })).toHaveCount(1);
+    await select.selectOption({
+      label: (await select.locator('option', { hasText: number }).textContent()) ?? '',
+    });
+    await expect(countText(page)).toHaveText('1 Barang (3)');
+
+    await openPage(page, '/bo/transaksi/so-penjualan');
+    await expect(
+      orderList(page).locator('tbody tr', { hasText: number }).locator('td').nth(4),
+    ).toHaveText('Selesai');
+  });
+
+  test('muat satu layar di 1280x640: daftar dan formulir SO', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await loginBo(page);
+    await openPage(page, '/bo/transaksi/so-penjualan');
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+    await openPage(page, '/bo/transaksi/so-penjualan?baru=1');
+    const lines = active(page).locator('.bo-trx__lines');
+    expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
+    expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+  });
+
+  test('Supervisor membuka daftar PO dan SO', async ({ page }) => {
+    await loginBo(page, SUPERVISOR);
+    await openPage(page, '/bo/transaksi/po-pembelian');
+    await expect(orderList(page).getByRole('button', { name: 'Buat PO Baru' })).toBeVisible();
+    await openPage(page, '/bo/transaksi/so-penjualan');
+    await expect(orderList(page).getByRole('button', { name: 'Buat SO Baru' })).toBeVisible();
+  });
+});

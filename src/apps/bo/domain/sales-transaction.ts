@@ -37,8 +37,7 @@ export interface SalesInvoiceDraft {
   readonly grandTotal: number;
 }
 
-// Nomor SO yang sudah diimpor ke Faktur Penjualan pada sesi ini (Daftar SO menampilkannya Selesai).
-export const importedSoNumbers = new Set<string>();
+export { importedSoNumbers } from './session-drafts';
 
 // Baris faktur dan baris dokumen bersama saling berubah bentuk; kode barang dipasok pemanggil.
 export function toDocLine(line: SalesInvoiceLine, code: string): DocLine {

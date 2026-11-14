@@ -67,7 +67,8 @@ export function renderPurchaseForm(
 ): ScreenHandle {
   const store = session.store;
   let dataset = store.getState().data;
-  const purchaseOrders = store.getState().purchaseOrders;
+  // Dibaca ulang tiap kali: PO bisa dibuat di tab lain selagi formulir ini terbuka.
+  const purchaseOrders = () => store.getState().purchaseOrders;
   const isOwner = store.getState().role === 'owner';
 
   let draft: PurchaseInvoiceDraft = createPurchaseInvoiceDraft(dataset);
@@ -270,9 +271,14 @@ export function renderPurchaseForm(
       option(TEXT.pilihPemasok, ''),
       ...dataset.suppliers.map((s) => option(`${s.name} (${s.phone || '-'})`, s.id)),
     );
+    refreshPoOptions();
+  }
+
+  function refreshPoOptions(): void {
+    const chosen = poSelectEl.value;
     poSelectEl.replaceChildren(
       option(TEXT.pilihPo, ''),
-      ...purchaseOrders.map((p) => {
+      ...purchaseOrders().map((p) => {
         const supplier = dataset.suppliers.find((s) => s.id === p.supplierId);
         return option(
           `${p.number} - ${supplier?.name ?? 'Pemasok'} (${formatRupiah(p.total)})`,
@@ -280,6 +286,7 @@ export function renderPurchaseForm(
         );
       }),
     );
+    poSelectEl.value = chosen;
   }
 
   // --- Tombol bilah ---
@@ -328,8 +335,9 @@ export function renderPurchaseForm(
     phoneEl.value = supplier?.phone ?? '';
     syncSupplierInfo();
   });
+  poSelectEl.addEventListener('focus', refreshPoOptions);
   poSelectEl.addEventListener('change', () => {
-    const order = purchaseOrders.find((item) => item.number === poSelectEl.value);
+    const order = purchaseOrders().find((item) => item.number === poSelectEl.value);
     if (order === undefined) {
       return;
     }
@@ -358,7 +366,7 @@ export function renderPurchaseForm(
   );
 
   if (initialPoNumber !== undefined) {
-    const order = purchaseOrders.find((item) => item.number === initialPoNumber);
+    const order = purchaseOrders().find((item) => item.number === initialPoNumber);
     if (order !== undefined) {
       poSelectEl.value = order.number;
       fillFromDraft(importFromPurchaseOrder(order, dataset));

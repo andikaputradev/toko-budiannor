@@ -266,6 +266,8 @@ export interface SalesOrder {
   readonly downPayment: number;
   readonly status: 'draf';
   readonly source: 'owner' | 'sales';
+  // Keterangan pesanan yang diisi di BO; kosong pada SO dari Owner dan Sales.
+  readonly notes?: string | undefined;
   readonly approvalId?: string | undefined;
   readonly synced?: boolean | undefined;
 }
@@ -287,6 +289,7 @@ export interface PurchaseOrder {
   readonly lines: readonly PurchaseOrderLine[];
   readonly total: number;
   readonly status: 'draf' | 'dipesan' | 'diterima-sebagian' | 'diterima';
+  readonly notes?: string | undefined;
 }
 
 // Retur yang dicatat di Back-Office (BO-10). Penjualan: barang kembali dari pelanggan; pembelian:

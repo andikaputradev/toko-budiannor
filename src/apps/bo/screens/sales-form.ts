@@ -85,7 +85,8 @@ export function renderSalesForm(
 ): ScreenHandle {
   const store = session.store;
   let dataset = store.getState().data;
-  const salesOrders = store.getState().salesOrders;
+  // Dibaca ulang tiap kali: SO bisa dibuat di tab lain selagi formulir ini terbuka.
+  const salesOrders = () => store.getState().salesOrders;
   const isOwner = store.getState().role === 'owner';
 
   let draft: SalesInvoiceDraft = createSalesInvoiceDraft(dataset);
@@ -318,9 +319,14 @@ export function renderSalesForm(
       option(TEXT.pilihPelanggan, ''),
       ...dataset.customers.map((c) => option(`${c.name} (${c.phone || '-'})`, c.id)),
     );
+    refreshSoOptions();
+  }
+
+  function refreshSoOptions(): void {
+    const chosen = soSelectEl.value;
     soSelectEl.replaceChildren(
       option(TEXT.pilihSo, ''),
-      ...salesOrders.map((s) => {
+      ...salesOrders().map((s) => {
         const customer = dataset.customers.find((c) => c.id === s.customerId);
         return option(
           `${s.number} - ${customer?.name ?? 'Umum'} (${formatRupiah(s.total)})`,
@@ -328,6 +334,7 @@ export function renderSalesForm(
         );
       }),
     );
+    soSelectEl.value = chosen;
   }
 
   // --- Cetak dan WhatsApp ---
@@ -476,8 +483,9 @@ export function renderSalesForm(
     phoneEl.value = customer?.phone ?? '';
     recalc();
   });
+  soSelectEl.addEventListener('focus', refreshSoOptions);
   soSelectEl.addEventListener('change', () => {
-    const order = salesOrders.find((item) => item.number === soSelectEl.value);
+    const order = salesOrders().find((item) => item.number === soSelectEl.value);
     if (order === undefined) {
       return;
     }
@@ -508,7 +516,7 @@ export function renderSalesForm(
   );
 
   if (initialSoNumber !== undefined) {
-    const order = salesOrders.find((item) => item.number === initialSoNumber);
+    const order = salesOrders().find((item) => item.number === initialSoNumber);
     if (order !== undefined) {
       soSelectEl.value = order.number;
       importedSoNumbers.add(order.number);
