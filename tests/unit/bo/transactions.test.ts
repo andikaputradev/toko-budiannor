@@ -18,9 +18,14 @@ import {
   addKoliPackage,
 } from '../../../src/apps/bo/domain/expedition';
 import {
+  buildTransactionRows,
   calculateTransactionAgeDays,
   computeTransactionMetrics,
+  countToday,
+  dateRangeFor,
   filterTransactions,
+  partyNames,
+  type TransactionRow,
 } from '../../../src/apps/bo/domain/transaction-list';
 
 const dataset = generateDataset();
@@ -282,6 +287,9 @@ describe('domain transaksi back-office (Tahap 4)', () => {
           status: 'belum-lunas' as const,
           ageDays: 5,
           total: 2_450_000,
+          refNumber: '',
+          user: 'Rizal',
+          notes: '',
         },
         {
           type: 'pembelian' as const,
@@ -292,6 +300,9 @@ describe('domain transaksi back-office (Tahap 4)', () => {
           status: 'lunas' as const,
           ageDays: 2,
           total: 1_890_000,
+          refNumber: '',
+          user: 'Rizal',
+          notes: '',
         },
       ];
 
@@ -302,6 +313,97 @@ describe('domain transaksi back-office (Tahap 4)', () => {
       const lunasOnly = filterTransactions(rows, { type: 'semua', status: 'lunas', query: '' });
       expect(lunasOnly).toHaveLength(1);
       expect(lunasOnly[0]?.number).toBe('FB26101234');
+    });
+
+    const row = (over: Partial<TransactionRow>): TransactionRow => ({
+      type: 'penjualan',
+      number: 'FJ0',
+      date: '2026-10-19',
+      partyName: 'Toko Arif',
+      paymentTerms: 'Tunai',
+      status: 'lunas',
+      ageDays: 0,
+      total: 100,
+      refNumber: '',
+      user: 'Rizal',
+      notes: '',
+      ...over,
+    });
+
+    it('membangun baris daftar dengan kolom No. SO atau PO, User, dan Keterangan (gambar 8)', () => {
+      const rows = buildTransactionRows(dataset);
+      const fj = rows.find((item) => item.number === 'FJ26101234');
+      expect(fj).toMatchObject({
+        type: 'penjualan',
+        refNumber: '26101234',
+        user: 'Rizal',
+        notes: 'Barang Besok Diambil',
+      });
+      expect(rows.every((item) => item.user !== '')).toBe(true);
+      const cashierName = dataset.users.find(
+        (user) => user.id === dataset.sales[0]?.cashierId,
+      )?.name;
+      const pos = rows.find((item) => item.number === dataset.sales[0]?.number);
+      expect(pos?.user).toBe(cashierName);
+      const dates = rows.map((item) => item.date);
+      expect([...dates].sort().reverse()).toEqual(dates);
+      const purchases = rows.filter((item) => item.type === 'pembelian');
+      expect(purchases.length).toBeGreaterThan(0);
+      expect(purchases.every((item) => item.refNumber.startsWith('PO'))).toBe(true);
+    });
+
+    it('menghitung jumlah dan nilai transaksi hari ini', () => {
+      const rows = [
+        row({ number: 'A', date: '2026-10-19', total: 100 }),
+        row({ number: 'B', date: '2026-10-19', total: 250 }),
+        row({ number: 'C', date: '2026-10-18', total: 900 }),
+      ];
+      expect(countToday(rows, '2026-10-19')).toEqual({ count: 2, total: 350 });
+      expect(countToday([], '2026-10-19')).toEqual({ count: 0, total: 0 });
+    });
+
+    it('menyaring menurut pelanggan atau pemasok dan rentang tanggal', () => {
+      const rows = [
+        row({ number: 'A', partyName: 'Toko Arif', date: '2026-10-19' }),
+        row({ number: 'B', partyName: 'Bu Wati', date: '2026-10-10' }),
+      ];
+      const base = { type: 'semua', status: 'semua', query: '' } as const;
+      expect(filterTransactions(rows, { ...base, party: 'Bu Wati' }).map((r) => r.number)).toEqual([
+        'B',
+      ]);
+      expect(
+        filterTransactions(rows, { ...base, startDate: '2026-10-15', endDate: '2026-10-19' }).map(
+          (r) => r.number,
+        ),
+      ).toEqual(['A']);
+      expect(filterTransactions(rows, { ...base, party: '' })).toHaveLength(2);
+    });
+
+    it('rentang tanggal pilihan filter dihitung dari hari ini', () => {
+      expect(dateRangeFor('semua', '2026-10-19')).toEqual({});
+      expect(dateRangeFor('hari-ini', '2026-10-19')).toEqual({
+        startDate: '2026-10-19',
+        endDate: '2026-10-19',
+      });
+      expect(dateRangeFor('tujuh-hari', '2026-10-19')).toEqual({
+        startDate: '2026-10-13',
+        endDate: '2026-10-19',
+      });
+      expect(dateRangeFor('bulan-ini', '2026-10-19')).toEqual({
+        startDate: '2026-10-01',
+        endDate: '2026-10-19',
+      });
+    });
+
+    it('daftar pihak untuk filter: unik, terurut, hanya jenis yang dipilih', () => {
+      const rows = [
+        row({ partyName: 'Toko Arif' }),
+        row({ partyName: 'Bu Wati' }),
+        row({ partyName: 'Toko Arif' }),
+        row({ type: 'pembelian', partyName: 'PT Sejati Raya' }),
+      ];
+      expect(partyNames(rows, 'penjualan')).toEqual(['Bu Wati', 'Toko Arif']);
+      expect(partyNames(rows, 'pembelian')).toEqual(['PT Sejati Raya']);
     });
 
     it('menghitung metrik total nilai, total belum lunas, dan jatuh tempo', () => {
@@ -315,6 +417,9 @@ describe('domain transaksi back-office (Tahap 4)', () => {
           status: 'belum-lunas' as const,
           ageDays: 10,
           total: 1_000_000,
+          refNumber: '',
+          user: 'Rizal',
+          notes: '',
         },
         {
           type: 'penjualan' as const,
@@ -325,6 +430,9 @@ describe('domain transaksi back-office (Tahap 4)', () => {
           status: 'jatuh-tempo' as const,
           ageDays: 35,
           total: 2_000_000,
+          refNumber: '',
+          user: 'Rizal',
+          notes: '',
         },
       ];
 

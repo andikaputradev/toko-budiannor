@@ -64,7 +64,7 @@ export function createLinesTable(options: LinesTableOptions): LinesTable {
       className: 'bo-trx__lines',
       attrs: { tabindex: '0', role: 'region', 'aria-label': T.daftarBarang },
     },
-    el('table', { className: 'bo-trx-table' }, el('thead', {}, head), body),
+    el('table', { className: 'bo-trx-table bo-trx-table--lines' }, el('thead', {}, head), body),
   );
   const columns = withKoli ? 10 : 9;
   let dragFrom = -1;

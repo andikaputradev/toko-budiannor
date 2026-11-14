@@ -226,12 +226,12 @@
   white-space: nowrap;
 }
 
-.bo-trx-table tbody tr {
-  cursor: pointer;
-}
-
 .bo-trx-table tbody tr:hover {
   background: var(--color-bg-selected);
+}
+
+.bo-trx-table--lines tbody tr {
+  cursor: pointer;
 }
 
 .bo-trx-table .is-bold {
@@ -309,10 +309,6 @@
   height: 56px;
   color: var(--color-text-secondary);
   text-align: center;
-}
-
-.bo-trx-table tbody tr.bo-trx-table__empty {
-  cursor: default;
 }
 
 .bo-trx-handle {
@@ -535,4 +531,211 @@
   margin-top: 4px;
   padding-top: 10px;
   border-top: 1px solid var(--color-border-default);
+}
+
+/* ===== Halaman daftar (Daftar Nota, Daftar PO, Daftar SO) ===== */
+.bo-trx .bo-trx-listhead {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+}
+
+.bo-trx-listhead__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bo-trx-listhead__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bo-trx-listhead__heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bo-trx-switch .bo-tab-btn {
+  min-height: 28px;
+  padding: 2px 12px;
+  font-size: 13px;
+}
+
+.bo-trx-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bo-trx-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  padding: 4px 12px;
+  border: 1px solid var(--color-text-primary);
+  border-radius: 4px;
+  background: var(--color-bg-surface);
+  text-align: center;
+}
+
+.bo-trx-kpi__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bo-trx-kpi__value {
+  font-size: 18px;
+}
+
+.bo-trx-kpi__value.is-warn {
+  color: var(--color-status-warning-fg);
+}
+
+.bo-trx-kpi__value.is-danger {
+  color: var(--color-status-danger-fg);
+}
+
+.bo-trx-listhead__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.bo-trx .bo-trx-create {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.bo-trx-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.bo-trx-iconbtn:focus-visible {
+  outline: 2px solid var(--color-accent-default);
+  outline-offset: 1px;
+}
+
+.bo-trx-filters,
+.bo-trx-filters__slot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bo-trx .bo-trx-filter {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 150px;
+  max-width: 230px;
+  height: 32px;
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.bo-trx-searchbox {
+  position: relative;
+  flex: 1 1 280px;
+  margin-left: auto;
+  max-width: 420px;
+}
+
+.bo-trx-searchbox__input {
+  width: 100%;
+  padding-right: 34px;
+}
+
+.bo-trx .bo-trx-searchbox .input {
+  height: 32px;
+  min-height: 32px;
+  font-size: 14px;
+}
+
+.bo-trx-table--list {
+  table-layout: auto;
+}
+
+.bo-trx-table--list td {
+  height: 40px;
+}
+
+.bo-trx-link {
+  color: var(--color-accent-pressed);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bo-trx-link:hover {
+  text-decoration: underline;
+}
+
+.bo-trx-link-ref {
+  color: var(--color-accent-pressed);
+  font-weight: 700;
+}
+
+.bo-trx-notes {
+  max-width: 220px;
+}
+
+.bo-trx-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bo-trx-status.is-lunas {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}
+
+.bo-trx-status.is-warning {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-fg);
+}
+
+.bo-trx-status.is-danger {
+  background: var(--color-status-danger-bg);
+  color: var(--color-status-danger-fg);
+}
+
+/* Status berupa teks tebal berwarna (Daftar PO dan SO). */
+.bo-trx-state {
+  font-weight: 700;
+}
+
+.bo-trx-state.is-danger {
+  color: var(--color-status-danger-fg);
+}
+
+.bo-trx-state.is-warning {
+  color: var(--color-status-warning-fg);
+}
+
+.bo-trx-state.is-success {
+  color: var(--color-status-success-fg);
 }
