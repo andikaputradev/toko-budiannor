@@ -15,8 +15,15 @@ const DEFAULT_SIZES = '1366x640,1280x720,1366x768,1920x1080';
 const TOLERANCE = 1;
 // Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.
 const MIN_LINES_HEIGHT = 150;
+// Kartu tabel menu Mutasi Stok (daftar Transfer, Koreksi, Opname) juga minimal 150 px.
+const MIN_MUT_HEIGHT = 150;
 // Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Nota Pembelian) ikut diukur.
-const EXTRA_ROUTES = ['/bo/transaksi/daftar-nota?tab=pembelian'];
+const EXTRA_ROUTES = [
+  '/bo/transaksi/daftar-nota?tab=pembelian',
+  '/bo/mutasi?baru=1',
+  '/bo/mutasi/koreksi?baru=1',
+  '/bo/opname?baru=1',
+];
 
 function option(name, fallback) {
   const index = process.argv.indexOf(`--${name}`);
@@ -71,10 +78,12 @@ for (const size of sizes) {
     const gap = await page.evaluate(() => {
       const main = document.querySelector('.bo-content');
       const lines = document.querySelector('.bo-tabpanel:not([hidden]) .bo-trx__lines');
+      const mut = document.querySelector('.bo-tabpanel:not([hidden]) .bo-mut-scroll');
       return {
         page: document.documentElement.scrollHeight - window.innerHeight,
         content: main === null ? 0 : main.scrollHeight - main.clientHeight,
         lines: lines === null ? undefined : lines.clientHeight,
+        mut: mut === null ? undefined : mut.clientHeight,
       };
     });
     if (gap.page > TOLERANCE || gap.content > TOLERANCE) {
@@ -82,6 +91,9 @@ for (const size of sizes) {
     }
     if (gap.lines !== undefined && gap.lines < MIN_LINES_HEIGHT) {
       over.push(`${route}  isi tidak terlihat: tabel baris hanya ${gap.lines} px`);
+    }
+    if (gap.mut !== undefined && gap.mut < MIN_MUT_HEIGHT) {
+      over.push(`${route}  isi tidak terlihat: kartu tabel hanya ${gap.mut} px`);
     }
     if (shots.includes(route)) {
       const name = route.replace(/[^a-z0-9]+/gi, '_');

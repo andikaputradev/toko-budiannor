@@ -1,4 +1,3 @@
-import '../../../styles/bo-stok.css';
 import { el, nextId } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
@@ -16,6 +15,7 @@ import { DEFAULT_STORE_PROFILE } from '../domain/settings-rbac';
 import {
   buildDoc,
   checkOwnerPin,
+  combineReasons,
   evaluateLine,
   ledgerFor,
   needsOwnerPin,
@@ -32,6 +32,11 @@ import { formatSigned, formatSignedRupiah } from '../domain/stock-report';
 import { createProductPicker } from '../picker';
 import type { ScreenHandle } from './login';
 import { screenActive } from '../screen-active';
+import { createCreateBar, createListCard, createScrollRegion } from './mutasi/parts';
+import { MUT_TEXT } from './mutasi/text';
+
+const LIST_PATH = '/bo/mutasi/koreksi';
+const FORM_PATH = '/bo/mutasi/koreksi?baru=1';
 
 const WAREHOUSE_OPTIONS: readonly { readonly value: WarehouseId; readonly key: LabelKey }[] = [
   { value: 'display', key: 'namaGudangDisplay' },
@@ -45,6 +50,9 @@ const REASON_PRESETS: readonly LabelKey[] = [
   'korAlasanSalahInput',
   'korAlasanDitemukan',
 ];
+
+// Nomor dokumen yang baru disimpan pada sesi ini: barisnya diberi warna sorot di daftar.
+let justSaved: string | undefined;
 
 function isPc(): boolean {
   return (
@@ -73,60 +81,297 @@ function issueText(issue: CorrectionIssue): string {
   return 'messageId' in issue ? message(issue.messageId) : label(issue.labelKey);
 }
 
-export function renderStockCorrection(session: BoSession): ScreenHandle {
+function actorOf(session: BoSession): { readonly id: string; readonly name: string } {
+  const state = session.store.getState();
+  const user = session.state().user ?? state.data.users.find((item) => item.id === state.userId);
+  return { id: user?.id ?? state.userId, name: user?.name ?? state.userId };
+}
+
+function logActivity(session: BoSession, kind: 'koreksi' | 'cetak', detail: string): void {
+  session.store.logActivity({
+    at: session.now().toISOString(),
+    userId: actorOf(session).id,
+    device: BO_DEVICE,
+    ip: BO_IP,
+    kind,
+    detail,
+  });
+}
+
+// Berita Acara Koreksi Stok: dipakai tombol "Cetak Berita Acara" di daftar dan Cetak di formulir.
+function openReport(session: BoSession, doc: CorrectionDoc, draft: boolean): void {
+  const profile = DEFAULT_STORE_PROFILE;
+  const rows = doc.lines.map((line, index) =>
+    el(
+      'tr',
+      {},
+      el('td', { text: String(index + 1) }),
+      el(
+        'td',
+        {},
+        el('span', { className: 'bo-korek__name', text: line.name }),
+        el('span', { className: 'bo-korek__code', text: line.code }),
+      ),
+      el('td', { text: warehouseName(line.warehouse) }),
+      el('td', {
+        className: 'is-end',
+        text: `${formatDecimal(line.systemQty, 3, 1)} ${line.unit}`,
+      }),
+      el('td', {
+        className: 'is-end',
+        text: `${formatDecimal(line.actualQty, 3, 1)} ${line.unit}`,
+      }),
+      el('td', {
+        className: 'is-end',
+        text: `${formatSigned(line.diffQty, 3, 1)} ${line.unit}`,
+      }),
+      el('td', { className: 'is-end', text: formatSignedRupiah(line.value) }),
+      el('td', { text: line.reason }),
+    ),
+  );
+  const signature = (role: string, name: string): HTMLElement =>
+    el(
+      'div',
+      { className: 'bo-korek-ba__sign' },
+      el('span', { className: 'bo-korek-ba__sign-role', text: role }),
+      el('span', { className: 'bo-korek-ba__sign-line' }),
+      el('span', { className: 'bo-korek-ba__sign-name', text: name }),
+    );
+  const body = el(
+    'div',
+    { className: 'bo-print-modal-content bo-korek-ba' },
+    el(
+      'div',
+      { className: 'bo-korek-ba__head' },
+      el('p', { className: 'bo-korek-ba__store', text: profile.name }),
+      el('p', {
+        className: 'bo-korek-ba__address',
+        text: `${profile.tagline}. ${profile.address}`,
+      }),
+      el('h3', { className: 'bo-korek-ba__title', text: label('korBaJudul') }),
+      el('p', { className: 'bo-korek-ba__number', text: doc.number }),
+    ),
+    el('p', { text: label('korBaPembuka', { tanggal: stamp(doc.at) }) }),
+    el(
+      'div',
+      { className: 'bo-stok-scroll' },
+      el(
+        'table',
+        { className: 'pos-table bo-stok-table' },
+        el(
+          'thead',
+          {},
+          el(
+            'tr',
+            {},
+            el('th', { text: 'No' }),
+            el('th', { text: label('kolomNamaBarang') }),
+            el('th', { text: label('kolomGudang') }),
+            el('th', { className: 'is-end', text: label('stokSistem') }),
+            el('th', { className: 'is-end', text: label('korKolomStokSebenarnya') }),
+            el('th', { className: 'is-end', text: label('selisih') }),
+            el('th', { className: 'is-end', text: label('korKolomNilai') }),
+            el('th', { text: MUT_TEXT.kolomAlasanKoreksi }),
+          ),
+        ),
+        el('tbody', {}, ...rows),
+        el(
+          'tfoot',
+          {},
+          el(
+            'tr',
+            {},
+            el('td', { attrs: { colspan: '6' }, text: label('korTotalNilai') }),
+            el('td', { className: 'is-end', text: formatSignedRupiah(doc.totalValue) }),
+            el('td'),
+          ),
+        ),
+      ),
+    ),
+    el('p', {
+      className: 'bo-korek-ba__reason',
+      text: label('korBaAlasan', { alasan: doc.reason }),
+    }),
+    el(
+      'div',
+      { className: 'bo-korek-ba__signs' },
+      signature(label('korBaDibuat'), doc.userName),
+      signature(label('korBaDisetujui'), doc.authorizedBy ?? ''),
+      signature(label('korBaMengetahui'), ''),
+    ),
+  );
+  const handle = openModal({
+    title: draft ? `${MUT_TEXT.draf} ${label('korCetakBa')}` : label('korCetakBa'),
+    body,
+    actions: [
+      { text: label('tutup'), variant: 'secondary' },
+      {
+        text: label('cetak'),
+        variant: 'primary',
+        icon: 'printer',
+        onClick: () => {
+          logActivity(session, 'cetak', label('korLogCetak', { nomor: doc.number }));
+          window.print();
+        },
+      },
+    ],
+  });
+  handle.dialog.classList.add('bo-stok-modal');
+}
+
+// Koreksi Stok: daftar riwayat (gambar klien 16) dan, lewat "+ Koreksi Stok", formulir input
+// (gambar 17) pada tab yang sama.
+export function renderStockCorrection(
+  session: BoSession,
+  go: (path: string) => void,
+  creating = false,
+): ScreenHandle {
+  return creating ? renderCorrectionForm(session, go) : renderCorrectionList(session, go);
+}
+
+function renderCorrectionList(session: BoSession, go: (path: string) => void): ScreenHandle {
+  const ledger = ledgerFor(session.store);
+  const body = el('tbody');
+  const emptyBox = el('p', { className: 'bo-mut-empty', text: label('korRiwayatKosong') });
+  const table = el(
+    'table',
+    { className: 'bo-mut-table bo-mut-table--log' },
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        el('th', { text: label('korNoDokumen') }),
+        el('th', { text: label('kolomWaktu') }),
+        el('th', { text: label('korPetugas') }),
+        el('th', { text: label('kolomNamaBarang') }),
+        el('th', { className: 'is-end', text: label('korKolomNilai') }),
+        el('th', { text: label('korAlasan') }),
+        el(
+          'th',
+          { className: 'is-action' },
+          el('span', { className: 'visually-hidden', text: label('korCetakBa') }),
+        ),
+      ),
+    ),
+    body,
+  );
+  const region = createScrollRegion(MUT_TEXT.daftarKoreksi, table);
+
+  const row = (doc: CorrectionDoc): HTMLElement => {
+    const open = createButton({
+      text: label('korCetakBa'),
+      variant: 'secondary',
+      icon: 'printer',
+      onClick: () => {
+        openReport(session, doc, false);
+      },
+    });
+    open.setAttribute('aria-label', `${label('korCetakBa')} ${doc.number}`);
+    return el(
+      'tr',
+      { className: doc.number === justSaved ? 'is-selected' : '' },
+      el('td', {}, el('strong', { text: doc.number })),
+      el('td', { text: stamp(doc.at) }),
+      el(
+        'td',
+        {},
+        el('span', { text: doc.userName }),
+        doc.authorizedBy === undefined
+          ? false
+          : el('span', {
+              className: 'bo-mut-code',
+              text: label('korOtorisasiOleh', { nama: doc.authorizedBy }),
+            }),
+      ),
+      el(
+        'td',
+        {},
+        el('span', {
+          className: 'bo-mut-name',
+          text: label('korBarangJumlah', { jumlah: formatDecimal(doc.lines.length) }),
+        }),
+        el('span', {
+          className: 'bo-mut-code',
+          text: warehousesOf(doc)
+            .map((warehouse) => warehouseName(warehouse))
+            .join(', '),
+        }),
+      ),
+      el(
+        'td',
+        { className: 'is-end' },
+        el('span', { className: toneOf(doc.totalValue), text: formatSignedRupiah(doc.totalValue) }),
+      ),
+      el('td', { className: 'bo-mut-note-cell', text: doc.reason }),
+      el('td', { className: 'is-action' }, open),
+    );
+  };
+
+  const paint = (): void => {
+    const docs = [...ledger.docs()].reverse();
+    body.replaceChildren(...docs.map(row));
+    emptyBox.hidden = docs.length > 0;
+    table.hidden = docs.length === 0;
+  };
+  paint();
+  const stop = ledger.subscribe(paint);
+
+  const element = el(
+    'div',
+    { className: 'bo-mut' },
+    createCreateBar(label('korJudul'), () => {
+      go(FORM_PATH);
+    }),
+    createListCard({
+      title: label('korRiwayat'),
+      collapsible: true,
+      content: el('div', { className: 'bo-mut-card__body' }, region, emptyBox),
+    }),
+  );
+  return { element, destroy: stop };
+}
+
+function renderCorrectionForm(session: BoSession, go: (path: string) => void): ScreenHandle {
   const store = session.store;
   const ledger = ledgerFor(store);
   let defaultWarehouse: WarehouseId = 'display';
   let lines: CorrectionDraftLine[] = [];
   let guard: PinGuard = INITIAL_GUARD;
-  let justSaved: string | undefined;
 
   const lookup = (id: string): Product | undefined =>
     store.getState().data.products.find((item) => item.id === id);
   const role = () => store.getState().role;
-  const actor = (): { readonly id: string; readonly name: string } => {
-    const state = store.getState();
-    const user = session.state().user ?? state.data.users.find((item) => item.id === state.userId);
-    return { id: user?.id ?? state.userId, name: user?.name ?? state.userId };
-  };
-  const log = (kind: 'koreksi' | 'cetak', detail: string): void => {
-    store.logActivity({
-      at: session.now().toISOString(),
-      userId: actor().id,
-      device: BO_DEVICE,
-      ip: BO_IP,
-      kind,
-      detail,
-    });
-  };
+  const actor = () => actorOf(session);
 
   // --- Kepala halaman ---
-  const numberOutput = el('output', { className: 'bo-stok-fact__value' });
-  const dateOutput = el('output', { className: 'bo-stok-fact__value' });
-  const fact = (text: string, output: HTMLElement): HTMLElement =>
+  const numberOutput = el('output', { className: 'bo-mut-chip__value' });
+  const dateOutput = el('output', { className: 'bo-mut-chip__value' });
+  const chip = (text: string, output: HTMLElement): HTMLElement =>
     el(
       'div',
-      { className: 'bo-stok-fact' },
-      el('span', { className: 'bo-stok-fact__label', text }),
+      { className: 'bo-mut-chip' },
+      el('span', { className: 'bo-mut-chip__label', text }),
       output,
     );
   const head = el(
     'header',
-    { className: 'bo-stok-head' },
+    { className: 'bo-mut-title' },
     el(
       'div',
-      { className: 'bo-stok-head__text' },
-      el('h2', { className: 'bo-stok-head__title', text: label('korJudul') }),
-      el('p', { className: 'bo-stok-head__sub', text: label('korSub') }),
+      { className: 'bo-mut-title__text' },
+      el('h2', { className: 'bo-mut-title__heading', text: label('korJudul') }),
+      el('p', { className: 'bo-mut-title__sub', text: label('korSub') }),
     ),
     el(
       'div',
-      { className: 'bo-stok-head__facts' },
-      fact(label('korNoDokumen'), numberOutput),
-      fact(label('tanggal'), dateOutput),
-      fact(
+      { className: 'bo-mut-chips' },
+      chip(label('korNoDokumen'), numberOutput),
+      chip(label('tanggal'), dateOutput),
+      chip(
         label('korPetugas'),
-        el('output', { className: 'bo-stok-fact__value', text: actor().name }),
+        el('output', { className: 'bo-mut-chip__value', text: actor().name }),
       ),
     ),
   );
@@ -134,31 +379,28 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
 
   // --- Formulir ---
   const warehouseField = createSelectField({
-    labelText: label('korGudangBawaan'),
+    labelText: label('kolomGudang'),
     options: WAREHOUSE_OPTIONS.map((option) => ({
       value: option.value,
       text: label(option.key),
     })),
     value: defaultWarehouse,
   });
-  warehouseField.root.classList.add('bo-korek__warehouse');
-  const tableBox = el('div', { className: 'bo-korek__table' });
-  const error = el('p', { className: 'bo-error bo-korek__error', attrs: { role: 'alert' } });
-  const reasonId = nextId('alasan-koreksi');
-  const hintId = nextId('alasan-bantuan');
-  const reason = el('textarea', {
-    className: 'input bo-korek__reason-input',
-    attrs: { id: reasonId, rows: '3', maxlength: '300', 'aria-describedby': hintId },
-  });
-  const countOutput = el('p', {
-    className: 'bo-korek-summary__count',
+  warehouseField.root.classList.add('bo-mut-warehouse');
+  const tableBox = el('div', { className: 'bo-mut-linesbox' });
+  const error = el('p', { className: 'bo-error bo-mut-error', attrs: { role: 'alert' } });
+  const reasonListId = nextId('alasan-saran');
+  const reasonList = el(
+    'datalist',
+    { attrs: { id: reasonListId } },
+    ...REASON_PRESETS.map((key) => el('option', { attrs: { value: label(key) } })),
+  );
+  const countOutput = el('span', {
+    className: 'bo-mut-summary__count',
     attrs: { 'aria-live': 'polite' },
   });
-  const totalOutput = el('output', { className: 'bo-korek-summary__total' });
-  const authNote = el('p', { className: 'bo-korek-summary__note' });
-  const historyBox = el('details', { className: 'bo-panel bo-korek__history' });
-  // Riwayat terbuka sendiri hanya di layar tinggi; di layar pendek tabel baris mendapat seluruh tinggi.
-  historyBox.open = window.innerHeight >= 800;
+  const totalOutput = el('output', { className: 'bo-mut-summary__total' });
+  const authNote = el('span', { className: 'bo-mut-summary__note' });
 
   const picker = createProductPicker({
     labelText: label('cariBarang'),
@@ -176,6 +418,7 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
             warehouse: defaultWarehouse,
             unit: product.defaultUnit ?? product.baseUnit,
             actual: '',
+            reason: '',
           },
         ];
         renderTable();
@@ -184,7 +427,7 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       document.querySelector<HTMLElement>(`[data-korek-actual="${String(index)}"]`)?.focus();
     },
   });
-  picker.root.classList.add('bo-korek__picker');
+  picker.root.classList.add('bo-mut-picker');
 
   const updateSummary = (): void => {
     let changed = 0;
@@ -201,14 +444,11 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
     });
     countOutput.textContent = label('korRingkasanBaris', { jumlah: formatDecimal(changed) });
     totalOutput.textContent = formatSignedRupiah(signed);
-    totalOutput.className = `bo-korek-summary__total ${toneOf(signed)}`;
+    totalOutput.className = `bo-mut-summary__total ${toneOf(signed)}`;
     const needsPin = needsOwnerPin(role(), absolute);
-    authNote.textContent =
-      lines.length === 0
-        ? ''
-        : needsPin
-          ? label('korButuhOtorisasi', { batas: formatRupiah(OWNER_PIN_LIMIT) })
-          : label('korTanpaOtorisasi');
+    authNote.textContent = needsPin
+      ? label('korButuhOtorisasi', { batas: formatRupiah(OWNER_PIN_LIMIT) })
+      : label('korTanpaOtorisasi');
     authNote.classList.toggle('is-warning', needsPin);
   };
 
@@ -222,9 +462,20 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       const systemCell = el('td', { className: 'is-end' });
       const diffCell = el('td', { className: 'is-end' });
       const valueCell = el('td', { className: 'is-end' });
+      const actual = el('input', {
+        className: 'input bo-mut-input bo-mut-actual',
+        attrs: {
+          inputmode: 'decimal',
+          autocomplete: 'off',
+          'aria-label': `${label('korKolomStokSebenarnya')} ${product.name}`,
+          'data-korek-actual': String(index),
+        },
+      });
+      actual.value = line.actual;
       const refresh = (): void => {
         const systemBase = product.stock[line.warehouse];
         systemCell.textContent = `${formatDecimal(fromBase(product, line.unit, systemBase), 3, 1)} ${line.unit}`;
+        actual.classList.toggle('is-required', actual.value.trim() === '');
         const result = evaluateLine(product, line, index);
         if (!result.ok) {
           diffCell.replaceChildren(el('span', { className: 'bo-korek-diff', text: '-' }));
@@ -243,7 +494,7 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       const warehouse = el(
         'select',
         {
-          className: 'input',
+          className: 'input bo-mut-input',
           attrs: {
             'aria-label': `${label('kolomGudang')} ${product.name}`,
             'data-korek-warehouse': String(index),
@@ -262,16 +513,6 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
         renderTable();
       });
 
-      const actual = el('input', {
-        className: 'input bo-korek__actual',
-        attrs: {
-          inputmode: 'decimal',
-          autocomplete: 'off',
-          'aria-label': `${label('korKolomStokSebenarnya')} ${product.name}`,
-          'data-korek-actual': String(index),
-        },
-      });
-      actual.value = line.actual;
       actual.addEventListener('input', () => {
         lines = lines.map((item, position) =>
           position === index ? { ...item, actual: actual.value } : item,
@@ -285,7 +526,7 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       const unit = el(
         'select',
         {
-          className: 'input',
+          className: 'input bo-mut-input',
           attrs: { 'aria-label': `${label('kolomSatuan')} ${product.name}` },
         },
         ...product.units.map((item) =>
@@ -301,6 +542,27 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
         updateSummary();
       });
 
+      const reason = el('input', {
+        className: 'input bo-mut-input bo-mut-reason',
+        attrs: {
+          type: 'text',
+          maxlength: '200',
+          autocomplete: 'off',
+          list: reasonListId,
+          placeholder: MUT_TEXT.tulisAlasan,
+          'aria-label': `${MUT_TEXT.kolomAlasanKoreksi} ${product.name}`,
+          'data-korek-reason': String(index),
+        },
+      });
+      reason.value = line.reason ?? '';
+      reason.addEventListener('input', () => {
+        lines = lines.map((item, position) =>
+          position === index ? { ...item, reason: reason.value } : item,
+        );
+        reason.removeAttribute('aria-invalid');
+        error.textContent = '';
+      });
+
       const remove = createButton({
         text: label('hapus'),
         variant: 'secondary',
@@ -312,7 +574,8 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
         },
       });
       remove.setAttribute('aria-label', `${label('hapus')} ${product.name}`);
-      remove.classList.add('bo-korek__remove');
+      remove.title = `${label('hapus')} ${product.name}`;
+      remove.classList.add('bo-mut-iconbtn');
 
       refresh();
       body.append(
@@ -321,9 +584,9 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
           {},
           el(
             'td',
-            {},
-            el('span', { className: 'bo-korek__name', text: product.name }),
-            el('span', { className: 'bo-korek__code', text: product.code }),
+            { className: 'is-name' },
+            el('span', { className: 'bo-mut-name', text: product.name }),
+            el('span', { className: 'bo-mut-code', text: product.code }),
           ),
           el('td', {}, warehouse),
           systemCell,
@@ -331,7 +594,8 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
           el('td', {}, unit),
           diffCell,
           valueCell,
-          el('td', {}, remove),
+          el('td', { className: 'is-reason' }, reason),
+          el('td', { className: 'is-action' }, remove),
         ),
       );
     });
@@ -340,19 +604,15 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       lines.length === 0
         ? el(
             'div',
-            { className: 'bo-korek__empty' },
+            { className: 'bo-mut-placeholder' },
             icon('package'),
             el('p', { text: label('korKosong') }),
           )
-        : el(
-            'div',
-            { className: 'bo-stok-scroll' },
+        : createScrollRegion(
+            label('korDokumen'),
             el(
               'table',
-              {
-                className: 'pos-table bo-stok-table bo-korek__lines',
-                attrs: { 'aria-label': label('korDokumen') },
-              },
+              { className: 'bo-mut-table bo-mut-table--lines bo-mut-table--korek' },
               el(
                 'thead',
                 {},
@@ -366,9 +626,10 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
                   el('th', { text: label('kolomSatuan') }),
                   el('th', { className: 'is-end', text: label('selisih') }),
                   el('th', { className: 'is-end', text: label('korKolomNilai') }),
+                  el('th', { text: MUT_TEXT.kolomAlasanKoreksi }),
                   el(
                     'th',
-                    { className: 'bo-korek__th-action' },
+                    { className: 'is-action' },
                     el('span', { className: 'visually-hidden', text: label('hapus') }),
                   ),
                 ),
@@ -377,228 +638,19 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
             ),
           ),
     );
+    clear.toggleAttribute('data-inactive', lines.length === 0);
+    clear.setAttribute('aria-disabled', lines.length === 0 ? 'true' : 'false');
     updateSummary();
-  };
-
-  // --- Riwayat dan Berita Acara ---
-  const openReport = (doc: CorrectionDoc): void => {
-    const profile = DEFAULT_STORE_PROFILE;
-    const rows = doc.lines.map((line, index) =>
-      el(
-        'tr',
-        {},
-        el('td', { text: String(index + 1) }),
-        el(
-          'td',
-          {},
-          el('span', { className: 'bo-korek__name', text: line.name }),
-          el('span', { className: 'bo-korek__code', text: line.code }),
-        ),
-        el('td', { text: warehouseName(line.warehouse) }),
-        el('td', {
-          className: 'is-end',
-          text: `${formatDecimal(line.systemQty, 3, 1)} ${line.unit}`,
-        }),
-        el('td', {
-          className: 'is-end',
-          text: `${formatDecimal(line.actualQty, 3, 1)} ${line.unit}`,
-        }),
-        el('td', {
-          className: 'is-end',
-          text: `${formatSigned(line.diffQty, 3, 1)} ${line.unit}`,
-        }),
-        el('td', { className: 'is-end', text: formatSignedRupiah(line.value) }),
-      ),
-    );
-    const signature = (role: string, name: string): HTMLElement =>
-      el(
-        'div',
-        { className: 'bo-korek-ba__sign' },
-        el('span', { className: 'bo-korek-ba__sign-role', text: role }),
-        el('span', { className: 'bo-korek-ba__sign-line' }),
-        el('span', { className: 'bo-korek-ba__sign-name', text: name }),
-      );
-    const body = el(
-      'div',
-      { className: 'bo-print-modal-content bo-korek-ba' },
-      el(
-        'div',
-        { className: 'bo-korek-ba__head' },
-        el('p', { className: 'bo-korek-ba__store', text: profile.name }),
-        el('p', {
-          className: 'bo-korek-ba__address',
-          text: `${profile.tagline}. ${profile.address}`,
-        }),
-        el('h3', { className: 'bo-korek-ba__title', text: label('korBaJudul') }),
-        el('p', { className: 'bo-korek-ba__number', text: doc.number }),
-      ),
-      el('p', { text: label('korBaPembuka', { tanggal: stamp(doc.at) }) }),
-      el(
-        'div',
-        { className: 'bo-stok-scroll' },
-        el(
-          'table',
-          { className: 'pos-table bo-stok-table' },
-          el(
-            'thead',
-            {},
-            el(
-              'tr',
-              {},
-              el('th', { text: 'No' }),
-              el('th', { text: label('kolomNamaBarang') }),
-              el('th', { text: label('kolomGudang') }),
-              el('th', { className: 'is-end', text: label('stokSistem') }),
-              el('th', { className: 'is-end', text: label('korKolomStokSebenarnya') }),
-              el('th', { className: 'is-end', text: label('selisih') }),
-              el('th', { className: 'is-end', text: label('korKolomNilai') }),
-            ),
-          ),
-          el('tbody', {}, ...rows),
-          el(
-            'tfoot',
-            {},
-            el(
-              'tr',
-              {},
-              el('td', { attrs: { colspan: '6' }, text: label('korTotalNilai') }),
-              el('td', { className: 'is-end', text: formatSignedRupiah(doc.totalValue) }),
-            ),
-          ),
-        ),
-      ),
-      el('p', {
-        className: 'bo-korek-ba__reason',
-        text: label('korBaAlasan', { alasan: doc.reason }),
-      }),
-      el(
-        'div',
-        { className: 'bo-korek-ba__signs' },
-        signature(label('korBaDibuat'), doc.userName),
-        signature(label('korBaDisetujui'), doc.authorizedBy ?? ''),
-        signature(label('korBaMengetahui'), ''),
-      ),
-    );
-    const handle = openModal({
-      title: label('korCetakBa'),
-      body,
-      actions: [
-        { text: label('tutup'), variant: 'secondary' },
-        {
-          text: label('cetak'),
-          variant: 'primary',
-          icon: 'printer',
-          onClick: () => {
-            log('cetak', label('korLogCetak', { nomor: doc.number }));
-            window.print();
-          },
-        },
-      ],
-    });
-    handle.dialog.classList.add('bo-stok-modal');
-  };
-
-  const renderHistory = (): void => {
-    const docs = [...ledger.docs()].reverse();
-    historyBox.replaceChildren(
-      el('summary', {
-        className: 'bo-stok-panel-title bo-korek__history-title',
-        text: label('korRiwayat'),
-      }),
-      docs.length === 0
-        ? el('p', { className: 'bo-stok-note', text: label('korRiwayatKosong') })
-        : el(
-            'div',
-            { className: 'bo-stok-scroll' },
-            el(
-              'table',
-              { className: 'pos-table bo-stok-table bo-korek__log' },
-              el(
-                'thead',
-                {},
-                el(
-                  'tr',
-                  {},
-                  el('th', { text: label('korNoDokumen') }),
-                  el('th', { text: label('kolomWaktu') }),
-                  el('th', { text: label('korPetugas') }),
-                  el('th', { text: label('kolomNamaBarang') }),
-                  el('th', { className: 'is-end', text: label('korKolomNilai') }),
-                  el('th', { text: label('korAlasan') }),
-                  el(
-                    'th',
-                    { className: 'bo-korek__th-action' },
-                    el('span', { className: 'visually-hidden', text: label('korCetakBa') }),
-                  ),
-                ),
-              ),
-              el(
-                'tbody',
-                {},
-                ...docs.map((doc) => {
-                  const open = createButton({
-                    text: label('korCetakBa'),
-                    variant: 'secondary',
-                    icon: 'printer',
-                    onClick: () => {
-                      openReport(doc);
-                    },
-                  });
-                  open.setAttribute('aria-label', `${label('korCetakBa')} ${doc.number}`);
-                  return el(
-                    'tr',
-                    { className: doc.number === justSaved ? 'is-selected' : '' },
-                    el('td', {}, el('strong', { text: doc.number })),
-                    el('td', { text: stamp(doc.at) }),
-                    el(
-                      'td',
-                      {},
-                      el('span', { text: doc.userName }),
-                      doc.authorizedBy === undefined
-                        ? false
-                        : el('span', {
-                            className: 'bo-korek__code',
-                            text: label('korOtorisasiOleh', { nama: doc.authorizedBy }),
-                          }),
-                    ),
-                    el(
-                      'td',
-                      {},
-                      el('span', {
-                        text: label('korBarangJumlah', { jumlah: formatDecimal(doc.lines.length) }),
-                      }),
-                      el('span', {
-                        className: 'bo-korek__code',
-                        text: warehousesOf(doc)
-                          .map((warehouse) => warehouseName(warehouse))
-                          .join(', '),
-                      }),
-                    ),
-                    el(
-                      'td',
-                      { className: 'is-end' },
-                      el('span', {
-                        className: toneOf(doc.totalValue),
-                        text: formatSignedRupiah(doc.totalValue),
-                      }),
-                    ),
-                    el('td', { className: 'bo-korek__log-reason', text: doc.reason }),
-                    el('td', {}, open),
-                  );
-                }),
-              ),
-            ),
-          ),
-    );
   };
 
   // --- Simpan ---
   const showIssue = (issue: CorrectionIssue): void => {
     error.textContent = issueText(issue);
     const line = issue.line === undefined ? undefined : String(issue.line);
-    if (issue.field === 'reason') {
-      reason.setAttribute('aria-invalid', 'true');
-      reason.focus();
+    if (issue.field === 'reason' && line !== undefined) {
+      const target = document.querySelector<HTMLElement>(`[data-korek-reason="${line}"]`);
+      target?.setAttribute('aria-invalid', 'true');
+      target?.focus();
     } else if (line !== undefined && issue.field === 'actual') {
       const target = document.querySelector<HTMLElement>(`[data-korek-actual="${line}"]`);
       target?.setAttribute('aria-invalid', 'true');
@@ -626,11 +678,12 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       at: session.now().toISOString(),
       user: actor(),
       authorizedBy,
-      reason: reason.value,
+      reason: combineReasons(plan.changed),
       lines: plan.changed,
     });
     ledger.add(doc);
-    log(
+    logActivity(
+      session,
       'koreksi',
       label('korLogDetail', {
         nomor: doc.number,
@@ -642,14 +695,10 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       }),
     );
     justSaved = doc.number;
-    historyBox.open = true;
     showToast({ kind: 'success', text: label('korTersimpan', { nomor: doc.number }) });
     lines = [];
-    reason.value = '';
     error.textContent = '';
-    renderTable();
-    renderHistory();
-    header();
+    go(LIST_PATH);
   };
 
   const askOwner = (absolute: number): void => {
@@ -709,7 +758,7 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
   };
 
   const submit = (authorizedBy: string | undefined): void => {
-    const plan = planCorrection(lines, reason.value, lookup);
+    const plan = planCorrection(lines, '', lookup);
     if (!plan.ok) {
       showIssue(plan.issue);
       return;
@@ -737,63 +786,82 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
       submit(undefined);
     },
   });
+  const confirmDiscard = (title: string, text: string, confirmText: string, then: () => void) => {
+    openModal({
+      title,
+      body: text,
+      actions: [
+        { text: label('lanjutMengisi'), variant: 'secondary' },
+        { text: confirmText, variant: 'danger', onClick: then },
+      ],
+    });
+  };
   const cancel = createButton({
     text: label('batal'),
     variant: 'secondary',
     onClick: () => {
-      if (lines.length === 0 && reason.value.trim() === '') {
+      if (lines.length === 0) {
         error.textContent = '';
+        go(LIST_PATH);
         return;
       }
-      openModal({
-        title: label('kosongkanFormJudul'),
-        body: label('kosongkanFormTeks'),
-        actions: [
-          { text: label('lanjutMengisi'), variant: 'secondary' },
-          {
-            text: label('kosongkan'),
-            variant: 'danger',
-            onClick: () => {
-              lines = [];
-              reason.value = '';
-              error.textContent = '';
-              renderTable();
-            },
-          },
-        ],
+      confirmDiscard(
+        label('kosongkanFormJudul'),
+        label('kosongkanFormTeks'),
+        label('kosongkan'),
+        () => {
+          lines = [];
+          error.textContent = '';
+          go(LIST_PATH);
+        },
+      );
+    },
+  });
+  const clear = createButton({
+    text: label('hapus'),
+    variant: 'secondary',
+    icon: 'trash-2',
+    onClick: () => {
+      if (lines.length === 0) {
+        return;
+      }
+      confirmDiscard(MUT_TEXT.hapusDrafJudul, MUT_TEXT.hapusDrafTeks, MUT_TEXT.hapusDraf, () => {
+        lines = [];
+        error.textContent = '';
+        renderTable();
+        picker.input.focus();
       });
+    },
+  });
+  const print = createButton({
+    text: MUT_TEXT.cetak,
+    variant: 'secondary',
+    icon: 'printer',
+    onClick: () => {
+      const plan = planCorrection(lines, '', lookup);
+      if (!plan.ok) {
+        showIssue(plan.issue);
+        return;
+      }
+      error.textContent = '';
+      openReport(
+        session,
+        buildDoc({
+          number: ledger.nextNumber(),
+          at: session.now().toISOString(),
+          user: actor(),
+          authorizedBy: undefined,
+          reason: combineReasons(plan.changed),
+          lines: plan.changed,
+        }),
+        true,
+      );
     },
   });
 
   warehouseField.select.addEventListener('change', () => {
     defaultWarehouse = warehouseField.select.value as WarehouseId;
   });
-  reason.addEventListener('input', () => {
-    reason.removeAttribute('aria-invalid');
-    error.textContent = '';
-  });
-  const presets = el(
-    'div',
-    { className: 'bo-korek__presets', attrs: { role: 'group', 'aria-label': label('korAlasan') } },
-    ...REASON_PRESETS.map((key) => {
-      const chip = el('button', {
-        className: 'chip',
-        text: label(key),
-        attrs: { type: 'button' },
-      });
-      chip.addEventListener('click', () => {
-        const text = label(key);
-        const current = reason.value.trim();
-        if (!current.includes(text)) {
-          reason.value = current === '' ? text : `${current}; ${text}`;
-        }
-        reason.removeAttribute('aria-invalid');
-        error.textContent = '';
-        reason.focus();
-      });
-      return chip;
-    }),
-  );
 
   const header = (): void => {
     numberOutput.textContent = ledger.nextNumber();
@@ -822,78 +890,41 @@ export function renderStockCorrection(session: BoSession): ScreenHandle {
   };
   document.addEventListener('keydown', onKey);
   const stopStore = store.subscribe(paintConnection);
-  const stopLedger = ledger.subscribe(() => {
-    renderHistory();
-    header();
-  });
+  const stopLedger = ledger.subscribe(header);
 
   const element = el(
     'div',
-    { className: 'bo-stok-page bo-korek' },
+    { className: 'bo-mut bo-mut--form' },
     head,
     bannerBox,
     el(
       'section',
-      { className: 'bo-panel bo-korek__form' },
-      el('h3', { className: 'bo-stok-panel-title', text: label('korDokumen') }),
+      { className: 'bo-mut-card bo-mut-card--korek', attrs: { 'aria-label': label('korDokumen') } },
       el(
         'div',
-        { className: 'bo-korek__cols' },
-        el(
-          'div',
-          { className: 'bo-korek__main' },
-          el('div', { className: 'bo-korek__tools' }, picker.root, warehouseField.root),
-          tableBox,
-        ),
-        el(
-          'div',
-          { className: 'bo-korek__side' },
-          el(
-            'div',
-            { className: 'bo-korek__reason' },
-            el('label', {
-              className: 'field__label',
-              text: label('korAlasan'),
-              attrs: { for: reasonId },
-            }),
-            reason,
-            el('p', {
-              className: 'bo-stok-note',
-              text: label('korAlasanBantuan'),
-              attrs: { id: hintId },
-            }),
-            presets,
-          ),
-        ),
+        { className: 'bo-mut-toolbar bo-mut-toolbar--card' },
+        el('div', { className: 'bo-mut-toolbar__tools' }, picker.root, warehouseField.root),
+        el('div', { className: 'bo-mut-toolbar__actions' }, save, cancel, clear, print),
       ),
+      error,
+      tableBox,
       el(
         'div',
-        { className: 'bo-korek__foot' },
+        { className: 'bo-mut-summary' },
+        countOutput,
         el(
-          'div',
-          { className: 'bo-korek-summary' },
-          el(
-            'div',
-            { className: 'bo-korek-summary__main' },
-            countOutput,
-            el(
-              'p',
-              { className: 'bo-korek-summary__line' },
-              el('span', { text: label('korTotalNilai') }),
-              totalOutput,
-            ),
-          ),
-          authNote,
+          'span',
+          { className: 'bo-mut-summary__line' },
+          el('span', { text: label('korTotalNilai') }),
+          totalOutput,
         ),
-        el('div', { className: 'bo-form__actions' }, cancel, save),
-        error,
+        authNote,
       ),
+      reasonList,
     ),
-    historyBox,
   );
   header();
   renderTable();
-  renderHistory();
   paintConnection();
   return {
     element,

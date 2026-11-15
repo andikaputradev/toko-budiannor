@@ -166,7 +166,44 @@ describe('stok, mutasi, dan opname', () => {
     expect(session.saveOpnameDraft()).toMatchObject({ messageId: 'MSG-077' });
     expect(session.addOpnameProduct(target)).toMatchObject({ messageId: 'MSG-077' });
     session.newOpname();
-    expect(session.state().opname).toMatchObject({ number: 'OP-0002', status: 'draf' });
+    expect(session.state().opname).toMatchObject({ number: 'OP-0004', status: 'draf' });
+  });
+
+  it('menyimpan keterangan dan pengguna pada mutasi; benih M-0001 berketerangan (gambar 14 dan 15)', () => {
+    const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
+    const target = first(store);
+    expect(session.state().transfers[0]).toMatchObject({ number: 'M-0001', note: 'Isi stok toko' });
+    const line = { productId: target.id, unit: 'Sak', quantity: '1' };
+    session.saveTransfer('besar', 'display', [line], '  Buat dibawa besok pagi ');
+    expect(session.state().transfers.at(-1)).toMatchObject({
+      number: 'M-0002',
+      note: 'Buat dibawa besok pagi',
+      userId: 'U-2',
+    });
+    session.saveTransfer('besar', 'display', [line]);
+    expect(session.state().transfers.at(-1)?.note).toBe('');
+  });
+
+  it('mencatat opname yang diterapkan pada riwayat perintah opname dan memulihkannya saat reset', () => {
+    const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
+    const target = first(store);
+    expect(session.state().opnameHistory.map((doc) => doc.number)).toEqual(['OP-0001', 'OP-0002']);
+    expect(session.state().opname.number).toBe('OP-0003');
+    session.addOpnameProduct(target);
+    session.setPhysical(target.id, String(target.stock.display - 1).replace('.', ','));
+    expect(session.applyOpname()).toEqual({ ok: true });
+    expect(session.state().opnameHistory.map((doc) => doc.number)).toEqual([
+      'OP-0001',
+      'OP-0002',
+      'OP-0003',
+    ]);
+    expect(session.state().opnameHistory.at(-1)).toMatchObject({
+      status: 'diterapkan',
+      appliedBy: 'U-2',
+    });
+    store.resetData();
+    expect(session.state().opnameHistory).toHaveLength(2);
+    expect(session.state().opname.number).toBe('OP-0003');
   });
 
   it('menambah 1 satuan dasar pada pindai ulang dan menghapus baris opname', () => {

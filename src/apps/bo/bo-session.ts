@@ -24,6 +24,7 @@ import {
 import {
   parsePhysical,
   difference,
+  seedOpnames,
   systemStock,
   validateDoc,
   type OpnameDoc,
@@ -48,6 +49,7 @@ export interface TransferDoc {
   readonly userId: string;
   readonly from: WarehouseId;
   readonly to: WarehouseId;
+  readonly note: string;
   readonly lines: readonly TransferLineDoc[];
 }
 
@@ -55,6 +57,9 @@ export interface BoState {
   readonly user: AppUser | undefined;
   readonly transfers: readonly TransferDoc[];
   readonly opname: OpnameDoc;
+  // Perintah opname yang sudah diterapkan (Daftar Perintah Stok Opname); dokumen yang sedang
+  // dikerjakan ada pada `opname`.
+  readonly opnameHistory: readonly OpnameDoc[];
 }
 
 export interface Failure {
@@ -98,6 +103,7 @@ export interface BoSession {
     from: WarehouseId,
     to: WarehouseId,
     lines: readonly TransferLineDraft[],
+    note?: string,
   ): TransferResult;
   setOpnameWarehouse(warehouse: WarehouseId): void;
   addOpnameProduct(product: Product): Done | Failure;
@@ -147,6 +153,7 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
             userId: 'U-2',
             from: 'besar',
             to: 'display',
+            note: 'Isi stok toko',
             lines: [
               {
                 productId: first.id,
@@ -161,10 +168,15 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
         ];
   };
 
+  const history = (): readonly OpnameDoc[] => {
+    const data = store.getState().data;
+    return seedOpnames(data.products, data.users);
+  };
   let state: BoState = {
     user: undefined,
     transfers: seed(),
-    opname: freshOpname(1, today()),
+    opname: freshOpname(history().length + 1, today()),
+    opnameHistory: history(),
   };
   const guards = new Map<string, LoginGuard>();
 
@@ -173,7 +185,13 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
     bus.emit('change', state);
   };
   store.bus.on('reset', () => {
-    state = { user: state.user, transfers: seed(), opname: freshOpname(1, today()) };
+    const past = history();
+    state = {
+      user: state.user,
+      transfers: seed(),
+      opname: freshOpname(past.length + 1, today()),
+      opnameHistory: past,
+    };
     bus.emit('change', state);
   });
 
@@ -309,7 +327,7 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
       log('koreksi', `Stok ${product.code} ditandai sudah ditinjau`);
       return { ok: true };
     },
-    saveTransfer: (from, to, lines) => {
+    saveTransfer: (from, to, lines, note = '') => {
       if (!isAllowed(role(), 'BO-06', 'Simpan Mutasi')) {
         return fail('MSG-003');
       }
@@ -343,7 +361,7 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
       commit({
         transfers: [
           ...state.transfers,
-          { number, at: stamp(), userId: userId(), from, to, lines: docs },
+          { number, at: stamp(), userId: userId(), from, to, note: note.trim(), lines: docs },
         ],
       });
       log('mutasi', `${number}: ${String(docs.length)} barang dari ${from} ke ${to}`);
@@ -444,15 +462,14 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
         });
       }
       const journalValue = changed.reduce((sum, item) => sum + item.diff * item.product.hpp, 0);
-      commit({
-        opname: {
-          ...doc,
-          status: 'diterapkan',
-          appliedBy: userId(),
-          journalValue: Math.round(journalValue),
-          lines: changes.map((item) => ({ ...item.line, systemSnapshot: item.system })),
-        },
-      });
+      const applied: OpnameDoc = {
+        ...doc,
+        status: 'diterapkan',
+        appliedBy: userId(),
+        journalValue: Math.round(journalValue),
+        lines: changes.map((item) => ({ ...item.line, systemSnapshot: item.system })),
+      };
+      commit({ opname: applied, opnameHistory: [...state.opnameHistory, applied] });
       log(
         'opname',
         `${doc.number}: ${String(changed.length)} barang disesuaikan, jurnal selisih ${String(Math.round(journalValue))}`,

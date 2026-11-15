@@ -6,6 +6,7 @@ import { createStore } from '../../../src/shared/store/store';
 import {
   buildDoc,
   checkOwnerPin,
+  combineReasons,
   createCorrectionLedger,
   evaluateLine,
   formatCorrectionNumber,
@@ -158,6 +159,75 @@ describe('planCorrection', () => {
     );
     expect(plan.ok && plan.changed.map((line) => line.warehouse)).toEqual(['display']);
     expect(plan.ok && plan.lines).toHaveLength(2);
+  });
+});
+
+describe('alasan per baris (gambar 17)', () => {
+  it('menerima alasan di tiap baris tanpa alasan dokumen', () => {
+    const plan = planCorrection([draft({ reason: 'Barang rusak saat bongkar' })], '', lookup);
+    expect(plan.ok && plan.changed[0]?.reason).toBe('Barang rusak saat bongkar');
+  });
+
+  it('mewajibkan alasan minimal lima karakter pada baris berselisih dan menunjuk barisnya', () => {
+    expect(planCorrection([draft({ reason: 'abc' })], '', lookup)).toMatchObject({
+      ok: false,
+      issue: { messageId: 'MSG-082', field: 'reason', line: 0 },
+    });
+    const second = planCorrection(
+      [
+        draft({ reason: 'Barang rusak saat bongkar' }),
+        draft({ warehouse: 'display', actual: '1' }),
+      ],
+      '',
+      lookup,
+    );
+    expect(second).toMatchObject({ ok: false, issue: { field: 'reason', line: 1 } });
+  });
+
+  it('tidak meminta alasan pada baris tanpa selisih', () => {
+    const plan = planCorrection(
+      [
+        draft({ actual: '2' }),
+        draft({ warehouse: 'display', actual: '1', reason: 'Hitung ulang rak' }),
+      ],
+      '',
+      lookup,
+    );
+    expect(plan.ok && plan.changed.map((line) => line.reason)).toEqual(['Hitung ulang rak']);
+  });
+
+  it('memakai alasan dokumen sebagai cadangan bila baris tidak beralasan', () => {
+    const plan = planCorrection([draft()], 'Barang rusak saat bongkar', lookup);
+    expect(plan.ok && plan.changed[0]?.reason).toBe('Barang rusak saat bongkar');
+  });
+
+  it('menggabungkan alasan baris yang unik sesuai urutan menjadi alasan dokumen', () => {
+    const plan = planCorrection(
+      [
+        draft({ reason: 'Barang rusak' }),
+        draft({ warehouse: 'display', actual: '0', reason: 'Barang hilang' }),
+      ],
+      '',
+      lookup,
+    );
+    if (!plan.ok) {
+      throw new Error('rencana harus valid');
+    }
+    expect(combineReasons(plan.changed)).toBe('Barang rusak; Barang hilang');
+    expect(
+      combineReasons([
+        { ...need(plan.changed[0]), reason: 'Sama' },
+        { ...need(plan.changed[1]), reason: ' Sama ' },
+      ]),
+    ).toBe('Sama');
+  });
+
+  it('dokumen contoh menyimpan alasan pada tiap baris', () => {
+    for (const doc of seedCorrections(dataset)) {
+      for (const line of doc.lines) {
+        expect(line.reason.length).toBeGreaterThanOrEqual(5);
+      }
+    }
   });
 });
 

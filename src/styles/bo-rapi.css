@@ -1,0 +1,370 @@
+/* Perapian tampilan Back-Office (revisi putaran kelima): temuan survei kerapian pada 1280 x 640.
+   Hanya tata letak dan ukuran (tidak ada perubahan perilaku). Dimuat sesudah bo-fit.css; aturan
+   memakai awalan [data-app='bo'] supaya menang atas CSS layar yang dimuat malas. */
+
+/* ===== Tampilan dan Tema: semua pilihan muat tanpa tertutup bilah Terapkan ===== */
+[data-app='bo'] .bo-tema__layout {
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+}
+
+[data-app='bo'] .bo-tema__choices {
+  overflow: hidden;
+}
+
+[data-app='bo'] .bo-tema__choices > .bo-panel {
+  padding: 12px 16px;
+}
+
+[data-app='bo'] .bo-tema__choices .bo-stok-panel-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+[data-app='bo'] .bo-tema__choices .bo-stok-note {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-tema__choices > .bo-tema__actions {
+  position: static;
+  flex-wrap: nowrap;
+  gap: 8px 16px;
+}
+
+[data-app='bo'] .bo-tema__actions-text {
+  flex: 1 1 0;
+  max-width: none;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-app='bo'] .bo-tema__actions .bo-form__actions {
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+[data-app='bo'] .bo-tema__palettes {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+[data-app='bo'] .bo-tema-card {
+  position: relative;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+[data-app='bo'] .bo-tema-card__head {
+  justify-content: flex-start;
+}
+
+[data-app='bo'] .bo-tema-card__head > .icon {
+  display: none;
+}
+
+[data-app='bo'] .bo-tema-card__name {
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-tema-card__hex {
+  font-size: 12.5px;
+}
+
+/* Penanda "Sedang dipakai" di pojok kanan atas kartu, bukan baris tambahan. */
+[data-app='bo'] .bo-tema-card__current {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+[data-app='bo'] .bo-tema-card__samples {
+  flex-wrap: nowrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+[data-app='bo'] .bo-tema-card__sample {
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+}
+
+[data-app='bo'] .bo-tema-card__sample-name {
+  font-size: 12px;
+}
+
+[data-app='bo'] .bo-tema-swatch {
+  width: 18px;
+  height: 18px;
+}
+
+[data-app='bo'] .bo-tema-card__swatches {
+  gap: 3px;
+}
+
+[data-app='bo'] .bo-tema__modes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+[data-app='bo'] .bo-tema-mode {
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+[data-app='bo'] .bo-tema-mode__hint {
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+
+/* ===== Hutang Piutang: formulir pembayaran sebaris tanpa saling menimpa ===== */
+[data-app='bo'] .bo-pay-panel .bo-quick-entry {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field:nth-child(1) {
+  flex: 0 0 152px;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field:nth-child(2) {
+  flex: 0 0 138px;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field.is-grow-2 {
+  flex: 2 1 0;
+  min-width: 110px;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field:nth-child(4) {
+  flex: 0 0 108px;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field:nth-child(5) {
+  flex: 0 0 182px;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field .input,
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field input[type='date'] {
+  width: 100%;
+  min-width: 0;
+}
+
+[data-app='bo'] .bo-pay-panel .bo-quick-entry .field__label {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ===== Akuntansi dan pengaturan: subjudul toolbar terbaca penuh ===== */
+[data-app='bo'] .bo-acc-sub {
+  max-width: 560px;
+  overflow: visible;
+  font-size: 13px;
+  line-height: 1.3;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+/* Judul dan keterangan panel sebaris supaya semua pilihan Tema muat di 1280 x 640. */
+[data-app='bo'] .bo-tema__choices > .bo-panel:not(.bo-tema__actions) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: baseline;
+}
+
+[data-app='bo'] .bo-tema__choices > .bo-panel > .bo-tema__palettes,
+[data-app='bo'] .bo-tema__choices > .bo-panel > .bo-tema__modes {
+  grid-column: 1 / -1;
+}
+
+/* ===== Umum: teks petunjuk yang kepanjangan diakhiri elipsis, bukan terpotong di tengah huruf ===== */
+[data-app='bo'] .input::placeholder {
+  text-overflow: ellipsis;
+}
+
+/* ===== Akuntansi, Riwayat Beban: tanggal tidak dipecah di tanda hubung ===== */
+[data-app='bo'] .bo-acc-hist-panel .pos-table td:first-child,
+[data-app='bo'] .bo-acc-hist-panel .pos-table th:first-child {
+  white-space: nowrap;
+}
+
+/* ===== Deposit Pelanggan: kepala, kartu, dan formulir dipadatkan agar riwayat mutasi terbaca ===== */
+[data-app='bo'] .bo-dep-head {
+  gap: 6px 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+[data-app='bo'] .bo-dep-stat {
+  padding: 4px 14px;
+}
+
+[data-app='bo'] .bo-dep-tile {
+  padding: 4px 14px;
+}
+
+[data-app='bo'] .bo-dep-tile strong {
+  font-size: 18px;
+}
+
+[data-app='bo'] .bo-dep-form--topup .input,
+[data-app='bo'] .bo-dep-form--topup .btn {
+  height: 34px;
+  min-height: 34px;
+}
+
+[data-app='bo'] .bo-dep-table th {
+  height: 34px;
+}
+
+[data-app='bo'] .bo-dep-table td {
+  height: 44px;
+}
+
+/* ===== Laporan Stok: lebar penuh, daftar kategori dua kolom, baris tabel lebih rendah ===== */
+[data-app='bo'] .bo-stok-page.bo-lapstok {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+[data-app='bo'] .bo-lapstok-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 20px;
+}
+
+[data-app='bo'] .bo-lapstok__bars {
+  padding: 8px 14px;
+}
+
+[data-app='bo'] .bo-lapstok__table .bo-stok-table td {
+  height: 50px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+[data-app='bo'] .bo-lapstok__table .bo-lapstok__status {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+/* Laporan Stok: kartu angka satu baris isi (keterangan kecil disembunyikan) supaya tabel mendapat lebih banyak baris. */
+@media (max-height: 700px) {
+  [data-app='bo'] .bo-lapstok__top {
+    grid-template-rows: 112px;
+  }
+
+  [data-app='bo'] .bo-lapstok-stat__caption {
+    display: none;
+  }
+
+  [data-app='bo'] .bo-lapstok-bars__value {
+    font-size: 12.5px;
+  }
+}
+
+/* ===== Faktur Pembelian dan Penjualan: kolom kanan kepala tidak memotong pilihan; info hutang lebih ramping ===== */
+[data-app='bo'] .bo-trx .bo-trx-head__aside {
+  width: 214px;
+}
+
+[data-app='bo'] .bo-trx .bo-trx-head__aside .bo-credit-stat__val {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* ===== Retur: pilihan penyelesaian dibaca penuh (satu kolom), chip alasan lebih tinggi ===== */
+[data-app='bo'] .bo-ret-pair {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+[data-app='bo'] .bo-ret-pair .field__label {
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-ret-aside .bo-ret-settle {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
+[data-app='bo'] .bo-ret-reason-chip {
+  min-height: 32px;
+}
+
+/* ===== Retur: chip alasan lebih rapat agar semuanya muat tanpa gulir ===== */
+[data-app='bo'] .bo-ret-chips {
+  gap: 4px;
+}
+
+[data-app='bo'] .bo-ret-reason-chip {
+  min-height: 30px;
+}
+
+/* ===== Data Barang: daftar barang diberi ruang lebih lebar agar nama tidak terpotong ===== */
+[data-app='bo'] .bo-pd {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+}
+
+[data-app='bo'] .bo-pd .vtable__cell {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+/* ===== Dashboard: teks keterangan sedikit lebih besar ===== */
+[data-app='bo'] .bo-dx-chip {
+  font-size: 12.5px;
+}
+
+[data-app='bo'] .bo-dx-stat__label,
+[data-app='bo'] .bo-dx-event__info {
+  font-size: 13px;
+}
+
+/* ===== Toolbar akuntansi, pengaturan, barcode: judul tidak dipotong elipsis; pilihan filter terbaca penuh ===== */
+[data-app='bo'] .bo-acc-toolbar-left .bo-page-title {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+[data-app='bo'] .bo-acc-filter select.input {
+  min-width: 168px;
+  padding-right: 34px;
+}
+
+/* ===== Panel dengan judul bagian di tepi (Pengguna, No. Rekening Toko): judul diberi bantalan ===== */
+[data-app='bo'] .bo-form-page > .bo-panel > .bo-form-sec-title:first-child {
+  padding: 10px 16px 8px;
+  font-size: 15px;
+}
+
+/* Laporan Stok: nama kategori boleh membungkus (nilainya tetap satu baris) daripada dipotong elipsis. */
+[data-app='bo'] .bo-lapstok-bars__name {
+  overflow: visible;
+  line-height: 1.2;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+[data-app='bo'] .bo-lapstok-bars__value {
+  flex: none;
+  white-space: nowrap;
+}

@@ -195,6 +195,7 @@ describe('kartu stok', () => {
         diffQty: 5,
         hpp: 1000,
         value: 5000,
+        reason: 'Barang ditemukan',
       },
     ],
   };

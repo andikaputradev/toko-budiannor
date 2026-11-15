@@ -99,6 +99,7 @@ function fixture() {
     diffQty,
     hpp: 100,
     value: diffQty * 100,
+    reason: 'Barang ditemukan',
   });
   const doc = (number: string, at: string, lines: readonly CorrectionLine[]): CorrectionDoc => ({
     number,

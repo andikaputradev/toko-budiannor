@@ -16,10 +16,18 @@ const SIZES = [
 const TOLERANCE = 1;
 
 // Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Nota Pembelian) ikut diukur.
-const EXTRA_ROUTES = ['/bo/transaksi/daftar-nota?tab=pembelian'];
+const EXTRA_ROUTES = [
+  '/bo/transaksi/daftar-nota?tab=pembelian',
+  // Formulir menu Mutasi Stok (gambar klien 15, 17) dan formulir opname.
+  '/bo/mutasi?baru=1',
+  '/bo/mutasi/koreksi?baru=1',
+  '/bo/opname?baru=1',
+];
 
 // Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.
 const MIN_LINES_HEIGHT = 150;
+// Daftar Mutasi Stok (Transfer, Koreksi, Opname) memakai kartu tabel yang sama: minimal 150 px.
+const MIN_MUT_HEIGHT = 150;
 
 function boRoutes(): string[] {
   const menu = readFileSync(new URL('../../src/apps/bo/domain/menu.ts', import.meta.url), 'utf8');
@@ -69,10 +77,12 @@ for (const size of SIZES) {
       const gap = await page.evaluate(() => {
         const main = document.querySelector('.bo-content');
         const lines = document.querySelector('.bo-tabpanel:not([hidden]) .bo-trx__lines');
+        const mut = document.querySelector('.bo-tabpanel:not([hidden]) .bo-mut-scroll');
         return {
           page: document.documentElement.scrollHeight - window.innerHeight,
           content: main === null ? 0 : main.scrollHeight - main.clientHeight,
           lines: lines === null ? undefined : lines.clientHeight,
+          mut: mut === null ? undefined : mut.clientHeight,
         };
       });
       if (gap.page > TOLERANCE || gap.content > TOLERANCE) {
@@ -80,6 +90,9 @@ for (const size of SIZES) {
       }
       if (gap.lines !== undefined && gap.lines < MIN_LINES_HEIGHT) {
         over.push(`${route} isi tidak terlihat: tabel baris hanya ${String(gap.lines)} px`);
+      }
+      if (gap.mut !== undefined && gap.mut < MIN_MUT_HEIGHT) {
+        over.push(`${route} isi tidak terlihat: kartu tabel hanya ${String(gap.mut)} px`);
       }
     }
     expect(over, `rute yang melebihi layar:\n${over.join('\n')}`).toEqual([]);
@@ -104,13 +117,13 @@ test('Koreksi Stok berisi empat barang tetap muat dan tabel baris menggulir di d
 }) => {
   await page.setViewportSize({ width: 1366, height: 640 });
   await loginBo(page);
-  await page.goto('/#/bo/mutasi/koreksi');
+  await page.goto('/#/bo/mutasi/koreksi?baru=1');
   const picker = page.getByLabel('Cari atau pindai barang');
   for (const query of ['semen', 'cat', 'paku', 'pipa']) {
     await picker.fill(query);
     await page.keyboard.press('Enter');
   }
-  await expect(page.locator('.bo-korek__lines tbody tr')).toHaveCount(4);
+  await expect(page.locator('.bo-mut-table--korek tbody tr')).toHaveCount(4);
   const gap = await page.evaluate(() => {
     const main = document.querySelector('.bo-content');
     return main === null ? 0 : main.scrollHeight - main.clientHeight;

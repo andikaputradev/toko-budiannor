@@ -1,3 +1,4 @@
+import '../../../styles/bo-mutasi.css';
 import { screenActive } from '../screen-active';
 import { el } from '../../../shared/dom';
 import { formatDecimal } from '../../../shared/format';
@@ -9,17 +10,19 @@ import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import { createVirtualGrid } from '../../../shared/ui/virtual-grid';
 import type { BoSession } from '../bo-session';
-import { openExportPreview, type ExportKind } from '../export-preview';
+import { wibDate } from '../../../shared/data/receivable';
+import { formatDate } from '../../../shared/format';
 import {
   matchesFilter,
   minimumIn,
-  stockIn,
   stockStatus,
   type StockStatus,
   type WarehouseFilter,
 } from '../domain/stock-view';
 import { findProducts } from '../search';
 import type { ScreenHandle } from './login';
+import { openPrintChooser } from './mutasi/parts';
+import { MUT_TEXT } from './mutasi/text';
 
 const STATUS_VIEW: Readonly<Record<StockStatus, { text: LabelKey; icon: IconName; css: string }>> =
   {
@@ -61,7 +64,7 @@ export function renderStock(
     className: 'bo-chips',
     attrs: { role: 'group', 'aria-label': label('filterStok') },
   });
-  const count = el('p', { className: 't-label bo-count', attrs: { 'aria-live': 'polite' } });
+  const count = el('p', { className: 'bo-mut-count bo-count', attrs: { 'aria-live': 'polite' } });
   const empty = el('p', { className: 'bo-empty t-label' });
 
   const filtered = (): Product[] => {
@@ -121,34 +124,44 @@ export function renderStock(
     rows: filtered(),
     rowKey: (product) => product.id,
     columns: [
-      { header: label('kolomKode'), width: '90px', cell: (product) => product.code },
-      { header: label('kolomNamaBarang'), width: '1fr', cell: (product) => product.name },
+      { header: label('kolomKode'), width: '76px', cell: (product) => product.code },
       {
-        header: label('gudangDisplay'),
-        width: '90px',
+        header: label('kolomNamaBarang'),
+        width: 'minmax(260px, 1fr)',
+        cell: (product) => product.name,
+      },
+      { header: MUT_TEXT.satuan, width: '76px', cell: (product) => product.baseUnit },
+      {
+        header: MUT_TEXT.stokToko,
+        width: '94px',
         align: 'end',
         cell: (product) => formatDecimal(product.stock.display, 3, 1),
       },
       {
-        header: label('gudangBesar'),
-        width: '90px',
+        header: MUT_TEXT.stokGudang,
+        width: '112px',
         align: 'end',
         cell: (product) => formatDecimal(product.stock.besar, 3, 1),
       },
       {
-        header: label('kolomTotal'),
-        width: '90px',
+        header: MUT_TEXT.totalStok,
+        width: '104px',
         align: 'end',
         cell: (product) => formatDecimal(totalStock(product), 3, 1),
       },
-      { header: label('kolomSatuanDasar'), width: '80px', cell: (product) => product.baseUnit },
       {
-        header: label('kolomMin'),
-        width: '80px',
+        header: MUT_TEXT.minToko,
+        width: '92px',
         align: 'end',
-        cell: (product) => formatDecimal(minimumIn(product, warehouse), 3, 1),
+        cell: (product) => formatDecimal(minimumIn(product, 'display'), 3, 1),
       },
-      { header: label('kolomStatus'), width: '330px', cell: statusCell },
+      {
+        header: MUT_TEXT.minTotal,
+        width: '96px',
+        align: 'end',
+        cell: (product) => formatDecimal(product.minStock, 3, 1),
+      },
+      { header: label('kolomStatus'), width: '320px', cell: statusCell },
     ],
     onActivate: (product) => {
       if (stockStatus(product, warehouse) === 'negatif') {
@@ -196,55 +209,34 @@ export function renderStock(
     );
   };
 
-  const exportRows = (): { columns: string[]; rows: string[][] } => {
-    const list = filtered();
-    if (warehouse === 'semua') {
-      return {
-        columns: [
-          label('kolomKode'),
-          label('kolomNamaBarang'),
-          label('gudangDisplay'),
-          label('gudangBesar'),
-          label('kolomTotal'),
-          label('kolomSatuanDasar'),
-          label('kolomMin'),
-          label('kolomStatus'),
-        ],
-        rows: list.map((product) => [
-          product.code,
-          product.name,
-          formatDecimal(product.stock.display, 3, 1),
-          formatDecimal(product.stock.besar, 3, 1),
-          formatDecimal(totalStock(product), 3, 1),
-          product.baseUnit,
-          formatDecimal(product.minStock, 3, 1),
-          label(STATUS_VIEW[stockStatus(product, warehouse)].text),
-        ]),
-      };
-    }
-    const key: LabelKey = warehouse === 'display' ? 'gudangDisplay' : 'gudangBesar';
-    return {
+  const print = (): void => {
+    openPrintChooser({
+      title: MUT_TEXT.cetakDaftarStok,
+      dateText: formatDate(session.now()),
+      fileName: `daftar-stok-minim-${wibDate(session.now())}`,
       columns: [
         label('kolomKode'),
         label('kolomNamaBarang'),
-        label(key),
-        label('kolomSatuanDasar'),
-        label('kolomMin'),
+        MUT_TEXT.satuan,
+        MUT_TEXT.stokToko,
+        MUT_TEXT.stokGudang,
+        MUT_TEXT.totalStok,
+        MUT_TEXT.minToko,
+        MUT_TEXT.minTotal,
         label('kolomStatus'),
       ],
-      rows: list.map((product) => [
+      rows: filtered().map((product) => [
         product.code,
         product.name,
-        formatDecimal(stockIn(product, warehouse), 3, 1),
         product.baseUnit,
-        formatDecimal(minimumIn(product, warehouse), 3, 1),
+        formatDecimal(product.stock.display, 3, 1),
+        formatDecimal(product.stock.besar, 3, 1),
+        formatDecimal(totalStock(product), 3, 1),
+        formatDecimal(minimumIn(product, 'display'), 3, 1),
+        formatDecimal(product.minStock, 3, 1),
         label(STATUS_VIEW[stockStatus(product, warehouse)].text),
       ]),
-    };
-  };
-  const doExport = (kind: ExportKind): void => {
-    const data = exportRows();
-    openExportPreview({ kind, title: label('menuStok'), columns: data.columns, rows: data.rows });
+    });
   };
 
   search.addEventListener('input', () => {
@@ -270,14 +262,13 @@ export function renderStock(
 
   const element = el(
     'div',
-    { className: 'bo-stock' },
-    el('div', { className: 'bo-bar' }, search, chips),
-    count,
+    { className: 'bo-stock bo-mut bo-mut--stock' },
+    el('div', { className: 'bo-mut-filters' }, search, chips, count),
     grid.element,
     empty,
     el(
       'div',
-      { className: 'bo-form__actions' },
+      { className: 'bo-mut-foot' },
       createButton({
         text: label('mutasiStok'),
         variant: 'secondary',
@@ -286,18 +277,10 @@ export function renderStock(
         },
       }),
       createButton({
-        text: label('eksporPdf'),
+        text: MUT_TEXT.cetak,
         variant: 'secondary',
-        onClick: () => {
-          doExport('pdf');
-        },
-      }),
-      createButton({
-        text: label('eksporExcel'),
-        variant: 'secondary',
-        onClick: () => {
-          doExport('excel');
-        },
+        icon: 'printer',
+        onClick: print,
       }),
     ),
   );

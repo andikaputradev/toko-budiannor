@@ -24,6 +24,7 @@ import '../../styles/bo-shell.css';
 import '../../styles/bo-dashboard.css';
 import '../../styles/bo-dashboard-widgets.css';
 import '../../styles/bo-fit.css';
+import '../../styles/bo-rapi.css';
 
 // Layar tanpa isian pengguna dan tanpa langganan store: dibangun ulang saat tabnya dibuka kembali
 // setelah data berubah (lihat Freshness di workspace.ts).
@@ -78,14 +79,14 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-06',
     load: async () => {
       const { renderTransfer } = await import('./screens/transfer');
-      return (session) => renderTransfer(session);
+      return (session, go, query) => renderTransfer(session, go, query.get('baru') === '1');
     },
   },
   '/bo/mutasi/koreksi': {
     id: 'BO-06',
     load: async () => {
       const { renderStockCorrection } = await import('./screens/stock-correction');
-      return (session) => renderStockCorrection(session);
+      return (session, go, query) => renderStockCorrection(session, go, query.get('baru') === '1');
     },
   },
   '/bo/laporan/stok': {
@@ -106,7 +107,7 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-07',
     load: async () => {
       const { renderOpname } = await import('./screens/opname');
-      return (session) => renderOpname(session);
+      return (session, go, query) => renderOpname(session, go, query.get('baru') === '1');
     },
   },
   '/bo/penjualan': {

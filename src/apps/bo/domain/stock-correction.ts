@@ -26,6 +26,8 @@ export interface CorrectionDraftLine {
   readonly warehouse: WarehouseId;
   readonly unit: string;
   readonly actual: string;
+  // Alasan tiap baris (gambar klien 17). Kosong berarti memakai alasan dokumen sebagai cadangan.
+  readonly reason?: string | undefined;
 }
 
 export type CorrectionIssue = (
@@ -50,6 +52,7 @@ export interface CorrectionLine {
   readonly diffQty: number;
   readonly hpp: number;
   readonly value: number;
+  readonly reason: string;
 }
 
 export type LineResult =
@@ -139,8 +142,21 @@ export function evaluateLine(
       diffQty: fromBase(product, draft.unit, diffBase),
       hpp: product.hpp,
       value: lineValue(diffBase, product.hpp),
+      reason: (draft.reason ?? '').trim(),
     },
   };
+}
+
+// Alasan dokumen = alasan baris yang unik menurut urutan, dipisah titik koma (daftar dan Berita Acara).
+export function combineReasons(lines: readonly { readonly reason: string }[]): string {
+  const seen: string[] = [];
+  for (const line of lines) {
+    const text = line.reason.trim();
+    if (text !== '' && !seen.includes(text)) {
+      seen.push(text);
+    }
+  }
+  return seen.join('; ');
 }
 
 export function planCorrection(
@@ -170,14 +186,17 @@ export function planCorrection(
     if (!result.ok) {
       return { ok: false, issue: result.issue };
     }
-    lines.push(result.line);
-  }
-  if (reason.trim().length < REASON_MIN) {
-    return { ok: false, issue: issueMessage('MSG-082', undefined, 'reason') };
+    // Alasan dokumen menjadi cadangan bagi baris yang alasannya kosong.
+    lines.push({ ...result.line, reason: result.line.reason || reason.trim() });
   }
   const changed = lines.filter((line) => line.diffBase !== 0);
   if (changed.length === 0) {
     return { ok: false, issue: issueMessage('MSG-076', undefined, 'nodiff') };
+  }
+  // Alasan wajib hanya pada baris yang selisihnya tidak nol; galat menunjuk barisnya.
+  const missing = lines.findIndex((line) => line.diffBase !== 0 && line.reason.length < REASON_MIN);
+  if (missing >= 0) {
+    return { ok: false, issue: issueMessage('MSG-082', missing, 'reason') };
   }
   return {
     ok: true,
@@ -314,7 +333,12 @@ export function createCorrectionLedger(seed: readonly CorrectionDoc[]): Correcti
   };
 }
 
-function sampleLine(product: Product, warehouse: WarehouseId, systemBase: number): CorrectionLine {
+function sampleLine(
+  product: Product,
+  warehouse: WarehouseId,
+  systemBase: number,
+  reason: string,
+): CorrectionLine {
   const actualBase = product.stock[warehouse];
   const diffBase = difference(systemBase, actualBase);
   return {
@@ -332,6 +356,7 @@ function sampleLine(product: Product, warehouse: WarehouseId, systemBase: number
     diffQty: diffBase,
     hpp: product.hpp,
     value: lineValue(diffBase, product.hpp),
+    reason,
   };
 }
 
@@ -352,16 +377,19 @@ export function seedCorrections(data: Dataset): readonly CorrectionDoc[] {
   if (first === undefined || second === undefined || third === undefined) {
     return [];
   }
-  const rusak = sampleLine(first, 'besar', first.stock.besar + 2);
-  const ditemukan = sampleLine(second, 'display', second.stock.display - 3);
-  const hilang = sampleLine(third, 'display', third.stock.display + 1);
+  const reasonRusak = 'Barang rusak saat bongkar muat di Gudang Besar';
+  const reasonDitemukan = 'Barang ditemukan saat hitung ulang rak Display';
+  const reasonHilang = 'Barang hilang saat hitung ulang rak Display';
+  const rusak = sampleLine(first, 'besar', first.stock.besar + 2, reasonRusak);
+  const ditemukan = sampleLine(second, 'display', second.stock.display - 3, reasonDitemukan);
+  const hilang = sampleLine(third, 'display', third.stock.display + 1, reasonHilang);
   return [
     buildDoc({
       number: formatCorrectionNumber(1),
       at: '2026-10-12T04:30:00.000Z',
       user: { id: supervisor?.id ?? 'U-2', name: supervisor?.name ?? 'Ibu Sinta' },
       authorizedBy: undefined,
-      reason: 'Barang rusak saat bongkar muat di Gudang Besar',
+      reason: reasonRusak,
       lines: [rusak],
     }),
     buildDoc({

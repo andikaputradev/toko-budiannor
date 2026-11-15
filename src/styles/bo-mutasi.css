@@ -1,0 +1,728 @@
+/* Menu Mutasi Stok Back-Office (revisi putaran kelima, gambar klien 14 sampai 18): daftar dan
+   formulir Transfer Stok, daftar dan formulir Koreksi Stok, Daftar Perintah Stok Opname. Dimuat
+   malas bersama layarnya. Tinggi halaman tetap satu layar: hanya tabel yang menggulir di dalam
+   kartunya. Semua aturan memakai awalan [data-app='bo'] supaya menang atas aturan bersama yang
+   dimuat lebih dulu. */
+
+[data-app='bo'] .bo-mut {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  font-size: 14px;
+}
+
+/* ===== Tombol tambah di atas daftar ===== */
+[data-app='bo'] .bo-mut-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+}
+
+[data-app='bo'] .bo-mut-create.btn {
+  min-width: 168px;
+  height: 42px;
+  min-height: 42px;
+  font-size: 15px;
+}
+
+/* ===== Kartu ===== */
+[data-app='bo'] .bo-mut-card {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+[data-app='bo'] .bo-mut-card__title {
+  flex: none;
+  margin: 0;
+  padding: 14px 20px 10px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Judul kartu yang dapat dilipat: tombol selebar judul dengan panah di kiri. */
+[data-app='bo'] .bo-mut-card__toggle {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+[data-app='bo'] .bo-mut-card__toggle::before {
+  display: inline-block;
+  font-size: 13px;
+  content: '\25BC';
+  transition: transform 0.15s ease;
+}
+
+[data-app='bo'] .bo-mut-card__toggle[aria-expanded='false']::before {
+  transform: rotate(-90deg);
+}
+
+[data-app='bo'] .bo-mut-card--fold.is-folded {
+  flex: none;
+}
+
+[data-app='bo'] .bo-mut-card--fold.is-folded > .bo-mut-card__title {
+  padding-bottom: 14px;
+}
+
+[data-app='bo'] .bo-mut-card__body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Kartu dengan isi tabel: tabel mengisi sisa tinggi kartu. */
+[data-app='bo'] .bo-mut-card > .bo-mut-scroll,
+[data-app='bo'] .bo-mut-card__body > .bo-mut-scroll {
+  flex: 1 1 0;
+  margin: 0 16px 16px;
+}
+
+[data-app='bo'] .bo-mut-scroll {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+}
+
+[data-app='bo'] .bo-mut-empty {
+  margin: 0;
+  padding: 28px 24px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ===== Tabel ===== */
+[data-app='bo'] .bo-mut-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-mut-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 46px;
+  padding: 0 16px;
+  background: var(--color-bg-table-header);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-mut-table td {
+  height: 52px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  vertical-align: middle;
+}
+
+[data-app='bo'] .bo-mut-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--color-bg-table-header) 40%, var(--color-bg-surface));
+}
+
+[data-app='bo'] .bo-mut-table tbody tr.is-selected td {
+  background: var(--color-accent-soft);
+}
+
+[data-app='bo'] .bo-mut-table .is-end {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-app='bo'] .bo-mut-table .is-action {
+  width: 1%;
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-mut-table .bo-mut-note-cell {
+  min-width: 180px;
+  max-width: 420px;
+}
+
+[data-app='bo'] .bo-mut-table .is-name {
+  min-width: 220px;
+}
+
+[data-app='bo'] .bo-mut-name {
+  display: block;
+  font-weight: 600;
+}
+
+[data-app='bo'] .bo-mut-code {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* ===== Kepala formulir Transfer Stok ===== */
+[data-app='bo'] .bo-mut-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: flex-end;
+  padding: 12px 20px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+[data-app='bo'] .bo-mut-head .field {
+  flex: 0 1 230px;
+  gap: 4px;
+  min-width: 0;
+}
+
+[data-app='bo'] .bo-mut-head .field.bo-mut-head__note {
+  flex: 1 1 280px;
+}
+
+[data-app='bo'] .bo-mut-head .field__label,
+[data-app='bo'] .bo-mut-toolbar .field__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+[data-app='bo'] .bo-mut-head .input,
+[data-app='bo'] .bo-mut-toolbar .input {
+  height: 40px;
+  min-height: 40px;
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-mut-fact {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-end;
+  min-width: 112px;
+  padding-bottom: 8px;
+}
+
+[data-app='bo'] .bo-mut-fact__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+[data-app='bo'] .bo-mut-fact__value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ===== Bilah alat: kotak cari barang dan tombol ===== */
+[data-app='bo'] .bo-mut-toolbar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+[data-app='bo'] .bo-mut-toolbar .field.bo-mut-picker {
+  flex: 1 1 380px;
+  gap: 4px;
+  max-width: 560px;
+}
+
+[data-app='bo'] .bo-mut-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+[data-app='bo'] .bo-mut-toolbar__actions .btn {
+  height: 40px;
+  min-height: 40px;
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-mut-error {
+  flex: none;
+  margin: 0;
+}
+
+[data-app='bo'] .bo-mut-error:empty {
+  display: none;
+}
+
+/* ===== Isian di dalam tabel ===== */
+[data-app='bo'] .bo-mut-table .input.bo-mut-input {
+  height: 40px;
+  min-height: 40px;
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-mut-table td input.bo-mut-input {
+  min-width: 112px;
+  text-align: right;
+}
+
+[data-app='bo'] .bo-mut-table td select.bo-mut-input {
+  min-width: 112px;
+}
+
+[data-app='bo'] .bo-mut-table .btn {
+  height: 38px;
+  min-height: 38px;
+  font-size: 14px;
+}
+
+/* Kartu tabel barang pada formulir: tidak berjudul, jadi tabel diberi jarak atas. */
+[data-app='bo'] .bo-mut-card--lines > .bo-mut-scroll {
+  margin-top: 16px;
+}
+
+[data-app='bo'] .bo-mut-table--lines td {
+  height: 50px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+[data-app='bo'] .bo-mut-table--lines .input.bo-mut-input {
+  height: 38px;
+  min-height: 38px;
+}
+
+/* Dokumen cetak (Bukti Transfer, Berita Acara): tabel tidak boleh terjepit ke satu baris saat
+   jendela pendek; yang menggulir adalah isi dokumen. */
+[data-app='bo'] .bo-korek-ba .bo-stok-scroll,
+.bo-korek-ba .bo-stok-scroll {
+  flex: none;
+}
+
+/* ===== Koreksi Stok: judul, kartu, ringkasan ===== */
+[data-app='bo'] .bo-mut-title {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+[data-app='bo'] .bo-mut-title__heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+[data-app='bo'] .bo-mut-title__sub {
+  max-width: none;
+  margin: 2px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+[data-app='bo'] .bo-mut-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+[data-app='bo'] .bo-mut-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 124px;
+  padding: 6px 16px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+}
+
+[data-app='bo'] .bo-mut-chip__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+[data-app='bo'] .bo-mut-chip__value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+[data-app='bo'] .bo-mut-card--korek {
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+[data-app='bo'] .bo-mut-toolbar--card {
+  align-items: flex-end;
+}
+
+[data-app='bo'] .bo-mut-toolbar__tools {
+  display: flex;
+  flex: 1 1 420px;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+[data-app='bo'] .bo-mut-toolbar__tools .field.bo-mut-picker {
+  flex: 1 1 280px;
+  max-width: 440px;
+}
+
+[data-app='bo'] .bo-mut-toolbar__tools .field.bo-mut-warehouse {
+  flex: 0 0 168px;
+  gap: 4px;
+}
+
+[data-app='bo'] .bo-mut-card--korek .bo-mut-error:not(:empty) {
+  flex: none;
+}
+
+[data-app='bo'] .bo-mut-linesbox {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-mut-linesbox > .bo-mut-scroll {
+  flex: 1 1 0;
+  margin: 0;
+}
+
+[data-app='bo'] .bo-mut-placeholder {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  border: 1px dashed var(--color-border-default);
+  border-radius: 12px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  text-align: center;
+}
+
+[data-app='bo'] .bo-mut-placeholder p {
+  margin: 0;
+}
+
+/* Tabel baris koreksi */
+[data-app='bo'] .bo-mut-table--korek th,
+[data-app='bo'] .bo-mut-table--korek td {
+  padding-right: 8px;
+  padding-left: 10px;
+}
+
+[data-app='bo'] .bo-mut-table--korek td select.bo-mut-input {
+  min-width: 88px;
+}
+
+[data-app='bo'] .bo-mut-table--korek td select.bo-mut-input[data-korek-warehouse] {
+  min-width: 156px;
+}
+
+[data-app='bo'] .bo-mut-table--korek td input.bo-mut-actual {
+  width: 100px;
+  min-width: 88px;
+}
+
+[data-app='bo'] .bo-mut-table--korek td input.bo-mut-actual.is-required {
+  border: 2px solid var(--color-status-danger-fg);
+}
+
+[data-app='bo'] .bo-mut-table--korek td.is-reason {
+  min-width: 190px;
+}
+
+[data-app='bo'] .bo-mut-table--korek td input.bo-mut-reason {
+  width: 100%;
+  min-width: 170px;
+  text-align: left;
+}
+
+[data-app='bo'] .bo-mut-table--korek .is-name {
+  min-width: 210px;
+}
+
+/* Tombol hapus baris: hanya ikon, teksnya tetap ada untuk pembaca layar. */
+[data-app='bo'] .bo-mut-iconbtn.btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+[data-app='bo'] .bo-mut-iconbtn.btn > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Bilah ringkasan di dasar kartu */
+[data-app='bo'] .bo-mut-summary {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 6px 28px;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--color-bg-table-header);
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-mut-summary__count {
+  font-weight: 700;
+}
+
+[data-app='bo'] .bo-mut-summary__line {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 700;
+}
+
+[data-app='bo'] .bo-mut-summary__note {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+}
+
+[data-app='bo'] .bo-mut-summary__note.is-warning {
+  color: var(--color-status-warning-fg);
+  font-weight: 600;
+}
+
+/* Daftar riwayat koreksi */
+[data-app='bo'] .bo-mut-table--log .bo-mut-note-cell {
+  min-width: 260px;
+  max-width: 460px;
+}
+
+/* Kolom pendek tidak dibungkus; kolom teks panjang (alasan, keterangan) yang boleh membungkus. */
+[data-app='bo'] .bo-mut-table--log td:not(.bo-mut-note-cell),
+[data-app='bo']
+  .bo-mut-table:not(.bo-mut-table--korek):not(.bo-mut-table--lines)
+  td:not(.bo-mut-note-cell) {
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-mut-table--korek th:nth-child(1) {
+  width: 30%;
+}
+
+[data-app='bo'] .bo-mut-table--korek th:nth-child(8) {
+  width: 22%;
+}
+
+[data-app='bo'] .bo-mut-table--korek td select.bo-mut-input[data-korek-warehouse] {
+  min-width: 160px;
+}
+
+/* ===== Daftar Perintah Stok Opname dan formulir opname ===== */
+[data-app='bo'] .bo-mut-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-mut-pill--ok {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}
+
+[data-app='bo'] .bo-mut-pill--draft {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-fg);
+}
+
+[data-app='bo'] .bo-mut-counter,
+[data-app='bo'] .bo-mut-journal {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-mut-journal:empty {
+  display: none;
+}
+
+[data-app='bo'] .bo-mut-counter {
+  padding-bottom: 10px;
+}
+
+[data-app='bo'] .bo-mut-toolbar__tools {
+  display: flex;
+  flex: 1 1 380px;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+[data-app='bo'] .bo-mut-table td input.bo-mut-input.bo-mut-text {
+  width: 100%;
+  min-width: 200px;
+  text-align: left;
+}
+
+/* ===== Daftar Stok Minim (gambar 18): baris filter, tabel mengisi sisa tinggi, tombol di bawah ===== */
+[data-app='bo'] .bo-mut--stock.bo-stock {
+  overflow: visible;
+}
+
+[data-app='bo'] .bo-mut-filters {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+}
+
+[data-app='bo'] .bo-mut-filters .bo-search {
+  flex: 1 1 280px;
+  max-width: 520px;
+  height: 42px;
+  min-height: 42px;
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-mut-filters .chip {
+  height: 38px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-mut-count {
+  margin: 0 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+[data-app='bo'] .bo-mut--stock .vtable {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  --row-height: 52px;
+}
+
+[data-app='bo'] .bo-mut--stock .vtable__head,
+[data-app='bo'] .bo-mut--stock .vtable__viewport {
+  flex: none;
+}
+
+[data-app='bo'] .bo-mut--stock .vtable__head {
+  height: 46px;
+  background: var(--color-bg-table-header);
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-mut--stock .vtable__viewport {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+}
+
+[data-app='bo'] .bo-mut--stock .vtable__cell {
+  padding-right: 10px;
+  padding-left: 10px;
+  font-size: 14px;
+}
+
+[data-app='bo'] .bo-mut-foot {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+[data-app='bo'] .bo-mut-foot .btn {
+  min-width: 132px;
+  height: 42px;
+  min-height: 42px;
+  font-size: 15px;
+}
+
+[data-app='bo'] .bo-mut--stock .bo-empty:empty {
+  display: none;
+}
+
+/* Cetak daftar: hanya tabel yang tampil di kertas. */
+.bo-mut-print {
+  display: none;
+}
+
+@media print {
+  body.is-printing-mutasi > *:not(.bo-mut-print) {
+    display: none !important;
+  }
+
+  body.is-printing-mutasi .bo-mut-print {
+    display: block;
+    padding: 12px;
+    background: #fff;
+    color: #000;
+  }
+
+  .bo-mut-print h1 {
+    margin: 0 0 4px;
+    font-size: 16px;
+  }
+
+  .bo-mut-print p {
+    margin: 0 0 8px;
+    font-size: 11px;
+  }
+
+  .bo-mut-print table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+
+  .bo-mut-print th,
+  .bo-mut-print td {
+    padding: 3px 4px;
+    border: 1px solid #000;
+    text-align: left;
+  }
+}

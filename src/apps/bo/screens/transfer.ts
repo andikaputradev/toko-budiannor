@@ -1,4 +1,4 @@
-import { el } from '../../../shared/dom';
+import { el, nextId } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatTime } from '../../../shared/format';
 import { label, message } from '../../../shared/messages';
 import type { Product, WarehouseId } from '../../../shared/data/types';
@@ -7,11 +7,25 @@ import { createButton } from '../../../shared/ui/button';
 import { createSelectField } from '../../../shared/ui/field';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
-import type { BoSession } from '../bo-session';
+import { BO_DEVICE, BO_IP, type BoSession, type TransferDoc } from '../bo-session';
 import { type TransferLineDraft } from '../domain/transfer';
 import { createProductPicker } from '../picker';
 import type { ScreenHandle } from './login';
 import { screenActive } from '../screen-active';
+import {
+  createCreateBar,
+  createListCard,
+  createScrollRegion,
+  openDocumentPreview,
+  userName,
+} from './mutasi/parts';
+import { MUT_TEXT, mut } from './mutasi/text';
+
+const LIST_PATH = '/bo/mutasi';
+const FORM_PATH = '/bo/mutasi?baru=1';
+
+// Nomor mutasi yang baru disimpan pada sesi ini: barisnya diberi warna sorot di daftar.
+let justSaved: string | undefined;
 
 function isPc(): boolean {
   return (
@@ -28,7 +42,88 @@ export function preferredUnit(product: Product): string {
   );
 }
 
-export function renderTransfer(session: BoSession): ScreenHandle {
+function warehouseName(warehouse: WarehouseId): string {
+  return label(warehouse === 'besar' ? 'namaGudangBesar' : 'namaGudangDisplay');
+}
+
+function stamp(iso: string): string {
+  const date = new Date(iso);
+  return `${formatDate(date)} ${formatTime(date)}`;
+}
+
+// Transfer Stok: daftar mutasi (gambar klien 14) dan, lewat "Buat Do Transfer", formulir input
+// (gambar 15) pada tab yang sama.
+export function renderTransfer(
+  session: BoSession,
+  go: (path: string) => void,
+  creating = false,
+): ScreenHandle {
+  return creating ? renderTransferForm(session, go) : renderTransferList(session, go);
+}
+
+function renderTransferList(session: BoSession, go: (path: string) => void): ScreenHandle {
+  const store = session.store;
+  const body = el('tbody');
+  const emptyBox = el('p', { className: 'bo-mut-empty', text: MUT_TEXT.mutasiKosong });
+  const table = el(
+    'table',
+    { className: 'bo-mut-table' },
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        el('th', { text: label('noMutasi') }),
+        el('th', { text: label('kolomWaktu') }),
+        el('th', { text: label('gudangAsal') }),
+        el('th', { text: label('gudangTujuan') }),
+        el('th', { className: 'is-end', text: label('kolomItem') }),
+        el('th', { text: MUT_TEXT.kolomUser }),
+        el('th', { text: MUT_TEXT.kolomKeterangan }),
+      ),
+    ),
+    body,
+  );
+  const region = createScrollRegion(MUT_TEXT.daftarMutasi, table);
+
+  const row = (doc: TransferDoc): HTMLElement =>
+    el(
+      'tr',
+      { className: doc.number === justSaved ? 'is-selected' : '' },
+      el('td', {}, el('strong', { text: doc.number })),
+      el('td', { text: stamp(doc.at) }),
+      el('td', { text: warehouseName(doc.from) }),
+      el('td', { text: warehouseName(doc.to) }),
+      el('td', { className: 'is-end', text: String(doc.lines.length) }),
+      el('td', { text: userName(store, doc.userId) }),
+      el('td', { className: 'bo-mut-note-cell', text: doc.note }),
+    );
+
+  const paint = (): void => {
+    const docs = [...session.state().transfers].reverse();
+    body.replaceChildren(...docs.map(row));
+    emptyBox.hidden = docs.length > 0;
+    table.hidden = docs.length === 0;
+  };
+  paint();
+  const stop = session.subscribe(paint);
+
+  const element = el(
+    'div',
+    { className: 'bo-mut' },
+    createCreateBar(MUT_TEXT.buatDoTransfer, () => {
+      go(FORM_PATH);
+    }),
+    createListCard({
+      title: label('riwayatMutasi'),
+      content: el('div', { className: 'bo-mut-card__body' }, region, emptyBox),
+    }),
+  );
+  return { element, destroy: stop };
+}
+
+function renderTransferForm(session: BoSession, go: (path: string) => void): ScreenHandle {
   const store = session.store;
   let from: WarehouseId = 'besar';
   let to: WarehouseId = 'display';
@@ -40,14 +135,30 @@ export function renderTransfer(session: BoSession): ScreenHandle {
   ];
   const fromField = createSelectField({ labelText: label('gudangAsal'), options, value: from });
   const toField = createSelectField({ labelText: label('gudangTujuan'), options, value: to });
-  const dateOutput = el('output', { className: 't-value' });
-  const numberOutput = el('output', { className: 't-value' });
-  const error = el('p', { className: 'bo-error', attrs: { role: 'alert' } });
-  const tableBox = el('div', { className: 'bo-panel bo-transfer-table' });
-  const historyBox = el('section', { className: 'bo-panel' });
+  const dateOutput = el('output', { className: 'bo-mut-fact__value' });
+  const numberOutput = el('output', { className: 'bo-mut-fact__value' });
+  const noteId = nextId('mutasi-keterangan');
+  const note = el('input', {
+    className: 'input',
+    attrs: {
+      id: noteId,
+      type: 'text',
+      maxlength: '120',
+      autocomplete: 'off',
+    },
+  });
+  const error = el('p', { className: 'bo-error bo-mut-error', attrs: { role: 'alert' } });
+  const tableBox = el('section', {
+    className: 'bo-mut-card bo-mut-card--lines',
+    attrs: { 'aria-label': MUT_TEXT.tabelMutasi },
+  });
 
   const lookup = (id: string): Product | undefined =>
     store.getState().data.products.find((item) => item.id === id);
+  const actorName = (): string => {
+    const current = session.state().user;
+    return current?.name ?? userName(store, store.getState().userId);
+  };
 
   const picker = createProductPicker({
     labelText: label('cariBarang'),
@@ -76,7 +187,7 @@ export function renderTransfer(session: BoSession): ScreenHandle {
       renderTable();
     },
   });
-  picker.root.classList.add('bo-picker--wide');
+  picker.root.classList.add('bo-mut-picker');
 
   const renderTable = (): void => {
     const body = el('tbody');
@@ -86,7 +197,7 @@ export function renderTransfer(session: BoSession): ScreenHandle {
         return;
       }
       const quantity = el('input', {
-        className: 'input bo-cell-input',
+        className: 'input bo-mut-input',
         attrs: {
           inputmode: 'decimal',
           autocomplete: 'off',
@@ -105,7 +216,7 @@ export function renderTransfer(session: BoSession): ScreenHandle {
       const unit = el(
         'select',
         {
-          className: 'input bo-cell-input',
+          className: 'input bo-mut-input',
           attrs: { 'aria-label': `${label('kolomSatuan')} ${product.name}` },
         },
         ...product.units.map((item) =>
@@ -140,19 +251,18 @@ export function renderTransfer(session: BoSession): ScreenHandle {
           }),
           el('td', {}, quantity),
           el('td', {}, unit),
-          el('td', {}, remove),
+          el('td', { className: 'is-action' }, remove),
         ),
       );
     });
     tableBox.replaceChildren(
       lines.length === 0
-        ? el('p', { className: 't-label', text: label('mutasiKosong') })
-        : el(
-            'div',
-            { className: 'bo-table-scroll' },
+        ? el('p', { className: 'bo-mut-empty', text: label('mutasiKosong') })
+        : createScrollRegion(
+            MUT_TEXT.tabelMutasi,
             el(
               'table',
-              { className: 'pos-table' },
+              { className: 'bo-mut-table bo-mut-table--lines' },
               el(
                 'thead',
                 {},
@@ -164,57 +274,10 @@ export function renderTransfer(session: BoSession): ScreenHandle {
                   el('th', { className: 'is-end', text: label('stokAsal') }),
                   el('th', { text: label('jumlahMutasi') }),
                   el('th', { text: label('kolomSatuan') }),
-                  el('th', { text: '' }),
+                  el('th', {}, el('span', { className: 'visually-hidden', text: label('hapus') })),
                 ),
               ),
               body,
-            ),
-          ),
-    );
-  };
-
-  const renderHistory = (): void => {
-    const recent = [...session.state().transfers].reverse().slice(0, 5);
-    historyBox.replaceChildren(
-      el('h2', { className: 't-section-title', text: label('riwayatMutasi') }),
-      recent.length === 0
-        ? el('p', { className: 't-label', text: label('belumAdaMutasi') })
-        : el(
-            'table',
-            { className: 'pos-table pos-table--dense' },
-            el(
-              'thead',
-              {},
-              el(
-                'tr',
-                {},
-                el('th', { text: label('noMutasi') }),
-                el('th', { text: label('kolomWaktu') }),
-                el('th', { text: label('gudangAsal') }),
-                el('th', { text: label('gudangTujuan') }),
-                el('th', { className: 'is-end', text: label('kolomItem') }),
-              ),
-            ),
-            el(
-              'tbody',
-              {},
-              ...recent.map((doc) =>
-                el(
-                  'tr',
-                  {},
-                  el('td', { text: doc.number }),
-                  el('td', {
-                    text: `${formatDate(new Date(doc.at))} ${formatTime(new Date(doc.at))}`,
-                  }),
-                  el('td', {
-                    text: label(doc.from === 'besar' ? 'namaGudangBesar' : 'namaGudangDisplay'),
-                  }),
-                  el('td', {
-                    text: label(doc.to === 'besar' ? 'namaGudangBesar' : 'namaGudangDisplay'),
-                  }),
-                  el('td', { className: 'is-end', text: String(doc.lines.length) }),
-                ),
-              ),
             ),
           ),
     );
@@ -225,6 +288,17 @@ export function renderTransfer(session: BoSession): ScreenHandle {
     numberOutput.textContent = store.peekNumber('M');
   };
 
+  const log = (detail: string): void => {
+    store.logActivity({
+      at: session.now().toISOString(),
+      userId: session.state().user?.id ?? store.getState().userId,
+      device: BO_DEVICE,
+      ip: BO_IP,
+      kind: 'cetak',
+      detail,
+    });
+  };
+
   const save = createButton({
     text: label('simpanMutasi'),
     icon: 'save',
@@ -232,14 +306,14 @@ export function renderTransfer(session: BoSession): ScreenHandle {
       if (!store.getState().online) {
         return;
       }
-      const result = session.saveTransfer(from, to, lines);
+      const result = session.saveTransfer(from, to, lines, note.value);
       if (result.ok) {
         showToast({ kind: 'success', text: message('MSG-012', { nomor: result.number }) });
+        justSaved = result.number;
         lines = [];
+        note.value = '';
         error.textContent = '';
-        renderTable();
-        renderHistory();
-        header();
+        go(LIST_PATH);
         return;
       }
       error.textContent = message(result.messageId, result.values);
@@ -258,8 +332,9 @@ export function renderTransfer(session: BoSession): ScreenHandle {
     text: label('batal'),
     variant: 'secondary',
     onClick: () => {
-      if (lines.length === 0) {
+      if (lines.length === 0 && note.value.trim() === '') {
         error.textContent = '';
+        go(LIST_PATH);
         return;
       }
       openModal({
@@ -272,11 +347,62 @@ export function renderTransfer(session: BoSession): ScreenHandle {
             variant: 'danger',
             onClick: () => {
               lines = [];
+              note.value = '';
               error.textContent = '';
-              renderTable();
+              go(LIST_PATH);
             },
           },
         ],
+      });
+    },
+  });
+  const print = createButton({
+    text: MUT_TEXT.cetak,
+    variant: 'secondary',
+    icon: 'printer',
+    onClick: () => {
+      if (lines.length === 0) {
+        error.textContent = MUT_TEXT.isiBarangDulu;
+        picker.input.focus();
+        return;
+      }
+      error.textContent = '';
+      const nomor = numberOutput.textContent;
+      openDocumentPreview({
+        modalTitle: MUT_TEXT.buktiTransferDraf,
+        heading: MUT_TEXT.buktiTransfer,
+        number: nomor,
+        intro: mut('buktiPembuka', {
+          asal: warehouseName(from),
+          tujuan: warehouseName(to),
+          tanggal: formatDate(session.now()),
+        }),
+        columns: [
+          { text: 'No' },
+          { text: label('kolomKode') },
+          { text: label('kolomNama') },
+          { text: label('jumlahMutasi'), end: true },
+          { text: label('kolomSatuan') },
+        ],
+        rows: lines.flatMap((line, index) => {
+          const product = lookup(line.productId);
+          return product === undefined
+            ? []
+            : [[String(index + 1), product.code, product.name, line.quantity || '0', line.unit]];
+        }),
+        note:
+          note.value.trim() === ''
+            ? MUT_TEXT.buktiTanpaKeterangan
+            : mut('buktiKeterangan', { teks: note.value.trim() }),
+        signs: [
+          { role: MUT_TEXT.dibuatOleh, name: actorName() },
+          { role: MUT_TEXT.disetujuiOleh, name: '' },
+          { role: MUT_TEXT.diterimaOleh, name: '' },
+        ],
+        onPrint: () => {
+          log(mut('logCetakMutasi', { nomor }));
+          window.print();
+        },
       });
     },
   });
@@ -313,36 +439,45 @@ export function renderTransfer(session: BoSession): ScreenHandle {
     save.setAttribute('aria-disabled', online ? 'false' : 'true');
   });
 
+  const fact = (text: string, output: HTMLElement): HTMLElement =>
+    el(
+      'div',
+      { className: 'bo-mut-fact' },
+      el('span', { className: 'bo-mut-fact__label', text }),
+      output,
+    );
   const element = el(
     'div',
-    { className: 'bo-transfer' },
+    { className: 'bo-mut bo-mut--form' },
     el(
       'section',
-      { className: 'bo-panel bo-transfer__head' },
+      { className: 'bo-mut-head', attrs: { 'aria-label': MUT_TEXT.formMutasi } },
+      fact(label('tanggal'), dateOutput),
+      fact(label('noMutasi'), numberOutput),
       fromField.root,
       toField.root,
       el(
         'div',
-        { className: 'field' },
-        el('span', { className: 'field__label', text: label('tanggal') }),
-        dateOutput,
-      ),
-      el(
-        'div',
-        { className: 'field' },
-        el('span', { className: 'field__label', text: label('noMutasi') }),
-        numberOutput,
+        { className: 'field bo-mut-head__note' },
+        el('label', {
+          className: 'field__label',
+          text: MUT_TEXT.kolomKeterangan,
+          attrs: { for: noteId },
+        }),
+        note,
       ),
     ),
-    picker.root,
-    tableBox,
+    el(
+      'div',
+      { className: 'bo-mut-toolbar' },
+      picker.root,
+      el('div', { className: 'bo-mut-toolbar__actions' }, save, cancel, print),
+    ),
     error,
-    el('div', { className: 'bo-form__actions' }, cancel, save),
-    historyBox,
+    tableBox,
   );
   header();
   renderTable();
-  renderHistory();
   return {
     element,
     destroy: () => {
