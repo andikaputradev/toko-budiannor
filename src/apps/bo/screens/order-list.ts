@@ -12,6 +12,7 @@ import {
   type OrderRow,
   type OrderStatus,
 } from '../domain/order-list';
+import { DEMO_PO_ROWS, DEMO_SO_ROWS } from '../domain/order-demo';
 import { importedSoNumbers } from '../domain/session-drafts';
 import {
   createFilterSelect,
@@ -92,10 +93,13 @@ export function renderOrderList(
   const copy = COPY[kind];
   const today = wibDate(session.now());
 
-  const allRows = (): OrderRow[] =>
-    kind === 'po'
+  // Pesanan nyata lebih dulu, lalu baris contoh peragaan (gambar klien 10).
+  const allRows = (): OrderRow[] => [
+    ...(kind === 'po'
       ? buildPurchaseOrderRows(store.getState())
-      : buildSalesOrderRows(store.getState(), importedSoNumbers);
+      : buildSalesOrderRows(store.getState(), importedSoNumbers)),
+    ...(kind === 'po' ? DEMO_PO_ROWS : DEMO_SO_ROWS),
+  ];
 
   const dateSelect = createFilterSelect(
     TEXT.tanggal,
@@ -197,11 +201,15 @@ export function renderOrderList(
           el(
             'td',
             {},
-            el('a', {
-              className: 'bo-trx-link',
-              text: row.number,
-              attrs: { href: `#${ORDER_FORM_PATH[kind]}?no=${encodeURIComponent(row.number)}` },
-            }),
+            row.demo === true
+              ? el('span', { className: 'bo-trx-link bo-trx-link--demo', text: row.number })
+              : el('a', {
+                  className: 'bo-trx-link',
+                  text: row.number,
+                  attrs: {
+                    href: `#${ORDER_FORM_PATH[kind]}?no=${encodeURIComponent(row.number)}`,
+                  },
+                }),
           ),
           el('td', { className: 'bo-nowrap', text: row.date }),
           el('td', { className: 'is-bold', text: row.partyName }),

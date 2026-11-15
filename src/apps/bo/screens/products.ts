@@ -329,19 +329,19 @@ export function renderProducts(session: BoSession): ScreenHandle {
       { header: 'Satuan', width: '72px', cell: (p) => p.baseUnit },
       {
         header: label('kolomStokTokoSingkat'),
-        width: '88px',
+        width: '100px',
         align: 'end',
         cell: (p) => formatDecimal(p.stock.display, 3, 0),
       },
       {
         header: label('kolomStokGdgSingkat'),
-        width: '96px',
+        width: '120px',
         align: 'end',
         cell: (p) => formatDecimal(p.stock.besar, 3, 0),
       },
       {
         header: label('kolomQtyPoSingkat'),
-        width: '76px',
+        width: '80px',
         align: 'end',
         cell: (p) => formatDecimal(p.incoming ?? 0),
       },

@@ -1082,9 +1082,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1124: "CETAK". Kunci btnAksiCetak.
 - TB-1125: "IMPOR". Kunci btnAksiImpor.
 - TB-1126: "CARI NAMA , KODE ..........". Kunci placeholderCariBarang.
-- TB-1127: "STOK TK". Kunci kolomStokTokoSingkat.
-- TB-1128: "STOK GDG". Kunci kolomStokGdgSingkat.
-- TB-1129: "QTY PO". Kunci kolomQtyPoSingkat.
+- TB-1127: "Stok Toko". Kunci kolomStokTokoSingkat.
+- TB-1128: "Stok Gudang". Kunci kolomStokGdgSingkat.
+- TB-1129: "Qty PO". Kunci kolomQtyPoSingkat.
 - TB-1131: "GROSIR". Kunci kolomHargaGrosir.
 - TB-1132: "KOMISI SALES". Kunci labelKomisiSales.
 - TB-1133: "PROMO". Kunci labelPromo.
@@ -1097,7 +1097,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1140: "( TGL / KUANTITAS / SATUAN / NILAI SATUAN / STOK GUDANG )". Kunci labelStokAwalSub.
 - TB-1141: "MINIMAL STOK (ALL)". Kunci labelMinStokAll.
 - TB-1142: "MIN STOK TOKO". Kunci labelMinStokTokoSingkat.
-- TB-1143: "BERAT". Kunci labelBeratBarang.
+- TB-1143: "BERAT (GRAM)". Kunci labelBeratBarang.
 - TB-1144: "RAK". Kunci labelNoRak.
 - TB-1145: "SATUAN 2". Kunci labelSatuan2.
 - TB-1146: "SATUAN 3". Kunci labelSatuan3.

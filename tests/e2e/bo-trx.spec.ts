@@ -568,7 +568,18 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
       'Status',
       'Total',
     ]);
-    await expect(root.locator('.bo-trx-table__empty')).toHaveText('Belum ada pesanan.');
+    // Baris contoh gambar klien 10 (bukan dokumen toko, nomor tidak berupa tautan).
+    await expect(root.locator('tbody tr')).toHaveCount(6);
+    await expect(root.locator('tbody tr').first().locator('td').nth(0)).toHaveText('PO26101234');
+    await expect(root.locator('a.bo-trx-link')).toHaveCount(0);
+    await expect(root.locator('.bo-trx-status')).toHaveText([
+      'On Proses',
+      'On Proses',
+      'Partial',
+      'Partial',
+      'Selesai',
+      'Selesai',
+    ]);
   });
 
   test('Buat PO Baru membuka formulir berlabel gambar 11 dengan tombol Simpan dan Cetak', async ({
@@ -618,7 +629,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
 
     // Penolakan tidak menambah PO.
     await openPage(page, '/bo/transaksi/po-pembelian');
-    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(0);
 
     await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
     await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
@@ -643,15 +654,16 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await addItem(page, 'semen', '1');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
-    await expect(orderList(page).locator('tbody tr[data-number]')).toHaveCount(1);
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(1);
     await orderList(page)
       .getByLabel('Status', { exact: true })
       .selectOption({ label: 'Status: Selesai' });
-    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(0);
+    await expect(orderList(page).locator('tbody tr')).toHaveCount(2);
     await orderList(page)
       .getByLabel('Status', { exact: true })
       .selectOption({ label: 'Status: On Proses' });
-    await expect(orderList(page).locator('tbody tr[data-number]')).toHaveCount(1);
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(1);
     await orderList(page)
       .getByRole('searchbox', { name: /Cari No PO/ })
       .fill('zzzz-tidak-ada');

@@ -435,7 +435,7 @@ export function openProductInfo(session: BoSession, product: Product): void {
 
   paint();
   select(0, false);
-  openModal({
+  const handle = openModal({
     title: TEXT.judul,
     body: el(
       'div',
@@ -448,4 +448,5 @@ export function openProductInfo(session: BoSession, product: Product): void {
     ),
     actions: [{ text: label('tutup'), variant: 'secondary' }],
   });
+  handle.dialog.classList.add('bo-info-modal');
 }
