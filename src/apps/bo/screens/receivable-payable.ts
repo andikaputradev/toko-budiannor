@@ -162,7 +162,7 @@ export function renderReceivablePayable(
           { className: 'is-center' },
           el('span', {
             className: `bo-badge ${p.overdueBalance > 0 ? 'is-danger' : 'is-warning'}`,
-            text: p.overdueBalance > 0 ? 'JATUH TEMPO' : 'BELUM LUNAS',
+            text: p.overdueBalance > 0 ? 'Jatuh Tempo' : 'Belum Lunas',
           }),
         ),
       );
@@ -243,7 +243,7 @@ export function renderReceivablePayable(
             { className: 'is-end is-bold' },
             el('span', { text: formatRupiah(inv.remaining) }),
             inv.isOverdue
-              ? el('span', { className: 'bo-badge is-danger bo-party-late', text: 'LEWAT' })
+              ? el('span', { className: 'bo-badge is-danger bo-party-late', text: 'Lewat' })
               : el('span', {}),
           ),
         ),
@@ -671,9 +671,9 @@ export function renderReceivablePayable(
             {},
             el('th', { text: 'No' }),
             el('th', { text: 'No. Faktur' }),
-            el('th', { text: 'Tgl Nota' }),
+            el('th', { text: 'Tgl Faktur' }),
             el('th', { text: 'Jatuh Tempo' }),
-            el('th', { className: 'is-end', text: 'Nilai Nota' }),
+            el('th', { className: 'is-end', text: 'Nilai Faktur' }),
             el('th', { className: 'is-end', text: 'Sisa Bayar' }),
           ),
         ),
@@ -734,7 +734,7 @@ export function renderReceivablePayable(
             'tr',
             {},
             el('th', { text: 'No. Faktur' }),
-            el('th', { text: 'Tgl Nota' }),
+            el('th', { text: 'Tgl Faktur' }),
             el('th', { className: 'is-end', text: 'Sisa Tagihan' }),
             el('th', { className: 'is-center', text: 'Alokasi Bayar (Rp)' }),
             el('th', { className: 'is-end', text: 'Sisa Setelah Bayar' }),

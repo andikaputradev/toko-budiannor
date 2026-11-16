@@ -173,8 +173,8 @@ export function renderAccountingScreen(
     const warehouseSelect = el('select', { className: 'input is-select' });
     [
       { value: 'semua', text: label('labelSemuaGudang') },
-      { value: 'Display', text: 'Display (Toko)' },
-      { value: 'Gudang Besar', text: 'Gudang Besar' },
+      { value: 'Toko', text: 'Toko' },
+      { value: 'Gudang', text: 'Gudang' },
     ].forEach((o) => {
       warehouseSelect.appendChild(el('option', { text: o.text, attrs: { value: o.value } }));
     });

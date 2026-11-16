@@ -373,7 +373,7 @@
 [data-app='bo'] .bo-info-modal .modal__title,
 .bo-info-modal .modal__title {
   text-align: center;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.03em;
 }
 

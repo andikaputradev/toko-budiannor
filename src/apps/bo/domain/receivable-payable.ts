@@ -228,7 +228,7 @@ export function buildWhatsAppBillStatement(
   const invoiceRows = invoices
     .map(
       (inv, idx) =>
-        `${idx + 1}. No: *${inv.invoiceNumber}* (${inv.date})\n   Tagihan: ${formatRupiah(inv.amount)} | Sisa: *${formatRupiah(inv.remaining)}*${inv.isOverdue ? ' (JATUH TEMPO)' : ''}`,
+        `${idx + 1}. No: *${inv.invoiceNumber}* (${inv.date})\n   Tagihan: ${formatRupiah(inv.amount)} | Sisa: *${formatRupiah(inv.remaining)}*${inv.isOverdue ? ' (Jatuh Tempo)' : ''}`,
     )
     .join('\n');
 

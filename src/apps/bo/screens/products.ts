@@ -222,11 +222,11 @@ export function renderProducts(session: BoSession): ScreenHandle {
     return base;
   };
 
-  const nama = input('NAMA', label('namaBarang'));
-  const kode = input('KODE', label('kodeBarang'), { maxLength: CODE_MAX });
-  const barcode = input('BARCODE', label('barcode'), { inputMode: 'numeric' });
-  const kategori = select('KATEGORI', label('kategori'), CATEGORY_OPTIONS);
-  const merk = select('MERK', label('merek'), BRAND_OPTIONS);
+  const nama = input('Nama', label('namaBarang'));
+  const kode = input('Kode', label('kodeBarang'), { maxLength: CODE_MAX });
+  const barcode = input('Barcode', label('barcode'), { inputMode: 'numeric' });
+  const kategori = select('Kategori', label('kategori'), CATEGORY_OPTIONS);
+  const merk = select('Merk', label('merek'), BRAND_OPTIONS);
   const rak = input(label('labelNoRak'), label('labelNoRak'));
   const berat = input(label('labelBeratBarang'), label('labelBeratBarang'), {
     inputMode: 'decimal',
@@ -322,7 +322,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
     label: label('daftarBarang'),
     columns: [
       {
-        header: 'NAMA BARANG',
+        header: 'Nama Barang',
         width: 'minmax(150px, 2fr)',
         cell: (p) => (p.active === false ? `${p.name} (Nonaktif)` : p.name),
       },
@@ -365,7 +365,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
       el(
         'tr',
         {},
-        el('th', { text: 'HARGA' }),
+        el('th', { text: 'Harga' }),
         el('th', { text: label('kolomHargaRetail') }),
         el('th', { text: label('kolomHargaGrosir') }),
       ),
@@ -801,7 +801,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
     el(
       'div',
       { className: 'bo-pd-field' },
-      el('span', { className: 'bo-pd-label', text: 'SATUAN' }),
+      el('span', { className: 'bo-pd-label', text: 'Satuan' }),
       unitPicker.element,
     ),
     el('div', { className: 'bo-pd-row2' }, minAll.field, minToko.field),

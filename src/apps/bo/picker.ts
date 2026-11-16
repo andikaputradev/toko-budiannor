@@ -28,7 +28,7 @@ export function createProductPicker(options: PickerOptions): Picker {
       type: 'search',
       autocomplete: 'off',
       list: listId,
-      placeholder: options.placeholder,
+      placeholder: options.placeholder ?? options.labelText,
     },
   });
   const list = el('datalist', { attrs: { id: listId } });

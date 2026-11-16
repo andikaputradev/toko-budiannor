@@ -25,6 +25,7 @@ import '../../styles/bo-dashboard.css';
 import '../../styles/bo-dashboard-widgets.css';
 import '../../styles/bo-fit.css';
 import '../../styles/bo-rapi.css';
+import '../../styles/bo-seragam.css';
 
 // Layar tanpa isian pengguna dan tanpa langganan store: dibangun ulang saat tabnya dibuka kembali
 // setelah data berubah (lihat Freshness di workspace.ts).

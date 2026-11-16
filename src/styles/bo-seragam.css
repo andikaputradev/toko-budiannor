@@ -1,0 +1,257 @@
+/* Keseragaman tampilan Back-Office (CATATAN dokumen klien 16 November 2026, revisi BO 7).
+   Dimuat paling akhir. Aturan memakai awalan html[data-app='bo'] (spesifisitas lebih tinggi daripada
+   aturan satu kelas pada CSS layar yang dimuat malas). Isinya:
+   1. bentuk isian dan tombol: kotak segi empat satu radius,
+   2. caption di kiri isian (tidak di atas),
+   3. kepala tabel satu warna,
+   4. satu skala huruf untuk label, kepala, dan tombol,
+   5. huruf kapital hanya pada isian (label, kepala, tombol berhuruf awal kapital). */
+
+html[data-app='bo'] {
+  --bo-radius: var(--radius-control);
+  --bo-label-w: 7.5rem;
+  --bo-fs-label: 14px;
+  --bo-fs-head: 14px;
+  --bo-fs-button: 14px;
+}
+
+/* ===== 1. Bentuk: kotak segi empat ===== */
+html[data-app='bo'] .btn,
+html[data-app='bo'] .input,
+html[data-app='bo'] textarea,
+html[data-app='bo'] select,
+html[data-app='bo'] input:not([type='checkbox'], [type='radio'], [type='range'], [type='color']),
+html[data-app='bo'] button:not(.bo-tab, .bo-tab__close, [class*='card'], [class*='avatar']),
+html[data-app='bo'] .bo-dx-seg,
+html[data-app='bo'] .bo-dx-seg__btn,
+html[data-app='bo'] .bo-dx-chip,
+html[data-app='bo'] .bo-tab-switcher,
+html[data-app='bo'] .bo-tab-group,
+html[data-app='bo'] .bo-tab-btn,
+html[data-app='bo'] .bo-ret-tabs,
+html[data-app='bo'] .bo-dep-seg,
+html[data-app='bo'] .bo-ret-tab,
+html[data-app='bo'] .bo-dep-seg__item,
+html[data-app='bo'] .bo-ret-reason-chip,
+html[data-app='bo'] .bo-ret-chip,
+html[data-app='bo'] .bo-lapstok__tab,
+html[data-app='bo'] .bo-pd-photo__pick,
+html[data-app='bo'] .bo-pd-input,
+html[data-app='bo'] .bo-pd-units__field,
+html[data-app='bo'] .bo-pd-units__search {
+  border-radius: var(--bo-radius);
+}
+
+/* ===== 3. Kepala tabel: satu warna di semua halaman ===== */
+html[data-app='bo'] .bo-trx-table th {
+  background: var(--color-bg-table-header);
+  color: var(--color-text-primary);
+}
+
+/* ===== 4. Satu skala huruf ===== */
+html[data-app='bo'] .field__label,
+html[data-app='bo'] .bo-pd-field > label,
+html[data-app='bo'] .bo-pd-label {
+  font-size: var(--bo-fs-label);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html[data-app='bo'] .btn,
+html[data-app='bo'] button:not(.bo-tab, .bo-tab__close, [class*='card']) {
+  font-size: var(--bo-fs-button);
+}
+
+html[data-app='bo'] th {
+  font-size: var(--bo-fs-head);
+}
+
+/* ===== 5. Huruf kapital hanya pada isian ===== */
+html[data-app='bo'] :is(label, th, button, legend, h1, h2, h3, h4, h5, h6, .field__label) {
+  text-transform: none;
+}
+
+/* ===== 2. Caption di kiri isian ===== */
+html[data-app='bo'] :not(.bo-login__form) > .field {
+  display: grid;
+  grid-template-columns: var(--bo-label-w) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+}
+
+html[data-app='bo'] :not(.bo-login__form) > .field > .field__label {
+  grid-column: 1;
+  margin: 0;
+  line-height: 1.25;
+}
+
+html[data-app='bo'] :not(.bo-login__form) > .field > :not(.field__label) {
+  grid-column: 2;
+  min-width: 0;
+}
+
+/* Kotak cari barang: label disembunyikan secara visual (isinya jadi placeholder), bukan di atas. */
+html[data-app='bo'] .field.bo-picker {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+html[data-app='bo'] .field.bo-picker > .field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .field.bo-picker > :not(.field__label) {
+  grid-column: 1;
+}
+
+/* ===== Data Barang: caption di kiri, satu isian per baris ===== */
+html[data-app='bo'] .bo-pd {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+
+html[data-app='bo'] .bo-pd-form {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 16px;
+}
+
+html[data-app='bo'] .bo-pd-col {
+  --bo-label-w: 7.5rem;
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-pd-col:last-child {
+  --bo-label-w: 6.25rem;
+}
+
+html[data-app='bo'] .bo-pd-row2 {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-pd-field {
+  display: grid;
+  grid-template-columns: var(--bo-label-w) minmax(0, 1fr);
+  align-items: center;
+  gap: 0 10px;
+}
+
+html[data-app='bo'] .bo-pd-field > label,
+html[data-app='bo'] .bo-pd-field > .bo-pd-label {
+  line-height: 1.25;
+}
+
+html[data-app='bo'] .bo-pd-field:has(.bo-pd-units) {
+  align-items: start;
+}
+
+html[data-app='bo'] .bo-pd-field:has(.bo-pd-units) > .bo-pd-label {
+  padding-top: 8px;
+}
+
+html[data-app='bo'] .bo-pd-input,
+html[data-app='bo'] .bo-pd-units__field {
+  height: 34px;
+}
+
+/* ===== Master (Kategori, Merk, Pemasok, Pelanggan, Sales, Ekspedisi): dua isian per baris ===== */
+html[data-app='bo'] .bo-master__split {
+  grid-template-columns: minmax(400px, 42fr) minmax(0, 58fr);
+}
+
+html[data-app='bo'] .bo-master__form {
+  --bo-label-w: 6.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  align-content: start;
+}
+
+html[data-app='bo'] .bo-master__span-2,
+html[data-app='bo'] .bo-master__span-3 {
+  grid-column: span 1;
+}
+
+html[data-app='bo'] .bo-master__span-4,
+html[data-app='bo'] .bo-master__span-6 {
+  grid-column: 1 / -1;
+}
+
+html[data-app='bo'] .bo-master .field {
+  gap: 2px 10px;
+}
+
+html[data-app='bo'] .bo-master .field > .bo-master__hint {
+  grid-column: 2;
+  margin: 0;
+}
+
+/* ===== Kepala dan bilah formulir Mutasi Stok: caption sebaris ===== */
+html[data-app='bo'] .bo-mut-head {
+  align-items: center;
+  gap: 8px 20px;
+  padding: 10px 20px;
+}
+
+html[data-app='bo'] .bo-mut-head .field,
+html[data-app='bo'] .bo-mut-toolbar .field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-mut-head .field {
+  flex: 1 1 210px;
+}
+
+html[data-app='bo'] .bo-mut-head .field.bo-mut-head__note {
+  flex: 2 1 280px;
+}
+
+html[data-app='bo'] .bo-mut-head .field > .field__label,
+html[data-app='bo'] .bo-mut-toolbar .field > .field__label {
+  flex: none;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-mut-head .field > :not(.field__label) {
+  flex: 1 1 0;
+}
+
+html[data-app='bo'] .bo-mut-head .input,
+html[data-app='bo'] .bo-mut-toolbar .input {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+html[data-app='bo'] .bo-mut-fact {
+  flex: 0 0 auto;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding-bottom: 0;
+}
+
+html[data-app='bo'] .bo-mut-fact__label,
+html[data-app='bo'] .bo-mut-head .field__label {
+  font-size: var(--bo-fs-label);
+}
+
+html[data-app='bo'] .bo-mut-fact__value {
+  font-size: 15px;
+}
+
+/* ===== Pengaturan: label panjang di kolom lebar ===== */
+html[data-app='bo'] .bo-form-meta-grid {
+  --bo-label-w: 11rem;
+}
+
+html[data-app='bo'] .bo-field-gap-top {
+  --bo-label-w: 11rem;
+}

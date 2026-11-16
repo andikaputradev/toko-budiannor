@@ -377,9 +377,9 @@ export function seedCorrections(data: Dataset): readonly CorrectionDoc[] {
   if (first === undefined || second === undefined || third === undefined) {
     return [];
   }
-  const reasonRusak = 'Barang rusak saat bongkar muat di Gudang Besar';
-  const reasonDitemukan = 'Barang ditemukan saat hitung ulang rak Display';
-  const reasonHilang = 'Barang hilang saat hitung ulang rak Display';
+  const reasonRusak = 'Barang rusak saat bongkar muat di Gudang';
+  const reasonDitemukan = 'Barang ditemukan saat hitung ulang rak Toko';
+  const reasonHilang = 'Barang hilang saat hitung ulang rak Toko';
   const rusak = sampleLine(first, 'besar', first.stock.besar + 2, reasonRusak);
   const ditemukan = sampleLine(second, 'display', second.stock.display - 3, reasonDitemukan);
   const hilang = sampleLine(third, 'display', third.stock.display + 1, reasonHilang);
@@ -397,7 +397,7 @@ export function seedCorrections(data: Dataset): readonly CorrectionDoc[] {
       at: '2026-10-16T03:10:00.000Z',
       user: { id: owner?.id ?? 'U-1', name: owner?.name ?? 'Bapak Haris' },
       authorizedBy: undefined,
-      reason: 'Hitung ulang rak Display: satu barang ditemukan dan satu barang hilang',
+      reason: 'Hitung ulang rak Toko: satu barang ditemukan dan satu barang hilang',
       lines: [ditemukan, hilang],
     }),
   ];

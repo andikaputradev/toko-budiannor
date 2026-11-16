@@ -81,7 +81,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Penjualan',
     amount: 14_250_000,
     status: 'terposting',
-    warehouse: 'Display (Toko)',
+    warehouse: 'Toko',
   },
   {
     id: 'JU-2610-0317',
@@ -91,7 +91,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Penjualan',
     amount: 4_200_000,
     status: 'terposting',
-    warehouse: 'Gudang Besar',
+    warehouse: 'Gudang',
   },
   {
     id: 'JU-2610-0316',
@@ -101,7 +101,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Persediaan',
     amount: 12_880_000,
     status: 'terposting',
-    warehouse: 'Display (Toko)',
+    warehouse: 'Toko',
   },
   {
     id: 'JU-2610-0315',
@@ -120,7 +120,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Utang Usaha',
     amount: 45_018_548,
     status: 'terposting',
-    warehouse: 'Gudang Besar',
+    warehouse: 'Gudang',
   },
   {
     id: 'JU-2610-0313',
@@ -148,7 +148,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Kas',
     amount: 475_000,
     status: 'review',
-    warehouse: 'Display (Toko)',
+    warehouse: 'Toko',
   },
 ];
 

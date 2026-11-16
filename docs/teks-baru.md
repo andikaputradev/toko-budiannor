@@ -474,7 +474,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-492: "Purchase Order". Kunci tabPo.
 - TB-493: "Sales Order". Kunci tabSo.
 - TB-494: "Tagihan akan dikirim ke {telepon} saat internet pulih.". Kunci tagihanAntre.
-- TB-495: "TAGIHAN PIUTANG". Kunci tagihanJudul.
+- TB-495: "Tagihan Piutang". Kunci tagihanJudul.
 - TB-496: "Kepada". Kunci tagihanKepada.
 - TB-497: "Tagihan PDF terkirim ke {telepon} via WA (simulasi).". Kunci tagihanTerkirim.
 - TB-498: "Tandai semua dibaca". Kunci tandaiSemuaDibaca.
@@ -1073,34 +1073,34 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1115: "Piutang". Kunci labelPiutang.
 - TB-1116: "Stok". Kunci labelStok.
 - TB-1117: "Omset". Kunci omsetSingkat.
-- TB-1118: "MASTER DATA BARANG". Kunci judulMasterDataBarang.
-- TB-1119: "TAMBAH". Kunci btnAksiTambah.
-- TB-1120: "RUBAH". Kunci btnAksiRubah.
-- TB-1121: "HAPUS". Kunci btnAksiHapus.
-- TB-1122: "KELUAR". Kunci btnAksiKeluar.
-- TB-1123: "INFO". Kunci btnAksiInfo.
-- TB-1124: "CETAK". Kunci btnAksiCetak.
-- TB-1125: "IMPOR". Kunci btnAksiImpor.
+- TB-1118: "Master Data Barang". Kunci judulMasterDataBarang.
+- TB-1119: "Tambah". Kunci btnAksiTambah.
+- TB-1120: "Rubah". Kunci btnAksiRubah.
+- TB-1121: "Hapus". Kunci btnAksiHapus.
+- TB-1122: "Keluar". Kunci btnAksiKeluar.
+- TB-1123: "Info". Kunci btnAksiInfo.
+- TB-1124: "Cetak". Kunci btnAksiCetak.
+- TB-1125: "Impor". Kunci btnAksiImpor.
 - TB-1126: "CARI NAMA , KODE ..........". Kunci placeholderCariBarang.
 - TB-1127: "Stok Toko". Kunci kolomStokTokoSingkat.
 - TB-1128: "Stok Gudang". Kunci kolomStokGdgSingkat.
 - TB-1129: "Qty PO". Kunci kolomQtyPoSingkat.
-- TB-1131: "GROSIR". Kunci kolomHargaGrosir.
-- TB-1132: "KOMISI SALES". Kunci labelKomisiSales.
-- TB-1133: "PROMO". Kunci labelPromo.
-- TB-1134: "CATATAN". Kunci labelCatatanBarang.
-- TB-1135: "SUPLIER". Kunci labelSuplier.
-- TB-1136: "TGL BELI AKHIR". Kunci labelTglBeliAkhir.
-- TB-1137: "HARGA BELI AKHIR". Kunci labelHargaBeliAkhir.
-- TB-1138: "HPP AVG". Kunci labelHppAvg.
-- TB-1139: "STOK AWAL +". Kunci labelStokAwalHeader.
-- TB-1140: "( TGL / KUANTITAS / SATUAN / NILAI SATUAN / STOK GUDANG )". Kunci labelStokAwalSub.
-- TB-1141: "MINIMAL STOK (ALL)". Kunci labelMinStokAll.
-- TB-1142: "MIN STOK TOKO". Kunci labelMinStokTokoSingkat.
-- TB-1143: "BERAT (GRAM)". Kunci labelBeratBarang.
-- TB-1144: "RAK". Kunci labelNoRak.
-- TB-1145: "SATUAN 2". Kunci labelSatuan2.
-- TB-1146: "SATUAN 3". Kunci labelSatuan3.
+- TB-1131: "Grosir". Kunci kolomHargaGrosir.
+- TB-1132: "Komisi Sales". Kunci labelKomisiSales.
+- TB-1133: "Promo". Kunci labelPromo.
+- TB-1134: "Catatan". Kunci labelCatatanBarang.
+- TB-1135: "Suplier". Kunci labelSuplier.
+- TB-1136: "Tgl Beli Akhir". Kunci labelTglBeliAkhir.
+- TB-1137: "Harga Beli Akhir". Kunci labelHargaBeliAkhir.
+- TB-1138: "HPP Avg". Kunci labelHppAvg.
+- TB-1139: "Stok Awal +". Kunci labelStokAwalHeader.
+- TB-1140: "( Tgl / Kuantitas / Satuan / Nilai Satuan / Stok Gudang )". Kunci labelStokAwalSub.
+- TB-1141: "Minimal Stok (All)". Kunci labelMinStokAll.
+- TB-1142: "Min Stok Toko". Kunci labelMinStokTokoSingkat.
+- TB-1143: "Berat (Gram)". Kunci labelBeratBarang.
+- TB-1144: "Rak". Kunci labelNoRak.
+- TB-1145: "Satuan 2". Kunci labelSatuan2.
+- TB-1146: "Satuan 3". Kunci labelSatuan3.
 - TB-1147: "Impor Data Excel". Kunci judulModalImpor.
 - TB-1148: "Muat Contoh 10 SKU Excel". Kunci btnMuatContohExcel.
 - TB-1149: "Berhasil mengimpor {jumlah} barang.". Kunci pesanImporBerhasil.
@@ -1428,11 +1428,11 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1471: "Input Beban Baru". Kunci labelInputBebanBaru.
 - TB-1472: "Riwayat Beban". Kunci labelRiwayatBeban.
 - TB-1473: "Simpan dan Jurnalkan". Kunci labelSimpanDanJurnalkan.
-- TB-1474: "AKTIVITAS OPERASI". Kunci labelAktivitasOperasi.
-- TB-1475: "AKTIVITAS INVESTASI". Kunci labelAktivitasInvestasi.
-- TB-1476: "AKTIVITAS PENDANAAN". Kunci labelAktivitasPendanaan.
+- TB-1474: "Aktivitas Operasi". Kunci labelAktivitasOperasi.
+- TB-1475: "Aktivitas Investasi". Kunci labelAktivitasInvestasi.
+- TB-1476: "Aktivitas Pendanaan". Kunci labelAktivitasPendanaan.
 - TB-1477: "Kas bersih dari operasi". Kunci labelKasBersihOperasi.
-- TB-1478: "KENAIKAN KAS BERSIH". Kunci labelKenaikanKasBersih.
+- TB-1478: "Kenaikan Kas Bersih". Kunci labelKenaikanKasBersih.
 - TB-1479: "Posisi Kas dan Bank". Kunci labelPosisiKasBank.
 - TB-1480: "Kas Awal Periode". Kunci labelKasAwalPeriode.
 - TB-1481: "Total Kas Masuk". Kunci labelTotalKasMasuk.
@@ -1443,12 +1443,12 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1486: "Laba Kotor". Kunci labelLabaKotor.
 - TB-1487: "Laba Bersih". Kunci labelLabaBersih.
 - TB-1488: "Margin Kotor". Kunci labelMarginKotor.
-- TB-1489: "ASET LANCAR". Kunci labelAsetLancar.
-- TB-1490: "ASET TETAP". Kunci labelAsetTetap.
-- TB-1491: "KEWAJIBAN". Kunci labelKewajiban.
-- TB-1492: "EKUITAS". Kunci labelEkuitas.
-- TB-1493: "TOTAL ASET". Kunci labelTotalAset.
-- TB-1494: "TOTAL KEWAJIBAN DAN EKUITAS". Kunci labelTotalKewajibanEkuitas.
+- TB-1489: "Aset Lancar". Kunci labelAsetLancar.
+- TB-1490: "Aset Tetap". Kunci labelAsetTetap.
+- TB-1491: "Kewajiban". Kunci labelKewajiban.
+- TB-1492: "Ekuitas". Kunci labelEkuitas.
+- TB-1493: "Total Aset". Kunci labelTotalAset.
+- TB-1494: "Total Kewajiban dan Ekuitas". Kunci labelTotalKewajibanEkuitas.
 - TB-1495: "Neraca seimbang: Total Aset sama dengan Total Kewajiban dan Ekuitas". Kunci labelNeracaSeimbangNotif.
 - TB-1496: "Total halaman ini (debit = kredit)". Kunci labelTotalHalamanDebitKredit.
 - TB-1497: "+ Input Beban Operasional". Kunci labelInputBebanOperasional.
@@ -1634,8 +1634,8 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1677: "Pratinjau Nota Retur". Kunci boReturNotaModal.
 - TB-1678: "Pratinjau nota. Tombol Cetak membuka dialog cetak peramban.". Kunci boReturNotaCatatan.
 - TB-1679: "Cetak Nota". Kunci boReturNotaCetak.
-- TB-1680: "NOTA RETUR PENJUALAN". Kunci boReturNotaJudulPenjualan.
-- TB-1681: "NOTA RETUR PEMBELIAN". Kunci boReturNotaJudulPembelian.
+- TB-1680: "Faktur Retur Penjualan". Kunci boReturNotaJudulPenjualan.
+- TB-1681: "Faktur Retur Pembelian". Kunci boReturNotaJudulPembelian.
 - TB-1682: "No. Retur". Kunci boReturNotaNomor.
 - TB-1683: "Petugas". Kunci boReturNotaPetugas.
 - TB-1684: "No". Kunci boReturNotaNo.
@@ -1690,8 +1690,8 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1733: "Deposit {nilai} dipakai melunasi piutang ({nomor}).". Kunci boDepositPakaiTersimpan.
 - TB-1734: "Pemakaian melebihi saldo deposit {saldo}.". Kunci boDepositMelebihiSaldo.
 - TB-1735: "Pratinjau Bukti Deposit". Kunci boDepositBuktiModal.
-- TB-1736: "BUKTI SETOR DEPOSIT". Kunci boDepositBuktiJudulSetor.
-- TB-1737: "BUKTI PEMAKAIAN DEPOSIT". Kunci boDepositBuktiJudulPakai.
+- TB-1736: "Bukti Setor Deposit". Kunci boDepositBuktiJudulSetor.
+- TB-1737: "Bukti Pemakaian Deposit". Kunci boDepositBuktiJudulPakai.
 - TB-1738: "Saldo deposit setelah transaksi". Kunci boDepositBuktiSaldoSetelah.
 - TB-1739: "Faktur dilunasi". Kunci boDepositBuktiPelunasan.
 - TB-1740: "Daftar Saldo Deposit Pelanggan". Kunci boDepositEksporJudul.
@@ -1723,7 +1723,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1766: "Belum ada koreksi stok.". Kunci korRiwayatKosong.
 - TB-1767: "Lihat Detail". Kunci korLihatDetail.
 - TB-1768: "Cetak Berita Acara". Kunci korCetakBa.
-- TB-1769: "BERITA ACARA KOREKSI STOK". Kunci korBaJudul.
+- TB-1769: "Berita Acara Koreksi Stok". Kunci korBaJudul.
 - TB-1770: "Pada {tanggal} stok sistem dikoreksi sesuai kondisi fisik dengan rincian berikut.". Kunci korBaPembuka.
 - TB-1771: "Alasan: {alasan}". Kunci korBaAlasan.
 - TB-1772: "Disetujui Owner". Kunci korBaDisetujui.
@@ -1931,4 +1931,30 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1976: "Satuan dasar barang yang sudah ada tidak dapat diganti. Tambahkan satuan lain atau buat barang baru.". Kunci produkErrSatuanDasarTetap.
 - TB-1977: "Cari nama, kode, atau pindai barcode". Kunci lpsKartuPlaceholder.
 - TB-1978: "hari". Kunci hariSatuan.
-- TB-1979: "ECERAN". Kunci kolomHargaRetail.
+- TB-1979: "Eceran". Kunci kolomHargaRetail.
+- TB-1980: "Cetak Faktur Retur". Kunci boReturCetakNota.
+- TB-1981: "Retur yang sudah disimpan tampil di sini beserta tombol cetak faktur.". Kunci boReturDaftarKosongTeks.
+- TB-1982: "Pratinjau Faktur Retur". Kunci boReturNotaModal.
+- TB-1983: "Pratinjau faktur. Tombol Cetak membuka dialog cetak peramban.". Kunci boReturNotaCatatan.
+- TB-1984: "Cetak Faktur". Kunci boReturNotaCetak.
+- TB-1985: "Faktur retur {nomor} dicetak". Kunci boReturLogCetak.
+- TB-1986: "Toko {display}, Gudang {besar}". Kunci lpsStatNilaiCaption.
+- TB-1987: "Toko {display}, Gudang {besar}, Total {total}". Kunci lpsKartuStokRincian.
+- TB-1988: "Saldo awal dihitung mundur dari stok sistem saat ini dan semua pergerakan sejak tanggal awal. Penjualan dicatat pada Toko dan pembelian pada Gudang.". Kunci lpsKetBantuan.
+- TB-1989: "PROMO". Kunci promoTanda.
+- TB-1990: "Nilai Gudang". Kunci nilaiBesar.
+- TB-1991: "Nilai Toko". Kunci nilaiDisplay.
+- TB-1992: "Stok minimum Gudang". Kunci stokMinBesar.
+- TB-1993: "Stok minimum Toko". Kunci stokMinDisplay.
+- TB-1994: "Gudang: {nilai}". Kunci stokBarisBesar.
+- TB-1995: "Toko: {nilai}". Kunci stokBarisDisplay.
+- TB-1996: "Daftar Faktur". Kunci tombolDaftarNota.
+- TB-1997: "Diskon Faktur". Kunci labelDiskonNota.
+- TB-1998: "Daftar Faktur Penjualan & Pembelian". Kunci daftarNotaJudul.
+- TB-1999: "Umur Faktur". Kunci labelUmurNota.
+- TB-2000: "Rincian Faktur & TTD Faktur". Kunci labelRincianTagihanHeader.
+- TB-2001: "Cetak Tagihan & TTD Faktur". Kunci labelCetakTtdNota.
+- TB-2002: "Lembar Tagihan & Tanda Terima Faktur". Kunci labelLembarTagihanResmi.
+- TB-2003: "Stok {gudang} bertambah untuk {jumlah} barang.". Kunci boReturDampakStokNaik.
+- TB-2004: "Stok {gudang} berkurang untuk {jumlah} barang.". Kunci boReturDampakStokTurun.
+- TB-2005: "{gudang}". Kunci korGudangLabel.

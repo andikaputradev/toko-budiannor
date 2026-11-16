@@ -165,7 +165,7 @@ export function renderRbacScreen(
       { className: 'bo-rbac-info' },
       el('p', {
         className: 'bo-rbac-info__text',
-        text: 'Aturan Keamanan Berjenjang (Proposal Bab II.A): Role khusus Frontliner/Pramuniaga hanya dapat mengecek barang dan menginput pesanan ke draf / Hold Bill (picking list), dan TIDAK BISA melakukan closing pembayaran maupun mencetak nota resmi. Closing pembayaran dan nota resmi hanya oleh Kasir atau Admin berwenang.',
+        text: 'Aturan Keamanan Berjenjang (Proposal Bab II.A): Role khusus Frontliner/Pramuniaga hanya dapat mengecek barang dan menginput pesanan ke draf / Hold Bill (picking list), dan TIDAK BISA melakukan closing pembayaran maupun mencetak faktur resmi. Closing pembayaran dan faktur resmi hanya oleh Kasir atau Admin berwenang.',
       }),
     );
 

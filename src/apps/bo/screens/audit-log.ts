@@ -150,7 +150,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
 
     filtered.forEach((log) => {
       let statusBadgeClass = 'is-lunas';
-      let statusText = 'SUKSES';
+      let statusText = 'Sukses';
       if (log.status === 'ditolak') {
         statusBadgeClass = 'is-danger';
         statusText = 'DITOLAK';

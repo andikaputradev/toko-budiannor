@@ -99,7 +99,7 @@ export const boMasterLabels = {
   masterMetDeposit: 'Saldo Deposit',
   masterMetTransaksi: 'Jumlah Transaksi',
   masterMetOmzet: 'Omzet Bulan Ini',
-  masterMetNota: 'Jumlah Nota',
+  masterMetNota: 'Jumlah Faktur',
   masterMetKomisiBulan: 'Komisi Bulan Ini',
   masterMetCapaian: 'Capaian Target',
   masterMetPilihanAwal: 'Pilihan Awal Surat Jalan',

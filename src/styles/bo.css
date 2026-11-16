@@ -223,7 +223,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bo-nav {
@@ -910,7 +910,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bo-login {
@@ -1049,7 +1049,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bo-placeholder-card h2 {
@@ -1278,7 +1278,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bo-status-pill.is-info {
@@ -1446,7 +1446,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bo-grand-total__value {
@@ -1715,7 +1715,7 @@ body:has(.sim:not([hidden])) .bo-sidebar .bo-menu__footer {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .bo-report-line {
