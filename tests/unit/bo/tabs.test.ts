@@ -127,8 +127,8 @@ describe('tabTitleKey', () => {
   });
 
   it('memakai alias untuk rute di luar menu', () => {
-    expect(tabTitleKey('/bo/laporan/arus-kas')).toBe('menuArusKas');
-    expect(tabTitleKey('/bo/laporan/neraca')).toBe('menuNeraca');
+    expect(tabTitleKey('/bo/laporan/arus-kas')).toBe('grupAkuntansi');
+    expect(tabTitleKey('/bo/laporan/neraca')).toBe('grupAkuntansi');
     expect(tabTitleKey('/bo/master/cetak-barcode')).toBe('menuCetakBarcode');
     expect(tabTitleKey('/bo/pengaturan/rekening')).toBe('menuProfilToko');
   });

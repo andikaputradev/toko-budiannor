@@ -20,8 +20,8 @@ export interface TabState {
 
 // Rute di luar menu memakai judul entri menu yang setara.
 const TITLE_ALIASES: Readonly<Record<string, string>> = {
-  '/bo/laporan/arus-kas': '/bo/akuntansi/arus-kas',
-  '/bo/laporan/neraca': '/bo/akuntansi/neraca',
+  '/bo/laporan/arus-kas': '/bo/akuntansi',
+  '/bo/laporan/neraca': '/bo/akuntansi',
   '/bo/master/cetak-barcode': '/bo/pengaturan/barcode',
   '/bo/pengaturan/rekening': '/bo/pengaturan/profil',
   '/bo/pengaturan/printer': '/bo/pengaturan/lainnya',

@@ -11,7 +11,7 @@ describe('Rute Navigasi Back-Office', () => {
 
   it('semua submenu dapat dicari dengan entryFor', () => {
     expect(entryFor('/bo/transaksi/po-pembelian')?.screenId).toBe('BO-08');
-    expect(entryFor('/bo/akuntansi/jurnal')?.screenId).toBe('BO-18');
+    expect(entryFor('/bo/akuntansi')?.screenId).toBe('BO-18');
     expect(entryFor('/bo/hutang-piutang/saldo-piutang')?.screenId).toBe('BO-11');
     expect(entryFor('/bo/laporan/laba-rugi')?.screenId).toBe('BO-17');
     expect(entryFor('/bo/pengaturan/profil')?.screenId).toBe('BO-22');
@@ -25,11 +25,7 @@ describe('Rute Navigasi Back-Office', () => {
   });
 
   it('memastikan rute akuntansi dan laporan keuangan terdaftar di BO', () => {
-    expect(entryFor('/bo/akuntansi/jurnal')?.screenId).toBe('BO-18');
-    expect(entryFor('/bo/akuntansi/beban')?.screenId).toBe('BO-19');
-    expect(entryFor('/bo/akuntansi/arus-kas')?.screenId).toBe('BO-18');
-    expect(entryFor('/bo/akuntansi/neraca')?.screenId).toBe('BO-18');
-    expect(entryFor('/bo/akuntansi/laba-rugi')?.screenId).toBe('BO-17');
+    expect(entryFor('/bo/akuntansi')?.screenId).toBe('BO-18');
     expect(entryFor('/bo/laporan/laba-rugi')?.screenId).toBe('BO-17');
   });
 

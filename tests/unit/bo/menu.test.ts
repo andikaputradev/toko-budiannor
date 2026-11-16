@@ -45,8 +45,8 @@ describe('Menu Navigasi Back-Office', () => {
   it('menemukan grup berdasarkan ID grup', () => {
     const akuntansi = groupFor('akuntansi');
     expect(akuntansi).toBeDefined();
-    expect(akuntansi?.entries.length).toBe(5);
-    expect(akuntansi?.entries.map((e) => e.label)).toContain('menuJurnalOtomatis');
+    // Akuntansi satu halaman (gambar klien 24 sampai 28): lima bagian berada di dalam satu tab.
+    expect(akuntansi?.entries.map((e) => e.path)).toEqual(['/bo/akuntansi']);
   });
 
   it('menu Master Data tanpa No Rekening: rekening toko dipakai dari Profil Toko (M2)', () => {

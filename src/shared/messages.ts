@@ -1214,7 +1214,7 @@ export const labels = {
   menuSaldoPiutang: 'Saldo Piutang',
   menuPembayaranPiutang: 'Pembayaran Piutang',
   menuJurnalOtomatis: 'Jurnal Otomatis',
-  menuBebanOperasional: 'Beban Operasional',
+  menuBebanUsaha: 'Beban Usaha',
   menuArusKas: 'Arus Kas',
   menuNeraca: 'Neraca',
   menuLabaRugiAkuntansi: 'Laba Rugi',
@@ -1410,9 +1410,9 @@ export const labels = {
   labelBelumAdaNotaTerpilih: 'Pilih pelanggan/pemasok di panel kiri untuk melihat tagihan.',
   // Tahap 6 - Modul Akuntansi & Laporan Keuangan
   jurnalOtomatisJudul: 'Jurnal Otomatis',
-  jurnalSubJudul: 'Jurnal terbentuk otomatis dari transaksi POS, pembelian, dan beban',
-  bebanOperasionalJudul: 'Beban Operasional',
-  bebanSubJudul: 'Catat beban toko, jurnal terbentuk otomatis ke Laba Rugi',
+  jurnalSubJudul: 'Jurnal terbentuk otomatis dari transaksi jual beli dan beban',
+  bebanOperasionalJudul: 'Beban Usaha',
+  bebanSubJudul: 'Catatan beban usaha, jurnal otomatis ke Laba Rugi',
   arusKasJudul: 'Arus Kas',
   arusKasSubJudul: 'Periode Oktober 2026 - Metode langsung',
   labaRugiJudul: 'Laporan Laba Rugi',
@@ -1428,9 +1428,6 @@ export const labels = {
   labelPerluReview: 'Perlu Review',
   labelTerjurnal: 'Terjurnal',
   labelTotalBebanBulan: 'Total Beban',
-  labelGajiDanKomisi: 'Gaji dan Komisi',
-  labelSewaDanListrik: 'Sewa dan Listrik',
-  labelTransportasiLain: 'Transportasi dan Lain-lain',
   labelInputBebanBaru: 'Input Beban Baru',
   labelRiwayatBeban: 'Riwayat Beban',
   labelSimpanDanJurnalkan: 'Simpan dan Jurnalkan',
@@ -1457,7 +1454,7 @@ export const labels = {
   labelTotalKewajibanEkuitas: 'Total Kewajiban dan Ekuitas',
   labelNeracaSeimbangNotif: 'Neraca seimbang: Total Aset sama dengan Total Kewajiban dan Ekuitas',
   labelTotalHalamanDebitKredit: 'Total halaman ini (debit = kredit)',
-  labelInputBebanOperasional: '+ Input Beban Operasional',
+  labelInputBebanOperasional: '+ Input Beban Usaha',
 } as const;
 
 export type SystemMessageId = keyof typeof systemMessages;

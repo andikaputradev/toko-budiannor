@@ -255,3 +255,87 @@ html[data-app='bo'] .bo-form-meta-grid {
 html[data-app='bo'] .bo-field-gap-top {
   --bo-label-w: 11rem;
 }
+
+/* ===== Akuntansi satu halaman: lima tombol bagian dan Cetak (gambar klien 24 sampai 28) ===== */
+html[data-app='bo'] .bo-acc-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+html[data-app='bo'] .bo-acc-head__title {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+html[data-app='bo'] .bo-acc-head__title .bo-page-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+html[data-app='bo'] .bo-acc-head__title .bo-acc-sub {
+  margin: 2px 0 0;
+  white-space: normal;
+}
+
+html[data-app='bo'] .bo-acc-switch {
+  display: flex;
+  flex: 3 1 640px;
+  gap: 10px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-acc-switch__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+}
+
+html[data-app='bo'] .bo-acc-switch__print {
+  flex: 0 0 auto;
+  height: 40px;
+}
+
+html[data-app='bo'] .bo-acc-filter__print {
+  flex: none;
+  margin-left: auto;
+}
+
+html[data-app='bo'] .bo-acc-stats--beban {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-acc-stats--beban .bo-stat-card {
+  padding: 8px 10px;
+}
+
+html[data-app='bo'] .bo-acc-stats--beban .bo-stat-card__val {
+  font-size: 16px;
+}
+
+html[data-app='bo'] .bo-acc-filter__source,
+html[data-app='bo'] .bo-acc-filter__status,
+html[data-app='bo'] .bo-acc-filter__warehouse {
+  flex: 0 0 190px;
+  width: auto;
+}
+
+/* Input Beban Baru: satu isian per baris dengan caption di kiri. */
+html[data-app='bo'] .bo-acc-form-panel {
+  --bo-label-w: 7rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-acc-form-panel > .field .input {
+  height: 36px;
+  min-height: 36px;
+}

@@ -1958,3 +1958,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2003: "Stok {gudang} bertambah untuk {jumlah} barang.". Kunci boReturDampakStokNaik.
 - TB-2004: "Stok {gudang} berkurang untuk {jumlah} barang.". Kunci boReturDampakStokTurun.
 - TB-2005: "{gudang}". Kunci korGudangLabel.
+- TB-2006: "Beban Usaha". Kunci menuBebanUsaha.
+- TB-2007: "Jurnal terbentuk otomatis dari transaksi jual beli dan beban". Kunci jurnalSubJudul.
+- TB-2008: "Catatan beban usaha, jurnal otomatis ke Laba Rugi". Kunci bebanSubJudul.
+- TB-2009: "+ Input Beban Usaha". Kunci labelInputBebanOperasional.

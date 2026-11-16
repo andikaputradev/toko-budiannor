@@ -16,6 +16,7 @@ import { entryFor } from './domain/menu';
 import { renderDashboard } from './screens/dashboard';
 import { renderLogin, type ScreenHandle } from './screens/login';
 import { renderPlaceholder } from './screens/placeholder';
+import type { AccountingTab } from './screens/accounting';
 import { createShell, type Shell } from './shell';
 import { importedSoNumbers, resetSessionDrafts } from './domain/session-drafts';
 import { createWorkspace, type Workspace } from './workspace';
@@ -260,39 +261,12 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
         );
     },
   },
-  '/bo/akuntansi/jurnal': {
+  '/bo/akuntansi': {
     id: 'BO-18',
     load: async () => {
       const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'jurnal');
-    },
-  },
-  '/bo/akuntansi/beban': {
-    id: 'BO-19',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'beban');
-    },
-  },
-  '/bo/akuntansi/arus-kas': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'arus-kas');
-    },
-  },
-  '/bo/akuntansi/laba-rugi': {
-    id: 'BO-17',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'laba-rugi');
-    },
-  },
-  '/bo/akuntansi/neraca': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'neraca');
+      return (session, go, query) =>
+        renderAccountingScreen(session, go, accountingSection(query.get('bagian')));
     },
   },
   '/bo/laporan/laba-rugi': {
@@ -430,6 +404,21 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   },
 };
 
+// Rute Akuntansi lama (satu tab per bagian) dialihkan ke satu halaman Akuntansi (gambar klien 24 sampai 28).
+const LEGACY_PATHS: Readonly<Record<string, string>> = {
+  '/bo/akuntansi/jurnal': '/bo/akuntansi?bagian=jurnal',
+  '/bo/akuntansi/beban': '/bo/akuntansi?bagian=beban',
+  '/bo/akuntansi/arus-kas': '/bo/akuntansi?bagian=arus-kas',
+  '/bo/akuntansi/laba-rugi': '/bo/akuntansi?bagian=laba-rugi',
+  '/bo/akuntansi/neraca': '/bo/akuntansi?bagian=neraca',
+};
+
+function accountingSection(value: string | null): AccountingTab {
+  return value === 'beban' || value === 'arus-kas' || value === 'laba-rugi' || value === 'neraca'
+    ? value
+    : 'jurnal';
+}
+
 let session: BoSession | undefined;
 let loginScreen: ScreenHandle | undefined;
 let shell: Shell | undefined;
@@ -547,6 +536,11 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   if (active.state().user === undefined) {
     disposeWorkspace();
     navigate('/bo');
+    return;
+  }
+  const legacy = LEGACY_PATHS[path];
+  if (legacy !== undefined) {
+    navigate(legacy);
     return;
   }
   if (ROUTES[path] === undefined && entryFor(path) === undefined) {

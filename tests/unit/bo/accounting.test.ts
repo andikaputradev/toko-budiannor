@@ -28,10 +28,36 @@ describe('Domain Akuntansi & Laporan Keuangan Back Office', () => {
   it('menghitung ringkasan beban operasional dengan benar', () => {
     const summary = calculateExpenseSummary(DEFAULT_EXPENSE_ITEMS, 412_600_000);
     expect(summary.totalBeban).toBe(52_600_000);
-    expect(summary.gajiKomisi).toBe(31_400_000);
-    expect(summary.sewaListrik).toBe(12_800_000);
-    expect(summary.transportasiLain).toBe(8_400_000);
     expect(summary.persenDariPenjualan).toBe(12.7);
+    expect(summary.categories.map((item) => [item.name, item.amount, item.percent])).toEqual([
+      ['Gaji dan Komisi', 31_400_000, 59.7],
+      ['Transportasi Angkutan', 6_250_000, 11.9],
+      ['Katering Makan', 1_100_000, 2.1],
+      ['Listrik dan Internet', 3_200_000, 6.1],
+      ['Sewa dan Peralatan Toko', 9_600_000, 18.3],
+      ['Beban Lain Lain', 1_050_000, 2],
+    ]);
+    expect(summary.categories.reduce((sum, item) => sum + item.amount, 0)).toBe(summary.totalBeban);
+  });
+
+  it('memetakan kategori beban di luar enam kategori ke Beban Lain Lain', () => {
+    const summary = calculateExpenseSummary(
+      [{ ...DEFAULT_EXPENSE_ITEMS[0]!, category: 'Lain', amount: 1_000 }],
+      1_000_000,
+    );
+    expect(summary.categories.find((item) => item.name === 'Beban Lain Lain')?.amount).toBe(1_000);
+  });
+
+  it('laba rugi memuat enam baris beban sesuai gambar klien 26', () => {
+    const pl = generateProfitLossStatement(undefined, DEFAULT_EXPENSE_ITEMS);
+    expect(pl.expenses.items.map((item) => item.category)).toEqual([
+      'Gaji dan Komisi Sales',
+      'Transportasi Angkutan',
+      'Katering Makan',
+      'Listrik dan Internet',
+      'Sewa dan Peralatan Toko',
+      'Beban Lain Lain',
+    ]);
   });
 
   it('menghasilkan laporan arus kas langsung yang konsisten', () => {

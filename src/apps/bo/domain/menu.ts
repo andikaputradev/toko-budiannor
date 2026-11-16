@@ -208,34 +208,10 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
     icon: 'file-text',
     entries: [
       {
-        path: '/bo/akuntansi/jurnal',
-        label: 'menuJurnalOtomatis',
+        path: '/bo/akuntansi',
+        label: 'grupAkuntansi',
         group: 'akuntansi',
         screenId: 'BO-18',
-      },
-      {
-        path: '/bo/akuntansi/beban',
-        label: 'menuBebanOperasional',
-        group: 'akuntansi',
-        screenId: 'BO-19',
-      },
-      {
-        path: '/bo/akuntansi/arus-kas',
-        label: 'menuArusKas',
-        group: 'akuntansi',
-        screenId: 'BO-18',
-      },
-      {
-        path: '/bo/akuntansi/neraca',
-        label: 'menuNeraca',
-        group: 'akuntansi',
-        screenId: 'BO-18',
-      },
-      {
-        path: '/bo/akuntansi/laba-rugi',
-        label: 'menuLabaRugiAkuntansi',
-        group: 'akuntansi',
-        screenId: 'BO-17',
       },
     ],
   },
