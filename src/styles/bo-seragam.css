@@ -402,3 +402,71 @@ html[data-app='bo'] .bo-ret-chips {
 html[data-app='bo'] :is(label, .field__label, .bo-trx-head__label, .bo-trx-totals__label) {
   font-size: var(--bo-fs-label);
 }
+
+/* ===== 6. Bilah tombol halaman daftar dan halaman data (gambar klien 31 dan 32) ===== */
+html[data-app='bo'] .bo-actionbar .btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: var(--bo-fs-button);
+}
+
+html[data-app='bo'] .bo-actionbar .btn--secondary {
+  border-color: transparent;
+  background: transparent;
+}
+
+html[data-app='bo'] .bo-actionbar .btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg-pressed);
+}
+
+html[data-app='bo'] .bo-actionbar .btn--danger {
+  border-color: transparent;
+  background: var(--color-status-danger-bg);
+}
+
+html[data-app='bo'] .bo-actionbar .btn:disabled {
+  background: transparent;
+  opacity: 0.5;
+}
+
+/* ===== 7. Tampilan baku (gambar klien 30): ukuran tidak berubah karena isi ===== */
+/* Data Barang: blok Satuan selalu setinggi tiga baris dan panel Harga selalu setinggi tiga satuan,
+   jadi daftar barang dan isian di bawahnya tidak bergeser walau barang hanya punya satu satuan. */
+html[data-app='bo'] .bo-pd-units {
+  min-height: calc(3 * 36px + 2 * 6px);
+}
+
+html[data-app='bo'] .bo-pd-units__row {
+  min-height: 36px;
+}
+
+html[data-app='bo'] .bo-pd-prices {
+  flex: none;
+  height: 140px;
+  overflow-y: auto;
+}
+
+/* Info Piutang Pelanggan di kepala faktur: lebar tetap dan tidak melipat, supaya angka besar tidak
+   membesarkan kotak dan mendorong isian di sebelahnya. */
+html[data-app='bo'] .bo-trx .bo-trx-head__aside {
+  width: 258px;
+}
+
+html[data-app='bo'] .bo-trx .bo-trx-head__aside .bo-credit-stat {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-trx .bo-trx-head__aside .bo-credit-stat__lbl,
+html[data-app='bo'] .bo-trx .bo-trx-head__aside .bo-credit-stat__val {
+  white-space: nowrap;
+}
+
+/* Filter pada bilah daftar: ruang teks cukup untuk "Pelanggan: Semua" pada lebar 156 px. */
+html[data-app='bo'] .bo-trx .bo-trx-filter {
+  flex: 0 0 156px;
+  width: 156px;
+  max-width: 156px;
+  padding: 0 28px 0 10px;
+}

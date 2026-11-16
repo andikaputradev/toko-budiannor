@@ -567,77 +567,71 @@
   border-top: 1px solid var(--color-border-default);
 }
 
-/* ===== Halaman daftar (Daftar Nota, Daftar PO, Daftar SO) ===== */
-.bo-trx .bo-trx-listhead {
+/* ===== Halaman daftar (gambar klien 32): bilah tombol, kotak angka, tabel ===== */
+.bo-trx .bo-trx-listbar {
   display: flex;
   flex: none;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border-default);
-  border-radius: 10px;
-  background: var(--color-bg-surface);
-}
-
-.bo-trx-listhead__top {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
   align-items: center;
-  justify-content: space-between;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
 }
 
-.bo-trx-listhead__title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.bo-trx-listhead__heading {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.bo-trx-switch .bo-tab-btn {
-  min-height: 28px;
-  padding: 2px 12px;
-  font-size: 13px;
-}
-
-.bo-trx-kpis {
+.bo-trx-listbar__actions {
   display: flex;
   flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.bo-trx-listbar__divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 4px 4px;
+  background: var(--color-border-default);
+}
+
+/* Kotak angka: garis oranye di kiri, judul di kiri dan angka di kanan (sama dengan halaman master). */
+.bo-trx-kpis {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 8px;
 }
 
 .bo-trx-kpi {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 170px;
-  padding: 4px 12px;
-  border: 1px solid var(--color-text-primary);
-  border-radius: 4px;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border-default);
+  border-left: 4px solid var(--color-accent-default);
+  border-radius: var(--radius-card);
   background: var(--color-bg-surface);
-  text-align: center;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
 }
 
 .bo-trx-kpi__label {
+  color: var(--color-text-secondary);
   font-size: 13px;
-  font-weight: 600;
 }
 
 .bo-trx-kpi__value {
   font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-/* Angka peringatan memakai pil berlatar (kontras terjaga di mode gelap), seperti gambar klien 8. */
+/* Angka peringatan memakai pil berlatar (kontras terjaga di mode gelap). */
 .bo-trx-kpi__value.is-warn,
 .bo-trx-kpi__value.is-danger {
-  align-self: center;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: 12px;
 }
 
@@ -651,17 +645,23 @@
   color: var(--color-status-danger-fg);
 }
 
-.bo-trx-listhead__bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
 .bo-trx .bo-trx-create {
   height: 36px;
   min-height: 36px;
   font-size: 14px;
+}
+
+/* Baris terpilih pada daftar: sama dengan baris terpilih pada halaman master. */
+.bo-trx-table tr.bo-trx-row {
+  cursor: pointer;
+}
+
+.bo-trx-table tr.bo-trx-row.is-selected td {
+  background: var(--color-accent-soft);
+}
+
+.bo-trx-table tr.bo-trx-row.is-selected td:first-child {
+  box-shadow: inset 4px 0 0 var(--color-accent-default);
 }
 
 .bo-trx-iconbtn {
@@ -690,20 +690,24 @@
 }
 
 .bo-trx .bo-trx-filter {
-  flex: 0 0 auto;
-  width: auto;
-  min-width: 150px;
-  max-width: 230px;
+  flex: 0 0 158px;
+  width: 158px;
+  min-width: 0;
+  max-width: 158px;
+  padding-right: 28px;
+  padding-left: 10px;
   height: 32px;
   min-height: 32px;
   font-size: 13px;
+  text-overflow: ellipsis;
 }
 
 .bo-trx-searchbox {
   position: relative;
-  flex: 1 1 280px;
+  flex: 1 1 170px;
+  min-width: 170px;
   margin-left: auto;
-  max-width: 420px;
+  max-width: 380px;
 }
 
 .bo-trx-searchbox__input {

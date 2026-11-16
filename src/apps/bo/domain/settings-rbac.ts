@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import type { Role } from '../../../shared/data/types';
 import { PERMISSION_ROWS } from '../../../shared/permissions';
 
@@ -266,12 +267,10 @@ export function filterAuditLogs(
       return false;
     }
     if (criteria.searchQuery) {
-      const q = criteria.searchQuery.toLowerCase();
-      const match =
-        item.details.toLowerCase().includes(q) ||
-        item.action.toLowerCase().includes(q) ||
-        item.username.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q);
+      const match = matchesPhrase(
+        `${item.details} ${item.action} ${item.username} ${item.id}`,
+        criteria.searchQuery,
+      );
       if (!match) return false;
     }
     return true;

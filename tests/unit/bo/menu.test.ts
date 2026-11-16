@@ -8,12 +8,11 @@ import {
 } from '../../../src/apps/bo/domain/menu';
 
 describe('Menu Navigasi Back-Office', () => {
-  it('memiliki 8 grup menu utama sesuai bo-menu.png', () => {
-    expect(MENU_GROUPS.length).toBe(8);
+  it('memiliki 7 grup menu sesuai gambar klien 33 (Dashboard jadi tab dasar, bukan entri menu)', () => {
+    expect(MENU_GROUPS.length).toBe(7);
     expect(MENU_ENTRIES.length).toBeGreaterThan(0);
     const groupIds = MENU_GROUPS.map((g) => g.id);
     expect(groupIds).toEqual([
-      'dashboard',
       'master-data',
       'transaksi',
       'mutasi-stok',
@@ -25,9 +24,11 @@ describe('Menu Navigasi Back-Office', () => {
   });
 
   it('memetakan path rute ke entri menu dengan benar', () => {
+    // Dashboard dan Surat Jalan tidak ada di laci menu, tetapi rutenya tetap punya judul dan grup.
     const dashboard = entryFor('/bo/dashboard');
-    expect(dashboard).toBeDefined();
     expect(dashboard?.group).toBe('dashboard');
+    expect(MENU_GROUPS.some((group) => group.id === 'dashboard')).toBe(false);
+    expect(entryFor('/bo/transaksi/surat-jalan')?.group).toBe('transaksi');
 
     const barang = entryFor('/bo/barang');
     expect(barang).toBeDefined();
@@ -67,13 +68,26 @@ describe('Menu Navigasi Back-Office', () => {
   });
 
   it('hanya menampilkan menu penuh untuk peran yang berwenang (owner dan supervisor)', () => {
-    expect(menuFor('owner').length).toBe(8);
-    expect(menuFor('supervisor').length).toBe(8);
+    expect(menuFor('owner').length).toBe(7);
+    expect(menuFor('supervisor').length).toBe(7);
     expect(menuFor('kasir').length).toBe(0);
     expect(menuFor('frontliner').length).toBe(0);
   });
 
-  it('entri Laporan membuka kotak pilihan, kecuali halaman Price List (gambar klien 29)', () => {
+  it('menu Transaksi tanpa Daftar Nota dan Surat Jalan Ekspedisi (gambar klien 33)', () => {
+    const transaksi = groupFor('transaksi');
+    expect(transaksi?.entries.map((entry) => entry.path)).toEqual([
+      '/bo/transaksi/po-pembelian',
+      '/bo/transaksi/faktur-pembelian',
+      '/bo/transaksi/retur-pembelian',
+      '/bo/transaksi/so-penjualan',
+      '/bo/transaksi/faktur-penjualan',
+      '/bo/transaksi/retur-penjualan',
+      '/bo/transaksi/deposit-pelanggan',
+    ]);
+  });
+
+  it('keenam entri Laporan membuka kotak pilihan (gambar klien 29 dan 33)', () => {
     const laporan = groupFor('laporan');
     expect(laporan?.entries.map((entry) => [entry.path, entry.dialog])).toEqual([
       ['/bo/laporan/laba-rugi', 'laba-rugi-kotor'],
@@ -82,7 +96,8 @@ describe('Menu Navigasi Back-Office', () => {
       ['/bo/laporan/hutang-piutang', 'hutang-piutang'],
       ['/bo/laporan/stok', 'stok'],
       ['/bo/laporan/daftar-harga', 'harga'],
-      ['/bo/harga', undefined],
     ]);
+    // Halaman Satuan dan Harga tidak lagi di laci menu, tetapi rutenya tetap dikenal.
+    expect(entryFor('/bo/harga')?.group).toBe('laporan');
   });
 });

@@ -121,8 +121,9 @@ test.describe('kerangka Back-Office', () => {
     await expect(page.locator('.bo-menu')).toBeHidden();
     await page.getByRole('button', { name: 'Buka menu' }).click();
     const links = page.locator('.bo-menu__link');
-    await expect(links.first()).toHaveText('Dashboard');
-    expect(await links.count()).toBeGreaterThanOrEqual(20);
+    // Dashboard menjadi tab dasar, bukan entri menu (gambar klien 33).
+    await expect(links.first()).toHaveText('Data Barang');
+    expect(await links.count()).toBeGreaterThanOrEqual(30);
     await expect(page.locator('.bo-menu')).toBeVisible();
     const menuWidth = await page
       .locator('.bo-menu')
@@ -399,7 +400,7 @@ test.describe('BO-06 Mutasi Antar Gudang (F-06)', () => {
 
     await page.goto('/#/bo/mutasi');
     await expect(page.getByRole('heading', { name: 'Riwayat mutasi terakhir' })).toBeVisible();
-    await page.getByRole('button', { name: 'Buat Do Transfer' }).click();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/mutasi\?baru=1$/);
     await page.getByRole('button', { name: 'Simpan Mutasi' }).click();
     await expect(page.getByText('Tambahkan minimal satu barang.')).toBeVisible();
@@ -417,7 +418,7 @@ test.describe('BO-06 Mutasi Antar Gudang (F-06)', () => {
     await page.getByRole('button', { name: 'Simpan Mutasi' }).click();
     await expect(page.getByText('Mutasi M-0002 tersimpan.')).toBeVisible();
     await expect(page).toHaveURL(/#\/bo\/mutasi$/);
-    const saved = page.locator('.bo-mut-table tbody tr').first();
+    const saved = page.locator('.bo-tabpanel:not([hidden]) .bo-trx-table tbody tr').first();
     await expect(saved).toContainText('M-0002');
     await expect(saved).toContainText('BUAT DIBAWA BESOK PAGI');
     await expect(saved).toContainText('Ibu Sinta');
@@ -453,7 +454,7 @@ test.describe('BO-07 Opname Stok', () => {
     await page.goto('/#/bo/opname');
     await expect(page.getByRole('heading', { name: 'Riwayat Stok Opname' })).toBeVisible();
     await expect(page.locator('.bo-trx-table tbody tr')).toHaveCount(4);
-    await page.getByRole('button', { name: 'Stok Opname', exact: true }).click();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/opname\?baru=1$/);
     await page.getByLabel('Nama Barang').fill('B0001');
     await page.getByLabel('Nama Barang').press('Enter');

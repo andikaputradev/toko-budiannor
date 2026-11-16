@@ -96,6 +96,9 @@ export interface Store {
   addApproval(request: ApprovalRequest): void;
   markSalesOrderSynced(number: string): void;
   addPurchaseOrder(order: PurchaseOrder): void;
+  // Hanya pesanan yang belum diproses yang boleh dihapus; pemanggil memeriksa statusnya.
+  removeSalesOrder(number: string): void;
+  removePurchaseOrder(number: string): void;
   saveReturnNote(note: ReturnNote): void;
   addDepositEntry(entry: DepositEntry): void;
   peekNumber(kind: DocumentKind): string;
@@ -441,6 +444,17 @@ export function createStore(options: StoreOptions = {}): Store {
     },
     addPurchaseOrder: (order) => {
       state = { ...state, purchaseOrders: [...state.purchaseOrders, order] };
+      publish(false);
+    },
+    removeSalesOrder: (number) => {
+      state = { ...state, salesOrders: state.salesOrders.filter((item) => item.number !== number) };
+      publish(false);
+    },
+    removePurchaseOrder: (number) => {
+      state = {
+        ...state,
+        purchaseOrders: state.purchaseOrders.filter((item) => item.number !== number),
+      };
       publish(false);
     },
     saveReturnNote: (note) => {

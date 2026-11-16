@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { BillLine, Product, WarehouseId } from '../../../shared/data/types';
 import { label } from '../../../shared/messages';
@@ -84,8 +85,7 @@ const withUnitPrice = (row: Omit<HistoryRow, 'unitPrice'>): HistoryRow => ({
 });
 
 export function filterByParty(rows: readonly HistoryRow[], text: string): HistoryRow[] {
-  const query = text.trim().toLowerCase();
-  return query === '' ? [...rows] : rows.filter((row) => row.party.toLowerCase().includes(query));
+  return rows.filter((row) => matchesPhrase(row.party, text));
 }
 
 export function buildProductHistory(input: {

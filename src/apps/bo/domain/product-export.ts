@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { totalStock } from '../../../shared/data/units';
 import type { Product, Role, TierPrices } from '../../../shared/data/types';
 import { formatDecimal } from '../../../shared/format';
@@ -170,10 +171,7 @@ function matches(product: Product, params: ExportParams): boolean {
   if (params.stock === 'dibawah-minimum' && !(total < product.minStock)) {
     return false;
   }
-  const text = params.text.trim().toLowerCase();
-  return (
-    text === '' || `${product.name} ${product.code} ${product.barcode}`.toLowerCase().includes(text)
-  );
+  return matchesPhrase(`${product.name} ${product.code} ${product.barcode}`, params.text);
 }
 
 export function buildExport(

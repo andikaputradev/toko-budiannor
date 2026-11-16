@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { balanceOf } from '../../../shared/data/receivable';
 import { buildInvoiceLines, linesTotal } from '../../../shared/data/invoice-lines';
 import { round3, toBase } from '../../../shared/data/units';
@@ -88,11 +89,8 @@ function productMatches(
   if (product === undefined) {
     return filter.product === ALL && filter.category === ALL && filter.brand === ALL;
   }
-  const phrase = filter.product.trim().toLowerCase();
   return (
-    (phrase === '' ||
-      product.name.toLowerCase().includes(phrase) ||
-      product.code.toLowerCase().includes(phrase)) &&
+    matchesPhrase(`${product.name} ${product.code}`, filter.product) &&
     (filter.category === ALL || product.category === filter.category) &&
     (filter.brand === ALL || product.brand === filter.brand)
   );

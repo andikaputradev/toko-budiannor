@@ -1,5 +1,7 @@
 import { el, nextId } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatTime } from '../../../shared/format';
+import { matchesPhrase } from '../../../shared/data/search-index';
+import { wibDate } from '../../../shared/data/receivable';
 import { label, message } from '../../../shared/messages';
 import type { Product, WarehouseId } from '../../../shared/data/types';
 import { fromBase } from '../../../shared/data/units';
@@ -9,16 +11,19 @@ import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import { BO_DEVICE, BO_IP, type BoSession, type TransferDoc } from '../bo-session';
 import { type TransferLineDraft } from '../domain/transfer';
+import { dateRangeFor, type DateRangeKind } from '../domain/transaction-list';
 import { createProductPicker } from '../picker';
 import type { ScreenHandle } from './login';
 import { screenActive } from '../screen-active';
+import { createScrollRegion, openDocumentPreview, userName } from './mutasi/parts';
 import {
-  createCreateBar,
-  createListCard,
-  createScrollRegion,
-  openDocumentPreview,
-  userName,
-} from './mutasi/parts';
+  createDateFilter,
+  createListPage,
+  createRefreshButton,
+  createRowSelection,
+  createSearchBox,
+  refuseDelete,
+} from './trx/list-page';
 import { MUT_TEXT, mut } from './mutasi/text';
 
 const LIST_PATH = '/bo/mutasi';
@@ -61,66 +66,179 @@ export function renderTransfer(
   return creating ? renderTransferForm(session, go) : renderTransferList(session, go);
 }
 
+const LIST_TEXT = {
+  segarkan: 'Segarkan',
+  cari: 'Cari mutasi...',
+  cariNama: 'Cari nomor mutasi, gudang, atau keterangan',
+  kolomBarang: 'Jumlah Barang',
+  kolomItem: 'Jumlah Item',
+  tidakCocok: 'Tidak ada mutasi yang sesuai filter.',
+  ditolak: 'Mutasi stok yang sudah tersimpan tidak dapat dihapus karena sudah memindahkan stok.',
+} as const;
+
+// Daftar Transfer Stok (gambar klien 14 dan 32): Tambah, Ubah, Hapus, Cetak, Keluar, filter Tanggal,
+// pencarian, dan tabel mutasi. Ubah membuka bukti transfer dokumen terpilih.
 function renderTransferList(session: BoSession, go: (path: string) => void): ScreenHandle {
   const store = session.store;
+  const today = wibDate(session.now());
+  const selection = createRowSelection();
+  const dateSelect = createDateFilter();
+  const search = createSearchBox(LIST_TEXT.cariNama, LIST_TEXT.cari);
   const body = el('tbody');
-  const emptyBox = el('p', { className: 'bo-mut-empty', text: MUT_TEXT.mutasiKosong });
   const table = el(
-    'table',
-    { className: 'bo-mut-table' },
+    'div',
+    {
+      className: 'bo-trx__lines',
+      attrs: { tabindex: '0', role: 'region', 'aria-label': MUT_TEXT.daftarMutasi },
+    },
     el(
-      'thead',
-      {},
+      'table',
+      { className: 'bo-trx-table bo-trx-table--list' },
       el(
-        'tr',
+        'thead',
         {},
-        el('th', { text: label('noMutasi') }),
-        el('th', { text: label('kolomWaktu') }),
-        el('th', { text: label('gudangAsal') }),
-        el('th', { text: label('gudangTujuan') }),
-        el('th', { className: 'is-end', text: label('kolomItem') }),
-        el('th', { text: MUT_TEXT.kolomUser }),
-        el('th', { text: MUT_TEXT.kolomKeterangan }),
+        el(
+          'tr',
+          {},
+          el('th', { text: label('noMutasi') }),
+          el('th', { text: label('kolomWaktu') }),
+          el('th', { text: label('gudangAsal') }),
+          el('th', { text: label('gudangTujuan') }),
+          el('th', { className: 'is-end', text: LIST_TEXT.kolomBarang }),
+          el('th', { className: 'is-end', text: LIST_TEXT.kolomItem }),
+          el('th', { text: MUT_TEXT.kolomUser }),
+          el('th', { text: MUT_TEXT.kolomKeterangan }),
+        ),
       ),
+      body,
     ),
-    body,
   );
-  const region = createScrollRegion(MUT_TEXT.daftarMutasi, table);
 
-  const row = (doc: TransferDoc): HTMLElement =>
-    el(
-      'tr',
-      { className: doc.number === justSaved ? 'is-selected' : '' },
-      el('td', {}, el('strong', { text: doc.number })),
-      el('td', { text: stamp(doc.at) }),
-      el('td', { text: warehouseName(doc.from) }),
-      el('td', { text: warehouseName(doc.to) }),
-      el('td', { className: 'is-end', text: String(doc.lines.length) }),
-      el('td', { text: userName(store, doc.userId) }),
-      el('td', { className: 'bo-mut-note-cell', text: doc.note }),
-    );
+  const docs = (): TransferDoc[] => [...session.state().transfers].reverse();
 
   const paint = (): void => {
-    const docs = [...session.state().transfers].reverse();
-    body.replaceChildren(...docs.map(row));
-    emptyBox.hidden = docs.length > 0;
-    table.hidden = docs.length === 0;
+    const all = docs();
+    const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
+    const rows = all.filter((doc) => {
+      const day = wibDate(new Date(doc.at));
+      if (range.startDate !== undefined && day < range.startDate) {
+        return false;
+      }
+      if (range.endDate !== undefined && day > range.endDate) {
+        return false;
+      }
+      return matchesPhrase(
+        `${doc.number} ${warehouseName(doc.from)} ${warehouseName(doc.to)} ${doc.note} ${userName(store, doc.userId)}`,
+        search.input.value,
+      );
+    });
+    if (rows.length === 0) {
+      body.replaceChildren(
+        el(
+          'tr',
+          { className: 'bo-trx-table__empty' },
+          el('td', {
+            text: all.length === 0 ? MUT_TEXT.mutasiKosong : LIST_TEXT.tidakCocok,
+            attrs: { colspan: '8' },
+          }),
+        ),
+      );
+      return;
+    }
+    body.replaceChildren(
+      ...rows.map((doc) => {
+        const tr = el(
+          'tr',
+          { attrs: { 'data-number': doc.number } },
+          el('td', {}, el('strong', { className: 'bo-trx-link', text: doc.number })),
+          el('td', { className: 'bo-nowrap', text: stamp(doc.at) }),
+          el('td', { text: warehouseName(doc.from) }),
+          el('td', { text: warehouseName(doc.to) }),
+          el('td', { className: 'is-end', text: String(doc.lines.length) }),
+          el('td', {
+            className: 'is-end',
+            text: formatDecimal(doc.lines.reduce((sum, line) => sum + line.quantity, 0)),
+          }),
+          el('td', { text: userName(store, doc.userId) }),
+          el('td', { className: 'bo-trx-notes', text: doc.note, attrs: { title: doc.note } }),
+        );
+        selection.attach(tr, doc.number);
+        return tr;
+      }),
+    );
   };
-  paint();
-  const stop = session.subscribe(paint);
 
-  const element = el(
-    'div',
-    { className: 'bo-mut' },
-    createCreateBar(MUT_TEXT.buatDoTransfer, () => {
+  const open = (number: string): void => {
+    const doc = docs().find((item) => item.number === number);
+    if (doc !== undefined) {
+      openSavedTransfer(session, doc);
+    }
+  };
+
+  dateSelect.addEventListener('change', paint);
+  search.input.addEventListener('input', paint);
+  const stop = session.subscribe(paint);
+  const element = createListPage({
+    title: label('riwayatMutasi'),
+    kpis: [],
+    selection,
+    onCreate: () => {
       go(FORM_PATH);
-    }),
-    createListCard({
-      title: label('riwayatMutasi'),
-      content: el('div', { className: 'bo-mut-card__body' }, region, emptyBox),
-    }),
-  );
+    },
+    onEdit: open,
+    onDelete: () => {
+      refuseDelete(LIST_TEXT.ditolak);
+    },
+    refresh: createRefreshButton(LIST_TEXT.segarkan, paint),
+    filters: [dateSelect],
+    search: search.root,
+    table,
+  });
+  paint();
+  if (justSaved !== undefined) {
+    selection.select(justSaved);
+  }
   return { element, destroy: stop };
+}
+
+// Bukti transfer dari dokumen yang sudah tersimpan.
+function openSavedTransfer(session: BoSession, doc: TransferDoc): void {
+  openDocumentPreview({
+    modalTitle: MUT_TEXT.buktiTransfer,
+    heading: MUT_TEXT.buktiTransfer,
+    number: doc.number,
+    intro: mut('buktiPembuka', {
+      asal: warehouseName(doc.from),
+      tujuan: warehouseName(doc.to),
+      tanggal: formatDate(new Date(doc.at)),
+    }),
+    columns: [
+      { text: 'No' },
+      { text: label('kolomKode') },
+      { text: label('kolomNama') },
+      { text: label('jumlahMutasi'), end: true },
+      { text: label('kolomSatuan') },
+    ],
+    rows: doc.lines.map((line, index) => [
+      String(index + 1),
+      line.code,
+      line.name,
+      formatDecimal(line.quantity),
+      line.unit,
+    ]),
+    note:
+      doc.note.trim() === ''
+        ? MUT_TEXT.buktiTanpaKeterangan
+        : mut('buktiKeterangan', { teks: doc.note.trim() }),
+    signs: [
+      { role: MUT_TEXT.dibuatOleh, name: userName(session.store, doc.userId) },
+      { role: MUT_TEXT.disetujuiOleh, name: '' },
+      { role: MUT_TEXT.diterimaOleh, name: '' },
+    ],
+    onPrint: () => {
+      window.print();
+    },
+  });
 }
 
 function renderTransferForm(session: BoSession, go: (path: string) => void): ScreenHandle {

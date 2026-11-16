@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { Customer, DepositEntry } from '../../../shared/data/types';
 import { formatDate, formatRupiah } from '../../../shared/format';
@@ -9,24 +10,26 @@ import { depositHistory, holderCount, todayTotals, totalDeposit } from '../domai
 import { dateRangeFor, type DateRangeKind } from '../domain/transaction-list';
 import type { ScreenHandle } from './login';
 import { openDepositReceipt } from './deposit-print';
+import { showToast } from '../../../shared/ui/toast';
 import {
   createFilterSelect,
   createKpi,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  refuseDelete,
 } from './trx/list-page';
 
 export const DEPOSIT_PATH = '/bo/transaksi/deposit-pelanggan';
 
 const TEXT = {
   judul: 'Daftar Deposit Pelanggan',
-  buat: 'Buat Setoran Deposit',
   segarkan: 'Segarkan',
   tanggal: 'Tanggal',
   semua: 'Semua',
   jenis: 'Jenis',
-  cari: 'Cari No / Pelanggan...',
+  cari: 'Cari mutasi...',
   cariNama: 'Cari nomor bukti atau pelanggan',
   kolomTanggal: 'Tanggal',
   kolomNomor: 'No. Bukti',
@@ -35,7 +38,9 @@ const TEXT = {
   kolomMasuk: 'Masuk',
   kolomKeluar: 'Keluar',
   kolomSaldo: 'Saldo',
-  kosong: 'Belum ada mutasi deposit. Klik Buat Setoran Deposit untuk menyetor.',
+  kosong: 'Belum ada mutasi deposit. Klik Tambah untuk menyetor.',
+  ditolak: 'Mutasi deposit tidak dapat dihapus karena sudah mengubah saldo pelanggan.',
+  tanpaBukti: 'Saldo awal tidak punya bukti untuk dibuka.',
   tidakCocok: 'Tidak ada mutasi deposit yang sesuai filter.',
   daftar: 'Daftar mutasi deposit',
   setor: 'Setoran',
@@ -64,7 +69,7 @@ const DATE_OPTIONS: readonly { readonly value: DateRangeKind; readonly text: str
 ];
 
 // Daftar Deposit Pelanggan: semua mutasi (setoran, pemakaian, kredit retur) beserta saldo awal tiap
-// pelanggan, dengan tombol "Buat Setoran Deposit" yang membuka formulir pada tab yang sama.
+// pelanggan, dengan tombol Tambah (setoran deposit) yang membuka formulir pada tab yang sama.
 export function renderDepositListPage(
   session: BoSession,
   go: (path: string) => void,
@@ -89,6 +94,7 @@ export function renderDepositListPage(
     { value: 'retur', text: `${TEXT.jenis}: ${TEXT.retur}` },
   ]);
   const search = createSearchBox(TEXT.cariNama, TEXT.cari);
+  const selection = createRowSelection();
   const body = el('tbody', {});
   const table = el(
     'div',
@@ -150,7 +156,6 @@ export function renderDepositListPage(
     kpiOut.set(formatRupiah(day.outflow));
     const all = lines();
     const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
-    const text = search.input.value.trim().toLowerCase();
     const rows = all.filter((line) => {
       if (kindSelect.value !== 'semua' && line.entry?.kind !== kindSelect.value) {
         return false;
@@ -166,11 +171,9 @@ export function renderDepositListPage(
       } else if (range.startDate !== undefined) {
         return false;
       }
-      return (
-        text === '' ||
-        line.number.toLowerCase().includes(text) ||
-        line.customer.name.toLowerCase().includes(text) ||
-        line.customer.code.toLowerCase().includes(text)
+      return matchesPhrase(
+        `${line.number} ${line.customer.name} ${line.customer.code}`,
+        search.input.value,
       );
     });
     if (rows.length === 0) {
@@ -200,9 +203,9 @@ export function renderDepositListPage(
                   openDepositReceipt(session, entry);
                 },
               });
-        return el(
+        const tr = el(
           'tr',
-          { attrs: { 'data-key': line.key } },
+          {},
           el('td', {
             className: 'bo-nowrap',
             text: line.at === '' ? '-' : formatDate(new Date(line.at)),
@@ -227,8 +230,20 @@ export function renderDepositListPage(
           el('td', { className: 'is-end is-bold', text: formatRupiah(line.balance) }),
           el('td', { className: 'is-action' }, print),
         );
+        selection.attach(tr, line.key);
+        return tr;
       }),
     );
+  };
+
+  // Ubah membuka bukti mutasi terpilih; saldo awal tidak punya bukti.
+  const open = (key: string): void => {
+    const entry = lines().find((line) => line.key === key)?.entry;
+    if (entry === undefined) {
+      showToast({ kind: 'info', text: TEXT.tanpaBukti });
+      return;
+    }
+    openDepositReceipt(session, entry);
   };
 
   for (const control of [dateSelect, kindSelect]) {
@@ -237,11 +252,15 @@ export function renderDepositListPage(
   search.input.addEventListener('input', paint);
   const stop = store.subscribe(paint);
   const element = createListPage({
-    heading: el('h1', { className: 'bo-trx-listhead__heading', text: TEXT.judul }),
+    title: TEXT.judul,
     kpis: [kpiTotal, kpiHolders, kpiIn, kpiOut],
-    createText: TEXT.buat,
+    selection,
     onCreate: () => {
       go(`${DEPOSIT_PATH}?baru=1`);
+    },
+    onEdit: open,
+    onDelete: () => {
+      refuseDelete(TEXT.ditolak);
     },
     refresh: createRefreshButton(TEXT.segarkan, paint),
     filters: [dateSelect, kindSelect],

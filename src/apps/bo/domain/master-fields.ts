@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { formatDecimal, parseDecimal } from '../../../shared/format';
 import type { LabelKey, MessageValues, SystemMessageId } from '../../../shared/messages';
 import { isValidPhone, normalizePhone, parseDueDays } from '../../pos/domain/forms';
@@ -146,6 +147,5 @@ export function searchText(parts: readonly (string | undefined)[]): string {
 }
 
 export function matchesQuery(search: string, query: string): boolean {
-  const needle = cleanText(query).toLowerCase();
-  return needle === '' || search.includes(needle);
+  return matchesPhrase(search, cleanText(query));
 }

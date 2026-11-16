@@ -1,5 +1,6 @@
 import '../../../styles/bo-mutasi.css';
 import { el } from '../../../shared/dom';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import { formatDate } from '../../../shared/format';
 import type { BoSession } from '../bo-session';
@@ -10,11 +11,15 @@ import { renderOpnameForm } from './opname-form';
 import { formFor, OPNAME_FORM_PATH, warehouseName } from './opname-shared';
 import { userName } from './mutasi/parts';
 import { MUT_TEXT } from './mutasi/text';
+import { showToast } from '../../../shared/ui/toast';
 import {
+  confirmDelete,
   createFilterSelect,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  refuseDelete,
 } from './trx/list-page';
 
 const STATUS_TEXT: Readonly<Record<OpnameStatus, string>> = {
@@ -74,6 +79,7 @@ function renderOpnameList(session: BoSession, go: (path: string) => void): Scree
     })),
   ]);
   const search = createSearchBox(MUT_TEXT.cariOpnameNama, MUT_TEXT.cariOpname);
+  const selection = createRowSelection();
 
   const body = el('tbody', {});
   const table = el(
@@ -121,12 +127,9 @@ function renderOpnameList(session: BoSession, go: (path: string) => void): Scree
     if (statusSelect.value !== 'semua' && order.status !== statusSelect.value) {
       return false;
     }
-    const text = search.input.value.trim().toLowerCase();
-    if (text === '') {
-      return true;
-    }
-    return [order.pso, order.hso ?? '', userName(session.store, order.officerId), order.note].some(
-      (field) => field.toLowerCase().includes(text),
+    return matchesPhrase(
+      `${order.pso} ${order.hso ?? ''} ${userName(session.store, order.officerId)} ${order.note}`,
+      search.input.value,
     );
   };
 
@@ -147,8 +150,8 @@ function renderOpnameList(session: BoSession, go: (path: string) => void): Scree
       return;
     }
     body.replaceChildren(
-      ...rows.map((order) =>
-        el(
+      ...rows.map((order) => {
+        const tr = el(
           'tr',
           { attrs: { 'data-pso': order.pso } },
           el('td', { className: 'bo-nowrap', text: docDate(order) }),
@@ -187,9 +190,35 @@ function renderOpnameList(session: BoSession, go: (path: string) => void): Scree
             text: order.note,
             attrs: { title: order.note },
           }),
-        ),
-      ),
+        );
+        selection.attach(tr, order.pso);
+        return tr;
+      }),
     );
+  };
+
+  const orderOf = (pso: string): OpnameOrder | undefined =>
+    session.state().opnameOrders.find((order) => order.pso === pso);
+
+  // Perintah yang masih menunggu dibuka sebagai perintah, yang sudah berjalan atau selesai sebagai hasil.
+  const open = (pso: string): void => {
+    const order = orderOf(pso);
+    if (order !== undefined) {
+      go(formFor(pso, order.status === 'menunggu' ? 'perintah' : 'hasil'));
+    }
+  };
+
+  const remove = (pso: string): void => {
+    if (orderOf(pso)?.status !== 'menunggu') {
+      refuseDelete(MUT_TEXT.opnameDitolak);
+      return;
+    }
+    confirmDelete(pso, () => {
+      if (session.removeOpnameOrder(pso)) {
+        showToast({ kind: 'success', text: MUT_TEXT.opnameTerhapus.replace('{nomor}', pso) });
+        selection.clear();
+      }
+    });
   };
 
   for (const control of [dateSelect, warehouseSelect, statusSelect]) {
@@ -198,12 +227,14 @@ function renderOpnameList(session: BoSession, go: (path: string) => void): Scree
   search.input.addEventListener('input', paint);
   const stop = session.subscribe(paint);
   const element = createListPage({
-    heading: el('h1', { className: 'bo-trx-listhead__heading', text: MUT_TEXT.riwayatOpname }),
+    title: MUT_TEXT.riwayatOpname,
     kpis: [],
-    createText: MUT_TEXT.buatOpname,
+    selection,
     onCreate: () => {
       go(OPNAME_FORM_PATH);
     },
+    onEdit: open,
+    onDelete: remove,
     refresh: createRefreshButton(MUT_TEXT.segarkan, paint),
     filters: [dateSelect, warehouseSelect, statusSelect],
     search: search.root,

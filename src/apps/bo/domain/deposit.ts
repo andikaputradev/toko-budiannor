@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { Customer, DepositEntry } from '../../../shared/data/types';
 import { parseAmount, settleInvoices } from '../../../shared/domain/receivables';
@@ -50,18 +51,12 @@ export function depositRows(
   query: string,
   filter: DepositFilter,
 ): DepositRow[] {
-  const wanted = query.trim().toLowerCase();
   return customers
     .filter((customer) => {
       if (filter === 'bersaldo' && depositOf(customer) <= 0) {
         return false;
       }
-      return (
-        wanted === '' ||
-        customer.name.toLowerCase().includes(wanted) ||
-        customer.code.toLowerCase().includes(wanted) ||
-        customer.phone.includes(wanted)
-      );
+      return matchesPhrase(`${customer.name} ${customer.code} ${customer.phone}`, query);
     })
     .map((customer) => ({
       customer,

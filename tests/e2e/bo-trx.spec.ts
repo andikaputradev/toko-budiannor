@@ -51,14 +51,14 @@ test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masin
     for (const text of [
       'Jumlah Transaksi Hari Ini',
       'Total Transaksi Hari Ini',
-      'Total Belum Lunas',
-      'Total Jatuh Tempo',
+      'Total Faktur Belum Lunas',
+      'Total Faktur Jatuh Tempo',
     ]) {
       await expect(root.getByText(text, { exact: true })).toBeVisible();
     }
     await expect(root.locator('.bo-trx-kpi__value').first()).toHaveText(/^\d+$/);
     await expect(root.locator('.bo-trx-kpi__value').nth(1)).toHaveText(/^Rp /);
-    await expect(root.getByRole('button', { name: 'Buat Faktur Baru' })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Tambah', exact: true })).toBeVisible();
     await expect(root.getByRole('button', { name: 'Segarkan' })).toBeVisible();
     for (const name of ['Tanggal', 'Pelanggan', 'Status']) {
       await expect(root.getByLabel(name, { exact: true })).toBeVisible();
@@ -70,7 +70,7 @@ test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masin
     await loginBo(page);
     await openPage(page, '/bo/transaksi/faktur-penjualan');
     expect(await headers(page)).toEqual([
-      'No. Invoice',
+      'No. Faktur',
       'No. SO',
       'Tanggal',
       'Pelanggan',
@@ -87,7 +87,7 @@ test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masin
     ).toBeVisible();
     await expect(list(page).getByRole('button', { name: 'Faktur Penjualan' })).toHaveCount(0);
     expect(await headers(page)).toEqual([
-      'No. Invoice',
+      'No. Faktur',
       'No. PO',
       'Tanggal',
       'Pemasok',
@@ -110,11 +110,11 @@ test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masin
     await expect(link).toHaveAttribute('href', '#/bo/penjualan?no=FJ26101234');
     await expect(link.locator('xpath=ancestor::tr')).toContainText('26101234');
     await expect(link.locator('xpath=ancestor::tr')).toContainText('Barang Besok Diambil');
-    await list(page).getByRole('button', { name: 'Buat Faktur Baru' }).click();
+    await list(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/penjualan$/);
 
     await openPage(page, '/bo/transaksi/faktur-pembelian');
-    await list(page).getByRole('button', { name: 'Buat Faktur Baru' }).click();
+    await list(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/pembelian$/);
   });
 
@@ -557,7 +557,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await expect(
       root.getByRole('heading', { name: 'Daftar Pesanan Pembelian ( PO )' }),
     ).toBeVisible();
-    await expect(root.getByRole('button', { name: 'Buat PO Baru' })).toBeVisible();
+    await expect(root.getByRole('button', { name: 'Tambah', exact: true })).toBeVisible();
     await expect(root.getByRole('button', { name: 'Segarkan' })).toBeVisible();
     for (const name of ['Tanggal', 'Pemasok', 'Status']) {
       await expect(root.getByLabel(name, { exact: true })).toBeVisible();
@@ -590,7 +590,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
   }) => {
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian');
-    await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
+    await orderList(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian\/baru$/);
     const root = active(page);
     for (const name of [
@@ -634,7 +634,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await openPage(page, '/bo/transaksi/po-pembelian');
     await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(0);
 
-    await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
+    await orderList(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
     await addItem(page, 'semen', '2');
     await active(page).getByLabel('Keterangan').fill('Urgen Developer');
@@ -701,7 +701,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
       'Status',
       'Total',
     ]);
-    await root.getByRole('button', { name: 'Buat SO Baru' }).click();
+    await root.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/so-penjualan\/baru$/);
     for (const name of [
       'Tanggal',
@@ -767,9 +767,13 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
   test('Supervisor membuka daftar PO dan SO', async ({ page }) => {
     await loginBo(page, SUPERVISOR);
     await openPage(page, '/bo/transaksi/po-pembelian');
-    await expect(orderList(page).getByRole('button', { name: 'Buat PO Baru' })).toBeVisible();
+    await expect(
+      orderList(page).getByRole('button', { name: 'Tambah', exact: true }),
+    ).toBeVisible();
     await openPage(page, '/bo/transaksi/so-penjualan');
-    await expect(orderList(page).getByRole('button', { name: 'Buat SO Baru' })).toBeVisible();
+    await expect(
+      orderList(page).getByRole('button', { name: 'Tambah', exact: true }),
+    ).toBeVisible();
   });
 });
 

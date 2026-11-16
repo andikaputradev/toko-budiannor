@@ -1965,3 +1965,5 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2010: "Laba Rugi Kotor". Kunci menuLabaRugi.
 - TB-2011: "Price List". Kunci menuPricelist.
 - TB-2012: "Daftar Harga dan Katalog". Kunci menuDaftarHarga.
+- TB-2013: "{entitas} tidak dihapus agar riwayat transaksinya tetap utuh. Gunakan Nonaktifkan.". Kunci masterTidakDihapus.
+- TB-2014: "{entitas} yang tidak dipakai dihapus, tidak dinonaktifkan. Gunakan Hapus.". Kunci masterTidakDinonaktifkan.

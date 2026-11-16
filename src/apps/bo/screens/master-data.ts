@@ -24,7 +24,7 @@ import {
   type MasterKind,
   type MasterRow,
 } from '../domain/master-data';
-import { openExportPreview } from '../export-preview';
+import { requestCloseTab } from '../screen-active';
 import type { ScreenHandle } from './login';
 import {
   openBlockedDialog,
@@ -51,11 +51,7 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 /** Layar master serbaguna: bilah tombol, formulir di kiri, daftar di kanan (pola Data Barang). */
-export function renderMasterData(
-  session: BoSession,
-  go: (path: string) => void,
-  kind: MasterKind,
-): ScreenHandle {
+export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHandle {
   const config = MASTER_CONFIGS[kind];
   const store = session.store;
   const entity = label(config.entity);
@@ -129,20 +125,50 @@ export function renderMasterData(
     openImportDialog(config, sampleNames(kind), doImport);
   });
   const btnPrint = action(label('cetak'), 'printer', 'secondary', 'c', () => {
-    preview('pdf');
-  });
-  const btnExcel = action(label('masterEkspor'), 'file-down', 'secondary', undefined, () => {
-    preview('excel');
+    printList();
   });
   const btnExit = action(label('keluar'), 'log-out', 'secondary', 'k', () => {
-    go('/bo/dashboard');
+    requestCloseTab(container);
   });
+
+  // Gambar klien 31: Tambah, Ubah, Hapus, Nonaktifkan, Info, Impor, Cetak, Keluar pada semua halaman
+  // data. Tombol yang tidak berlaku bagi data ini tetap tampil tetapi tidak aktif: Kategori, Merk,
+  // Sales, dan Ekspedisi dihapus; Pemasok dan Pelanggan dinonaktifkan agar riwayat transaksinya utuh.
+  const unavailable = (text: string, iconName: IconName, reason: string): HTMLButtonElement => {
+    const button = createButton({ text, icon: iconName, variant: 'danger', disabled: true });
+    button.title = reason;
+    return button;
+  };
+  const removes = config.removeStyle === 'hapus';
+  const btnDelete = removes
+    ? btnRemove
+    : unavailable(label('hapus'), 'trash-2', label('masterTidakDihapus', { entitas: entity }));
+  const btnDeactivate = removes
+    ? unavailable(
+        label('masterNonaktifkan'),
+        'trash-2',
+        label('masterTidakDinonaktifkan', { entitas: entity }),
+      )
+    : btnRemove;
 
   const bar = el(
     'div',
-    { className: 'bo-master__bar', attrs: { role: 'toolbar', 'aria-label': label(config.menu) } },
-    el('div', { className: 'bo-master__group' }, btnAdd, btnEdit, btnRemove, btnInfo, btnImport),
-    el('div', { className: 'bo-master__group' }, btnPrint, btnExcel, btnExit),
+    {
+      className: 'bo-master__bar bo-actionbar',
+      attrs: { role: 'toolbar', 'aria-label': label(config.menu) },
+    },
+    el(
+      'div',
+      { className: 'bo-master__group' },
+      btnAdd,
+      btnEdit,
+      btnDelete,
+      btnDeactivate,
+      btnInfo,
+      btnImport,
+      btnPrint,
+      btnExit,
+    ),
   );
 
   // --- Ringkasan angka ---
@@ -550,20 +576,26 @@ export function renderMasterData(
     refreshAll();
   }
 
-  function preview(type: 'pdf' | 'excel'): void {
+  // Cetak membuka kotak pilihan Print, Ekspor Excel, dan Ekspor PDF atas data yang sedang tampil.
+  function printList(): void {
     const data = exportTable(shown());
-    openExportPreview({
-      kind: type,
-      title: label(config.menu),
-      columns: data.columns,
-      rows: data.rows,
+    void import('./mutasi/parts').then(({ openPrintChooser }) => {
+      openPrintChooser({
+        title: label(config.menu),
+        dateText: '',
+        fileName: label(config.menu)
+          .toLowerCase()
+          .replaceAll(/[^a-z0-9]+/g, '-'),
+        columns: data.columns,
+        rows: data.rows,
+      });
     });
     if (data.rows.length > 0) {
       ctx.log(
         'cetak',
         label('masterLogCetak', {
           entitas: entity,
-          format: label(type === 'pdf' ? 'pratinjauPdf' : 'pratinjauExcel'),
+          format: label('cetak'),
           jumlah: String(data.rows.length),
         }),
       );

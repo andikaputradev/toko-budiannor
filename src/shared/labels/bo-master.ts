@@ -3,6 +3,10 @@
 export const boMasterLabels = {
   // Tombol dan bilah
   masterTambah: 'Tambah',
+  masterTidakDihapus:
+    '{entitas} tidak dihapus agar riwayat transaksinya tetap utuh. Gunakan Nonaktifkan.',
+  masterTidakDinonaktifkan:
+    '{entitas} yang tidak dipakai dihapus, tidak dinonaktifkan. Gunakan Hapus.',
   masterUbah: 'Ubah',
   masterInfo: 'Info',
   masterImpor: 'Impor',

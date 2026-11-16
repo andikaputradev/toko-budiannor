@@ -1,27 +1,31 @@
 import { el } from '../../../shared/dom';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import { formatDecimal } from '../../../shared/format';
 import type { BoSession } from '../bo-session';
 import { savedExpeditionNotes } from '../domain/expedition';
 import { dateRangeFor, type DateRangeKind } from '../domain/transaction-list';
 import type { ScreenHandle } from './login';
+import { showToast } from '../../../shared/ui/toast';
 import {
+  confirmDelete,
   createFilterSelect,
   createKpi,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  logDeleted,
 } from './trx/list-page';
 
 export const EXPEDITION_PATH = '/bo/transaksi/surat-jalan';
 
 const TEXT = {
   judul: 'Daftar Surat Jalan Ekspedisi',
-  buat: 'Buat Surat Jalan',
   segarkan: 'Segarkan',
   jumlah: 'Jumlah Surat Jalan',
   tanggal: 'Tanggal',
-  cari: 'Cari No Surat Jalan / Faktur / Penerima...',
+  cari: 'Cari surat jalan...',
   cariNama: 'Cari nomor surat jalan, faktur, atau penerima',
   kolomNomor: 'No. Surat Jalan',
   kolomTanggal: 'Tanggal',
@@ -30,7 +34,8 @@ const TEXT = {
   kolomSopir: 'No. Polisi / Driver',
   kolomPenerima: 'Penerima & Alamat Kirim',
   kolomKoli: 'Koli',
-  kosong: 'Belum ada surat jalan. Klik Buat Surat Jalan atau isi dari Faktur Penjualan.',
+  kosong: 'Belum ada surat jalan. Klik Tambah atau isi dari Faktur Penjualan.',
+  terhapus: '{nomor} dihapus.',
   tidakCocok: 'Tidak ada surat jalan yang sesuai filter.',
   daftar: 'Daftar surat jalan',
 } as const;
@@ -42,7 +47,7 @@ const DATE_OPTIONS: readonly { readonly value: DateRangeKind; readonly text: str
   { value: 'bulan-ini', text: 'Bulan Ini' },
 ];
 
-// Daftar Surat Jalan Ekspedisi: dokumen yang sudah disimpan pada sesi ini, dengan tombol "+ Buat";
+// Daftar Surat Jalan Ekspedisi: dokumen yang sudah disimpan pada sesi ini, dengan tombol Tambah;
 // nomor membuka dokumennya pada tab yang sama (CATATAN klien 16 November: semua menu input berupa daftar).
 export function renderExpeditionListPage(
   session: BoSession,
@@ -58,6 +63,7 @@ export function renderExpeditionListPage(
     })),
   );
   const search = createSearchBox(TEXT.cariNama, TEXT.cari);
+  const selection = createRowSelection();
   const body = el('tbody', {});
   const table = el(
     'div',
@@ -92,15 +98,14 @@ export function renderExpeditionListPage(
       (a, b) => b.date.localeCompare(a.date) || b.noteNumber.localeCompare(a.noteNumber),
     );
     const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
-    const text = search.input.value.trim().toLowerCase();
     const rows = all.filter(
       (note) =>
         (range.startDate === undefined || note.date >= range.startDate) &&
         (range.endDate === undefined || note.date <= range.endDate) &&
-        (text === '' ||
-          [note.noteNumber, note.invoiceNumber, note.recipient].some((field) =>
-            field.toLowerCase().includes(text),
-          )),
+        matchesPhrase(
+          `${note.noteNumber} ${note.invoiceNumber} ${note.recipient} ${note.expeditionName}`,
+          search.input.value,
+        ),
     );
     kpi.set(String(rows.length));
     if (rows.length === 0) {
@@ -117,8 +122,8 @@ export function renderExpeditionListPage(
       return;
     }
     body.replaceChildren(
-      ...rows.map((note) =>
-        el(
+      ...rows.map((note) => {
+        const tr = el(
           'tr',
           { attrs: { 'data-number': note.noteNumber } },
           el(
@@ -140,20 +145,36 @@ export function renderExpeditionListPage(
             attrs: { title: note.recipient },
           }),
           el('td', { className: 'is-end is-bold', text: formatDecimal(note.lines.length) }),
-        ),
-      ),
+        );
+        selection.attach(tr, note.noteNumber);
+        return tr;
+      }),
     );
+  };
+
+  const remove = (number: string): void => {
+    confirmDelete(number, () => {
+      savedExpeditionNotes.delete(number);
+      logDeleted(session, `Surat Jalan ${number} dihapus`);
+      showToast({ kind: 'success', text: TEXT.terhapus.replace('{nomor}', number) });
+      selection.clear();
+      paint();
+    });
   };
 
   dateSelect.addEventListener('change', paint);
   search.input.addEventListener('input', paint);
   const element = createListPage({
-    heading: el('h1', { className: 'bo-trx-listhead__heading', text: TEXT.judul }),
+    title: TEXT.judul,
     kpis: [kpi],
-    createText: TEXT.buat,
+    selection,
     onCreate: () => {
       go(`${EXPEDITION_PATH}?baru=1`);
     },
+    onEdit: (number) => {
+      go(`${EXPEDITION_PATH}?no=${encodeURIComponent(number)}`);
+    },
+    onDelete: remove,
     refresh: createRefreshButton(TEXT.segarkan, paint),
     filters: [dateSelect],
     search: search.root,

@@ -234,6 +234,19 @@ describe('stok, mutasi, dan opname', () => {
     expect(session.state().opnameDraft.pso).toBe('PSO-0005');
   });
 
+  it('removeOpnameOrder hanya menghapus perintah yang masih menunggu eksekusi', () => {
+    const { session } = loggedIn('sinta.spv', 'Kunci2026B');
+    const states = session.state().opnameOrders.map((order) => [order.pso, order.status]);
+    expect(states).toContainEqual(['PSO-0004', 'menunggu']);
+    expect(session.removeOpnameOrder('PSO-0002')).toBe(false);
+    expect(session.removeOpnameOrder('PSO-0003')).toBe(false);
+    expect(session.removeOpnameOrder('PSO-9999')).toBe(false);
+    expect(session.state().opnameOrders).toHaveLength(4);
+    expect(session.removeOpnameOrder('PSO-0004')).toBe(true);
+    expect(session.state().opnameOrders.map((order) => order.pso)).not.toContain('PSO-0004');
+    expect(session.state().opnameOrders).toHaveLength(3);
+  });
+
   it('mengubah kepala perintah, menambah dan menghapus baris selama belum dihitung', () => {
     const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
     const [one, two] = store.getState().data.products;

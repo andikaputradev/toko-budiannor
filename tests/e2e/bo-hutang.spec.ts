@@ -78,11 +78,12 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
       page.getByRole('heading', { name: 'Daftar Pembayaran Piutang Penjualan' }),
     ).toBeVisible();
     await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-trx-table thead th')).toHaveText([
-      'Tanggal',
       'Nomor Pembayaran',
+      'Tanggal',
       'Pelanggan',
+      'Metode Bayar',
+      'Kas / Bank',
       'Total Bayar',
-      'Cara Bayar',
       'Keterangan',
       'User',
     ]);
@@ -105,7 +106,7 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
       .first()
       .textContent();
     await page.goto('/#/bo/hutang-piutang/bayar-piutang');
-    await page.getByRole('button', { name: 'Bayar Piutang', exact: true }).click();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/hutang-piutang\/bayar-piutang\?baru=1$/);
     await expect(page.getByRole('heading', { name: 'Isi Data Pembayaran Piutang' })).toBeVisible();
     await page.getByRole('button', { name: 'Simpan', exact: true }).click();
@@ -146,7 +147,7 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
     await expect(
       page.getByRole('heading', { name: 'Daftar Pembayaran Hutang Pembelian' }),
     ).toBeVisible();
-    await page.getByRole('button', { name: 'Bayar Hutang', exact: true }).click();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Isi Data Pembayaran Hutang' })).toBeVisible();
     await expect(page.getByLabel('Pemasok', { exact: true })).toBeVisible();
   });

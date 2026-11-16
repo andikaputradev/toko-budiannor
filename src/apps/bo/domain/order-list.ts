@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { AppState } from '../../../shared/store/store';
 
@@ -93,12 +94,7 @@ export function filterOrderRows(rows: readonly OrderRow[], filter: OrderFilter):
     if (filter.end !== undefined && row.date > filter.end) {
       return false;
     }
-    return (
-      text === '' ||
-      row.number.toLowerCase().includes(text) ||
-      row.partyName.toLowerCase().includes(text) ||
-      row.notes.toLowerCase().includes(text)
-    );
+    return matchesPhrase(`${row.number} ${row.partyName} ${row.notes}`, text);
   });
 }
 

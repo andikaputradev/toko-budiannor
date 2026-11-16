@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { ReturnNote } from '../../../shared/data/types';
 import { formatRupiah } from '../../../shared/format';
@@ -16,11 +17,12 @@ import {
   createKpi,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  refuseDelete,
 } from './trx/list-page';
 
 const TEXT = {
-  buat: 'Buat Retur Baru',
   segarkan: 'Segarkan',
   jumlah: 'Jumlah Retur',
   nilai: 'Total Nilai Retur',
@@ -28,8 +30,8 @@ const TEXT = {
   tanggal: 'Tanggal',
   status: 'Status',
   semua: 'Semua',
-  cariPenjualan: 'Cari No Retur / Faktur / Pelanggan...',
-  cariPembelian: 'Cari No Retur / Faktur / Pemasok...',
+  cariPenjualan: 'Cari retur...',
+  cariPembelian: 'Cari retur...',
   cariNama: 'Cari nomor retur, faktur, atau nama',
   kolomNomor: 'No. Retur',
   kolomTanggal: 'Tanggal',
@@ -39,7 +41,8 @@ const TEXT = {
   kolomNilai: 'Nilai Retur',
   kolomStatus: 'Status',
   kolomAlasan: 'Alasan',
-  kosong: 'Belum ada retur. Klik Buat Retur Baru untuk mencatat retur pertama.',
+  kosong: 'Belum ada retur. Klik Tambah untuk mencatat retur pertama.',
+  ditolak: 'Retur yang sudah tersimpan tidak dapat dihapus karena sudah mengubah stok dan saldo.',
   tidakCocok: 'Tidak ada retur yang sesuai filter.',
   daftar: 'Daftar retur',
   barang: '{jumlah} barang',
@@ -85,6 +88,7 @@ export function renderReturnListPage(
     { value: 'selesai', text: `${TEXT.status}: ${TEXT.selesai}` },
   ]);
   const search = createSearchBox(TEXT.cariNama, sale ? TEXT.cariPenjualan : TEXT.cariPembelian);
+  const selection = createRowSelection();
   const body = el('tbody', {});
   const table = el(
     'div',
@@ -129,12 +133,9 @@ export function renderReturnListPage(
     if (statusSelect.value !== 'semua' && note.status !== statusSelect.value) {
       return false;
     }
-    const text = search.input.value.trim().toLowerCase();
-    return (
-      text === '' ||
-      [note.number, note.sourceNumber, note.partyName].some((field) =>
-        field.toLowerCase().includes(text),
-      )
+    return matchesPhrase(
+      `${note.number} ${note.sourceNumber} ${note.partyName}`,
+      search.input.value,
     );
   };
 
@@ -187,7 +188,7 @@ export function renderReturnListPage(
                 },
               })
             : '';
-        return el(
+        const tr = el(
           'tr',
           { attrs: { 'data-number': note.number } },
           el('td', {}, open),
@@ -211,9 +212,14 @@ export function renderReturnListPage(
           el('td', { className: 'bo-trx-notes', text: note.reason, attrs: { title: note.reason } }),
           el('td', { className: 'is-action' }, confirm),
         );
+        selection.attach(tr, note.number);
+        return tr;
       }),
     );
   };
+
+  const noteOf = (number: string): ReturnNote | undefined =>
+    notesOfKind(store.getState().returnNotes, kind).find((note) => note.number === number);
 
   for (const control of [dateSelect, statusSelect]) {
     control.addEventListener('change', paint);
@@ -221,14 +227,20 @@ export function renderReturnListPage(
   search.input.addEventListener('input', paint);
   const stop = session.store.subscribe(paint);
   const element = createListPage({
-    heading: el('h1', {
-      className: 'bo-trx-listhead__heading',
-      text: label(sale ? 'boReturDaftarPenjualan' : 'boReturDaftarPembelian'),
-    }),
+    title: label(sale ? 'boReturDaftarPenjualan' : 'boReturDaftarPembelian'),
     kpis: [kpiCount, kpiValue, kpiWaiting],
-    createText: TEXT.buat,
+    selection,
     onCreate: () => {
       go(`${RETURN_PATH[kind]}?baru=1`);
+    },
+    onEdit: (number) => {
+      const note = noteOf(number);
+      if (note !== undefined) {
+        openReturnNote(session, note);
+      }
+    },
+    onDelete: () => {
+      refuseDelete(TEXT.ditolak);
     },
     refresh: createRefreshButton(TEXT.segarkan, paint),
     filters: [dateSelect, statusSelect],

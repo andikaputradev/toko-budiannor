@@ -27,7 +27,7 @@ test('daftar Surat Jalan kosong, Buat membuka formulir, Simpan menyimpan dan mem
     panel(page).getByRole('heading', { name: 'Daftar Surat Jalan Ekspedisi' }),
   ).toBeVisible();
   await expect(panel(page).locator('.bo-trx-table__empty')).toContainText('Belum ada surat jalan');
-  await panel(page).getByRole('button', { name: 'Buat Surat Jalan' }).click();
+  await panel(page).getByRole('button', { name: 'Tambah', exact: true }).click();
   await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?baru=1$/);
   await expect(page.locator('.bo-tab')).toHaveCount(2);
   await panel(page).getByRole('button', { name: 'Simpan Surat Jalan' }).click();

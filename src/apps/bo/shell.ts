@@ -199,7 +199,7 @@ export function createShell(session: BoSession, go: (path: string) => void): She
   });
 
   // Status lipat per grup menu. Lipatan memakai kelas supaya bisa dianimasikan.
-  const openGroups = new Set<string>(['dashboard']);
+  const openGroups = new Set<string>();
 
   const countFor = (entry: MenuEntry): number =>
     entry.path === MINIMUM_PATH ? countBelowMinimum(store.getState().data.products) : 0;

@@ -82,6 +82,26 @@ describe('buildPurchaseOrderRows', () => {
   });
 });
 
+describe('menghapus PO dan SO dari daftar', () => {
+  it('removePurchaseOrder membuang hanya PO bernomor itu dan daftar ikut berubah', () => {
+    const { store, po } = fixture();
+    store.addPurchaseOrder(po('PO-1', '2026-10-01T03:00:00.000Z', 'draf'));
+    store.addPurchaseOrder(po('PO-2', '2026-10-02T03:00:00.000Z', 'dipesan'));
+    store.removePurchaseOrder('PO-1');
+    expect(buildPurchaseOrderRows(store.getState()).map((row) => row.number)).toEqual(['PO-2']);
+    store.removePurchaseOrder('PO-TIDAK-ADA');
+    expect(store.getState().purchaseOrders).toHaveLength(1);
+  });
+
+  it('removeSalesOrder membuang hanya SO bernomor itu', () => {
+    const { store, so, customer } = fixture();
+    store.addSalesOrder(so('SO-1', '2026-10-01T03:00:00.000Z', customer.id));
+    store.addSalesOrder(so('SO-2', '2026-10-02T03:00:00.000Z', undefined));
+    store.removeSalesOrder('SO-1');
+    expect(store.getState().salesOrders.map((order) => order.number)).toEqual(['SO-2']);
+  });
+});
+
 describe('buildSalesOrderRows', () => {
   it('SO yang sudah diimpor ke faktur Selesai, selain itu On Proses', () => {
     const { store, so, customer } = fixture();
