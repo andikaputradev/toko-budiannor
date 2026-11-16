@@ -32,8 +32,6 @@ import '../../styles/bo-seragam.css';
 // setelah data berubah (lihat Freshness di workspace.ts).
 const VIEW_ONLY_ROUTES: ReadonlySet<string> = new Set([
   '/bo/transaksi/daftar-nota',
-  '/bo/laporan/penjualan',
-  '/bo/laporan/pembelian',
   '/bo/transaksi/po-pembelian',
   '/bo/transaksi/so-penjualan',
 ]);
@@ -199,20 +197,6 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
         renderOrderForm(session, go, 'po', query.get('no') ?? undefined);
     },
   },
-  '/bo/laporan/penjualan': {
-    id: 'BO-16',
-    load: async () => {
-      const { renderTransactionList } = await import('./screens/transaction-list');
-      return (session, go) => renderTransactionList(session, go, 'penjualan');
-    },
-  },
-  '/bo/laporan/pembelian': {
-    id: 'BO-16',
-    load: async () => {
-      const { renderTransactionList } = await import('./screens/transaction-list');
-      return (session, go) => renderTransactionList(session, go, 'pembelian');
-    },
-  },
   '/bo/hutang-piutang/saldo-hutang': {
     id: 'BO-11',
     load: async () => {
@@ -249,45 +233,12 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
         });
     },
   },
-  '/bo/laporan/hutang-piutang': {
-    id: 'BO-16',
-    load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go, query) =>
-        renderReceivablePayable(
-          session,
-          go,
-          query.get('tab') === 'pemasok' ? 'pemasok' : 'pelanggan',
-        );
-    },
-  },
   '/bo/akuntansi': {
     id: 'BO-18',
     load: async () => {
       const { renderAccountingScreen } = await import('./screens/accounting');
       return (session, go, query) =>
         renderAccountingScreen(session, go, accountingSection(query.get('bagian')));
-    },
-  },
-  '/bo/laporan/laba-rugi': {
-    id: 'BO-17',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'laba-rugi');
-    },
-  },
-  '/bo/laporan/arus-kas': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'arus-kas');
-    },
-  },
-  '/bo/laporan/neraca': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'neraca');
     },
   },
   '/bo/pengaturan/barcode': {
@@ -536,6 +487,10 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   if (active.state().user === undefined) {
     disposeWorkspace();
     navigate('/bo');
+    return;
+  }
+  if (ROUTES[path] === undefined && entryFor(path)?.dialog !== undefined) {
+    navigate('/bo/dashboard');
     return;
   }
   const legacy = LEGACY_PATHS[path];

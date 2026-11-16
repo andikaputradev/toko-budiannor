@@ -2,11 +2,17 @@ import type { Role } from '../../../shared/data/types';
 import type { IconName } from '../../../shared/icons';
 import type { LabelKey } from '../../../shared/messages';
 
+// Laporan yang dibuka sebagai kotak pilihan (gambar klien 29), bukan halaman.
+export type ReportKind =
+  'penjualan' | 'pembelian' | 'laba-rugi-kotor' | 'hutang-piutang' | 'stok' | 'harga';
+
 export interface MenuEntry {
   readonly path: string;
   readonly label: LabelKey;
   readonly group: string;
   readonly screenId: string;
+  // Bila ada, entri membuka kotak pilihan laporan ini dan tidak berpindah halaman.
+  readonly dialog?: ReportKind;
 }
 
 export interface MenuGroup {
@@ -225,31 +231,44 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         label: 'menuLabaRugi',
         group: 'laporan',
         screenId: 'BO-17',
+        dialog: 'laba-rugi-kotor',
       },
       {
         path: '/bo/laporan/penjualan',
         label: 'menuLaporanPenjualan',
         group: 'laporan',
         screenId: 'BO-16',
+        dialog: 'penjualan',
       },
       {
         path: '/bo/laporan/pembelian',
         label: 'menuLaporanPembelian',
         group: 'laporan',
         screenId: 'BO-16',
+        dialog: 'pembelian',
       },
       {
         path: '/bo/laporan/hutang-piutang',
         label: 'menuLaporanHutangPiutang',
         group: 'laporan',
         screenId: 'BO-16',
+        dialog: 'hutang-piutang',
       },
       {
         path: '/bo/laporan/stok',
         label: 'menuLaporanStok',
         group: 'laporan',
         screenId: 'BO-16',
+        dialog: 'stok',
       },
+      {
+        path: '/bo/laporan/daftar-harga',
+        label: 'menuDaftarHarga',
+        group: 'laporan',
+        screenId: 'BO-04',
+        dialog: 'harga',
+      },
+      // Halaman Satuan dan Harga (ubah harga) tetap ada seperti sebelumnya; kotak di atasnya khusus cetak.
       {
         path: '/bo/harga',
         label: 'menuPricelist',

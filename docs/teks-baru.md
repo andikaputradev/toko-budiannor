@@ -1962,3 +1962,6 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2007: "Jurnal terbentuk otomatis dari transaksi jual beli dan beban". Kunci jurnalSubJudul.
 - TB-2008: "Catatan beban usaha, jurnal otomatis ke Laba Rugi". Kunci bebanSubJudul.
 - TB-2009: "+ Input Beban Usaha". Kunci labelInputBebanOperasional.
+- TB-2010: "Laba Rugi Kotor". Kunci menuLabaRugi.
+- TB-2011: "Price List". Kunci menuPricelist.
+- TB-2012: "Daftar Harga dan Katalog". Kunci menuDaftarHarga.

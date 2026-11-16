@@ -1,0 +1,146 @@
+/* Kotak pilihan Laporan (revisi BO 7, gambar klien 29) dan pratinjaunya. Dimuat malas bersama dialog. */
+
+html[data-app='bo'] .modal.bo-rpt-modal {
+  width: min(620px, 100%);
+  min-width: min(520px, 100%);
+  padding: 18px 22px;
+}
+
+html[data-app='bo'] .bo-rpt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+html[data-app='bo'] .bo-rpt-radios,
+html[data-app='bo'] .bo-rpt-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+html[data-app='bo'] .bo-rpt-radio {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html[data-app='bo'] .bo-rpt-radio input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent-default);
+}
+
+html[data-app='bo'] .bo-rpt .field.bo-rpt-row {
+  --bo-label-w: 10.5rem;
+  display: grid;
+  grid-template-columns: var(--bo-label-w) minmax(0, 1fr);
+  gap: 0 10px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-rpt .field.bo-rpt-row .input {
+  height: 34px;
+  min-height: 34px;
+  font-size: 14px;
+}
+
+html[data-app='bo'] .bo-rpt-period {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-rpt-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent-default);
+}
+
+html[data-app='bo'] .bo-rpt-error {
+  min-height: 0;
+  margin: 0;
+  color: var(--color-status-danger-fg);
+  font-size: 13px;
+}
+
+html[data-app='bo'] .bo-rpt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+html[data-app='bo'] .bo-rpt-close {
+  margin-left: auto;
+}
+
+/* ===== Pratinjau laporan ===== */
+html[data-app='bo'] .modal.bo-rpt-preview-modal {
+  width: min(960px, 100%);
+}
+
+html[data-app='bo'] .bo-rpt-preview__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+html[data-app='bo'] .bo-rpt-preview__store {
+  margin: 0;
+  font-weight: 700;
+}
+
+html[data-app='bo'] .bo-rpt-preview__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+html[data-app='bo'] .bo-rpt-preview__param {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+html[data-app='bo'] .bo-rpt-preview__scroll {
+  max-height: min(50vh, 360px);
+  overflow: auto;
+  border: 1px solid var(--color-border-default);
+}
+
+html[data-app='bo'] .bo-rpt-table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-table-header);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-rpt-table tfoot th {
+  position: static;
+  border-top: 2px solid var(--color-border-default);
+}
+
+html[data-app='bo'] .bo-rpt-table .is-end {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-app='bo'] .bo-rpt-preview__note {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+html[data-app='bo'] .modal.bo-rpt-modal > .modal__actions {
+  display: none;
+}
