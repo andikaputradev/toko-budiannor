@@ -215,29 +215,37 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/bo/hutang-piutang/saldo-hutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pemasok');
+      const { renderDebtSaldo } = await import('./screens/debt/saldo');
+      return (session) => renderDebtSaldo(session, 'pemasok');
     },
   },
   '/bo/hutang-piutang/bayar-hutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pemasok');
+      const { renderDebtPayments } = await import('./screens/debt/payments');
+      return (session, go, query) =>
+        renderDebtPayments(session, go, 'pemasok', {
+          creating: query.get('baru') === '1',
+          number: query.get('no') ?? undefined,
+        });
     },
   },
   '/bo/hutang-piutang/saldo-piutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pelanggan');
+      const { renderDebtSaldo } = await import('./screens/debt/saldo');
+      return (session) => renderDebtSaldo(session, 'pelanggan');
     },
   },
   '/bo/hutang-piutang/bayar-piutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pelanggan');
+      const { renderDebtPayments } = await import('./screens/debt/payments');
+      return (session, go, query) =>
+        renderDebtPayments(session, go, 'pelanggan', {
+          creating: query.get('baru') === '1',
+          number: query.get('no') ?? undefined,
+        });
     },
   },
   '/bo/laporan/hutang-piutang': {

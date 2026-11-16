@@ -224,6 +224,7 @@ export function buildWhatsAppBillStatement(
   party: PartyBalance,
   invoices: readonly UnpaidInvoice[],
   storeName = 'Toko Budiannor',
+  type: PartyType = 'pelanggan',
 ): string {
   const invoiceRows = invoices
     .map(
@@ -231,8 +232,17 @@ export function buildWhatsAppBillStatement(
         `${idx + 1}. No: *${inv.invoiceNumber}* (${inv.date})\n   Tagihan: ${formatRupiah(inv.amount)} | Sisa: *${formatRupiah(inv.remaining)}*${inv.isOverdue ? ' (Jatuh Tempo)' : ''}`,
     )
     .join('\n');
+  const title = type === 'pelanggan' ? 'TAGIHAN PIUTANG' : 'KONFIRMASI HUTANG';
+  const footer =
+    type === 'pelanggan'
+      ? `*Pembayaran dapat ditransfer ke:*
+BCA: 018-889-2231 a/n Budiannor
+Mandiri: 131-00-1122334 a/n CV Budiannor
 
-  return `*TAGIHAN PIUTANG - ${storeName.toUpperCase()}*
+Mohon konfirmasi setelah melakukan pembayaran. Terima kasih atas kerjasamanya.`
+      : 'Mohon periksa daftar di atas dan konfirmasi bila ada selisih. Terima kasih atas kerjasamanya.';
+
+  return `*${title} - ${storeName.toUpperCase()}*
 ----------------------------------------
 Kepada Yth: *${party.name}*
 Alamat: ${party.address}
@@ -242,11 +252,7 @@ Telepon: ${party.phone}
 ${invoiceRows || '- Tidak ada tagihan terbuka -'}
 
 ----------------------------------------
-*TOTAL TAGIHAN: ${formatRupiah(party.totalBalance)}*
+*TOTAL ${type === 'pelanggan' ? 'TAGIHAN' : 'HUTANG'}: ${formatRupiah(party.totalBalance)}*
 ${party.overdueBalance > 0 ? `Termasuk Jatuh Tempo: *${formatRupiah(party.overdueBalance)}*\n` : ''}
-*Pembayaran dapat ditransfer ke:*
-BCA: 018-889-2231 a/n Budiannor
-Mandiri: 131-00-1122334 a/n CV Budiannor
-
-Mohon konfirmasi setelah melakukan pembayaran. Terima kasih atas kerjasamanya.`;
+${footer}`;
 }
