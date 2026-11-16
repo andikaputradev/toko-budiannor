@@ -421,7 +421,7 @@ export function renderSettingsScreen(
         'div',
         { className: 'bo-panel bo-stat-card' },
         el('span', { className: 'bo-stat-card__lbl', text: 'Backup Terakhir' }),
-        el('span', { className: 'bo-stat-card__val is-success', text: 'SUKSES' }),
+        el('span', { className: 'bo-stat-card__val is-success', text: 'Sukses' }),
         el('span', { className: 't-label', text: '18 Okt 2026 23:59:00 WITA' }),
       ),
     );

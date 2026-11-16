@@ -16,6 +16,7 @@ import { entryFor } from './domain/menu';
 import { renderDashboard } from './screens/dashboard';
 import { renderLogin, type ScreenHandle } from './screens/login';
 import { renderPlaceholder } from './screens/placeholder';
+import type { AccountingTab } from './screens/accounting';
 import { createShell, type Shell } from './shell';
 import { importedSoNumbers, resetSessionDrafts } from './domain/session-drafts';
 import { createWorkspace, type Workspace } from './workspace';
@@ -25,13 +26,13 @@ import '../../styles/bo-dashboard.css';
 import '../../styles/bo-dashboard-widgets.css';
 import '../../styles/bo-fit.css';
 import '../../styles/bo-rapi.css';
+import '../../styles/bo-seragam.css';
 
 // Layar tanpa isian pengguna dan tanpa langganan store: dibangun ulang saat tabnya dibuka kembali
 // setelah data berubah (lihat Freshness di workspace.ts).
 const VIEW_ONLY_ROUTES: ReadonlySet<string> = new Set([
-  '/bo/transaksi/daftar-nota',
-  '/bo/laporan/penjualan',
-  '/bo/laporan/pembelian',
+  '/bo/transaksi/faktur-penjualan',
+  '/bo/transaksi/faktur-pembelian',
   '/bo/transaksi/po-pembelian',
   '/bo/transaksi/so-penjualan',
 ]);
@@ -107,7 +108,7 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-07',
     load: async () => {
       const { renderOpname } = await import('./screens/opname');
-      return (session, go, query) => renderOpname(session, go, query.get('baru') === '1');
+      return (session, go, query) => renderOpname(session, go, query);
     },
   },
   '/bo/penjualan': {
@@ -129,42 +130,50 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/bo/transaksi/surat-jalan': {
     id: 'BO-12',
     load: async () => {
-      const { renderExpeditionForm } = await import('./screens/expedition-form');
+      const { renderExpeditionPage } = await import('./screens/expedition-page');
       return (session, go, query) =>
-        renderExpeditionForm(session, go, query.get('inv') ?? undefined);
+        renderExpeditionPage(session, go, {
+          invoice: query.get('inv') ?? undefined,
+          saved: query.get('no') ?? undefined,
+          creating: query.get('baru') === '1',
+        });
     },
   },
   '/bo/transaksi/retur-penjualan': {
     id: 'BO-10',
     load: async () => {
-      const { renderReturnForm } = await import('./screens/return-form');
-      return (session, go) => renderReturnForm(session, go, 'penjualan');
+      const { renderReturns } = await import('./screens/returns');
+      return (session, go, query) =>
+        renderReturns(session, go, 'penjualan', query.get('baru') === '1');
     },
   },
   '/bo/transaksi/retur-pembelian': {
     id: 'BO-10',
     load: async () => {
-      const { renderReturnForm } = await import('./screens/return-form');
-      return (session, go) => renderReturnForm(session, go, 'pembelian');
+      const { renderReturns } = await import('./screens/returns');
+      return (session, go, query) =>
+        renderReturns(session, go, 'pembelian', query.get('baru') === '1');
     },
   },
   '/bo/transaksi/deposit-pelanggan': {
     id: 'BO-11',
     load: async () => {
-      const { renderDeposit } = await import('./screens/deposit');
-      return (session) => renderDeposit(session);
+      const { renderDepositPage } = await import('./screens/deposit-page');
+      return (session, go, query) => renderDepositPage(session, go, query.get('baru') === '1');
     },
   },
-  '/bo/transaksi/daftar-nota': {
+  '/bo/transaksi/faktur-penjualan': {
     id: 'BO-09',
     load: async () => {
       const { renderTransactionList } = await import('./screens/transaction-list');
-      return (session, go, query) =>
-        renderTransactionList(
-          session,
-          go,
-          query.get('tab') === 'pembelian' ? 'pembelian' : 'penjualan',
-        );
+      return (session, go) => renderTransactionList(session, go, 'penjualan');
+    },
+  },
+  '/bo/transaksi/faktur-pembelian': {
+    id: 'BO-08',
+    load: async () => {
+      const { renderTransactionList } = await import('./screens/transaction-list');
+      return (session, go) => renderTransactionList(session, go, 'pembelian');
     },
   },
   '/bo/transaksi/so-penjualan': {
@@ -197,114 +206,48 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
         renderOrderForm(session, go, 'po', query.get('no') ?? undefined);
     },
   },
-  '/bo/laporan/penjualan': {
-    id: 'BO-16',
-    load: async () => {
-      const { renderTransactionList } = await import('./screens/transaction-list');
-      return (session, go) => renderTransactionList(session, go, 'penjualan');
-    },
-  },
-  '/bo/laporan/pembelian': {
-    id: 'BO-16',
-    load: async () => {
-      const { renderTransactionList } = await import('./screens/transaction-list');
-      return (session, go) => renderTransactionList(session, go, 'pembelian');
-    },
-  },
   '/bo/hutang-piutang/saldo-hutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pemasok');
+      const { renderDebtSaldo } = await import('./screens/debt/saldo');
+      return (session) => renderDebtSaldo(session, 'pemasok');
     },
   },
   '/bo/hutang-piutang/bayar-hutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pemasok');
+      const { renderDebtPayments } = await import('./screens/debt/payments');
+      return (session, go, query) =>
+        renderDebtPayments(session, go, 'pemasok', {
+          creating: query.get('baru') === '1',
+          number: query.get('no') ?? undefined,
+        });
     },
   },
   '/bo/hutang-piutang/saldo-piutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pelanggan');
+      const { renderDebtSaldo } = await import('./screens/debt/saldo');
+      return (session) => renderDebtSaldo(session, 'pelanggan');
     },
   },
   '/bo/hutang-piutang/bayar-piutang': {
     id: 'BO-11',
     load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
-      return (session, go) => renderReceivablePayable(session, go, 'pelanggan');
-    },
-  },
-  '/bo/laporan/hutang-piutang': {
-    id: 'BO-16',
-    load: async () => {
-      const { renderReceivablePayable } = await import('./screens/receivable-payable');
+      const { renderDebtPayments } = await import('./screens/debt/payments');
       return (session, go, query) =>
-        renderReceivablePayable(
-          session,
-          go,
-          query.get('tab') === 'pemasok' ? 'pemasok' : 'pelanggan',
-        );
+        renderDebtPayments(session, go, 'pelanggan', {
+          creating: query.get('baru') === '1',
+          number: query.get('no') ?? undefined,
+        });
     },
   },
-  '/bo/akuntansi/jurnal': {
+  '/bo/akuntansi': {
     id: 'BO-18',
     load: async () => {
       const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'jurnal');
-    },
-  },
-  '/bo/akuntansi/beban': {
-    id: 'BO-19',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'beban');
-    },
-  },
-  '/bo/akuntansi/arus-kas': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'arus-kas');
-    },
-  },
-  '/bo/akuntansi/laba-rugi': {
-    id: 'BO-17',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'laba-rugi');
-    },
-  },
-  '/bo/akuntansi/neraca': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'neraca');
-    },
-  },
-  '/bo/laporan/laba-rugi': {
-    id: 'BO-17',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'laba-rugi');
-    },
-  },
-  '/bo/laporan/arus-kas': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'arus-kas');
-    },
-  },
-  '/bo/laporan/neraca': {
-    id: 'BO-18',
-    load: async () => {
-      const { renderAccountingScreen } = await import('./screens/accounting');
-      return (session, go) => renderAccountingScreen(session, go, 'neraca');
+      return (session, go, query) =>
+        renderAccountingScreen(session, go, accountingSection(query.get('bagian')));
     },
   },
   '/bo/pengaturan/barcode': {
@@ -420,6 +363,22 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     },
   },
 };
+
+// Rute Akuntansi lama (satu tab per bagian) dialihkan ke satu halaman Akuntansi (gambar klien 24 sampai 28).
+const LEGACY_PATHS: Readonly<Record<string, string>> = {
+  '/bo/transaksi/daftar-nota': '/bo/transaksi/faktur-penjualan',
+  '/bo/akuntansi/jurnal': '/bo/akuntansi?bagian=jurnal',
+  '/bo/akuntansi/beban': '/bo/akuntansi?bagian=beban',
+  '/bo/akuntansi/arus-kas': '/bo/akuntansi?bagian=arus-kas',
+  '/bo/akuntansi/laba-rugi': '/bo/akuntansi?bagian=laba-rugi',
+  '/bo/akuntansi/neraca': '/bo/akuntansi?bagian=neraca',
+};
+
+function accountingSection(value: string | null): AccountingTab {
+  return value === 'beban' || value === 'arus-kas' || value === 'laba-rugi' || value === 'neraca'
+    ? value
+    : 'jurnal';
+}
 
 let session: BoSession | undefined;
 let loginScreen: ScreenHandle | undefined;
@@ -538,6 +497,15 @@ export function mount(root: HTMLElement, fullPath: string, context: AppContext):
   if (active.state().user === undefined) {
     disposeWorkspace();
     navigate('/bo');
+    return;
+  }
+  if (ROUTES[path] === undefined && entryFor(path)?.dialog !== undefined) {
+    navigate('/bo/dashboard');
+    return;
+  }
+  const legacy = LEGACY_PATHS[path];
+  if (legacy !== undefined) {
+    navigate(legacy);
     return;
   }
   if (ROUTES[path] === undefined && entryFor(path) === undefined) {

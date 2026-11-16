@@ -35,10 +35,10 @@ const TEXT = {
   pemasok: 'Pemasok',
   status: 'Status',
   semua: 'Semua',
-  judulJual: 'Daftar Nota Penjualan',
-  judulBeli: 'Daftar Nota Pembelian',
-  kosong: 'Tidak ada nota transaksi yang sesuai filter.',
-  daftar: 'Daftar nota transaksi',
+  judulJual: 'Daftar Faktur Penjualan',
+  judulBeli: 'Daftar Faktur Pembelian',
+  kosong: 'Tidak ada faktur transaksi yang sesuai filter.',
+  daftar: 'Daftar faktur transaksi',
   pembayaran: 'Pembayaran',
   user: 'User',
   keterangan: 'Keterangan',
@@ -80,22 +80,10 @@ export function renderTransactionList(
   const dataset = session.store.getState().data;
   const today = dataset.referenceDate.slice(0, 10);
   const allRows = buildTransactionRows(dataset);
-  let tab: TransactionType = initialTab;
+  // Penjualan dan Pembelian masing-masing punya halaman daftar sendiri (CATATAN klien 16 November).
+  const tab: TransactionType = initialTab;
 
   const heading = el('h1', { className: 'bo-trx-listhead__heading' });
-  const switcher = el('div', { className: 'bo-tab-switcher bo-trx-switch' });
-  const switchButton = (type: TransactionType, text: string): HTMLButtonElement => {
-    const button = el('button', { className: 'bo-tab-btn', text, attrs: { type: 'button' } });
-    button.addEventListener('click', () => {
-      tab = type;
-      rebuildPartyFilter();
-      paint();
-    });
-    return button;
-  };
-  const jualButton = switchButton('penjualan', label('tabFakturPenjualan'));
-  const beliButton = switchButton('pembelian', label('tabFakturPembelian'));
-  switcher.append(jualButton, beliButton);
 
   const kpiCount = createKpi(TEXT.jumlahHariIni);
   const kpiToday = createKpi(TEXT.totalHariIni);
@@ -145,10 +133,6 @@ export function renderTransactionList(
   function paint(): void {
     const buyer = tab === 'pembelian';
     heading.textContent = buyer ? TEXT.judulBeli : TEXT.judulJual;
-    jualButton.classList.toggle('is-active', !buyer);
-    beliButton.classList.toggle('is-active', buyer);
-    jualButton.setAttribute('aria-pressed', buyer ? 'false' : 'true');
-    beliButton.setAttribute('aria-pressed', buyer ? 'true' : 'false');
 
     const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
     const filtered = filterTransactions(allRows, {
@@ -227,7 +211,6 @@ export function renderTransactionList(
   rebuildPartyFilter();
   const root = createListPage({
     heading,
-    under: switcher,
     kpis: [kpiCount, kpiToday, kpiUnpaid, kpiDue],
     createText: TEXT.buatFaktur,
     onCreate: () => {

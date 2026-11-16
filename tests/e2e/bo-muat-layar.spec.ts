@@ -15,19 +15,38 @@ const SIZES = [
 
 const TOLERANCE = 1;
 
-// Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Nota Pembelian) ikut diukur.
+// Tampilan lain pada rute yang sama (formulir PO dan SO, Daftar Faktur Pembelian) ikut diukur.
 const EXTRA_ROUTES = [
-  '/bo/transaksi/daftar-nota?tab=pembelian',
+  '/bo/transaksi/faktur-pembelian',
   // Formulir menu Mutasi Stok (gambar klien 15, 17) dan formulir opname.
   '/bo/mutasi?baru=1',
   '/bo/mutasi/koreksi?baru=1',
   '/bo/opname?baru=1',
+  '/bo/transaksi/surat-jalan?baru=1',
+  '/bo/hutang-piutang/bayar-piutang?baru=1',
+  '/bo/hutang-piutang/bayar-hutang?baru=1',
+  '/bo/transaksi/retur-penjualan?baru=1',
+  '/bo/transaksi/retur-pembelian?baru=1',
+  '/bo/transaksi/deposit-pelanggan?baru=1',
+  '/bo/akuntansi?bagian=beban',
+  '/bo/akuntansi?bagian=arus-kas',
+  '/bo/akuntansi?bagian=laba-rugi',
+  '/bo/akuntansi?bagian=neraca',
 ];
 
 // Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.
 const MIN_LINES_HEIGHT = 150;
 // Daftar Mutasi Stok (Transfer, Koreksi, Opname) memakai kartu tabel yang sama: minimal 150 px.
 const MIN_MUT_HEIGHT = 150;
+
+// Entri menu Laporan membuka kotak pilihan, bukan halaman: tidak ikut disapu sebagai rute.
+const DIALOG_ONLY = new Set([
+  '/bo/laporan/laba-rugi',
+  '/bo/laporan/penjualan',
+  '/bo/laporan/pembelian',
+  '/bo/laporan/hutang-piutang',
+  '/bo/laporan/daftar-harga',
+]);
 
 function boRoutes(): string[] {
   const menu = readFileSync(new URL('../../src/apps/bo/domain/menu.ts', import.meta.url), 'utf8');
@@ -36,7 +55,9 @@ function boRoutes(): string[] {
     ...menu.matchAll(/path: '(\/bo\/[^']*)'/g),
     ...index.matchAll(/^ {2}'(\/bo\/[^']+)': \{/gm),
   ].map((match) => match[1] ?? '');
-  return [...new Set([...paths, ...EXTRA_ROUTES])].filter((path) => path !== '');
+  return [...new Set([...paths, ...EXTRA_ROUTES])].filter(
+    (path) => path !== '' && !DIALOG_ONLY.has(path),
+  );
 }
 
 async function loginBo(page: Page): Promise<void> {

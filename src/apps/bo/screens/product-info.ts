@@ -32,21 +32,21 @@ const TEXT = {
   tabMutasi: 'Mutasi',
   semuaGudang: 'Semua Gudang',
   toko: 'Toko',
-  gudangBesar: 'Gudang Besar',
-  tambah: 'TAMBAH',
-  kurang: 'KURANG',
+  gudangBesar: 'Gudang',
+  tambah: 'Tambah',
+  kurang: 'Kurang',
   satuanDasar: 'Jumlah dalam satuan dasar: {satuan}',
 } as const;
 
 const KIND_TEXT: Readonly<Record<MutationHistoryRow['kind'], string>> = {
-  'saldo-awal': 'SALDO AWAL',
-  pembelian: 'PEMBELIAN',
-  penjualan: 'PENJUALAN',
-  mutasi: 'TRANSFER',
-  koreksi: 'KOREKSI',
-  opname: 'OPNAME',
-  'retur-penjualan': 'RETUR PENJUALAN',
-  'retur-pembelian': 'RETUR PEMBELIAN',
+  'saldo-awal': 'Saldo Awal',
+  pembelian: 'Pembelian',
+  penjualan: 'Penjualan',
+  mutasi: 'Transfer',
+  koreksi: 'Koreksi',
+  opname: 'Opname',
+  'retur-penjualan': 'Retur Penjualan',
+  'retur-pembelian': 'Retur Pembelian',
 };
 
 type TabKey = 'pembelian' | 'penjualan' | 'koreksi' | 'mutasi';
@@ -201,12 +201,12 @@ export function openProductInfo(session: BoSession, product: Product): void {
 
   const paintPembelian = (): void => {
     const columns: Column[] = [
-      { text: 'TGL PEMBELIAN' },
-      { text: 'NO NOTA' },
-      { text: 'QTY' },
-      { text: 'SATUAN' },
-      ...(isOwner ? [{ text: 'HARGA', end: true }] : []),
-      { text: 'PEMASOK' },
+      { text: 'Tgl Pembelian' },
+      { text: 'No Faktur' },
+      { text: 'Qty' },
+      { text: 'Satuan' },
+      ...(isOwner ? [{ text: 'Harga', end: true }] : []),
+      { text: 'Pemasok' },
     ];
     const rows = filterByParty(history.pembelian, supplierInput.value).map((row) => [
       shortDate(row.at),
@@ -221,12 +221,12 @@ export function openProductInfo(session: BoSession, product: Product): void {
 
   const paintPenjualan = (): void => {
     const columns: Column[] = [
-      { text: 'TGL PENJUALAN' },
-      { text: 'NO NOTA' },
-      { text: 'QTY' },
-      { text: 'SATUAN' },
-      { text: 'HARGA', end: true },
-      { text: 'PELANGGAN' },
+      { text: 'Tgl Penjualan' },
+      { text: 'No Faktur' },
+      { text: 'Qty' },
+      { text: 'Satuan' },
+      { text: 'Harga', end: true },
+      { text: 'Pelanggan' },
     ];
     const rows = filterByParty(history.penjualan, customerInput.value).map((row) => [
       shortDate(row.at),
@@ -241,12 +241,12 @@ export function openProductInfo(session: BoSession, product: Product): void {
 
   const paintKoreksi = (): void => {
     const columns: Column[] = [
-      { text: 'TGL KOREKSI' },
-      { text: 'NO KOREKSI' },
-      { text: 'QTY AWAL' },
-      { text: 'AKSI' },
-      { text: 'QTY' },
-      { text: 'QTY AKHIR' },
+      { text: 'Tgl Koreksi' },
+      { text: 'No Koreksi' },
+      { text: 'Qty Awal' },
+      { text: 'Aksi' },
+      { text: 'Qty' },
+      { text: 'Qty Akhir' },
     ];
     const rows = history.koreksi.map((row) => [
       shortDate(row.at),
@@ -261,13 +261,13 @@ export function openProductInfo(session: BoSession, product: Product): void {
 
   const paintMutasi = (): void => {
     const columns: Column[] = [
-      { text: 'TANGGAL' },
-      { text: 'NOMOR' },
-      { text: 'TRANSAKSI' },
-      { text: 'NAMA' },
-      { text: 'MASUK' },
-      { text: 'KELUAR' },
-      { text: 'SALDO' },
+      { text: 'Tanggal' },
+      { text: 'Nomor' },
+      { text: 'Transaksi' },
+      { text: 'Nama' },
+      { text: 'Masuk' },
+      { text: 'Keluar' },
+      { text: 'Saldo' },
     ];
     const warehouse = warehouseSelect.value as WarehouseFilter;
     const result = buildMutationHistory({
@@ -435,7 +435,7 @@ export function openProductInfo(session: BoSession, product: Product): void {
 
   paint();
   select(0, false);
-  openModal({
+  const handle = openModal({
     title: TEXT.judul,
     body: el(
       'div',
@@ -448,4 +448,5 @@ export function openProductInfo(session: BoSession, product: Product): void {
     ),
     actions: [{ text: label('tutup'), variant: 'secondary' }],
   });
+  handle.dialog.classList.add('bo-info-modal');
 }

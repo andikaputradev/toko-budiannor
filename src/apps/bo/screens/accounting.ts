@@ -1,6 +1,7 @@
 import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
+import { canOpenScreen } from '../../../shared/permissions';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
@@ -11,14 +12,14 @@ import {
   getFilteredJournalEntries,
   calculateJournalTotal,
   calculateExpenseSummary,
+  EXPENSE_CATEGORIES,
   generateCashFlowStatement,
   generateProfitLossStatement,
   generateBalanceSheetStatement,
-  exportTableToCsv,
   type JournalRow,
   type OperatingExpenseItem,
 } from '../domain/accounting';
-import { openExportPreview } from '../export-preview';
+import { openPrintChooser } from './mutasi/parts';
 
 export type AccountingTab = 'jurnal' | 'beban' | 'arus-kas' | 'laba-rugi' | 'neraca';
 
@@ -30,6 +31,8 @@ export function renderAccountingScreen(
   let activeTab: AccountingTab = initialTab;
   let journalEntries: JournalRow[] = [...DEFAULT_JOURNAL_ENTRIES];
   let expenseItems: OperatingExpenseItem[] = [...DEFAULT_EXPENSE_ITEMS];
+  // Baris jurnal yang sedang tampil (sesudah filter), dipakai tombol Cetak.
+  let shownJournal: readonly JournalRow[] = journalEntries;
 
   // Root container
   const container = el('div', { className: 'bo-form-page' });
@@ -77,57 +80,59 @@ export function renderAccountingScreen(
 
     const titleBlock = el(
       'div',
-      {},
+      { className: 'bo-acc-head__title' },
       el('h1', { className: 'bo-page-title', text: titleText }),
       el('p', { className: 't-label bo-acc-sub', attrs: { title: subText }, text: subText }),
     );
 
-    // Tabs
+    // Lima tombol bagian (gambar klien 24 sampai 28): satu halaman, bagian berganti di tempat.
     const tabs: { key: AccountingTab; text: string }[] = [
-      { key: 'jurnal', text: 'Jurnal Otomatis' },
-      { key: 'beban', text: 'Beban Operasional' },
-      { key: 'arus-kas', text: 'Arus Kas' },
-      { key: 'laba-rugi', text: 'Laba Rugi' },
-      { key: 'neraca', text: 'Neraca' },
+      { key: 'jurnal', text: label('menuJurnalOtomatis') },
+      { key: 'beban', text: label('menuBebanUsaha') },
+      { key: 'arus-kas', text: label('menuArusKas') },
+      ...(canOpenScreen(session.store.getState().role, 'BO-17')
+        ? [{ key: 'laba-rugi' as const, text: label('menuLabaRugiAkuntansi') }]
+        : []),
+      { key: 'neraca', text: label('menuNeraca') },
     ];
 
-    const tabButtons = tabs.map((t) => {
-      const btn = el('button', {
-        className: `bo-tab-btn ${activeTab === t.key ? 'is-active' : ''}`,
-        attrs: { type: 'button' },
-        text: t.text,
+    const tabButtons = tabs.map((item) => {
+      const btn = createButton({
+        text: item.text,
+        variant: activeTab === item.key ? 'primary' : 'secondary',
+        onClick: () => {
+          activeTab = item.key;
+          renderView();
+        },
       });
-      btn.addEventListener('click', () => {
-        activeTab = t.key;
-        renderView();
-      });
+      btn.classList.add('bo-acc-switch__btn');
+      btn.setAttribute('aria-pressed', activeTab === item.key ? 'true' : 'false');
       return btn;
     });
 
-    const tabSwitcher = el('div', { className: 'bo-tab-switcher' }, ...tabButtons);
-
-    // Export Buttons
-    const btnPdf = createButton({
-      text: label('eksporPdf'),
+    // Jurnal punya tombol Cetak di baris filter, Beban Usaha tidak punya (gambar klien 24 dan 25).
+    const withPrint = activeTab !== 'jurnal' && activeTab !== 'beban';
+    const printButton = createButton({
+      text: label('cetak'),
       variant: 'secondary',
       icon: 'printer',
-      onClick: handleExportPdf,
+      onClick: handlePrint,
     });
-
-    const btnExcel = createButton({
-      text: label('eksporExcelXlsx'),
-      variant: 'primary',
-      icon: 'download',
-      onClick: handleExportExcel,
-    });
-
-    const rightActions = el('div', { className: 'bo-toolbar__right' }, btnPdf, btnExcel);
+    printButton.classList.add('bo-acc-switch__print');
 
     return el(
-      'div',
-      { className: 'bo-toolbar' },
-      el('div', { className: 'bo-toolbar__left bo-acc-toolbar-left' }, titleBlock, tabSwitcher),
-      rightActions,
+      'section',
+      { className: 'bo-acc-head' },
+      titleBlock,
+      el(
+        'div',
+        {
+          className: 'bo-acc-switch',
+          attrs: { role: 'group', 'aria-label': label('grupAkuntansi') },
+        },
+        ...tabButtons,
+        withPrint ? printButton : false,
+      ),
     );
   }
 
@@ -139,6 +144,13 @@ export function renderAccountingScreen(
     let statusFilter = 'semua';
     let warehouseFilter = 'semua';
     let searchQuery = '';
+    const printJournal = createButton({
+      text: label('cetak'),
+      variant: 'secondary',
+      icon: 'printer',
+      onClick: handlePrint,
+    });
+    printJournal.classList.add('bo-acc-filter__print');
 
     // Filter controls
     const searchInput = el('input', {
@@ -173,8 +185,8 @@ export function renderAccountingScreen(
     const warehouseSelect = el('select', { className: 'input is-select' });
     [
       { value: 'semua', text: label('labelSemuaGudang') },
-      { value: 'Display', text: 'Display (Toko)' },
-      { value: 'Gudang Besar', text: 'Gudang Besar' },
+      { value: 'Toko', text: 'Toko' },
+      { value: 'Gudang', text: 'Gudang' },
     ].forEach((o) => {
       warehouseSelect.appendChild(el('option', { text: o.text, attrs: { value: o.value } }));
     });
@@ -190,6 +202,7 @@ export function renderAccountingScreen(
         warehouse: warehouseFilter,
         searchQuery,
       });
+      shownJournal = rows;
 
       if (rows.length === 0) {
         tableTbody.appendChild(
@@ -269,6 +282,7 @@ export function renderAccountingScreen(
       el('div', { className: 'bo-acc-filter__source' }, sourceSelect),
       el('div', { className: 'bo-acc-filter__status' }, statusSelect),
       el('div', { className: 'bo-acc-filter__warehouse' }, warehouseSelect),
+      printJournal,
     );
 
     const journalTable = el(
@@ -326,7 +340,7 @@ export function renderAccountingScreen(
 
     const statsGrid = el(
       'div',
-      { className: 'bo-stats-grid bo-acc-stats' },
+      { className: 'bo-stats-grid bo-acc-stats bo-acc-stats--beban' },
       el(
         'div',
         { className: 'bo-panel bo-stat-card' },
@@ -337,29 +351,14 @@ export function renderAccountingScreen(
           text: `${summary.persenDariPenjualan}% dari penjualan`,
         }),
       ),
-      el(
-        'div',
-        { className: 'bo-panel bo-stat-card' },
-        el('span', { className: 'bo-stat-card__lbl', text: label('labelGajiDanKomisi') }),
-        el('span', { className: 'bo-stat-card__val', text: formatRupiah(summary.gajiKomisi) }),
-        el('span', { className: 't-label', text: `${summary.persenGaji}% dari total beban` }),
-      ),
-      el(
-        'div',
-        { className: 'bo-panel bo-stat-card' },
-        el('span', { className: 'bo-stat-card__lbl', text: label('labelSewaDanListrik') }),
-        el('span', { className: 'bo-stat-card__val', text: formatRupiah(summary.sewaListrik) }),
-        el('span', { className: 't-label', text: `${summary.persenSewa}% dari total beban` }),
-      ),
-      el(
-        'div',
-        { className: 'bo-panel bo-stat-card' },
-        el('span', { className: 'bo-stat-card__lbl', text: label('labelTransportasiLain') }),
-        el('span', {
-          className: 'bo-stat-card__val',
-          text: formatRupiah(summary.transportasiLain),
-        }),
-        el('span', { className: 't-label', text: 'Rp 6.250.000 + Rp 2.150.000' }),
+      ...summary.categories.map((item) =>
+        el(
+          'div',
+          { className: 'bo-panel bo-stat-card' },
+          el('span', { className: 'bo-stat-card__lbl', text: item.name }),
+          el('span', { className: 'bo-stat-card__val', text: formatRupiah(item.amount) }),
+          el('span', { className: 't-label', text: `${item.percent}% dari total beban` }),
+        ),
       ),
     );
 
@@ -370,12 +369,7 @@ export function renderAccountingScreen(
     });
 
     const categorySelect = el('select', { className: 'input is-select' });
-    [
-      { value: 'Gaji dan Komisi', text: 'Gaji dan Komisi' },
-      { value: 'Sewa dan Listrik', text: 'Sewa dan Listrik' },
-      { value: 'Transportasi', text: 'Transportasi' },
-      { value: 'Beban Lain-lain', text: 'Beban Lain-lain' },
-    ].forEach((c) => {
+    EXPENSE_CATEGORIES.map((name) => ({ value: name, text: name })).forEach((c) => {
       categorySelect.appendChild(el('option', { text: c.text, attrs: { value: c.value } }));
     });
 
@@ -388,6 +382,7 @@ export function renderAccountingScreen(
     [
       { value: 'Kas Toko', text: 'Kas Toko' },
       { value: 'Bank BCA', text: 'Bank BCA' },
+      { value: 'Bank Mandiri', text: 'Bank Mandiri' },
     ].forEach((f) => {
       sourceFundSelect.appendChild(el('option', { text: f.text, attrs: { value: f.value } }));
     });
@@ -686,7 +681,7 @@ export function renderAccountingScreen(
       'div',
       { className: 'bo-panel bo-acc-main-panel' },
       el('h3', { className: 'bo-form-sec-title', text: 'Laba Rugi Oktober 2026' }),
-      el('h4', { className: 'bo-sec-sub', text: 'PENDAPATAN' }),
+      el('h4', { className: 'bo-sec-sub', text: 'Pendapatan' }),
       el(
         'div',
         { className: 'bo-report-line' },
@@ -707,7 +702,7 @@ export function renderAccountingScreen(
           text: `${formatRupiah(pl.revenue.grossProfit)} (${pl.revenue.grossMarginPercent}%)`,
         }),
       ),
-      el('h4', { className: 'bo-sec-sub', text: 'BEBAN OPERASIONAL' }),
+      el('h4', { className: 'bo-sec-sub', text: 'Beban Usaha' }),
       ...pl.expenses.items.map((item) =>
         el(
           'div',
@@ -889,180 +884,119 @@ export function renderAccountingScreen(
     return viewContainer;
   }
 
-  // --- EXPORT HANDLERS ---
-  function handleExportExcel(): void {
+  // --- Cetak: satu kotak pilihan (Print, Ekspor Excel, Ekspor PDF) untuk bagian yang sedang tampil ---
+  function reportTable(): {
+    title: string;
+    fileName: string;
+    columns: string[];
+    rows: string[][];
+  } {
     if (activeTab === 'jurnal') {
-      const headers = [
-        'No Jurnal',
-        'Tanggal',
-        'Sumber / Keterangan',
-        'Akun Debit',
-        'Akun Kredit',
-        'Nominal',
-        'Status',
-      ];
-      const rows = journalEntries.map((r) => [
-        r.id,
-        r.date,
-        r.source,
-        r.debitAccount,
-        r.creditAccount,
-        r.amount,
-        r.status,
-      ]);
-      exportTableToCsv('Jurnal-Otomatis-Okt-2026', headers, rows);
-    } else if (activeTab === 'beban') {
-      const headers = [
-        'ID',
-        'Tanggal',
-        'Kategori',
-        'Keterangan',
-        'Nominal',
-        'Sumber Dana',
-        'Status',
-      ];
-      const rows = expenseItems.map((e) => [
-        e.id,
-        e.date,
-        e.category,
-        e.description,
-        e.amount,
-        e.paidFrom,
-        e.status,
-      ]);
-      exportTableToCsv('Beban-Operasional-Okt-2026', headers, rows);
-    } else if (activeTab === 'arus-kas') {
-      const cf = generateCashFlowStatement(expenseItems);
-      const headers = ['Aktivitas / Akun', 'Nominal (Rp)'];
-      const rows: (string | number)[][] = [
-        ['Kas Awal Periode', cf.initialCash],
-        ['Penerimaan dari pelanggan', 389_750_000],
-        ['Pembayaran ke supplier', -234_300_000],
-        ['Pembayaran beban operasional', -52_600_000],
-        ['Kas bersih dari operasi', cf.netOperatingCash],
-        ['Pembelian peralatan', -24_500_000],
-        ['Penarikan pemilik (prive)', -35_000_000],
-        ['Kenaikan Kas Bersih', cf.netCashChange],
-        ['Kas Akhir Periode', cf.endingCash],
-      ];
-      exportTableToCsv('Arus-Kas-Okt-2026', headers, rows);
-    } else if (activeTab === 'laba-rugi') {
-      const pl = generateProfitLossStatement(undefined, expenseItems);
-      const headers = ['Pos Laba Rugi', 'Nominal (Rp)'];
-      const rows: (string | number)[][] = [
-        ['Penjualan Bersih', pl.revenue.netSales],
-        ['HPP (Average)', -pl.revenue.cogs],
-        ['Laba Kotor', pl.revenue.grossProfit],
-        ...pl.expenses.items.map((it) => [it.category, -it.amount]),
-        ['Total Beban Operasional', -pl.expenses.totalExpense],
-        ['Laba Bersih', pl.netProfit],
-      ];
-      exportTableToCsv('Laba-Rugi-Okt-2026', headers, rows);
-    } else {
-      const bs = generateBalanceSheetStatement();
-      const headers = ['Pos Neraca', 'Nominal (Rp)'];
-      const rows: (string | number)[][] = [
-        ['Kas dan Bank', 238_400_000],
-        ['Piutang Usaha', 86_450_000],
-        ['Persediaan Barang', 1_284_500_000],
-        ['Total Aset Lancar', bs.totalCurrentAssets],
-        ['Peralatan dan Kendaraan', bs.totalFixedAssets],
-        ['TOTAL ASET', bs.totalAssets],
-        ['Utang Usaha', 64_200_000],
-        ['Utang Lain-lain', 12_150_000],
-        ['Total Kewajiban', bs.totalLiabilities],
-        ['Modal Pemilik', 1_400_000_000],
-        ['Laba Ditahan', 245_900_000],
-        ['Laba Bersih Okt 2026', 72_100_000],
-        ['Total Ekuitas', bs.totalEquity],
-        ['TOTAL KEWAJIBAN DAN EKUITAS', bs.totalLiabilitiesAndEquity],
-      ];
-      exportTableToCsv('Neraca-Okt-2026', headers, rows);
+      return {
+        title: 'Jurnal Otomatis',
+        fileName: 'Jurnal-Otomatis-Okt-2026',
+        columns: [
+          'No Jurnal',
+          'Tanggal',
+          'Sumber / Keterangan',
+          'Akun Debit',
+          'Akun Kredit',
+          'Nominal (Rp)',
+          'Status',
+        ],
+        rows: shownJournal.map((r) => [
+          r.id,
+          r.date,
+          `${r.source} ${r.warehouse ?? ''}`.trim(),
+          r.debitAccount,
+          r.creditAccount,
+          formatRupiah(r.amount),
+          r.status === 'terposting' ? label('labelTerposting') : label('labelPerluReview'),
+        ]),
+      };
     }
-
-    showToast({ kind: 'success', text: 'File Excel (.xlsx/CSV) berhasil diunduh.' });
+    if (activeTab === 'beban') {
+      return {
+        title: 'Beban Usaha',
+        fileName: 'Beban-Usaha-Okt-2026',
+        columns: ['Tanggal', 'Kategori', 'Keterangan', 'Sumber Dana', 'Nominal (Rp)'],
+        rows: expenseItems.map((e) => [
+          e.date,
+          e.category,
+          e.description,
+          e.paidFrom,
+          formatRupiah(e.amount),
+        ]),
+      };
+    }
+    if (activeTab === 'arus-kas') {
+      const cf = generateCashFlowStatement(expenseItems);
+      return {
+        title: 'Arus Kas (Metode Langsung)',
+        fileName: 'Arus-Kas-Okt-2026',
+        columns: ['Aktivitas Arus Kas', 'Nominal (Rp)'],
+        rows: [
+          ['Kas Awal Periode', formatRupiah(cf.initialCash)],
+          ['Penerimaan dari pelanggan', 'Rp 389.750.000'],
+          ['Pembayaran ke supplier', '-Rp 234.300.000'],
+          ['Pembayaran beban', '-Rp 52.600.000'],
+          ['Kas Bersih dari Operasi', formatRupiah(cf.netOperatingCash)],
+          ['Pembelian peralatan (Investasi)', '-Rp 24.500.000'],
+          ['Penarikan prive pemilik (Pendanaan)', '-Rp 35.000.000'],
+          ['Kenaikan Kas Bersih', formatRupiah(cf.netCashChange)],
+          ['Kas Akhir Periode', formatRupiah(cf.endingCash)],
+        ],
+      };
+    }
+    if (activeTab === 'laba-rugi') {
+      const pl = generateProfitLossStatement(undefined, expenseItems);
+      return {
+        title: 'Laporan Laba Rugi',
+        fileName: 'Laba-Rugi-Okt-2026',
+        columns: ['Pos Laba Rugi', 'Nominal (Rp)'],
+        rows: [
+          ['Penjualan Bersih', formatRupiah(pl.revenue.netSales)],
+          ['HPP (metode Average)', `(${formatRupiah(pl.revenue.cogs)})`],
+          ['Laba Kotor', formatRupiah(pl.revenue.grossProfit)],
+          ...pl.expenses.items.map((it) => [
+            `Beban: ${it.category}`,
+            `(${formatRupiah(it.amount)})`,
+          ]),
+          ['Total Beban Operasional', `(${formatRupiah(pl.expenses.totalExpense)})`],
+          ['Laba Bersih', formatRupiah(pl.netProfit)],
+        ],
+      };
+    }
+    const bs = generateBalanceSheetStatement();
+    return {
+      title: 'Neraca',
+      fileName: 'Neraca-Okt-2026',
+      columns: ['Pos Neraca', 'Nominal (Rp)'],
+      rows: [
+        ...bs.currentAssets.map((item) => [item.label, formatRupiah(item.amount)]),
+        ['Total Aset Lancar', formatRupiah(bs.totalCurrentAssets)],
+        ...bs.fixedAssets.map((item) => [item.label, formatRupiah(item.amount)]),
+        ['Total Aset', formatRupiah(bs.totalAssets)],
+        ...bs.liabilities.map((item) => [item.label, formatRupiah(item.amount)]),
+        ['Total Kewajiban', formatRupiah(bs.totalLiabilities)],
+        ...bs.equity.map((item) => [item.label, formatRupiah(item.amount)]),
+        ['Total Kewajiban dan Ekuitas', formatRupiah(bs.totalLiabilitiesAndEquity)],
+      ],
+    };
   }
 
-  function handleExportPdf(): void {
-    let reportTitle = 'JURNAL OTOMATIS';
-    let columns: string[] = [];
-    let rows: (string | number)[][] = [];
-
-    if (activeTab === 'jurnal') {
-      reportTitle = 'JURNAL OTOMATIS TRANSAKSI';
-      columns = ['No Jurnal', 'Tanggal', 'Sumber / Keterangan', 'Debit', 'Kredit', 'Nominal'];
-      rows = journalEntries.map((j) => [
-        j.id,
-        j.date,
-        j.source,
-        j.debitAccount,
-        j.creditAccount,
-        formatRupiah(j.amount),
-      ]);
-    } else if (activeTab === 'beban') {
-      reportTitle = 'LAPORAN BEBAN OPERASIONAL';
-      columns = ['Tanggal', 'Kategori', 'Keterangan', 'Sumber Dana', 'Nominal'];
-      rows = expenseItems.map((e) => [
-        e.date,
-        e.category,
-        e.description,
-        e.paidFrom,
-        formatRupiah(e.amount),
-      ]);
-    } else if (activeTab === 'arus-kas') {
-      reportTitle = 'LAPORAN ARUS KAS (METODE LANGSUNG)';
-      const cf = generateCashFlowStatement(expenseItems);
-      columns = ['Aktivitas Arus Kas', 'Nominal'];
-      rows = [
-        ['Kas Awal Periode', formatRupiah(cf.initialCash)],
-        ['Penerimaan dari pelanggan', 'Rp 389.750.000'],
-        ['Pembayaran ke supplier', '-Rp 234.300.000'],
-        ['Pembayaran beban operasional', '-Rp 52.600.000'],
-        ['Kas Bersih dari Operasi', formatRupiah(cf.netOperatingCash)],
-        ['Pembelian peralatan (Investasi)', '-Rp 24.500.000'],
-        ['Penarikan prive pemilik (Pendanaan)', '-Rp 35.000.000'],
-        ['Kenaikan Kas Bersih', formatRupiah(cf.netCashChange)],
-        ['Kas Akhir Periode', formatRupiah(cf.endingCash)],
-      ];
-    } else if (activeTab === 'laba-rugi') {
-      reportTitle = 'LAPORAN LABA RUGI';
-      const pl = generateProfitLossStatement(undefined, expenseItems);
-      columns = ['Pos Laba Rugi', 'Nominal'];
-      rows = [
-        ['Penjualan Bersih', formatRupiah(pl.revenue.netSales)],
-        ['HPP (metode Average)', `(${formatRupiah(pl.revenue.cogs)})`],
-        ['Laba Kotor (30,2%)', formatRupiah(pl.revenue.grossProfit)],
-        ...pl.expenses.items.map((it) => [`Beban: ${it.category}`, `(${formatRupiah(it.amount)})`]),
-        ['Total Beban Operasional', `(${formatRupiah(pl.expenses.totalExpense)})`],
-        ['Laba Bersih (17,5%)', formatRupiah(pl.netProfit)],
-      ];
-    } else {
-      reportTitle = 'LAPORAN NERACA KEUANGAN';
-      const bs = generateBalanceSheetStatement();
-      columns = ['Pos Neraca Keuangan', 'Nominal'];
-      rows = [
-        ['Kas dan Bank', formatRupiah(238_400_000)],
-        ['Piutang Usaha', formatRupiah(86_450_000)],
-        ['Persediaan Barang', formatRupiah(1_284_500_000)],
-        ['Total Aset Lancar', formatRupiah(bs.totalCurrentAssets)],
-        ['Peralatan dan Kendaraan', formatRupiah(bs.totalFixedAssets)],
-        ['TOTAL ASET', formatRupiah(bs.totalAssets)],
-        ['Utang Usaha', formatRupiah(64_200_000)],
-        ['Utang Lain-lain', formatRupiah(12_150_000)],
-        ['Total Kewajiban', formatRupiah(bs.totalLiabilities)],
-        ['Modal Pemilik', formatRupiah(1_400_000_000)],
-        ['Laba Ditahan', formatRupiah(245_900_000)],
-        ['Laba Bersih Okt 2026', formatRupiah(72_100_000)],
-        ['Total Ekuitas', formatRupiah(bs.totalEquity)],
-        ['TOTAL KEWAJIBAN DAN EKUITAS', formatRupiah(bs.totalLiabilitiesAndEquity)],
-      ];
+  function handlePrint(): void {
+    const report = reportTable();
+    if (report.rows.length === 0) {
+      showToast({ kind: 'info', text: 'Tidak ada data untuk dicetak.' });
+      return;
     }
-
-    openExportPreview({
-      kind: 'pdf',
-      title: reportTitle,
-      columns,
-      rows: rows.map((r) => r.map((c) => String(c))),
+    openPrintChooser({
+      title: report.title,
+      dateText: 'Periode Oktober 2026',
+      fileName: report.fileName,
+      columns: report.columns,
+      rows: report.rows,
     });
   }
 

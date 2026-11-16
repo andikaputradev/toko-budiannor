@@ -38,16 +38,16 @@ async function pageOverflow(page: Page): Promise<number> {
   });
 }
 
-test.describe('T2 Daftar Nota (gambar 8)', () => {
+test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masing satu halaman', () => {
   const list = (page: Page): Locator => active(page).locator('.bo-trx-list');
   const headers = (page: Page): Promise<string[]> =>
     list(page).locator('thead th').allTextContents();
 
   test('kartu judul, empat kotak angka, tombol, filter, dan pencarian', async ({ page }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     const root = list(page);
-    await expect(root.getByRole('heading', { name: 'Daftar Nota Penjualan' })).toBeVisible();
+    await expect(root.getByRole('heading', { name: 'Daftar Faktur Penjualan' })).toBeVisible();
     for (const text of [
       'Jumlah Transaksi Hari Ini',
       'Total Transaksi Hari Ini',
@@ -68,7 +68,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
 
   test('kolom Penjualan lalu Pembelian, tanpa kolom Aksi', async ({ page }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     expect(await headers(page)).toEqual([
       'No. Invoice',
       'No. SO',
@@ -76,13 +76,16 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
       'Pelanggan',
       'Pembayaran',
       'Status',
-      'Umur Nota',
+      'Umur Faktur',
       'Total',
       'User',
       'Keterangan',
     ]);
-    await list(page).getByRole('button', { name: 'Faktur Pembelian' }).click();
-    await expect(list(page).getByRole('heading', { name: 'Daftar Nota Pembelian' })).toBeVisible();
+    await openPage(page, '/bo/transaksi/faktur-pembelian');
+    await expect(
+      list(page).getByRole('heading', { name: 'Daftar Faktur Pembelian' }),
+    ).toBeVisible();
+    await expect(list(page).getByRole('button', { name: 'Faktur Penjualan' })).toHaveCount(0);
     expect(await headers(page)).toEqual([
       'No. Invoice',
       'No. PO',
@@ -90,7 +93,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
       'Pemasok',
       'Pembayaran',
       'Status',
-      'Umur Nota',
+      'Umur Faktur',
       'Total',
       'User',
       'Keterangan',
@@ -102,7 +105,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
     page,
   }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     const link = list(page).getByRole('link', { name: 'FJ26101234', exact: true });
     await expect(link).toHaveAttribute('href', '#/bo/penjualan?no=FJ26101234');
     await expect(link.locator('xpath=ancestor::tr')).toContainText('26101234');
@@ -110,7 +113,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
     await list(page).getByRole('button', { name: 'Buat Faktur Baru' }).click();
     await expect(page).toHaveURL(/#\/bo\/penjualan$/);
 
-    await openPage(page, '/bo/transaksi/daftar-nota?tab=pembelian');
+    await openPage(page, '/bo/transaksi/faktur-pembelian');
     await list(page).getByRole('button', { name: 'Buat Faktur Baru' }).click();
     await expect(page).toHaveURL(/#\/bo\/pembelian$/);
   });
@@ -119,7 +122,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
     page,
   }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     const rows = list(page).locator('tbody tr');
     await expect(rows.first()).toBeVisible();
 
@@ -143,7 +146,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
       .getByRole('searchbox', { name: /Cari No/ })
       .fill('zzzz-tidak-ada');
     await expect(list(page).locator('.bo-trx-table__empty')).toHaveText(
-      'Tidak ada nota transaksi yang sesuai filter.',
+      'Tidak ada faktur transaksi yang sesuai filter.',
     );
     await list(page)
       .getByRole('searchbox', { name: /Cari No/ })
@@ -156,7 +159,7 @@ test.describe('T2 Daftar Nota (gambar 8)', () => {
   }) => {
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     await expect(list(page).locator('tbody tr').first()).toBeVisible();
     expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
     const height = await list(page)
@@ -568,7 +571,18 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
       'Status',
       'Total',
     ]);
-    await expect(root.locator('.bo-trx-table__empty')).toHaveText('Belum ada pesanan.');
+    // Baris contoh gambar klien 10 (bukan dokumen toko, nomor tidak berupa tautan).
+    await expect(root.locator('tbody tr')).toHaveCount(6);
+    await expect(root.locator('tbody tr').first().locator('td').nth(0)).toHaveText('PO26101234');
+    await expect(root.locator('a.bo-trx-link')).toHaveCount(0);
+    await expect(root.locator('.bo-trx-status')).toHaveText([
+      'On Proses',
+      'On Proses',
+      'Partial',
+      'Partial',
+      'Selesai',
+      'Selesai',
+    ]);
   });
 
   test('Buat PO Baru membuka formulir berlabel gambar 11 dengan tombol Simpan dan Cetak', async ({
@@ -618,7 +632,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
 
     // Penolakan tidak menambah PO.
     await openPage(page, '/bo/transaksi/po-pembelian');
-    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(0);
 
     await orderList(page).getByRole('button', { name: 'Buat PO Baru' }).click();
     await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
@@ -643,15 +657,16 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await addItem(page, 'semen', '1');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
-    await expect(orderList(page).locator('tbody tr[data-number]')).toHaveCount(1);
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(1);
     await orderList(page)
       .getByLabel('Status', { exact: true })
       .selectOption({ label: 'Status: Selesai' });
-    await expect(orderList(page).locator('.bo-trx-table__empty')).toBeVisible();
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(0);
+    await expect(orderList(page).locator('tbody tr')).toHaveCount(2);
     await orderList(page)
       .getByLabel('Status', { exact: true })
       .selectOption({ label: 'Status: On Proses' });
-    await expect(orderList(page).locator('tbody tr[data-number]')).toHaveCount(1);
+    await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(1);
     await orderList(page)
       .getByRole('searchbox', { name: /Cari No PO/ })
       .fill('zzzz-tidak-ada');
@@ -870,7 +885,7 @@ test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
 
   test('dibuka langsung tanpa faktur menampilkan contoh gambar 13', async ({ page }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/surat-jalan');
+    await openPage(page, '/bo/transaksi/surat-jalan?baru=1');
     await expect(sjRows(page)).toHaveCount(3);
     await expect(active(page).getByLabel('Penerima & Alamat Kirim')).not.toHaveValue('');
   });
@@ -878,7 +893,7 @@ test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
   test('muat satu layar di 1280x640 dengan banyak baris', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/surat-jalan');
+    await openPage(page, '/bo/transaksi/surat-jalan?baru=1');
     const lines = active(page).locator('.bo-trx__lines');
     expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
     for (let index = 0; index < 12; index += 1) {
@@ -929,7 +944,7 @@ test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () 
   }) => {
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/surat-jalan');
+    await openPage(page, '/bo/transaksi/surat-jalan?baru=1');
     const root = active(page);
     const long = 'BARANG CAMPURAN '.repeat(20);
     await root.getByLabel('Jumlah', { exact: true }).fill('1');
@@ -982,7 +997,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     page,
   }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     const link = orderList(page).getByRole('link', { name: 'T-000131', exact: true });
     await expect(link).toHaveAttribute('href', '#/bo/penjualan?no=T-000131');
     await link.click();
@@ -997,7 +1012,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     page,
   }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     await orderList(page).getByRole('link', { name: 'FJ26101234', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/penjualan\?no=FJ26101234$/);
     await expect(active(page).getByLabel('No. Invoice')).toHaveValue('FJ26101234');
@@ -1007,7 +1022,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
 
   test('nomor pembelian membuka Faktur Pembelian dengan pemasok dan PO asal', async ({ page }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota?tab=pembelian');
+    await openPage(page, '/bo/transaksi/faktur-pembelian');
     await orderList(page).getByRole('link', { name: 'FB26101234', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/pembelian\?no=FB26101234$/);
     await expect(active(page).getByLabel('No. Invoice')).toHaveValue('FB26101234');

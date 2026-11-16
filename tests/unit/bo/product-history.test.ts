@@ -284,7 +284,7 @@ describe('buildMutationHistory', () => {
       suppliers: state.data.suppliers,
       purchaseOrders: state.purchaseOrders,
       transfers: [],
-      opname: undefined,
+      opnames: [],
       corrections,
       extra: [],
     };
@@ -303,7 +303,7 @@ describe('buildMutationHistory', () => {
       warehouse: 'semua',
     });
     expect(result.rows).toHaveLength(1);
-    expect(result.rows[0]).toMatchObject({ kind: 'saldo-awal', name: 'SALDO AWAL' });
+    expect(result.rows[0]).toMatchObject({ kind: 'saldo-awal', name: 'Saldo Awal' });
     expect(result.rows[0]?.balance).toBe(stockIn(product, 'semua'));
     expect(result.opening).toBe(stockIn(product, 'semua'));
   });
@@ -326,7 +326,7 @@ describe('buildMutationHistory', () => {
     expect(result.rows[0]?.balance).toBe(target.stock.display + 6);
     expect(result.rows.at(-1)?.balance).toBe(target.stock.display);
     expect(result.rows[2]).toMatchObject({ outQty: 2, inQty: 0 });
-    expect(result.rows[1]).toMatchObject({ name: 'KOREKSI', outQty: 3 });
+    expect(result.rows[1]).toMatchObject({ name: 'Koreksi', outQty: 3 });
   });
 
   it('gudang besar hanya memuat gerak gudang besar (pembelian dengan nama pemasok)', () => {

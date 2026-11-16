@@ -81,7 +81,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Penjualan',
     amount: 14_250_000,
     status: 'terposting',
-    warehouse: 'Display (Toko)',
+    warehouse: 'Toko',
   },
   {
     id: 'JU-2610-0317',
@@ -91,7 +91,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Penjualan',
     amount: 4_200_000,
     status: 'terposting',
-    warehouse: 'Gudang Besar',
+    warehouse: 'Gudang',
   },
   {
     id: 'JU-2610-0316',
@@ -101,7 +101,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Persediaan',
     amount: 12_880_000,
     status: 'terposting',
-    warehouse: 'Display (Toko)',
+    warehouse: 'Toko',
   },
   {
     id: 'JU-2610-0315',
@@ -120,7 +120,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Utang Usaha',
     amount: 45_018_548,
     status: 'terposting',
-    warehouse: 'Gudang Besar',
+    warehouse: 'Gudang',
   },
   {
     id: 'JU-2610-0313',
@@ -148,7 +148,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     creditAccount: 'Kas',
     amount: 475_000,
     status: 'review',
-    warehouse: 'Display (Toko)',
+    warehouse: 'Toko',
   },
 ];
 
@@ -165,7 +165,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-02',
     date: '2026-10-18',
-    category: 'Sewa dan Listrik',
+    category: 'Listrik dan Internet',
     description: 'Listrik toko dan gudang Okt',
     amount: 3_200_000,
     paidFrom: 'Bank BCA',
@@ -174,7 +174,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-03',
     date: '2026-10-17',
-    category: 'Transportasi',
+    category: 'Transportasi Angkutan',
     description: 'Bensin dan sewa truk kirim',
     amount: 850_000,
     paidFrom: 'Kas Toko',
@@ -183,7 +183,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-04',
     date: '2026-10-15',
-    category: 'Beban Lain-lain',
+    category: 'Beban Lain Lain',
     description: 'ATK dan kantong plastik',
     amount: 420_000,
     paidFrom: 'Kas Toko',
@@ -201,7 +201,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-06',
     date: '2026-10-01',
-    category: 'Sewa dan Listrik',
+    category: 'Sewa dan Peralatan Toko',
     description: 'Sewa ruko dan gudang',
     amount: 9_600_000,
     paidFrom: 'Bank BCA',
@@ -219,7 +219,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-08',
     date: '2026-10-12',
-    category: 'Transportasi',
+    category: 'Transportasi Angkutan',
     description: 'Biaya ekspedisi armada pengiriman',
     amount: 5_400_000,
     paidFrom: 'Bank BCA',
@@ -228,9 +228,18 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-09',
     date: '2026-10-08',
-    category: 'Beban Lain-lain',
+    category: 'Beban Lain Lain',
     description: 'Pemeliharaan etalase dan perlengkapan',
-    amount: 1_730_000,
+    amount: 630_000,
+    paidFrom: 'Kas Toko',
+    status: 'terjurnal',
+  },
+  {
+    id: 'BBN-10',
+    date: '2026-10-16',
+    category: 'Katering Makan',
+    description: 'Katering makan karyawan minggu ke-2',
+    amount: 1_100_000,
     paidFrom: 'Kas Toko',
     status: 'terjurnal',
   },
@@ -290,53 +299,51 @@ export function calculateJournalTotal(entries: readonly JournalRow[]): number {
 /**
  * Ringkasan beban operasional per kategori
  */
+// Enam kategori beban usaha (gambar klien 25 dan 26), berurutan seperti pada gambar.
+export const EXPENSE_CATEGORIES: readonly string[] = [
+  'Gaji dan Komisi',
+  'Transportasi Angkutan',
+  'Katering Makan',
+  'Listrik dan Internet',
+  'Sewa dan Peralatan Toko',
+  'Beban Lain Lain',
+];
+
 export interface ExpenseCategorySummary {
   readonly totalBeban: number;
-  readonly gajiKomisi: number;
-  readonly sewaListrik: number;
-  readonly transportasiLain: number;
-  readonly persenGaji: number;
-  readonly persenSewa: number;
   readonly persenDariPenjualan: number;
+  // Jumlah dan porsi (persen dari total beban) per kategori, urut EXPENSE_CATEGORIES.
+  readonly categories: readonly {
+    readonly name: string;
+    readonly amount: number;
+    readonly percent: number;
+  }[];
 }
 
 export function calculateExpenseSummary(
   expenses: readonly OperatingExpenseItem[],
   totalSales = 412_600_000,
 ): ExpenseCategorySummary {
+  const totals = new Map<string, number>(EXPENSE_CATEGORIES.map((name) => [name, 0]));
   let totalBeban = 0;
-  let gajiKomisi = 0;
-  let sewaListrik = 0;
-  let transportasi = 0;
-  let lainLain = 0;
-
   for (const item of expenses) {
     totalBeban += item.amount;
-    const cat = item.category.toLowerCase();
-    if (cat.includes('gaji') || cat.includes('komisi')) {
-      gajiKomisi += item.amount;
-    } else if (cat.includes('sewa') || cat.includes('listrik')) {
-      sewaListrik += item.amount;
-    } else if (cat.includes('transport')) {
-      transportasi += item.amount;
-    } else {
-      lainLain += item.amount;
-    }
+    // Kategori di luar daftar (data lama) dihitung sebagai Beban Lain Lain.
+    const name = totals.has(item.category) ? item.category : 'Beban Lain Lain';
+    totals.set(name, (totals.get(name) ?? 0) + item.amount);
   }
-
-  const transportasiLain = transportasi + lainLain;
-  const persenGaji = totalBeban > 0 ? (gajiKomisi / totalBeban) * 100 : 0;
-  const persenSewa = totalBeban > 0 ? (sewaListrik / totalBeban) * 100 : 0;
   const persenDariPenjualan = totalSales > 0 ? (totalBeban / totalSales) * 100 : 0;
-
   return {
     totalBeban,
-    gajiKomisi,
-    sewaListrik,
-    transportasiLain,
-    persenGaji: Math.round(persenGaji * 10) / 10,
-    persenSewa: Math.round(persenSewa * 10) / 10,
     persenDariPenjualan: Math.round(persenDariPenjualan * 10) / 10,
+    categories: EXPENSE_CATEGORIES.map((name) => {
+      const amount = totals.get(name) ?? 0;
+      return {
+        name,
+        amount,
+        percent: totalBeban > 0 ? Math.round((amount / totalBeban) * 1000) / 10 : 0,
+      };
+    }),
   };
 }
 
@@ -411,12 +418,10 @@ export function generateProfitLossStatement(
 
   const summary = calculateExpenseSummary(expenses, netSales);
 
-  const expenseItems = [
-    { category: 'Gaji dan Komisi Sales', amount: summary.gajiKomisi },
-    { category: 'Sewa dan Listrik', amount: summary.sewaListrik },
-    { category: 'Transportasi dan Pengiriman', amount: 6_250_000 },
-    { category: 'Beban Lain-lain', amount: 2_150_000 },
-  ];
+  const expenseItems = summary.categories.map((item) => ({
+    category: item.name === 'Gaji dan Komisi' ? 'Gaji dan Komisi Sales' : item.name,
+    amount: item.amount,
+  }));
 
   const totalExpense = summary.totalBeban; // 52.600.000
   const netProfit = grossProfit - totalExpense; // 72.100.000

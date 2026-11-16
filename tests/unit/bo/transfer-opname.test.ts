@@ -4,9 +4,13 @@ import type { Product } from '../../../src/shared/data/types';
 import {
   difference,
   filledCount,
+  formatOrderNumber,
+  isComplete,
+  nextSequence,
   parsePhysical,
-  validateDoc,
-  type OpnameDoc,
+  seedOpnameOrders,
+  validateResult,
+  type OpnameOrder,
 } from '../../../src/apps/bo/domain/opname';
 import { parseQuantity, validateTransfer } from '../../../src/apps/bo/domain/transfer';
 
@@ -51,11 +55,18 @@ describe('validasi mutasi', () => {
 });
 
 describe('opname', () => {
-  function doc(lines: OpnameDoc['lines'], status: OpnameDoc['status'] = 'draf'): OpnameDoc {
+  function doc(
+    lines: OpnameOrder['lines'],
+    status: OpnameOrder['status'] = 'perhitungan',
+  ): OpnameOrder {
     return {
-      number: 'OP-0001',
+      pso: 'PSO-0001',
+      hso: status === 'menunggu' ? undefined : 'HSO-0001',
       warehouse: 'display',
       date: '2026-10-19',
+      resultDate: undefined,
+      officerId: 'U-1',
+      note: '',
       status,
       lines,
       appliedBy: undefined,
@@ -65,7 +76,6 @@ describe('opname', () => {
   const line = (physical: string) => ({
     productId: 'P-0001',
     physical,
-    note: '',
     systemSnapshot: undefined,
   });
 
@@ -77,17 +87,60 @@ describe('opname', () => {
     expect(parsePhysical('x')).toBeUndefined();
   });
 
-  it('memeriksa stok fisik kosong dan negatif serta dokumen yang sudah diterapkan', () => {
-    expect(validateDoc(doc([line('')]))).toMatchObject({
+  it('memeriksa hasil: kosong hanya ditolak saat penyelesaian, negatif selalu, selesai tak berubah', () => {
+    expect(validateResult(doc([line('')]), false)).toBeUndefined();
+    expect(validateResult(doc([line('')]), true)).toMatchObject({
       messageId: 'MSG-074',
       productId: 'P-0001',
     });
-    expect(validateDoc(doc([line('-1')]))).toMatchObject({ messageId: 'MSG-075' });
-    expect(validateDoc(doc([line('2')]))).toBeUndefined();
-    expect(validateDoc(doc([line('2')], 'diterapkan'))).toMatchObject({ messageId: 'MSG-077' });
+    expect(validateResult(doc([line('-1')]), false)).toMatchObject({ messageId: 'MSG-075' });
+    expect(validateResult(doc([line('x')]), false)).toMatchObject({ messageId: 'MSG-075' });
+    expect(validateResult(doc([line('2')]), true)).toBeUndefined();
+    expect(validateResult(doc([line('2')], 'selesai'), false)).toMatchObject({
+      messageId: 'MSG-077',
+    });
   });
 
-  it('menghitung baris terisi', () => {
+  it('menghitung baris terisi dan kelengkapan hasil', () => {
     expect(filledCount(doc([line('1'), line(''), line(' ')]))).toBe(1);
+    expect(isComplete(doc([line('1'), line('2')]))).toBe(true);
+    expect(isComplete(doc([line('1'), line('')]))).toBe(false);
+    expect(isComplete(doc([]))).toBe(false);
+  });
+
+  it('menomori PSO dan HSO secara terpisah', () => {
+    expect(formatOrderNumber('PSO', 7)).toBe('PSO-0007');
+    const orders = [doc([line('1')]), { ...doc([line('1')], 'menunggu'), pso: 'PSO-0002' }];
+    expect(nextSequence(orders, 'PSO')).toBe(3);
+    expect(nextSequence(orders, 'HSO')).toBe(2);
+    expect(nextSequence([], 'HSO')).toBe(1);
+  });
+
+  it('memuat empat perintah contoh dengan tiga status berbeda', () => {
+    const products = Array.from({ length: 20 }, (_, index) => ({
+      ...stocked,
+      id: `P-${String(index + 1).padStart(4, '0')}`,
+    }));
+    const orders = seedOpnameOrders(products, [
+      { id: 'U-1', role: 'owner' },
+      { id: 'U-2', role: 'supervisor' },
+      { id: 'U-3', role: 'kasir' },
+      { id: 'U-4', role: 'kasir' },
+    ]);
+    expect(orders.map((order) => order.status)).toEqual([
+      'selesai',
+      'selesai',
+      'perhitungan',
+      'menunggu',
+    ]);
+    expect(orders.map((order) => order.hso)).toEqual([
+      'HSO-0001',
+      'HSO-0002',
+      'HSO-0003',
+      undefined,
+    ]);
+    expect(orders[2]?.lines.filter((item) => item.physical !== '')).toHaveLength(2);
+    expect(orders[3]?.lines).toHaveLength(4);
+    expect(orders[0]?.officerId).toBe('U-1');
   });
 });

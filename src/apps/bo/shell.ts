@@ -6,6 +6,8 @@ import { createBanner } from '../../shared/ui/banner';
 import type { Role } from '../../shared/data/types';
 import type { BoSession } from './bo-session';
 import { groupFor, menuFor, type MenuEntry, type MenuGroup } from './domain/menu';
+import { canOpenScreen } from '../../shared/permissions';
+import { showToast } from '../../shared/ui/toast';
 import { countBelowMinimum } from './domain/stock-view';
 import { tabEntryFor, tabTitleKey, tabTitleText } from './domain/tabs';
 
@@ -210,15 +212,28 @@ export function createShell(session: BoSession, go: (path: string) => void): She
       {
         className: `bo-menu__link ${isEntryActive ? 'bo-menu__link--active' : ''}`,
         attrs: {
-          href: `#${entry.path}`,
+          href: entry.dialog === undefined ? `#${entry.path}` : '#',
           'aria-current': isEntryActive ? 'page' : false,
         },
       },
       el('span', { text: label(entry.label) }),
       count > 0 && el('span', { className: 'bo-menu__count', text: String(count) }),
     );
-    link.addEventListener('click', () => {
+    link.addEventListener('click', (event) => {
       setDrawer(false);
+      const kind = entry.dialog;
+      if (kind === undefined) {
+        return;
+      }
+      // Laporan: kotak pilihan di atas halaman yang sedang dibuka, tanpa tab baru.
+      event.preventDefault();
+      if (!canOpenScreen(store.getState().role, entry.screenId)) {
+        showToast({ kind: 'error', text: message('MSG-003') });
+        return;
+      }
+      void import('./screens/reports').then(({ openReport }) => {
+        openReport(kind, session);
+      });
     });
     return el('li', { className: 'bo-menu__item' }, link);
   };

@@ -223,9 +223,11 @@ test.describe('K5 tab halaman', () => {
 });
 
 test.describe('K5 tab tampil-saja tidak basi', () => {
-  test('Daftar Nota dibangun ulang hanya bila data berubah sejak tab dibuka', async ({ page }) => {
+  test('Daftar Faktur dibangun ulang hanya bila data berubah sejak tab dibuka', async ({
+    page,
+  }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     const mark = () =>
       page.evaluate(() => {
         document
@@ -238,7 +240,7 @@ test.describe('K5 tab tampil-saja tidak basi', () => {
 
     // Tanpa perubahan data, isi tab dipertahankan.
     await openPage(page, '/bo/barang');
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     await expect(probe).toHaveCount(1);
 
     // Data berubah di tab lain: tab dibangun ulang saat dibuka kembali.
@@ -246,7 +248,7 @@ test.describe('K5 tab tampil-saja tidak basi', () => {
     await page.getByRole('button', { name: 'Panel Simulasi' }).click();
     await page.getByRole('button', { name: 'Atur ulang data' }).click();
     await page.getByRole('button', { name: 'Panel Simulasi' }).click();
-    await openPage(page, '/bo/transaksi/daftar-nota');
+    await openPage(page, '/bo/transaksi/faktur-penjualan');
     await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-form-page')).toBeVisible();
     await expect(probe).toHaveCount(0);
   });

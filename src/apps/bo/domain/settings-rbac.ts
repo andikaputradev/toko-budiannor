@@ -200,7 +200,7 @@ export const DEFAULT_AUDIT_LOGS: readonly AuditLogEntry[] = [
     role: 'supervisor',
     module: 'Mutasi Stok',
     action: 'Transfer Antar Gudang',
-    details: 'Mutasi M-0042 Semen Gresik 50 Sak (Gudang Besar -> Display Toko)',
+    details: 'Mutasi M-0042 Semen Gresik 50 Sak (Gudang -> Toko)',
     ipAddress: '192.168.1.25',
     status: 'sukses',
   },

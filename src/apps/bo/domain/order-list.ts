@@ -5,6 +5,8 @@ export type OrderKind = 'po' | 'so';
 export type OrderStatus = 'on-proses' | 'partial' | 'selesai';
 
 export interface OrderRow {
+  // Baris contoh untuk peragaan (gambar klien 10): bukan dokumen toko, tidak bisa dibuka.
+  readonly demo?: boolean;
   readonly kind: OrderKind;
   readonly number: string;
   // Tanggal WIB berformat YYYY-MM-DD.

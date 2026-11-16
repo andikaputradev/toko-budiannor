@@ -150,13 +150,13 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
 
     filtered.forEach((log) => {
       let statusBadgeClass = 'is-lunas';
-      let statusText = 'SUKSES';
+      let statusText = 'Sukses';
       if (log.status === 'ditolak') {
         statusBadgeClass = 'is-danger';
-        statusText = 'DITOLAK';
+        statusText = 'Ditolak';
       } else if (log.status === 'peringatan') {
         statusBadgeClass = 'is-warning';
-        statusText = 'PERINGATAN';
+        statusText = 'Peringatan';
       }
 
       tableTbody.appendChild(
@@ -170,7 +170,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
             el('strong', { text: log.username }),
             el('span', {
               className: 't-label bo-audit-role',
-              text: log.role.toUpperCase(),
+              text: log.role.charAt(0).toUpperCase() + log.role.slice(1),
             }),
           ),
           el('td', {}, el('span', { className: 'bo-badge is-toko', text: log.module })),
@@ -238,7 +238,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
       l.module,
       l.action,
       l.details,
-      l.status.toUpperCase(),
+      l.status.charAt(0).toUpperCase() + l.status.slice(1),
     ]);
     openExportPreview({
       kind: 'pdf',

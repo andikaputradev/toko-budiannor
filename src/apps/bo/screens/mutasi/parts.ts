@@ -189,7 +189,7 @@ export interface PrintChooserOptions {
 }
 
 // Cetak tabel lewat jendela cetak peramban: hanya area ini yang tampil di kertas.
-function printTable(options: PrintChooserOptions): void {
+export function printTable(options: PrintChooserOptions): void {
   const area = el(
     'div',
     { className: 'bo-mut-print' },

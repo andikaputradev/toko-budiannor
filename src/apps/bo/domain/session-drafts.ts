@@ -3,6 +3,8 @@
 
 // Benih Surat Jalan: Faktur Penjualan mengisinya saat "Isi SJ Ekspedisi" dan layar Surat Jalan
 // membacanya menurut nomor faktur. Kosong bila Surat Jalan dibuka tanpa melewati faktur.
+import type { ExpeditionNote } from './expedition';
+
 export interface ExpeditionSeed {
   readonly invoiceNumber: string;
   readonly date: string;
@@ -19,6 +21,9 @@ export interface ExpeditionSeed {
 
 export const expeditionSeeds = new Map<string, ExpeditionSeed>();
 
+// Surat Jalan yang sudah disimpan pada sesi ini (Daftar Surat Jalan), menurut nomornya.
+export const savedExpeditionNotes = new Map<string, ExpeditionNote>();
+
 // Nomor SO yang sudah diimpor ke Faktur Penjualan pada sesi ini (Daftar SO menampilkannya Selesai).
 export const importedSoNumbers = new Set<string>();
 
@@ -33,5 +38,6 @@ export function nextSeedVersion(): number {
 
 export function resetSessionDrafts(): void {
   expeditionSeeds.clear();
+  savedExpeditionNotes.clear();
   importedSoNumbers.clear();
 }

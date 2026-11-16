@@ -177,8 +177,8 @@ export function buildProductHistory(input: {
 }
 
 const WAREHOUSE_NAME: Readonly<Record<WarehouseId, string>> = {
-  display: 'TOKO',
-  besar: 'GUDANG BESAR',
+  display: 'Toko',
+  besar: 'Gudang',
 };
 
 function mutationName(row: CardRow): string {
@@ -188,13 +188,13 @@ function mutationName(row: CardRow): string {
     case 'penjualan':
       return row.party ?? label('pelangganUmum');
     case 'retur-penjualan':
-      return row.party ?? 'RETUR PENJUALAN';
+      return row.party ?? 'Retur Penjualan';
     case 'retur-pembelian':
-      return row.party ?? 'RETUR PEMBELIAN';
+      return row.party ?? 'Retur Pembelian';
     case 'koreksi':
-      return 'KOREKSI';
+      return 'Koreksi';
     case 'opname':
-      return 'OPNAME';
+      return 'Opname';
     case 'mutasi': {
       const from = row.from === undefined ? '-' : WAREHOUSE_NAME[row.from];
       const to = row.to === undefined ? '-' : WAREHOUSE_NAME[row.to];
@@ -229,7 +229,7 @@ export function buildMutationHistory(input: {
     at: new Date(`${range.from}T00:00:00+07:00`).toISOString(),
     number: '-',
     kind: 'saldo-awal',
-    name: 'SALDO AWAL',
+    name: 'Saldo Awal',
     inQty: Math.max(0, card.opening),
     outQty: Math.max(0, -card.opening),
     balance: card.opening,

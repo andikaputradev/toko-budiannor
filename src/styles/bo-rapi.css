@@ -368,3 +368,29 @@
   flex: none;
   white-space: nowrap;
 }
+
+/* ===== Modal Info Data Barang: judul seperti gambar klien (huruf kapital, di tengah) ===== */
+[data-app='bo'] .bo-info-modal .modal__title,
+.bo-info-modal .modal__title {
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0.03em;
+}
+
+/* Nomor pada baris contoh Daftar PO dan SO: terlihat seperti nomor, bukan tautan. */
+[data-app='bo'] .bo-trx-link--demo {
+  color: var(--color-accent-pressed);
+  font-weight: 700;
+  cursor: default;
+}
+
+/* ===== Laci menu: semua grup (termasuk Pengaturan) terlihat tanpa menggulir di layar 640 px ===== */
+@media (max-height: 700px) {
+  [data-app='bo'] .bo-menu__group-header {
+    min-height: 40px;
+  }
+
+  [data-app='bo'] .bo-menu__link {
+    min-height: 36px;
+  }
+}

@@ -296,7 +296,7 @@ describe('penyelesaian dan dampak', () => {
       2,
     );
     expect(rows.map((row) => row.icon)).toEqual(['package', 'wallet', 'coins']);
-    expect(rows[0]?.text).toContain('Display');
+    expect(rows[0]?.text).toContain('Toko');
     expect(rows[1]?.text).toContain('Rp 30.000');
     expect(
       describeImpact(
