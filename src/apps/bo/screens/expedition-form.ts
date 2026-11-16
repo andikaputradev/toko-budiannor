@@ -10,6 +10,7 @@ import {
   createExpeditionNote,
   expeditionSeeds,
   removeLine,
+  savedExpeditionNotes,
   upsertLine,
   validateLine,
   type ExpeditionNote,
@@ -20,6 +21,10 @@ import { createDocHead } from './trx/doc-head';
 const TEXT = {
   judul: 'Surat Jalan Ekspedisi & Packing Koli',
   isiFaktur: 'Isi Data Faktur Penjualan',
+  simpanSj: 'Simpan Surat Jalan',
+  kembali: 'Kembali ke Daftar',
+  sjTersimpan: 'Surat Jalan {nomor} tersimpan.',
+  sjKosong: 'Isi minimal satu koli sebelum menyimpan Surat Jalan.',
   noSj: 'No. Surat Jalan',
   faktur: 'Faktur Penjualan',
   tanggal: 'Tanggal',
@@ -60,10 +65,12 @@ export function renderExpeditionForm(
   session: BoSession,
   go: (path: string) => void,
   invoiceNumber?: string,
+  savedNumber?: string,
 ): ScreenHandle {
   const today = wibDate(session.now());
   const seed = invoiceNumber === undefined ? undefined : expeditionSeeds.get(invoiceNumber);
-  let note: ExpeditionNote =
+  const saved = savedNumber === undefined ? undefined : savedExpeditionNotes.get(savedNumber);
+  const fresh = (): ExpeditionNote =>
     seed === undefined
       ? createExpeditionNote(
           {
@@ -77,6 +84,8 @@ export function renderExpeditionForm(
           SAMPLE_LINES,
         )
       : createExpeditionNote(seed, seed.koliLines);
+  // Dokumen tersimpan dibuka apa adanya; selain itu catatan baru dari benih faktur atau contoh.
+  let note: ExpeditionNote = saved ?? fresh();
   let selectedId: string | undefined;
 
   // --- Kepala dokumen ---
@@ -106,18 +115,54 @@ export function renderExpeditionForm(
     TEXT.judul,
   );
 
+  // Menyimpan dokumen: kepala dari isian saat ini, koli dari tabel. Nomor yang sama menimpa.
+  function saveNote(): void {
+    if (note.lines.length === 0) {
+      showToast({ kind: 'info', text: TEXT.sjKosong });
+      return;
+    }
+    note = {
+      ...note,
+      date: dateEl.value,
+      vehicle: vehicleEl.value.trim(),
+      expeditionName: expeditionEl.value.trim(),
+      recipient: recipientEl.value.trim(),
+    };
+    savedExpeditionNotes.set(note.noteNumber, note);
+    showToast({ kind: 'success', text: TEXT.sjTersimpan.replace('{nomor}', note.noteNumber) });
+    go('/bo/transaksi/surat-jalan');
+  }
+
   const titleBar = el(
     'section',
     { className: 'bo-trx-sjhead' },
     el('h1', { className: 'bo-trx-listhead__heading', text: TEXT.judul }),
-    createButton({
-      text: TEXT.isiFaktur,
-      variant: 'secondary',
-      icon: 'arrow-left',
-      onClick: () => {
-        go('/bo/penjualan');
-      },
-    }),
+    el(
+      'div',
+      { className: 'bo-trx-sjhead__actions' },
+      createButton({
+        text: TEXT.simpanSj,
+        variant: 'primary',
+        icon: 'save',
+        onClick: saveNote,
+      }),
+      createButton({
+        text: TEXT.isiFaktur,
+        variant: 'secondary',
+        icon: 'arrow-left',
+        onClick: () => {
+          go('/bo/penjualan');
+        },
+      }),
+      createButton({
+        text: TEXT.kembali,
+        variant: 'secondary',
+        icon: 'arrow-left',
+        onClick: () => {
+          go('/bo/transaksi/surat-jalan');
+        },
+      }),
+    ),
   );
 
   // --- Isian satu baris koli ---

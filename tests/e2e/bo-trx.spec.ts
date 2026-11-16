@@ -885,7 +885,7 @@ test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
 
   test('dibuka langsung tanpa faktur menampilkan contoh gambar 13', async ({ page }) => {
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/surat-jalan');
+    await openPage(page, '/bo/transaksi/surat-jalan?baru=1');
     await expect(sjRows(page)).toHaveCount(3);
     await expect(active(page).getByLabel('Penerima & Alamat Kirim')).not.toHaveValue('');
   });
@@ -893,7 +893,7 @@ test.describe('T10 Surat Jalan Ekspedisi dan Packing Koli (gambar 13)', () => {
   test('muat satu layar di 1280x640 dengan banyak baris', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/surat-jalan');
+    await openPage(page, '/bo/transaksi/surat-jalan?baru=1');
     const lines = active(page).locator('.bo-trx__lines');
     expect(await lines.evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(150);
     for (let index = 0; index < 12; index += 1) {
@@ -944,7 +944,7 @@ test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () 
   }) => {
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
-    await openPage(page, '/bo/transaksi/surat-jalan');
+    await openPage(page, '/bo/transaksi/surat-jalan?baru=1');
     const root = active(page);
     const long = 'BARANG CAMPURAN '.repeat(20);
     await root.getByLabel('Jumlah', { exact: true }).fill('1');

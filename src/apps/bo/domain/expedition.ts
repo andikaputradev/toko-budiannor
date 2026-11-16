@@ -1,7 +1,12 @@
 import { nextLineId } from './doc-line';
 import { parseQuantityText } from './line-detail';
 
-export { expeditionSeeds, nextSeedVersion, type ExpeditionSeed } from './session-drafts';
+export {
+  expeditionSeeds,
+  nextSeedVersion,
+  savedExpeditionNotes,
+  type ExpeditionSeed,
+} from './session-drafts';
 
 // Surat Jalan Ekspedisi dan Packing Koli (gambar klien 13): tabel datar Jumlah, Satuan, Nama Barang.
 export interface ExpeditionLine {

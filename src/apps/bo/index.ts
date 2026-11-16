@@ -130,9 +130,13 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/bo/transaksi/surat-jalan': {
     id: 'BO-12',
     load: async () => {
-      const { renderExpeditionForm } = await import('./screens/expedition-form');
+      const { renderExpeditionPage } = await import('./screens/expedition-page');
       return (session, go, query) =>
-        renderExpeditionForm(session, go, query.get('inv') ?? undefined);
+        renderExpeditionPage(session, go, {
+          invoice: query.get('inv') ?? undefined,
+          saved: query.get('no') ?? undefined,
+          creating: query.get('baru') === '1',
+        });
     },
   },
   '/bo/transaksi/retur-penjualan': {

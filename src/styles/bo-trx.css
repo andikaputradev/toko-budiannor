@@ -809,6 +809,13 @@
   background: var(--color-bg-surface);
 }
 
+.bo-trx .bo-trx-sjhead__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .bo-trx .bo-trx-sjhead .btn {
   height: 36px;
   min-height: 36px;

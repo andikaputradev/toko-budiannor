@@ -22,6 +22,7 @@ const EXTRA_ROUTES = [
   '/bo/mutasi?baru=1',
   '/bo/mutasi/koreksi?baru=1',
   '/bo/opname?baru=1',
+  '/bo/transaksi/surat-jalan?baru=1',
   '/bo/hutang-piutang/bayar-piutang?baru=1',
   '/bo/hutang-piutang/bayar-hutang?baru=1',
   '/bo/transaksi/retur-penjualan?baru=1',
