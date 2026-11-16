@@ -11,7 +11,7 @@ export function movementSourcesFor(session: BoSession): MovementSources {
     suppliers: state.data.suppliers,
     purchaseOrders: state.purchaseOrders,
     transfers: session.state().transfers,
-    opname: session.state().opname,
+    opnames: session.state().opnameOrders,
     corrections: ledgerFor(session.store).docs(),
     extra: extraMovements(),
   };

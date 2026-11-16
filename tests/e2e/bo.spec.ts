@@ -446,43 +446,30 @@ test.describe('BO-06 Mutasi Antar Gudang (F-06)', () => {
 });
 
 test.describe('BO-07 Opname Stok', () => {
-  test('draf, validasi, penerapan oleh Supervisor, dan dokumen terkunci', async ({ page }) => {
+  test('perintah, penghitungan, penyelesaian oleh Supervisor, dan dokumen terkunci', async ({
+    page,
+  }) => {
     await loginBo(page, 'sinta.spv', 'Kunci2026B');
     await page.goto('/#/bo/opname');
-    await expect(page.getByRole('heading', { name: 'Daftar Perintah Stok Opname' })).toBeVisible();
-    await expect(page.locator('.bo-mut-table tbody tr')).toHaveCount(2);
-    await page.getByRole('button', { name: 'Perintah Opname' }).click();
+    await expect(page.getByRole('heading', { name: 'Riwayat Stok Opname' })).toBeVisible();
+    await expect(page.locator('.bo-trx-table tbody tr')).toHaveCount(4);
+    await page.getByRole('button', { name: 'Stok Opname', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/opname\?baru=1$/);
-    await page.getByRole('button', { name: 'Terapkan Penyesuaian Stok' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Terapkan', exact: true }).click();
-    await expect(page.getByText('Tidak ada selisih untuk diterapkan.')).toBeVisible();
-    await page.getByLabel('Cari atau pindai barang').fill('B0001');
-    await page.getByLabel('Cari atau pindai barang').press('Enter');
+    await page.getByLabel('Nama Barang').fill('B0001');
+    await page.getByLabel('Nama Barang').press('Enter');
+    await page.getByRole('button', { name: 'Proses Opname' }).click();
     await expect(page.getByText('Terisi 0 dari 1')).toBeVisible();
-    await page.getByRole('button', { name: 'Simpan Draf Opname' }).click();
-    await expect(page.getByText('Isi stok fisik atau hapus baris ini.')).toBeVisible();
     const physical = page.locator('[data-physical="P-0001"]');
-    await physical.fill('-1');
-    await page.getByRole('button', { name: 'Simpan Draf Opname' }).click();
-    await expect(page.getByText('Stok fisik tidak boleh negatif.')).toBeVisible();
     await physical.fill('0');
     await expect(page.getByText('Terisi 1 dari 1')).toBeVisible();
-    await page.getByRole('button', { name: 'Simpan Draf Opname' }).click();
-    await expect(page.getByText('Draf opname tersimpan.')).toBeVisible();
-    await page.getByRole('button', { name: 'Terapkan Penyesuaian Stok' }).click();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Terapkan', exact: true }).click();
-    await expect(page.getByText('Penyesuaian stok diterapkan.')).toBeVisible();
-    await expect(page.locator('.bo-mut-head')).toContainText('Diterapkan');
-    await expect(page.getByText(/Jurnal selisih: /)).toBeVisible();
-    await page.getByRole('button', { name: 'Simpan Draf Opname' }).click();
-    await expect(page.getByText('Opname yang sudah diterapkan tidak dapat diubah.')).toBeVisible();
-    await page.getByRole('button', { name: 'Opname Baru' }).click();
-    await expect(
-      page.getByText('Belum ada barang di daftar opname. Cari atau pindai barang.'),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/#\/bo\/opname$/);
+    await expect(page.locator('.bo-trx-table tbody tr').first()).toContainText('Selesai');
+    await page.getByRole('link', { name: 'HSO-0004' }).click();
+    await expect(page.getByRole('button', { name: 'Simpan', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'Kembali ke daftar' }).click();
-    await expect(page.locator('.bo-mut-table tbody tr')).toHaveCount(3);
-    await expect(page.locator('.bo-mut-table tbody tr').first()).toContainText('OP-0003');
+    await expect(page.locator('.bo-trx-table tbody tr')).toHaveCount(5);
   });
 });
 

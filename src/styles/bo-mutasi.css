@@ -726,3 +726,120 @@
     text-align: left;
   }
 }
+
+/* ===== Stok Opname dua tahap: Perintah (PSO) dan Hasil (HSO), gambar klien 19 dan 20 ===== */
+html[data-app='bo'] .bo-opn {
+  gap: 10px;
+}
+
+html[data-app='bo'] .bo-opn-bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+html[data-app='bo'] .bo-opn-mode,
+html[data-app='bo'] .bo-opn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-opn-actions {
+  margin-left: auto;
+}
+
+html[data-app='bo'] .bo-opn-actions .bo-mut-counter {
+  margin: 0 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+html[data-app='bo'] .bo-opn-process:not(:disabled) {
+  border-color: var(--color-status-success-fg);
+  background: var(--color-status-success-fg);
+  color: var(--color-bg-surface);
+}
+
+html[data-app='bo'] .bo-opn-head {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 16px;
+}
+
+html[data-app='bo'] .bo-opn .bo-opn-head .field.bo-opn-field {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+html[data-app='bo'] .bo-opn .bo-opn-head .field.bo-opn-field:last-child {
+  flex: 2 1 260px;
+}
+
+html[data-app='bo'] .bo-opn-filters {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+html[data-app='bo'] .bo-opn-filters[hidden] {
+  display: none;
+}
+
+html[data-app='bo'] .bo-opn .bo-opn-filters .field.bo-opn-field {
+  flex: 1 1 210px;
+  min-width: 0;
+}
+
+html[data-app='bo'] .bo-opn .bo-opn-filters .field.bo-opn-picker {
+  flex: 2 1 240px;
+  min-width: 0;
+}
+
+html[data-app='bo'] .bo-opn .field.bo-opn-field {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-opn .field.bo-opn-field > .field__label {
+  flex: none;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-opn .field.bo-opn-field > :not(.field__label) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+html[data-app='bo'] .bo-opn .field.bo-opn-field .input {
+  height: 36px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+html[data-app='bo'] .bo-opn-physical {
+  width: 110px;
+  text-align: right;
+}
+
+html[data-app='bo'] .bo-opn-diff.is-plus {
+  color: var(--color-status-success-fg);
+  font-weight: 700;
+}
+
+html[data-app='bo'] .bo-opn-diff.is-minus {
+  color: var(--color-status-danger-fg);
+  font-weight: 700;
+}

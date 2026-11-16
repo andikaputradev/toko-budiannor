@@ -69,9 +69,44 @@ for (const route of routes) {
     const text = (node) => (node.textContent ?? '').replace(/\s+/g, ' ').trim();
     const out = { upper: [], above: [], head: [], shape: [], term: [], size: [] };
     const ALLOWED = new Set([
-      'PO', 'SO', 'HPP', 'QRIS', 'EDC', 'PDF', 'WA', 'TTD', 'CSV', 'SKU', 'PSO', 'HSO', 'RFID',
-      'KTP', 'NPWP', 'PPN', 'QR', 'UMKM', 'FIFO', 'OK', 'PIN', 'USB', 'BCA', 'BRI', 'BNI', 'CV', 'UD', 'PT',
-      'WIB', 'IDR', 'JU', 'FJ', 'FB', 'T', 'KS', 'TF', 'KAS', 'ID',
+      'PO',
+      'SO',
+      'HPP',
+      'QRIS',
+      'EDC',
+      'PDF',
+      'WA',
+      'TTD',
+      'CSV',
+      'SKU',
+      'PSO',
+      'HSO',
+      'RFID',
+      'KTP',
+      'NPWP',
+      'PPN',
+      'QR',
+      'UMKM',
+      'FIFO',
+      'OK',
+      'PIN',
+      'USB',
+      'BCA',
+      'BRI',
+      'BNI',
+      'CV',
+      'UD',
+      'PT',
+      'WIB',
+      'IDR',
+      'JU',
+      'FJ',
+      'FB',
+      'T',
+      'KS',
+      'TF',
+      'KAS',
+      'ID',
     ]);
     const labelNodes = panel.querySelectorAll(
       'button, label, th, legend, h1, h2, h3, h4, h5, h6, [class*="pill"], [class*="badge"], [class*="chip"], [class*="title"], [class*="label"]',
@@ -96,7 +131,8 @@ for (const route of routes) {
         ? document.getElementById(id)
         : label.querySelector('input, select, textarea');
       if (control === null || !visible(control)) continue;
-      if (control.type === 'checkbox' || control.type === 'radio' || control.type === 'hidden') continue;
+      if (control.type === 'checkbox' || control.type === 'radio' || control.type === 'hidden')
+        continue;
       const a = label.getBoundingClientRect();
       const b = control.getBoundingClientRect();
       const overlap = Math.min(a.right, b.right) - Math.max(a.left, b.left);
@@ -113,7 +149,9 @@ for (const route of routes) {
     }
     out.head = [...heads.entries()].map(([colour, count]) => `${colour}x${count}`);
     const shapes = new Map();
-    for (const node of panel.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select, textarea, button')) {
+    for (const node of panel.querySelectorAll(
+      'input:not([type=checkbox]):not([type=radio]), select, textarea, button',
+    )) {
       if (!visible(node)) continue;
       const radius = getComputedStyle(node).borderTopLeftRadius;
       const kind = node.tagName === 'BUTTON' ? 'tombol' : 'isian';
@@ -154,7 +192,10 @@ for (const [route, result] of Object.entries(report)) {
   if (bad.length > 0 || verbose) {
     findings += bad.length;
     console.log(`${route}\n  ${bad.join('\n  ')}`);
-    if (verbose) console.log(`  kepala: ${result.head.join(', ')}\n  bentuk: ${result.shape.join(', ')}\n  ukuran: ${result.size.join(', ')}`);
+    if (verbose)
+      console.log(
+        `  kepala: ${result.head.join(', ')}\n  bentuk: ${result.shape.join(', ')}\n  ukuran: ${result.size.join(', ')}`,
+      );
   }
 }
 console.log(

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../../src/shared/data/generator';
 import type { Product, PurchaseOrder, Sale, Supplier } from '../../../src/shared/data/types';
-import type { OpnameDoc } from '../../../src/apps/bo/domain/opname';
+import type { OpnameOrder } from '../../../src/apps/bo/domain/opname';
 import {
   addDays,
   ALL_CATEGORIES,
@@ -199,14 +199,18 @@ describe('kartu stok', () => {
       },
     ],
   };
-  const opname: OpnameDoc = {
-    number: 'OP-0001',
+  const opname: OpnameOrder = {
+    pso: 'PSO-0001',
+    hso: 'HSO-0001',
     warehouse: 'display',
     date: '2026-10-19',
-    status: 'diterapkan',
+    resultDate: '2026-10-19',
+    officerId: 'U-1',
+    note: 'Hitung ulang',
+    status: 'selesai',
     appliedBy: 'U-1',
     journalValue: 0,
-    lines: [{ productId: semen.id, physical: '10', note: 'Hitung ulang', systemSnapshot: 12 }],
+    lines: [{ productId: semen.id, physical: '10', systemSnapshot: 12 }],
   };
   const sources: MovementSources = {
     sales: [
@@ -225,7 +229,7 @@ describe('kartu stok', () => {
         lines: [{ productId: semen.id, baseQuantity: 20 }],
       },
     ],
-    opname,
+    opnames: [opname],
     corrections: [correction],
     extra: [],
   };
@@ -240,7 +244,7 @@ describe('kartu stok', () => {
       ['M-0001', 'display', 20],
       ['M-0001', 'besar', -20],
       ['T-2', 'display', -10],
-      ['OP-0001', 'display', -2],
+      ['HSO-0001', 'display', -2],
     ]);
     expect(movements.find((item) => item.document === 'T-1')?.party).toBe('Budi');
     expect(movements.find((item) => item.document === 'M-0001' && item.delta < 0)?.counter).toBe(
@@ -268,7 +272,7 @@ describe('kartu stok', () => {
         order('diterima-sebagian'),
         order('diterima'),
       ],
-      opname: { ...opname, status: 'draf' },
+      opnames: [{ ...opname, status: 'perhitungan' }],
     });
     expect(withOrders.filter((item) => item.document.startsWith('PO-'))).toHaveLength(1);
     expect(withOrders.some((item) => item.kind === 'opname')).toBe(false);
@@ -377,7 +381,7 @@ describe('kartu stok', () => {
       suppliers: dataset.suppliers,
       purchaseOrders: [],
       transfers: [],
-      opname: undefined,
+      opnames: [],
       corrections: seedCorrections(dataset),
       extra: [],
     };

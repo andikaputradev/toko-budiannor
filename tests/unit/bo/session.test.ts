@@ -148,25 +148,57 @@ describe('stok, mutasi, dan opname', () => {
     expect(session.state().transfers).toHaveLength(1);
   });
 
-  it('menjalankan opname: draf, penerapan oleh Supervisor, jurnal selisih, dan tidak dapat diubah (A-13)', () => {
+  it('menjalankan opname dua tahap: perintah, hitung, selesai oleh Supervisor, jurnal selisih, tidak dapat diubah (A-13)', () => {
     const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
     const target = first(store);
-    expect(session.addOpnameProduct(target)).toEqual({ ok: true });
-    expect(session.saveOpnameDraft()).toMatchObject({ messageId: 'MSG-074' });
-    session.setPhysical(target.id, String(target.stock.display));
-    expect(session.applyOpname()).toMatchObject({ ok: false, messageId: 'MSG-076' });
-    session.setPhysical(target.id, String(target.stock.display - 1).replace('.', ','));
-    expect(session.applyOpname()).toEqual({ ok: true });
+    expect(session.saveOpnameOrder(undefined)).toEqual({ ok: false, empty: true });
+    expect(session.addOpnameProducts(undefined, [target])).toBe(1);
+    expect(session.addOpnameProducts(undefined, [target])).toBe(0);
+    const saved = session.saveOpnameOrder(undefined);
+    expect(saved).toMatchObject({ ok: true, pso: 'PSO-0005', status: 'menunggu' });
+    expect(session.startOpnameCount('PSO-0005')).toMatchObject({ ok: true, status: 'perhitungan' });
+    const started = session.state().opnameOrders.find((order) => order.pso === 'PSO-0005');
+    expect(started).toMatchObject({ hso: 'HSO-0004', status: 'perhitungan' });
+    expect(session.saveOpnameResult('PSO-0005')).toMatchObject({ messageId: 'MSG-074' });
+    session.setPhysical('PSO-0005', target.id, '-1');
+    expect(session.saveOpnameResult('PSO-0005')).toMatchObject({ messageId: 'MSG-075' });
+    session.setPhysical('PSO-0005', target.id, String(target.stock.display - 1).replace('.', ','));
+    expect(session.saveOpnameResult('PSO-0005')).toMatchObject({ ok: true, status: 'selesai' });
     expect(first(store).stock.display).toBeCloseTo(target.stock.display - 1, 3);
-    const doc = session.state().opname;
-    expect(doc.status).toBe('diterapkan');
-    expect(doc.appliedBy).toBe('U-2');
-    expect(doc.journalValue).toBe(Math.round(-1 * target.hpp));
+    const doc = session.state().opnameOrders.find((order) => order.pso === 'PSO-0005');
+    expect(doc?.status).toBe('selesai');
+    expect(doc?.appliedBy).toBe('U-2');
+    expect(doc?.journalValue).toBe(Math.round(-1 * target.hpp));
     expect(store.getState().activity.at(-1)?.kind).toBe('opname');
-    expect(session.saveOpnameDraft()).toMatchObject({ messageId: 'MSG-077' });
-    expect(session.addOpnameProduct(target)).toMatchObject({ messageId: 'MSG-077' });
-    session.newOpname();
-    expect(session.state().opname).toMatchObject({ number: 'OP-0004', status: 'draf' });
+    expect(session.saveOpnameResult('PSO-0005')).toMatchObject({ messageId: 'MSG-077' });
+    session.setPhysical('PSO-0005', target.id, '99');
+    expect(
+      session.state().opnameOrders.find((order) => order.pso === 'PSO-0005')?.lines[0]?.physical,
+    ).not.toBe('99');
+    expect(session.state().opnameDraft.pso).toBe('PSO-0006');
+  });
+
+  it('menyimpan hasil sebagian sebagai Dalam Perhitungan tanpa mengubah stok', () => {
+    const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
+    const products = store.getState().data.products.slice(40, 42);
+    session.addOpnameProducts(undefined, products);
+    session.saveOpnameOrder(undefined);
+    const before = products.map((item) => item.stock.display);
+    const [one, two] = products;
+    expect(one).toBeDefined();
+    expect(two).toBeDefined();
+    session.setPhysical('PSO-0005', one?.id ?? '', '1');
+    expect(session.saveOpnameResult('PSO-0005')).toMatchObject({ ok: true, status: 'perhitungan' });
+    expect(session.state().opnameOrders.at(-1)).toMatchObject({
+      hso: 'HSO-0004',
+      status: 'perhitungan',
+    });
+    expect(
+      store
+        .getState()
+        .data.products.slice(40, 42)
+        .map((item) => item.stock.display),
+    ).toEqual(before);
   });
 
   it('menyimpan keterangan dan pengguna pada mutasi; benih M-0001 berketerangan (gambar 14 dan 15)', () => {
@@ -184,37 +216,42 @@ describe('stok, mutasi, dan opname', () => {
     expect(session.state().transfers.at(-1)?.note).toBe('');
   });
 
-  it('mencatat opname yang diterapkan pada riwayat perintah opname dan memulihkannya saat reset', () => {
+  it('memuat empat perintah contoh pada riwayat opname dan memulihkannya saat reset', () => {
     const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
     const target = first(store);
-    expect(session.state().opnameHistory.map((doc) => doc.number)).toEqual(['OP-0001', 'OP-0002']);
-    expect(session.state().opname.number).toBe('OP-0003');
-    session.addOpnameProduct(target);
-    session.setPhysical(target.id, String(target.stock.display - 1).replace('.', ','));
-    expect(session.applyOpname()).toEqual({ ok: true });
-    expect(session.state().opnameHistory.map((doc) => doc.number)).toEqual([
-      'OP-0001',
-      'OP-0002',
-      'OP-0003',
+    expect(session.state().opnameOrders.map((doc) => [doc.pso, doc.hso, doc.status])).toEqual([
+      ['PSO-0001', 'HSO-0001', 'selesai'],
+      ['PSO-0002', 'HSO-0002', 'selesai'],
+      ['PSO-0003', 'HSO-0003', 'perhitungan'],
+      ['PSO-0004', undefined, 'menunggu'],
     ]);
-    expect(session.state().opnameHistory.at(-1)).toMatchObject({
-      status: 'diterapkan',
-      appliedBy: 'U-2',
-    });
+    expect(session.state().opnameDraft.pso).toBe('PSO-0005');
+    session.addOpnameProducts(undefined, [target]);
+    session.saveOpnameOrder(undefined);
+    expect(session.state().opnameOrders).toHaveLength(5);
     store.resetData();
-    expect(session.state().opnameHistory).toHaveLength(2);
-    expect(session.state().opname.number).toBe('OP-0003');
+    expect(session.state().opnameOrders).toHaveLength(4);
+    expect(session.state().opnameDraft.pso).toBe('PSO-0005');
   });
 
-  it('menambah 1 satuan dasar pada pindai ulang dan menghapus baris opname', () => {
+  it('mengubah kepala perintah, menambah dan menghapus baris selama belum dihitung', () => {
     const { store, session } = loggedIn('sinta.spv', 'Kunci2026B');
-    const target = first(store);
-    session.addOpnameProduct(target);
-    session.addOpnameProduct(target);
-    session.addOpnameProduct(target);
-    expect(session.state().opname.lines[0]?.physical).toBe('2');
-    session.removeOpnameLine(target.id);
-    expect(session.state().opname.lines).toHaveLength(0);
+    const [one, two] = store.getState().data.products;
+    session.addOpnameProducts(undefined, [one ?? first(store), two ?? first(store)]);
+    expect(session.state().opnameDraft.lines).toHaveLength(2);
+    session.removeOpnameLine(undefined, (one ?? first(store)).id);
+    expect(session.state().opnameDraft.lines).toHaveLength(1);
+    session.editOpname(undefined, { warehouse: 'besar', note: 'Cek rak', officerId: 'U-3' });
+    expect(session.state().opnameDraft).toMatchObject({
+      warehouse: 'besar',
+      note: 'Cek rak',
+      officerId: 'U-3',
+    });
+    session.saveOpnameOrder(undefined);
+    session.startOpnameCount('PSO-0005');
+    session.editOpname('PSO-0005', { warehouse: 'display' });
+    expect(session.state().opnameOrders.at(-1)?.warehouse).toBe('besar');
+    expect(session.addOpnameProducts('PSO-0005', [first(store)])).toBe(0);
   });
 
   it('mengatur ulang dokumen BO saat data diatur ulang', () => {
@@ -225,6 +262,6 @@ describe('stok, mutasi, dan opname', () => {
     ]);
     store.resetData();
     expect(session.state().transfers).toHaveLength(1);
-    expect(session.state().opname.lines).toHaveLength(0);
+    expect(session.state().opnameDraft.lines).toHaveLength(0);
   });
 });

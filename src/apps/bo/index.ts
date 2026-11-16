@@ -108,7 +108,7 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-07',
     load: async () => {
       const { renderOpname } = await import('./screens/opname');
-      return (session, go, query) => renderOpname(session, go, query.get('baru') === '1');
+      return (session, go, query) => renderOpname(session, go, query);
     },
   },
   '/bo/penjualan': {

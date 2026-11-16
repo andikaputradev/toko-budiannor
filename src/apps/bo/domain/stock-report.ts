@@ -19,7 +19,7 @@ import {
 } from '../../../shared/domain/stock';
 import type { SystemMessageId } from '../../../shared/messages';
 import type { CorrectionDoc } from './stock-correction';
-import { parsePhysical, type OpnameDoc } from './opname';
+import { parsePhysical, type OpnameOrder } from './opname';
 
 export const PAGE_SIZE = 50;
 export const ALL_CATEGORIES = '';
@@ -216,7 +216,7 @@ export interface MovementSources {
   readonly suppliers: readonly Supplier[];
   readonly purchaseOrders: readonly PurchaseOrder[];
   readonly transfers: readonly TransferSource[];
-  readonly opname: OpnameDoc | undefined;
+  readonly opnames: readonly OpnameOrder[];
   readonly corrections: readonly CorrectionDoc[];
   readonly extra: readonly StockMovement[];
 }
@@ -335,8 +335,10 @@ export function movementsFor(product: Product, sources: MovementSources): StockM
       });
     });
   }
-  const opname = sources.opname;
-  if (opname?.status === 'diterapkan') {
+  for (const opname of sources.opnames) {
+    if (opname.status !== 'selesai' || opname.hso === undefined) {
+      continue;
+    }
     for (const line of opname.lines) {
       const physical = parsePhysical(line.physical);
       if (
@@ -345,16 +347,16 @@ export function movementsFor(product: Product, sources: MovementSources): StockM
         line.systemSnapshot !== undefined
       ) {
         add({
-          id: `${opname.number}:${line.productId}`,
+          id: `${opname.hso}:${line.productId}`,
           productId: product.id,
-          at: noon(opname.date),
+          at: noon(opname.resultDate ?? opname.date),
           kind: 'opname',
-          document: opname.number,
+          document: opname.hso,
           warehouse: opname.warehouse,
           delta: round3(physical - line.systemSnapshot),
           party: undefined,
           counter: undefined,
-          note: line.note === '' ? undefined : line.note,
+          note: opname.note === '' ? undefined : opname.note,
         });
       }
     }

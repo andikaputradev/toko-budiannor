@@ -284,7 +284,7 @@ describe('buildMutationHistory', () => {
       suppliers: state.data.suppliers,
       purchaseOrders: state.purchaseOrders,
       transfers: [],
-      opname: undefined,
+      opnames: [],
       corrections,
       extra: [],
     };

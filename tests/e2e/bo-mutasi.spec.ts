@@ -133,34 +133,81 @@ test.describe('Daftar Stok Minim (gambar 18)', () => {
   });
 });
 
-test.describe('Daftar Perintah Stok Opname', () => {
-  test('daftar memuat dua perintah contoh, Lihat membuka pratinjau, dan draf berjalan bisa dilanjutkan', async ({
+test.describe('Stok Opname PSO dan HSO (gambar 19 dan 20)', () => {
+  test('daftar riwayat berkolom lengkap, empat contoh, filter status dan pencarian bekerja', async ({
     page,
   }) => {
     await loginBo(page);
     await page.goto('/#/bo/opname');
-    await expect(page.locator('.bo-mut-table thead th')).toHaveText([
-      'No. Opname',
+    await expect(page.getByRole('heading', { name: 'Riwayat Stok Opname' })).toBeVisible();
+    await expect(page.locator('.bo-trx-table thead th')).toHaveText([
       'Tanggal',
+      'Nomor PSO',
+      'Nomor HSO',
       'Gudang',
-      'Petugas',
-      'Barang',
       'Status',
-      'Nilai selisih',
-      'Aksi',
+      'Petugas',
+      'Keterangan',
     ]);
-    await page.getByRole('button', { name: 'Lihat OP-0002' }).click();
-    await expect(page.getByRole('dialog')).toContainText('OP-0002');
-    await page.getByRole('dialog').getByRole('button', { name: 'Tutup', exact: true }).click();
+    await expect(page.locator('.bo-trx-table tbody tr')).toHaveCount(4);
+    await expect(page.locator('.bo-trx-table tbody tr').first()).toContainText('Menunggu Eksekusi');
+    await page.getByLabel('Status', { exact: true }).selectOption('selesai');
+    await expect(page.locator('.bo-trx-table tbody tr')).toHaveCount(2);
+    await page.getByLabel('Status', { exact: true }).selectOption('semua');
+    await page
+      .getByRole('searchbox', { name: 'Cari nomor, petugas, atau keterangan' })
+      .fill('PSO-0003');
+    await expect(page.locator('.bo-trx-table tbody tr')).toHaveCount(1);
+    await expect(page.locator('.bo-trx-table tbody tr')).toContainText('Dalam Perhitungan');
+  });
 
-    await page.getByRole('button', { name: 'Perintah Opname' }).click();
-    await pick(page, 'B0001');
-    await page.getByRole('button', { name: 'Kembali ke daftar' }).click();
-    const draft = page.locator('.bo-mut-table tbody tr').first();
-    await expect(draft).toContainText('OP-0003');
-    await expect(draft).toContainText('Draf');
-    await page.getByRole('button', { name: 'Lanjutkan draf OP-0003' }).click();
+  test('perintah baru: tolak tanpa barang, tambah lewat rak, simpan, lalu proses menjadi hasil lengkap', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await page.goto('/#/bo/opname');
+    await page.getByRole('button', { name: 'Stok Opname', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/opname\?baru=1$/);
+    await expect(page.getByLabel('No PSO')).toHaveValue('Otomatis');
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Tambahkan barang yang akan dihitung lebih dulu.')).toBeVisible();
+    await page.getByLabel('Nama Barang').fill('B0001');
+    await page.getByLabel('Nama Barang').press('Enter');
+    await expect(page.locator('.bo-mut-table--lines tbody tr')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Proses Opname' }).click();
+    await expect(page.getByLabel('No HSO')).toHaveValue('HSO-0004');
+    await expect(page.getByLabel('No PSO')).toHaveValue('PSO-0005');
     await expect(page.getByText('Terisi 0 dari 1')).toBeVisible();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Isi stok fisik atau hapus baris ini.')).toBeVisible();
+    const physical = page.locator('[data-physical="P-0001"]');
+    await physical.fill('-1');
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByText('Stok fisik tidak boleh negatif.')).toBeVisible();
+    await physical.fill('0');
+    await expect(page.getByText('Terisi 1 dari 1')).toBeVisible();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Terapkan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/opname$/);
+    const first = page.locator('.bo-trx-table tbody tr').first();
+    await expect(first).toContainText('PSO-0005');
+    await expect(first).toContainText('HSO-0004');
+    await expect(first).toContainText('Selesai');
+  });
+
+  test('hasil sebagian disimpan sebagai Dalam Perhitungan dan hasil selesai terkunci', async ({
+    page,
+  }) => {
+    await loginBo(page);
+    await page.goto('/#/bo/opname?baru=1&no=PSO-0003&mode=hasil');
+    await expect(page.getByText('Terisi 2 dari 4')).toBeVisible();
+    await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page).toHaveURL(/#\/bo\/opname$/);
+    await expect(page.locator('.bo-trx-table tbody tr[data-pso="PSO-0003"]')).toContainText(
+      'Dalam Perhitungan',
+    );
+    await page.goto('/#/bo/opname?baru=1&no=PSO-0001&mode=hasil');
+    await expect(page.getByRole('button', { name: 'Simpan', exact: true })).toBeDisabled();
+    await expect(page.locator('[data-physical]')).toHaveCount(0);
   });
 });
