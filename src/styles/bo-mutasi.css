@@ -760,9 +760,9 @@ html[data-app='bo'] .bo-opn-actions .bo-mut-counter {
 }
 
 html[data-app='bo'] .bo-opn-process:not(:disabled) {
-  border-color: var(--color-status-success-fg);
-  background: var(--color-status-success-fg);
-  color: var(--color-bg-surface);
+  border-color: #1f6f2b;
+  background: #1f6f2b;
+  color: #fff;
 }
 
 html[data-app='bo'] .bo-opn-head {

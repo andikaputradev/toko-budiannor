@@ -31,7 +31,8 @@ import '../../styles/bo-seragam.css';
 // Layar tanpa isian pengguna dan tanpa langganan store: dibangun ulang saat tabnya dibuka kembali
 // setelah data berubah (lihat Freshness di workspace.ts).
 const VIEW_ONLY_ROUTES: ReadonlySet<string> = new Set([
-  '/bo/transaksi/daftar-nota',
+  '/bo/transaksi/faktur-penjualan',
+  '/bo/transaksi/faktur-pembelian',
   '/bo/transaksi/po-pembelian',
   '/bo/transaksi/so-penjualan',
 ]);
@@ -137,34 +138,38 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
   '/bo/transaksi/retur-penjualan': {
     id: 'BO-10',
     load: async () => {
-      const { renderReturnForm } = await import('./screens/return-form');
-      return (session, go) => renderReturnForm(session, go, 'penjualan');
+      const { renderReturns } = await import('./screens/returns');
+      return (session, go, query) =>
+        renderReturns(session, go, 'penjualan', query.get('baru') === '1');
     },
   },
   '/bo/transaksi/retur-pembelian': {
     id: 'BO-10',
     load: async () => {
-      const { renderReturnForm } = await import('./screens/return-form');
-      return (session, go) => renderReturnForm(session, go, 'pembelian');
+      const { renderReturns } = await import('./screens/returns');
+      return (session, go, query) =>
+        renderReturns(session, go, 'pembelian', query.get('baru') === '1');
     },
   },
   '/bo/transaksi/deposit-pelanggan': {
     id: 'BO-11',
     load: async () => {
-      const { renderDeposit } = await import('./screens/deposit');
-      return (session) => renderDeposit(session);
+      const { renderDepositPage } = await import('./screens/deposit-page');
+      return (session, go, query) => renderDepositPage(session, go, query.get('baru') === '1');
     },
   },
-  '/bo/transaksi/daftar-nota': {
+  '/bo/transaksi/faktur-penjualan': {
     id: 'BO-09',
     load: async () => {
       const { renderTransactionList } = await import('./screens/transaction-list');
-      return (session, go, query) =>
-        renderTransactionList(
-          session,
-          go,
-          query.get('tab') === 'pembelian' ? 'pembelian' : 'penjualan',
-        );
+      return (session, go) => renderTransactionList(session, go, 'penjualan');
+    },
+  },
+  '/bo/transaksi/faktur-pembelian': {
+    id: 'BO-08',
+    load: async () => {
+      const { renderTransactionList } = await import('./screens/transaction-list');
+      return (session, go) => renderTransactionList(session, go, 'pembelian');
     },
   },
   '/bo/transaksi/so-penjualan': {
@@ -357,6 +362,7 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
 
 // Rute Akuntansi lama (satu tab per bagian) dialihkan ke satu halaman Akuntansi (gambar klien 24 sampai 28).
 const LEGACY_PATHS: Readonly<Record<string, string>> = {
+  '/bo/transaksi/daftar-nota': '/bo/transaksi/faktur-penjualan',
   '/bo/akuntansi/jurnal': '/bo/akuntansi?bagian=jurnal',
   '/bo/akuntansi/beban': '/bo/akuntansi?bagian=beban',
   '/bo/akuntansi/arus-kas': '/bo/akuntansi?bagian=arus-kas',

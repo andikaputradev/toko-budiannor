@@ -33,9 +33,11 @@ describe('Menu Navigasi Back-Office', () => {
     expect(barang).toBeDefined();
     expect(barang?.group).toBe('master-data');
 
-    const penjualan = entryFor('/bo/penjualan');
+    const penjualan = entryFor('/bo/transaksi/faktur-penjualan');
     expect(penjualan).toBeDefined();
     expect(penjualan?.group).toBe('transaksi');
+    // Daftar Nota gabungan diganti dua daftar Faktur sendiri (CATATAN klien 16 November).
+    expect(entryFor('/bo/transaksi/daftar-nota')).toBeUndefined();
 
     const stok = entryFor('/bo/stok?filter=minimum');
     expect(stok).toBeDefined();
@@ -69,5 +71,18 @@ describe('Menu Navigasi Back-Office', () => {
     expect(menuFor('supervisor').length).toBe(8);
     expect(menuFor('kasir').length).toBe(0);
     expect(menuFor('frontliner').length).toBe(0);
+  });
+
+  it('entri Laporan membuka kotak pilihan, kecuali halaman Price List (gambar klien 29)', () => {
+    const laporan = groupFor('laporan');
+    expect(laporan?.entries.map((entry) => [entry.path, entry.dialog])).toEqual([
+      ['/bo/laporan/laba-rugi', 'laba-rugi-kotor'],
+      ['/bo/laporan/penjualan', 'penjualan'],
+      ['/bo/laporan/pembelian', 'pembelian'],
+      ['/bo/laporan/hutang-piutang', 'hutang-piutang'],
+      ['/bo/laporan/stok', 'stok'],
+      ['/bo/laporan/daftar-harga', 'harga'],
+      ['/bo/harga', undefined],
+    ]);
   });
 });

@@ -160,28 +160,28 @@ test.describe('B3 dan B4 komisi dan promo', () => {
   test('komisi terisi tersimpan sebagai persen dan kosong menghapusnya', async ({ page }) => {
     await openBarang(page);
     await save(page).click();
-    await page.getByLabel('KOMISI SALES', { exact: true }).fill('2,5');
+    await page.getByLabel('Komisi Sales', { exact: true }).fill('2,5');
     await save(page).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
-    await expect(page.getByLabel('KOMISI SALES', { exact: true })).toHaveValue('2,5');
+    await expect(page.getByLabel('Komisi Sales', { exact: true })).toHaveValue('2,5');
 
     await save(page).click();
-    await page.getByLabel('KOMISI SALES', { exact: true }).fill('');
+    await page.getByLabel('Komisi Sales', { exact: true }).fill('');
     await save(page).click();
-    await expect(page.getByLabel('KOMISI SALES', { exact: true })).toHaveValue('');
+    await expect(page.getByLabel('Komisi Sales', { exact: true })).toHaveValue('');
   });
 
   test('persen promo dan komisi di luar batas ditolak pada kolomnya', async ({ page }) => {
     await openBarang(page);
     await startNewProduct(page, 'B9102', 'Barang Persen Salah');
-    await page.getByLabel('PROMO', { exact: true }).fill('101');
+    await page.getByLabel('Promo', { exact: true }).fill('101');
     await save(page).click();
     await expect(page.getByText('Promo harus berupa persen 0 sampai 100.')).toBeVisible();
-    await page.getByLabel('PROMO', { exact: true }).fill('20%');
-    await page.getByLabel('KOMISI SALES', { exact: true }).fill('abc');
+    await page.getByLabel('Promo', { exact: true }).fill('20%');
+    await page.getByLabel('Komisi Sales', { exact: true }).fill('abc');
     await save(page).click();
     await expect(page.getByText('Komisi sales harus berupa persen 0 sampai 100.')).toBeVisible();
-    await page.getByLabel('KOMISI SALES', { exact: true }).fill('2,5');
+    await page.getByLabel('Komisi Sales', { exact: true }).fill('2,5');
     await save(page).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
   });
@@ -193,7 +193,7 @@ test.describe('B3 dan B4 komisi dan promo', () => {
     await searchFor(page, 'P001');
     await expect(page.getByLabel('Nama barang')).toHaveValue(/SEMEN GRESIK/i);
     await save(page).click();
-    await page.getByLabel('PROMO', { exact: true }).fill('15');
+    await page.getByLabel('Promo', { exact: true }).fill('15');
     await save(page).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
 
@@ -211,10 +211,10 @@ test.describe('B3 dan B4 komisi dan promo', () => {
 test.describe('B5 informasi biaya hanya untuk Owner', () => {
   test('Supervisor tidak melihat label dan kolom Harga Beli Akhir dan HPP', async ({ page }) => {
     await openBarang(page, SUPERVISOR);
-    await expect(page.getByLabel('HARGA BELI AKHIR', { exact: true })).toHaveCount(0);
-    await expect(page.getByLabel('HPP AVG', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('Harga Beli Akhir', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('HPP Avg', { exact: true })).toHaveCount(0);
     await expect(page.locator('.bo-pd-form')).not.toContainText('HPP');
-    await expect(page.locator('.bo-pd-form')).not.toContainText('HARGA BELI AKHIR');
+    await expect(page.locator('.bo-pd-form')).not.toContainText('Harga Beli Akhir');
   });
 
   // B0004 punya satu dokumen koreksi contoh (KS-0001), jadi tab Koreksi berisi baris untuk kedua peran.
@@ -237,12 +237,12 @@ test.describe('B5 informasi biaya hanya untuk Owner', () => {
     await expect(dialog).not.toContainText('nilai satuan');
     await dialog.getByRole('tab', { name: 'Pembelian' }).click();
     await expect(
-      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'HARGA' }),
+      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'Harga' }),
     ).toHaveCount(0);
     await expect(dialog.locator('[role="tabpanel"]:not([hidden])')).not.toContainText('Rp');
     await dialog.getByRole('tab', { name: 'Penjualan' }).click();
     await expect(
-      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'HARGA' }),
+      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'Harga' }),
     ).toHaveCount(1);
     await dialog.getByRole('tab', { name: 'Mutasi' }).click();
     await expect(dialog.locator('[role="tabpanel"]:not([hidden])')).toBeVisible();
@@ -252,26 +252,26 @@ test.describe('B5 informasi biaya hanya untuk Owner', () => {
     const dialog = await openInfoB0004(page, OWNER);
     await dialog.getByRole('tab', { name: 'Pembelian' }).click();
     await expect(
-      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'HARGA' }),
+      dialog.locator('[role="tabpanel"]:not([hidden]) th', { hasText: 'Harga' }),
     ).toHaveCount(1);
   });
 
   test('Owner melihat keduanya', async ({ page }) => {
     await openBarang(page, OWNER);
-    await expect(page.getByLabel('HARGA BELI AKHIR', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('HPP AVG', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Harga Beli Akhir', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('HPP Avg', { exact: true })).toBeVisible();
   });
 
   test('Owner lalu diganti Supervisor dari Panel Simulasi: kolom biaya hilang', async ({
     page,
   }) => {
     await openBarang(page, OWNER);
-    await expect(page.getByLabel('HPP AVG', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('HPP Avg', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Panel Simulasi' }).click();
     await page.locator('#sim-role').selectOption('supervisor');
     await page.getByRole('button', { name: 'Panel Simulasi' }).click();
     await expect(page.locator('.bo-pd-count')).toHaveText('3.607 barang');
-    await expect(page.getByLabel('HPP AVG', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('HPP Avg', { exact: true })).toHaveCount(0);
   });
 });
 
@@ -326,40 +326,40 @@ test.describe('I1 Info Data Histori Barang (gambar 4 sampai 7)', () => {
   test('kolom setiap tab mengikuti gambar klien', async ({ page }) => {
     const dialog = await openInfo(page, 'B1183');
     expect(await headers(dialog)).toEqual([
-      'TGL PEMBELIAN',
-      'NO NOTA',
-      'QTY',
-      'SATUAN',
-      'HARGA',
-      'PEMASOK',
+      'Tgl Pembelian',
+      'No Faktur',
+      'Qty',
+      'Satuan',
+      'Harga',
+      'Pemasok',
     ]);
     await dialog.getByRole('tab', { name: 'Penjualan' }).click();
     expect(await headers(dialog)).toEqual([
-      'TGL PENJUALAN',
-      'NO NOTA',
-      'QTY',
-      'SATUAN',
-      'HARGA',
-      'PELANGGAN',
+      'Tgl Penjualan',
+      'No Faktur',
+      'Qty',
+      'Satuan',
+      'Harga',
+      'Pelanggan',
     ]);
     await dialog.getByRole('tab', { name: 'Koreksi' }).click();
     expect(await headers(dialog)).toEqual([
-      'TGL KOREKSI',
-      'NO KOREKSI',
-      'QTY AWAL',
-      'AKSI',
-      'QTY',
-      'QTY AKHIR',
+      'Tgl Koreksi',
+      'No Koreksi',
+      'Qty Awal',
+      'Aksi',
+      'Qty',
+      'Qty Akhir',
     ]);
     await dialog.getByRole('tab', { name: 'Mutasi' }).click();
     expect(await headers(dialog)).toEqual([
-      'TANGGAL',
-      'NOMOR',
-      'TRANSAKSI',
-      'NAMA',
-      'MASUK',
-      'KELUAR',
-      'SALDO',
+      'Tanggal',
+      'Nomor',
+      'Transaksi',
+      'Nama',
+      'Masuk',
+      'Keluar',
+      'Saldo',
     ]);
   });
 
@@ -408,21 +408,21 @@ test.describe('I1 Info Data Histori Barang (gambar 4 sampai 7)', () => {
     await expect(rows).toHaveCount(before);
   });
 
-  test('Mutasi: baris SALDO AWAL di depan dan filter Gudang mengubah saldo akhir', async ({
+  test('Mutasi: baris Saldo Awal di depan dan filter Gudang mengubah saldo akhir', async ({
     page,
   }) => {
     const dialog = await openInfo(page, 'B0004');
     await dialog.getByRole('tab', { name: 'Mutasi' }).click();
     const rows = panel(dialog).locator('tbody tr');
-    await expect(rows.first()).toContainText('SALDO AWAL');
+    await expect(rows.first()).toContainText('Saldo Awal');
     const gudang = dialog.getByLabel('Gudang', { exact: true });
-    await expect(gudang.locator('option')).toHaveText(['Semua Gudang', 'Toko', 'Gudang Besar']);
+    await expect(gudang.locator('option')).toHaveText(['Semua Gudang', 'Toko', 'Gudang']);
     const lastBalance = async (): Promise<string> =>
       (await rows.last().locator('td').last().textContent()) ?? '';
     const semua = await lastBalance();
     await gudang.selectOption({ label: 'Toko' });
     const toko = await lastBalance();
-    await gudang.selectOption({ label: 'Gudang Besar' });
+    await gudang.selectOption({ label: 'Gudang' });
     const besar = await lastBalance();
     expect(new Set([semua, toko, besar]).size).toBeGreaterThan(1);
   });

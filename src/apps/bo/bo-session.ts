@@ -33,18 +33,8 @@ import {
   type OpnameLine,
   type OpnameOrder,
 } from './domain/opname';
-import {
-  applyToCustomer,
-  applyToSupplier,
-  checkPayment,
-  formatPaymentNumber,
-  nextPaymentSequence,
-  seedDebtPayments,
-  type DebtPayment,
-  type DebtPaymentDraft,
-  type PaymentIssue,
-} from './domain/debt-payments';
-import { getUnpaidInvoicesForParty, type PartyType } from './domain/receivable-payable';
+import type { DebtPayment } from './domain/debt-payments';
+import type { PartyType } from './domain/receivable-payable';
 import { parseQuantity, validateTransfer, type TransferLineDraft } from './domain/transfer';
 
 export const BO_DEVICE = 'Back-Office PC';
@@ -77,7 +67,10 @@ export interface BoState {
   // Perintah baru yang sedang disusun (belum disimpan).
   readonly opnameDraft: OpnameOrder;
   // Pembayaran piutang dan hutang yang tercatat (Daftar Pembayaran), terbaru di akhir.
+  // Kosong sampai layar Hutang Piutang atau Laporan pertama membukanya (riwayat contoh dibangkitkan
+  // di modul malas supaya tidak membesarkan berkas awal); `debtReady` menandai sudah diisi.
   readonly debtPayments: readonly DebtPayment[];
+  readonly debtReady: boolean;
   // Faktur yang ditandai untuk dicetak pada laporan penagihan (Saldo Piutang) per jenis pihak.
   readonly collectionMarks: Readonly<Record<PartyType, readonly string[]>>;
 }
@@ -106,11 +99,6 @@ export type PricingResult =
   | { readonly ok: false; readonly kind: 'denied'; readonly messageId: SystemMessageId };
 
 export type TransferResult = { readonly ok: true; readonly number: string } | Failure;
-
-export type DebtPaymentResult =
-  | { readonly ok: true; readonly number: string; readonly total: number }
-  | { readonly ok: false; readonly denied: true }
-  | { readonly ok: false; readonly issue: PaymentIssue; readonly invoiceNumber?: string };
 
 export interface OpnameHeaderPatch {
   readonly date?: string;
@@ -158,7 +146,8 @@ export interface BoSession {
   startOpnameCount(pso: string): OpnameSaveResult;
   setPhysical(pso: string, productId: string, value: string): void;
   saveOpnameResult(pso: string): OpnameSaveResult;
-  saveDebtPayment(draft: DebtPaymentDraft): DebtPaymentResult;
+  initDebtPayments(payments: readonly DebtPayment[]): void;
+  addDebtPayment(payment: DebtPayment): void;
   saveCollectionMarks(type: PartyType, invoices: readonly string[]): void;
   printInvoiceCopy(number: string): Done | Failure;
 }
@@ -229,16 +218,13 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
   };
   const draftFor = (orders: readonly OpnameOrder[]): OpnameOrder =>
     freshOpnameDraft(orders, today(), store.getState().userId);
-  const debtSeed = (): readonly DebtPayment[] => {
-    const data = store.getState().data;
-    return seedDebtPayments(data, data.users.find((user) => user.role === 'owner')?.id ?? 'U-1');
-  };
   let state: BoState = {
     user: undefined,
     transfers: seed(),
     opnameOrders: history(),
     opnameDraft: draftFor(history()),
-    debtPayments: debtSeed(),
+    debtPayments: [],
+    debtReady: false,
     collectionMarks: { pelanggan: [], pemasok: [] },
   };
   const guards = new Map<string, LoginGuard>();
@@ -254,7 +240,8 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
       transfers: seed(),
       opnameOrders: past,
       opnameDraft: draftFor(past),
-      debtPayments: debtSeed(),
+      debtPayments: [],
+      debtReady: false,
       collectionMarks: { pelanggan: [], pemasok: [] },
     };
     bus.emit('change', state);
@@ -610,55 +597,17 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
       );
       return { ok: true, pso: order.pso, status: 'selesai' };
     },
-    saveDebtPayment: (draft) => {
-      if (!isAllowed(role(), 'BO-11', 'Catat Pembayaran Piutang')) {
-        return { ok: false, denied: true };
+    initDebtPayments: (payments) => {
+      if (!state.debtReady) {
+        commit({ debtPayments: payments, debtReady: true });
       }
-      const data = store.getState().data;
-      const invoices = getUnpaidInvoicesForParty(draft.partyId, draft.type, data);
-      const check = checkPayment(draft, invoices);
-      if (!check.ok) {
-        return check;
-      }
-      let partyName = '';
-      if (draft.type === 'pelanggan') {
-        const customer = data.customers.find((item) => item.id === draft.partyId);
-        if (customer === undefined) {
-          return { ok: false, issue: 'pihak' };
-        }
-        partyName = customer.name;
-        store.saveCustomer(applyToCustomer(customer, check.allocations, draft.date, draft.method));
-      } else {
-        const supplier = data.suppliers.find((item) => item.id === draft.partyId);
-        if (supplier === undefined) {
-          return { ok: false, issue: 'pihak' };
-        }
-        partyName = supplier.name;
-        store.saveSupplier(applyToSupplier(supplier, check.total));
-      }
-      const number = formatPaymentNumber(
-        draft.type,
-        nextPaymentSequence(state.debtPayments, draft.type),
-      );
-      const payment: DebtPayment = {
-        number,
-        type: draft.type,
-        date: draft.date,
-        partyId: draft.partyId,
-        partyName,
-        method: draft.method,
-        account: draft.account,
-        total: check.total,
-        note: draft.note.trim(),
-        userId: userId(),
-        allocations: check.allocations,
-      };
+    },
+    addDebtPayment: (payment) => {
       commit({ debtPayments: [...state.debtPayments, payment] });
       log(
         'transaksi',
-        `${draft.type === 'pelanggan' ? 'Pembayaran piutang' : 'Pembayaran hutang'} ${number} ${partyName}: ${String(check.total)}`,
+        `${payment.type === 'pelanggan' ? 'Pembayaran piutang' : 'Pembayaran hutang'} ${payment.number} ${payment.partyName}: ${String(payment.total)}`,
       );
-      return { ok: true, number, total: check.total };
     },
     saveCollectionMarks: (type, invoices) => {
       commit({ collectionMarks: { ...state.collectionMarks, [type]: [...invoices] } });

@@ -110,7 +110,19 @@ html[data-app='bo'] .field.bo-picker > :not(.field__label) {
 
 /* ===== Data Barang: caption di kiri, satu isian per baris ===== */
 html[data-app='bo'] .bo-pd {
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+/* Enam tombol Data Barang tetap satu baris seperti gambar klien. */
+html[data-app='bo'] .bo-pd-toolbar {
+  flex-wrap: nowrap;
+}
+
+html[data-app='bo'] .bo-pd-btn {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 9px;
+  white-space: nowrap;
 }
 
 html[data-app='bo'] .bo-pd-form {
@@ -338,4 +350,55 @@ html[data-app='bo'] .bo-acc-form-panel {
 html[data-app='bo'] .bo-acc-form-panel > .field .input {
   height: 36px;
   min-height: 36px;
+}
+
+/* ===== Retur: Faktur Asal dua kolom dengan caption di kiri; Penyelesaian satu kolom ===== */
+html[data-app='bo'] .bo-ret-source {
+  --bo-label-w: 9.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-ret-source > .field:last-child {
+  grid-column: 1 / -1;
+}
+
+html[data-app='bo'] .bo-ret-source .bo-ret-search {
+  display: flex;
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret-source .bo-ret-search .input {
+  flex: 1 1 0;
+}
+
+html[data-app='bo'] .bo-ret-card .field,
+html[data-app='bo'] .bo-ret-settle .field {
+  --bo-label-w: 9rem;
+}
+
+html[data-app='bo'] .bo-ret-reasons,
+html[data-app='bo'] .bo-ret-reason-chips {
+  grid-column: 2;
+}
+
+html[data-app='bo'] .bo-ret-aside .bo-ret-settle {
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+}
+
+html[data-app='bo'] .bo-ret-settle .field {
+  --bo-label-w: 7.4rem;
+}
+
+html[data-app='bo'] .bo-ret-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+/* Satu ukuran huruf untuk semua caption isian (CATATAN klien: "label ukuran 10 semua 10"). */
+html[data-app='bo'] :is(label, .field__label, .bo-trx-head__label, .bo-trx-totals__label) {
+  font-size: var(--bo-fs-label);
 }

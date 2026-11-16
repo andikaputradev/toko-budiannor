@@ -28,6 +28,8 @@ const TITLE_ALIASES: Readonly<Record<string, string>> = {
   '/bo/pengaturan/backup': '/bo/pengaturan/lainnya',
   '/bo/transaksi/po-pembelian/baru': '/bo/transaksi/po-pembelian',
   '/bo/transaksi/so-penjualan/baru': '/bo/transaksi/so-penjualan',
+  '/bo/penjualan': '/bo/transaksi/faktur-penjualan',
+  '/bo/pembelian': '/bo/transaksi/faktur-pembelian',
 };
 
 // Tab formulir PO dan SO memakai rute sendiri agar tidak menimpa tab daftarnya; judulnya berupa
@@ -35,6 +37,8 @@ const TITLE_ALIASES: Readonly<Record<string, string>> = {
 const TITLE_TEXTS: Readonly<Record<string, string>> = {
   '/bo/transaksi/po-pembelian/baru': 'PO Baru',
   '/bo/transaksi/so-penjualan/baru': 'SO Baru',
+  '/bo/penjualan': 'Form Faktur Penjualan',
+  '/bo/pembelian': 'Form Faktur Pembelian',
 };
 
 export function tabKey(path: string): string {

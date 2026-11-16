@@ -254,10 +254,10 @@ test.describe('BO-03 Barang', () => {
     await expect(page.getByText('Satuan dasar wajib dipilih.')).toBeVisible();
     await page.getByLabel('Satuan dasar', { exact: true }).click();
     await page.locator('.bo-pd-units__option', { hasText: /^Pcs$/ }).click();
-    await page.getByLabel('Stok minimum Gudang Display').fill('-1');
+    await page.getByLabel('Stok minimum Toko').fill('-1');
     await save.click();
     await expect(page.getByText('Stok minimum tidak boleh negatif.')).toBeVisible();
-    await page.getByLabel('Stok minimum Gudang Display').fill('5');
+    await page.getByLabel('Stok minimum Toko').fill('5');
     await save.click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
     await expect(page.locator('.bo-pd-count')).toHaveText('3.608 barang');
@@ -367,7 +367,7 @@ test.describe('BO-05 Stok per Gudang', () => {
       'Min Total',
       'Status',
     ]);
-    await page.getByRole('button', { name: 'Besar', exact: true }).click();
+    await page.getByRole('button', { name: 'Gudang', exact: true }).click();
     await page.getByRole('button', { name: 'Cetak', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('button', { name: 'Print' })).toBeVisible();

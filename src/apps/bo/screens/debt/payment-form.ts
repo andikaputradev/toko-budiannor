@@ -13,6 +13,7 @@ import {
   methodText,
   sumAllocations,
   type DebtPayment,
+  type DebtPaymentDraft,
   type PayMethod,
 } from '../../domain/debt-payments';
 import { moneyText, parseMoney } from '../../domain/master-fields';
@@ -27,6 +28,7 @@ import {
 import { DEFAULT_STORE_PROFILE } from '../../domain/settings-rbac';
 import type { ScreenHandle } from '../login';
 import { userName } from '../mutasi/parts';
+import { ensurePayments, recordPayment } from './ledger';
 import { PAYMENT_PATH } from './payment-list';
 import { DEBT_COPY, DEBT_TEXT, debt } from './text';
 
@@ -47,7 +49,7 @@ export function renderPaymentForm(
   const existing =
     options.number === undefined
       ? undefined
-      : session.state().debtPayments.find((payment) => payment.number === options.number);
+      : ensurePayments(session).find((payment) => payment.number === options.number);
   const readOnly = existing !== undefined;
   const data = (): ReturnType<typeof store.getState>['data'] => store.getState().data;
 
@@ -154,7 +156,7 @@ export function renderPaymentForm(
   spread.disabled = readOnly;
 
   const paintTotal = (): void => {
-    const total = readOnly ? (existing.total) : sumAllocations(allocations);
+    const total = readOnly ? existing.total : sumAllocations(allocations);
     payOut.textContent = formatRupiah(total);
   };
 
@@ -291,7 +293,7 @@ export function renderPaymentForm(
   });
   spread.addEventListener('click', applyNominal);
 
-  const draft = (): Parameters<BoSession['saveDebtPayment']>[0] => ({
+  const draft = (): DebtPaymentDraft => ({
     type,
     date: dateInput.value,
     partyId,
@@ -393,7 +395,7 @@ export function renderPaymentForm(
     if (!store.getState().online) {
       return;
     }
-    const result = session.saveDebtPayment(draft());
+    const result = recordPayment(session, draft());
     if (result.ok) {
       showToast({
         kind: 'success',

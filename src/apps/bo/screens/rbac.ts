@@ -103,7 +103,10 @@ export function renderRbacScreen(
           el(
             'td',
             {},
-            el('span', { className: `bo-badge ${roleBadgeClass}`, text: u.role.toUpperCase() }),
+            el('span', {
+              className: `bo-badge ${roleBadgeClass}`,
+              text: u.role.charAt(0).toUpperCase() + u.role.slice(1),
+            }),
           ),
           el('td', { text: '••••' }),
           el(

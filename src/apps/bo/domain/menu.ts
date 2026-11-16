@@ -97,7 +97,7 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         screenId: 'BO-08',
       },
       {
-        path: '/bo/pembelian',
+        path: '/bo/transaksi/faktur-pembelian',
         label: 'menuFakturPembelian',
         group: 'transaksi',
         screenId: 'BO-08',
@@ -115,7 +115,7 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         screenId: 'BO-09',
       },
       {
-        path: '/bo/penjualan',
+        path: '/bo/transaksi/faktur-penjualan',
         label: 'menuFakturPenjualan',
         group: 'transaksi',
         screenId: 'BO-09',
@@ -131,12 +131,6 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         label: 'menuDepositPelanggan',
         group: 'transaksi',
         screenId: 'BO-11',
-      },
-      {
-        path: '/bo/transaksi/daftar-nota',
-        label: 'daftarNotaJudul',
-        group: 'transaksi',
-        screenId: 'BO-09',
       },
       {
         path: '/bo/transaksi/surat-jalan',

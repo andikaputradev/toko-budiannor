@@ -12,6 +12,7 @@ import {
   type ReportMode,
 } from '../../domain/reports';
 import { movementSourcesFor } from '../../movement-sources';
+import { ensurePayments } from '../debt/ledger';
 import { openReportDialog, type Choice, type DialogSpec, type DialogValues } from './dialog';
 
 const ALL: Choice = { value: '', text: 'Semua' };
@@ -260,7 +261,7 @@ export function openReport(kind: ReportKind, session: BoSession): void {
         },
       ],
       build: (values) =>
-        buildDebtReport(data, session.state().debtPayments, {
+        buildDebtReport(data, ensurePayments(session), {
           side: values['side'] === 'piutang' ? 'piutang' : 'hutang',
           mode:
             values['mode'] === 'perincian' || values['mode'] === 'pembayaran'

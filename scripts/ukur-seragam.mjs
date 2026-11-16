@@ -8,7 +8,7 @@
 // (2) label yang berada di atas isian (seharusnya di kiri), (3) kepala tabel berwarna lain,
 // (4) bentuk isian dan tombol yang tidak seragam, (5) istilah terlarang (Nota, Gudang Display,
 // Gudang Besar). Keluar dengan kode 1 bila ada temuan.
-/* global document, window, getComputedStyle -- dipakai di dalam page.evaluate */
+/* global document, getComputedStyle -- dipakai di dalam page.evaluate */
 import { readFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
@@ -18,11 +18,29 @@ function option(name, fallback) {
 }
 
 const EXTRA_ROUTES = [
-  '/bo/transaksi/daftar-nota?tab=pembelian',
+  '/bo/transaksi/faktur-pembelian',
   '/bo/mutasi?baru=1',
   '/bo/mutasi/koreksi?baru=1',
   '/bo/opname?baru=1',
+  '/bo/hutang-piutang/bayar-piutang?baru=1',
+  '/bo/hutang-piutang/bayar-hutang?baru=1',
+  '/bo/transaksi/retur-penjualan?baru=1',
+  '/bo/transaksi/retur-pembelian?baru=1',
+  '/bo/transaksi/deposit-pelanggan?baru=1',
+  '/bo/akuntansi?bagian=beban',
+  '/bo/akuntansi?bagian=arus-kas',
+  '/bo/akuntansi?bagian=laba-rugi',
+  '/bo/akuntansi?bagian=neraca',
 ];
+
+// Entri menu Laporan membuka kotak pilihan, bukan halaman: tidak ikut disapu sebagai rute.
+const DIALOG_ONLY = new Set([
+  '/bo/laporan/laba-rugi',
+  '/bo/laporan/penjualan',
+  '/bo/laporan/pembelian',
+  '/bo/laporan/hutang-piutang',
+  '/bo/laporan/daftar-harga',
+]);
 
 function allRoutes() {
   const menu = readFileSync(new URL('../src/apps/bo/domain/menu.ts', import.meta.url), 'utf8');
@@ -31,7 +49,7 @@ function allRoutes() {
     ...menu.matchAll(/path: '(\/bo\/[^']*)'/g),
     ...index.matchAll(/^ {2}'(\/bo\/[^']+)': \{/gm),
   ].map((match) => match[1]);
-  return [...new Set([...paths, ...EXTRA_ROUTES])];
+  return [...new Set([...paths, ...EXTRA_ROUTES])].filter((path) => !DIALOG_ONLY.has(path));
 }
 
 const base = option('base', 'http://127.0.0.1:4173');

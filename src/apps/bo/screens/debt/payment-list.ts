@@ -13,6 +13,7 @@ import {
   createSearchBox,
 } from '../trx/list-page';
 import { userName } from '../mutasi/parts';
+import { ensurePayments } from './ledger';
 import { DEBT_COPY, DEBT_TEXT } from './text';
 
 export const PAYMENT_PATH: Readonly<Record<PartyType, string>> = {
@@ -72,7 +73,7 @@ export function renderPaymentList(
   );
 
   const mine = (): DebtPayment[] =>
-    session.state().debtPayments.filter((payment) => payment.type === type);
+    ensurePayments(session).filter((payment) => payment.type === type);
 
   const rebuildFilter = (): void => {
     const names = [...new Set(mine().map((payment) => payment.partyName))].sort((a, b) =>

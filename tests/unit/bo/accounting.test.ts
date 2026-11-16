@@ -42,7 +42,11 @@ describe('Domain Akuntansi & Laporan Keuangan Back Office', () => {
 
   it('memetakan kategori beban di luar enam kategori ke Beban Lain Lain', () => {
     const summary = calculateExpenseSummary(
-      [{ ...DEFAULT_EXPENSE_ITEMS[0]!, category: 'Lain', amount: 1_000 }],
+      DEFAULT_EXPENSE_ITEMS.slice(0, 1).map((item) => ({
+        ...item,
+        category: 'Lain',
+        amount: 1_000,
+      })),
       1_000_000,
     );
     expect(summary.categories.find((item) => item.name === 'Beban Lain Lain')?.amount).toBe(1_000);

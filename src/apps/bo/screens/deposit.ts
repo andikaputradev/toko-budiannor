@@ -53,7 +53,7 @@ function tile(title: string, value: string, main = false): HTMLElement {
   );
 }
 
-export function renderDeposit(session: BoSession): ScreenHandle {
+export function renderDeposit(session: BoSession, go: (path: string) => void): ScreenHandle {
   const store = session.store;
   let query = '';
   let filter: DepositFilter = 'bersaldo';
@@ -97,6 +97,14 @@ export function renderDeposit(session: BoSession): ScreenHandle {
     el(
       'div',
       { className: 'bo-ret-head__actions' },
+      createButton({
+        text: 'Kembali ke Daftar',
+        variant: 'secondary',
+        icon: 'arrow-left',
+        onClick: () => {
+          go('/bo/transaksi/deposit-pelanggan');
+        },
+      }),
       createButton({
         text: label('eksporPdf'),
         variant: 'secondary',

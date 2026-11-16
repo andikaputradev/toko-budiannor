@@ -114,7 +114,7 @@ function seedExpeditions(): ExpeditionRecord[] {
       code: 'EX004',
       name: 'Armada Truk Toko',
       phone: '081355500204',
-      address: 'Gudang Besar Toko Budiannor',
+      address: 'Gudang Toko Budiannor',
       baseFee: 100_000,
       note: 'Armada milik toko, pengiriman dalam kota',
       builtIn: false,
