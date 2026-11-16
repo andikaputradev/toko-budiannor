@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { Dataset } from '../../../shared/data/types';
 
@@ -45,7 +46,6 @@ export function filterTransactions(
   rows: readonly TransactionRow[],
   options: TransactionFilterOptions,
 ): readonly TransactionRow[] {
-  const q = options.query.trim().toLowerCase();
   const party = options.party ?? '';
   return rows.filter((r) => {
     if (options.type !== 'semua' && r.type !== options.type) {
@@ -63,14 +63,10 @@ export function filterTransactions(
     if (options.endDate && r.date > options.endDate) {
       return false;
     }
-    if (q) {
-      const matchNum = r.number.toLowerCase().includes(q);
-      const matchRef = r.refNumber.toLowerCase().includes(q);
-      const matchParty = r.partyName.toLowerCase().includes(q);
-      const matchTerms = r.paymentTerms.toLowerCase().includes(q);
-      if (!matchNum && !matchRef && !matchParty && !matchTerms) {
-        return false;
-      }
+    if (
+      !matchesPhrase(`${r.number} ${r.refNumber} ${r.partyName} ${r.paymentTerms}`, options.query)
+    ) {
+      return false;
     }
     return true;
   });

@@ -1,16 +1,21 @@
 import { el } from '../../../../shared/dom';
+import { matchesPhrase } from '../../../../shared/data/search-index';
 import { wibDate } from '../../../../shared/data/receivable';
 import { formatDate, formatRupiah } from '../../../../shared/format';
 import type { BoSession } from '../../bo-session';
+import { dateRangeFor, type DateRangeKind } from '../../domain/transaction-list';
 import { methodText, type DebtPayment } from '../../domain/debt-payments';
 import type { PartyType } from '../../domain/receivable-payable';
 import type { ScreenHandle } from '../login';
 import {
+  createDateFilter,
   createFilterSelect,
   createKpi,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  refuseDelete,
 } from '../trx/list-page';
 import { userName } from '../mutasi/parts';
 import { ensurePayments } from './ledger';
@@ -40,7 +45,16 @@ export function renderPaymentList(
   const today = wibDate(session.now());
   const todayKpi = createKpi(copy.totalHariIni);
   const search = createSearchBox(copy.cariPembayaranNama, copy.cariPembayaran);
+  const selection = createRowSelection();
   let partySelect = createFilterSelect(copy.saldoPihak, [{ value: '', text: copy.semuaPihak }]);
+  const dateSelect = createDateFilter();
+  const methodSelect = createFilterSelect(DEBT_TEXT.kolomMetode, [
+    { value: '', text: 'Metode: Semua' },
+    ...(['tunai', 'transfer', 'qris', 'edc'] as const).map((method) => ({
+      value: method,
+      text: `Metode: ${methodText(method)}`,
+    })),
+  ]);
   const filters = el('div', { className: 'bo-trx-filters__slot' });
 
   const body = el('tbody', {});
@@ -59,11 +73,12 @@ export function renderPaymentList(
         el(
           'tr',
           {},
-          el('th', { text: DEBT_TEXT.kolomTanggal }),
           el('th', { text: DEBT_TEXT.kolomNomorBayar }),
+          el('th', { text: DEBT_TEXT.kolomTanggal }),
           el('th', { text: copy.kolomPihak }),
+          el('th', { text: DEBT_TEXT.kolomMetode }),
+          el('th', { text: DEBT_TEXT.kolomKasBank }),
           el('th', { className: 'is-end', text: DEBT_TEXT.kolomTotalBayar }),
-          el('th', { text: DEBT_TEXT.kolomCaraBayar }),
           el('th', { text: DEBT_TEXT.kolomKeterangan }),
           el('th', { text: DEBT_TEXT.kolomUser }),
         ),
@@ -86,7 +101,7 @@ export function renderPaymentList(
     ]);
     partySelect.value = names.includes(chosen) ? chosen : '';
     partySelect.addEventListener('change', paint);
-    filters.replaceChildren(partySelect);
+    filters.replaceChildren(dateSelect, partySelect, methodSelect);
   };
 
   const paint = (): void => {
@@ -96,15 +111,16 @@ export function renderPaymentList(
         all.filter((payment) => payment.date === today).reduce((sum, item) => sum + item.total, 0),
       ),
     );
-    const text = search.input.value.trim().toLowerCase();
+    const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
     const rows = [...all]
       .sort((a, b) => b.date.localeCompare(a.date) || b.number.localeCompare(a.number))
       .filter(
         (payment) =>
+          (range.startDate === undefined || payment.date >= range.startDate) &&
+          (range.endDate === undefined || payment.date <= range.endDate) &&
+          (methodSelect.value === '' || payment.method === methodSelect.value) &&
           (partySelect.value === '' || payment.partyName === partySelect.value) &&
-          (text === '' ||
-            payment.number.toLowerCase().includes(text) ||
-            payment.partyName.toLowerCase().includes(text)),
+          matchesPhrase(`${payment.number} ${payment.partyName}`, search.input.value),
       );
     if (rows.length === 0) {
       body.replaceChildren(
@@ -113,18 +129,17 @@ export function renderPaymentList(
           { className: 'bo-trx-table__empty' },
           el('td', {
             text: all.length === 0 ? DEBT_TEXT.pembayaranKosong : DEBT_TEXT.pembayaranTidakCocok,
-            attrs: { colspan: '7' },
+            attrs: { colspan: '8' },
           }),
         ),
       );
       return;
     }
     body.replaceChildren(
-      ...rows.map((payment) =>
-        el(
+      ...rows.map((payment) => {
+        const tr = el(
           'tr',
           { attrs: { 'data-number': payment.number } },
-          el('td', { className: 'bo-nowrap', text: shortDate(payment.date) }),
           el(
             'td',
             {},
@@ -134,27 +149,40 @@ export function renderPaymentList(
               attrs: { href: `#${paymentFormPath(type, payment.number)}` },
             }),
           ),
+          el('td', { className: 'bo-nowrap', text: shortDate(payment.date) }),
           el('td', { className: 'is-bold', text: payment.partyName }),
-          el('td', { className: 'is-end is-bold', text: formatRupiah(payment.total) }),
           el('td', { text: methodText(payment.method) }),
+          el('td', { text: payment.account }),
+          el('td', { className: 'is-end is-bold', text: formatRupiah(payment.total) }),
           el('td', {
             className: 'bo-trx-notes',
             text: payment.note,
             attrs: { title: payment.note },
           }),
           el('td', { text: userName(session.store, payment.userId) }),
-        ),
-      ),
+        );
+        selection.attach(tr, payment.number);
+        return tr;
+      }),
     );
   };
 
+  for (const control of [dateSelect, methodSelect]) {
+    control.addEventListener('change', paint);
+  }
   search.input.addEventListener('input', paint);
   const element = createListPage({
-    heading: el('h1', { className: 'bo-trx-listhead__heading', text: copy.daftarJudul }),
+    title: copy.daftarJudul,
     kpis: [todayKpi],
-    createText: copy.buat,
+    selection,
     onCreate: () => {
       go(paymentFormPath(type));
+    },
+    onEdit: (number) => {
+      go(paymentFormPath(type, number));
+    },
+    onDelete: () => {
+      refuseDelete(DEBT_TEXT.pembayaranDitolak);
     },
     refresh: createRefreshButton(DEBT_TEXT.segarkan, () => {
       rebuildFilter();

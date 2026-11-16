@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
@@ -137,12 +138,8 @@ export function renderBarcodeScreen(session: BoSession, go: (path: string) => vo
   function refreshTable(): void {
     tableTbody.replaceChildren();
 
-    const q = searchQuery.toLowerCase();
-    const filtered = [...itemsMap.values()].filter(
-      (it) =>
-        it.product.name.toLowerCase().includes(q) ||
-        it.product.code.toLowerCase().includes(q) ||
-        it.product.barcode.includes(q),
+    const filtered = [...itemsMap.values()].filter((it) =>
+      matchesPhrase(`${it.product.name} ${it.product.code} ${it.product.barcode}`, searchQuery),
     );
 
     if (filtered.length === 0) {

@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../../shared/data/search-index';
 import '../../../../styles/bo-hutang.css';
 import { el } from '../../../../shared/dom';
 import { icon } from '../../../../shared/icons';
@@ -170,13 +171,9 @@ export function renderDebtSaldo(session: BoSession, type: PartyType): ScreenHand
   };
 
   const paintParties = (): void => {
-    const query = search.value.trim().toLowerCase();
-    const shown =
-      query === ''
-        ? parties
-        : parties.filter(
-            (party) => party.name.toLowerCase().includes(query) || party.phone.includes(query),
-          );
+    const shown = parties.filter((party) =>
+      matchesPhrase(`${party.name} ${party.phone}`, search.value),
+    );
     if (shown.length === 0) {
       partyBody.replaceChildren(
         el(

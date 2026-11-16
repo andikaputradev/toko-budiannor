@@ -25,6 +25,21 @@ export function normalize(text: string): string {
     .trim();
 }
 
+// Pencarian frasa (revisi BO, kolom pencarian): setiap kata yang diketik harus ada di mana saja di
+// dalam teks, dalam urutan apa pun, dan boleh berupa potongan kata. "men gre", "cc kg", "resik",
+// dan "esi eme" semuanya cocok dengan "Semen Gresik PCC 40kg". Kata kosong dan huruf besar/kecil
+// diabaikan; teks pencarian kosong cocok dengan semuanya.
+export function matchesPhrase(text: string, query: string): boolean {
+  const words = normalize(query)
+    .split(' ')
+    .filter((word) => word !== '');
+  if (words.length === 0) {
+    return true;
+  }
+  const haystack = normalize(text);
+  return words.every((word) => haystack.includes(word));
+}
+
 function tokenize(text: string): string[] {
   return normalize(text)
     .split(' ')
@@ -58,7 +73,17 @@ function measure(name: string, run: () => void): number {
   return duration;
 }
 
-export function createSearchIndex(products: readonly Product[]): SearchIndex {
+export interface SearchOptions {
+  // Kata pencarian dicari sebagai potongan di dalam teks barang (revisi BO), bukan hanya awal kata.
+  readonly substring?: boolean;
+}
+
+export function createSearchIndex(
+  products: readonly Product[],
+  options: SearchOptions = {},
+): SearchIndex {
+  const substring = options.substring === true;
+  const haystacks: string[] = [];
   const postings = new Map<string, number[]>();
   const barcodes = new Map<string, number>();
   const codes = new Map<string, number>();
@@ -68,6 +93,11 @@ export function createSearchIndex(products: readonly Product[]): SearchIndex {
   const buildMs = measure('index:build', () => {
     products.forEach((product, position) => {
       names.push(normalize(product.name));
+      if (substring) {
+        haystacks.push(
+          normalize(`${product.code} ${product.name} ${product.brand} ${product.category}`),
+        );
+      }
       barcodes.set(product.barcode, position);
       codes.set(product.code.toLowerCase(), position);
       const words = new Set(
@@ -99,6 +129,34 @@ export function createSearchIndex(products: readonly Product[]): SearchIndex {
     return found;
   };
 
+  // Semua kata harus ada sebagai potongan; yang diawali frasa utuh atau kata-katanya diawali kata
+  // barang tampil lebih dulu, sisanya menurut urutan data.
+  const runSubstring = (normalized: string, limit: number): { hits: Product[]; total: number } => {
+    const words = normalized.split(' ');
+    const found: { position: number; rank: number }[] = [];
+    haystacks.forEach((haystack, position) => {
+      if (!words.every((word) => haystack.includes(word))) {
+        return;
+      }
+      const name = names[position] ?? '';
+      const rank = name.startsWith(normalized)
+        ? 0
+        : words.every((word) => haystack.startsWith(word) || haystack.includes(` ${word}`))
+          ? 1
+          : 2;
+      found.push({ position, rank });
+    });
+    found.sort((first, second) => first.rank - second.rank || first.position - second.position);
+    const hits: Product[] = [];
+    for (const item of found.slice(0, limit)) {
+      const product = products[item.position];
+      if (product !== undefined) {
+        hits.push(product);
+      }
+    }
+    return { hits, total: found.length };
+  };
+
   const run = (query: string, limit: number): { hits: Product[]; total: number } => {
     const normalized = normalize(query);
     if (normalized.length < MIN_QUERY_LENGTH) {
@@ -110,6 +168,9 @@ export function createSearchIndex(products: readonly Product[]): SearchIndex {
     if (exact !== undefined) {
       const product = products[exact];
       return product === undefined ? { hits: [], total: 0 } : { hits: [product], total: 1 };
+    }
+    if (substring) {
+      return runSubstring(normalized, limit);
     }
     let candidates: Set<number> | undefined;
     for (const token of normalized.split(' ')) {

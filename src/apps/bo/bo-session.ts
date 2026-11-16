@@ -144,6 +144,8 @@ export interface BoSession {
   removeOpnameLine(pso: string | undefined, productId: string): void;
   saveOpnameOrder(pso: string | undefined): OpnameSaveResult;
   startOpnameCount(pso: string): OpnameSaveResult;
+  // Hanya perintah yang masih menunggu eksekusi yang boleh dihapus; false bila tidak boleh.
+  removeOpnameOrder(pso: string): boolean;
   setPhysical(pso: string, productId: string, value: string): void;
   saveOpnameResult(pso: string): OpnameSaveResult;
   initDebtPayments(payments: readonly DebtPayment[]): void;
@@ -504,6 +506,15 @@ export function createBoSession(store: Store, options: BoSessionOptions = {}): B
       }
       log('opname', `${order.pso}: perintah disimpan (${String(order.lines.length)} barang)`);
       return { ok: true, pso: order.pso, status: order.status };
+    },
+    removeOpnameOrder: (pso) => {
+      const order = state.opnameOrders.find((item) => item.pso === pso);
+      if (order?.status !== 'menunggu') {
+        return false;
+      }
+      commit({ opnameOrders: state.opnameOrders.filter((item) => item.pso !== pso) });
+      log('opname', `${pso}: perintah dihapus`);
+      return true;
     },
     startOpnameCount: (pso) => {
       if (!isAllowed(role(), 'BO-07', 'Simpan Draf Opname')) {

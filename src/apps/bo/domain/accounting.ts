@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import type { Dataset } from '../../../shared/data/types';
 
 export interface JournalRow {
@@ -277,12 +278,10 @@ export function getFilteredJournalEntries(
       return false;
     }
     if (filter.searchQuery) {
-      const q = filter.searchQuery.toLowerCase();
-      const match =
-        row.id.toLowerCase().includes(q) ||
-        row.source.toLowerCase().includes(q) ||
-        row.debitAccount.toLowerCase().includes(q) ||
-        row.creditAccount.toLowerCase().includes(q);
+      const match = matchesPhrase(
+        `${row.id} ${row.source} ${row.debitAccount} ${row.creditAccount}`,
+        filter.searchQuery,
+      );
       if (!match) return false;
     }
     return true;

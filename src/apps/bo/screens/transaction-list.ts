@@ -20,13 +20,14 @@ import {
   createKpi,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  refuseDelete,
 } from './trx/list-page';
 
 const TEXT = {
   segarkan: 'Segarkan',
-  buatFaktur: 'Buat Faktur Baru',
-  cari: 'Cari No Faktur / Pelanggan / Pemasok...',
+  cari: 'Cari faktur...',
   cariNama: 'Cari No Faktur, pelanggan, atau pemasok',
   jumlahHariIni: 'Jumlah Transaksi Hari Ini',
   totalHariIni: 'Total Transaksi Hari Ini',
@@ -44,6 +45,11 @@ const TEXT = {
   keterangan: 'Keterangan',
   noSo: 'No. SO',
   noPo: 'No. PO',
+  noFaktur: 'No. Faktur',
+  totalBelumLunas: 'Total Faktur Belum Lunas',
+  totalJatuhTempo: 'Total Faktur Jatuh Tempo',
+  ditolak:
+    'Faktur yang sudah tersimpan tidak dapat dihapus karena sudah mengubah stok dan saldo. Gunakan Retur Penjualan atau Retur Pembelian.',
 } as const;
 
 const DATE_OPTIONS: readonly { readonly value: DateRangeKind; readonly text: string }[] = [
@@ -70,8 +76,8 @@ function statusBadge(status: TransactionStatus): HTMLElement {
   return el('span', { className: `bo-trx-status ${tone}`, text });
 }
 
-// Daftar Nota Penjualan atau Pembelian (gambar klien 8): kartu judul dengan empat kotak angka,
-// Buat Faktur Baru, segarkan, filter Tanggal, pelanggan atau pemasok, Status, dan pencarian.
+// Daftar Faktur Penjualan atau Pembelian (gambar klien 8 dan 32): Tambah, Ubah, Hapus, Cetak, Keluar,
+// segarkan, filter Tanggal, pelanggan atau pemasok, Status, pencarian, dan empat kotak angka.
 export function renderTransactionList(
   session: BoSession,
   go: (path: string) => void,
@@ -83,12 +89,12 @@ export function renderTransactionList(
   // Penjualan dan Pembelian masing-masing punya halaman daftar sendiri (CATATAN klien 16 November).
   const tab: TransactionType = initialTab;
 
-  const heading = el('h1', { className: 'bo-trx-listhead__heading' });
+  const selection = createRowSelection();
 
   const kpiCount = createKpi(TEXT.jumlahHariIni);
   const kpiToday = createKpi(TEXT.totalHariIni);
-  const kpiUnpaid = createKpi(label('labelRingkasanBelumLunas'), 'warn');
-  const kpiDue = createKpi(label('labelRingkasanJatuhTempo'), 'danger');
+  const kpiUnpaid = createKpi(TEXT.totalBelumLunas, 'warn');
+  const kpiDue = createKpi(TEXT.totalJatuhTempo, 'danger');
 
   const dateSelect = createFilterSelect(
     TEXT.tanggal,
@@ -132,7 +138,6 @@ export function renderTransactionList(
 
   function paint(): void {
     const buyer = tab === 'pembelian';
-    heading.textContent = buyer ? TEXT.judulBeli : TEXT.judulJual;
 
     const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
     const filtered = filterTransactions(allRows, {
@@ -150,7 +155,7 @@ export function renderTransactionList(
     kpiDue.set(formatRupiah(metrics.totalJatuhTempo));
 
     head.replaceChildren(
-      el('th', { text: label('noInvoice') }),
+      el('th', { text: TEXT.noFaktur }),
       el('th', { text: buyer ? TEXT.noPo : TEXT.noSo }),
       el('th', { text: label('tanggal') }),
       el('th', { text: buyer ? TEXT.pemasok : TEXT.pelanggan }),
@@ -174,10 +179,10 @@ export function renderTransactionList(
         ),
       ];
     }
-    return rows.map((row) =>
-      el(
+    return rows.map((row) => {
+      const tr = el(
         'tr',
-        {},
+        { attrs: { 'data-number': row.number } },
         el(
           'td',
           {},
@@ -198,8 +203,10 @@ export function renderTransactionList(
         el('td', { className: 'is-end is-bold', text: formatRupiah(row.total) }),
         el('td', { text: row.user }),
         el('td', { className: 'bo-trx-notes', text: row.notes, attrs: { title: row.notes } }),
-      ),
-    );
+      );
+      selection.attach(tr, row.number);
+      return tr;
+    });
   }
 
   for (const control of [dateSelect, statusSelect]) {
@@ -209,12 +216,19 @@ export function renderTransactionList(
 
   const refresh = createRefreshButton(TEXT.segarkan, paint);
   rebuildPartyFilter();
+  const formPath = tab === 'penjualan' ? '/bo/penjualan' : '/bo/pembelian';
   const root = createListPage({
-    heading,
+    title: tab === 'penjualan' ? TEXT.judulJual : TEXT.judulBeli,
     kpis: [kpiCount, kpiToday, kpiUnpaid, kpiDue],
-    createText: TEXT.buatFaktur,
+    selection,
     onCreate: () => {
-      go(tab === 'penjualan' ? '/bo/penjualan' : '/bo/pembelian');
+      go(formPath);
+    },
+    onEdit: (number) => {
+      go(`${formPath}?no=${encodeURIComponent(number)}`);
+    },
+    onDelete: () => {
+      refuseDelete(TEXT.ditolak);
     },
     refresh,
     filters: [filters],

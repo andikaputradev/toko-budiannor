@@ -1,6 +1,7 @@
 import { el } from '../../../shared/dom';
 import { wibDate } from '../../../shared/data/receivable';
 import { formatRupiah } from '../../../shared/format';
+import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
 import type { ScreenHandle } from './login';
 import { dateRangeFor, type DateRangeKind } from '../domain/transaction-list';
@@ -15,10 +16,14 @@ import {
 import { DEMO_PO_ROWS, DEMO_SO_ROWS } from '../domain/order-demo';
 import { importedSoNumbers } from '../domain/session-drafts';
 import {
+  confirmDelete,
   createFilterSelect,
   createListPage,
   createRefreshButton,
+  createRowSelection,
   createSearchBox,
+  logDeleted,
+  refuseDelete,
 } from './trx/list-page';
 
 export const ORDER_PATH: Readonly<Record<OrderKind, string>> = {
@@ -35,18 +40,18 @@ export const ORDER_FORM_PATH: Readonly<Record<OrderKind, string>> = {
 const COPY = {
   po: {
     judul: 'Daftar Pesanan Pembelian ( PO )',
-    buat: 'Buat PO Baru',
+    ditolak: 'PO yang sudah diterima sebagian atau seluruhnya tidak dapat dihapus.',
     nomor: 'No. PO',
     pihak: 'Pemasok',
-    cari: 'Cari No PO / Pemasok / Keterangan...',
+    cari: 'Cari PO...',
     cariNama: 'Cari No PO, pemasok, atau keterangan',
   },
   so: {
     judul: 'Daftar Pesanan Penjualan ( SO )',
-    buat: 'Buat SO Baru',
+    ditolak: 'SO yang sudah diimpor ke faktur tidak dapat dihapus.',
     nomor: 'No. SO',
     pihak: 'Pelanggan',
-    cari: 'Cari No SO / Pelanggan / Keterangan...',
+    cari: 'Cari SO...',
     cariNama: 'Cari No SO, pelanggan, atau keterangan',
   },
 } as const;
@@ -61,6 +66,8 @@ const TEXT = {
   kosong: 'Belum ada pesanan.',
   tidakCocok: 'Tidak ada pesanan yang sesuai filter.',
   daftar: 'Daftar pesanan',
+  contoh: 'Baris contoh tidak bisa dibuka atau dihapus.',
+  terhapus: '{nomor} dihapus.',
 } as const;
 
 const DATE_OPTIONS: readonly { readonly value: DateRangeKind; readonly text: string }[] = [
@@ -82,8 +89,8 @@ const STATUS_TONE: Readonly<Record<OrderStatus, string>> = {
   selesai: 'is-lunas',
 };
 
-// Daftar PO atau SO (gambar klien 10): kartu judul, Buat PO atau SO Baru, segarkan, filter Tanggal,
-// pemasok atau pelanggan, Status, dan pencarian. Nomor pesanan membuka formulirnya.
+// Daftar PO atau SO (gambar klien 10 dan 32): Tambah, Ubah, Hapus, Cetak, Keluar, segarkan, filter
+// Tanggal, pemasok atau pelanggan, Status, dan pencarian. Nomor pesanan membuka formulirnya.
 export function renderOrderList(
   session: BoSession,
   go: (path: string) => void,
@@ -120,8 +127,7 @@ export function renderOrderList(
   let partySelect = createFilterSelect(copy.pihak, []);
   const filters = el('div', { className: 'bo-trx-filters__slot' });
   const search = createSearchBox(copy.cariNama, copy.cari);
-
-  const heading = el('h1', { className: 'bo-trx-listhead__heading', text: copy.judul });
+  const selection = createRowSelection();
   const head = el(
     'tr',
     {},
@@ -184,7 +190,7 @@ export function renderOrderList(
                 'tr',
                 { className: 'bo-trx-table__hint' },
                 el('td', {
-                  text: `Klik "${copy.buat}" untuk membuat pesanan pertama.`,
+                  text: 'Klik Tambah untuk membuat pesanan pertama.',
                   attrs: { colspan: '6' },
                 }),
               ),
@@ -194,8 +200,8 @@ export function renderOrderList(
       return;
     }
     body.replaceChildren(
-      ...rows.map((row) =>
-        el(
+      ...rows.map((row) => {
+        const tr = el(
           'tr',
           { attrs: { 'data-number': row.number } },
           el(
@@ -223,9 +229,54 @@ export function renderOrderList(
             }),
           ),
           el('td', { className: 'is-end is-bold', text: formatRupiah(row.total) }),
-        ),
-      ),
+        );
+        selection.attach(tr, row.number);
+        return tr;
+      }),
     );
+  }
+
+  const rowOf = (number: string): OrderRow | undefined =>
+    allRows().find((row) => row.number === number);
+
+  function edit(number: string): void {
+    const row = rowOf(number);
+    if (row === undefined) {
+      return;
+    }
+    if (row.demo === true) {
+      showToast({ kind: 'info', text: TEXT.contoh });
+      return;
+    }
+    go(`${ORDER_FORM_PATH[kind]}?no=${encodeURIComponent(number)}`);
+  }
+
+  // PO dan SO yang belum diproses boleh dihapus; yang sudah menjadi faktur tetap tercatat.
+  function remove(number: string): void {
+    const row = rowOf(number);
+    if (row === undefined) {
+      return;
+    }
+    if (row.demo === true) {
+      showToast({ kind: 'info', text: TEXT.contoh });
+      return;
+    }
+    if (row.status !== 'on-proses') {
+      refuseDelete(copy.ditolak);
+      return;
+    }
+    confirmDelete(number, () => {
+      if (kind === 'po') {
+        store.removePurchaseOrder(number);
+      } else {
+        store.removeSalesOrder(number);
+      }
+      logDeleted(session, `${kind === 'po' ? 'PO' : 'SO'} ${number} dihapus dari daftar`);
+      showToast({ kind: 'success', text: TEXT.terhapus.replace('{nomor}', number) });
+      selection.clear();
+      rebuildPartyFilter();
+      paint();
+    });
   }
 
   for (const control of [dateSelect, statusSelect]) {
@@ -234,12 +285,14 @@ export function renderOrderList(
   search.input.addEventListener('input', paint);
   rebuildPartyFilter();
   const root = createListPage({
-    heading,
+    title: copy.judul,
     kpis: [],
-    createText: copy.buat,
+    selection,
     onCreate: () => {
       go(ORDER_FORM_PATH[kind]);
     },
+    onEdit: edit,
+    onDelete: remove,
     refresh: createRefreshButton(TEXT.segarkan, () => {
       rebuildPartyFilter();
       paint();

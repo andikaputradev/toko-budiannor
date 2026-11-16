@@ -28,17 +28,31 @@ test.describe('Transfer Stok (gambar 14 dan 15)', () => {
   }) => {
     await loginBo(page);
     await page.goto('/#/bo/mutasi');
-    await expect(page.locator('.bo-mut-table thead th')).toHaveText([
+    await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-trx-table thead th')).toHaveText([
       'No. Mutasi',
       'Waktu',
       'Gudang asal',
       'Gudang tujuan',
-      'Item',
+      'Jumlah Barang',
+      'Jumlah Item',
       'User',
       'Keterangan',
     ]);
-    await expect(page.locator('.bo-mut-table tbody tr').first()).toContainText('Isi stok toko');
-    await page.getByRole('button', { name: 'Buat Do Transfer' }).click();
+    const firstMove = page.locator('.bo-tabpanel:not([hidden]) .bo-trx-table tbody tr').first();
+    await expect(firstMove).toContainText('Isi stok toko');
+    // Ubah membuka bukti transfer dokumen terpilih; tanpa pilihan muncul petunjuk.
+    await page.getByRole('button', { name: 'Ubah', exact: true }).click();
+    await expect(page.getByText('Pilih data pada daftar terlebih dahulu.')).toBeVisible();
+    await firstMove.click();
+    await page.getByRole('button', { name: 'Ubah', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('M-0001');
+    await page.getByRole('dialog').getByRole('button', { name: 'Tutup', exact: true }).click();
+    // Mutasi stok tidak dapat dihapus karena sudah memindahkan stok.
+    await page.getByRole('button', { name: 'Hapus', exact: true }).click();
+    await expect(
+      page.getByText('Mutasi stok yang sudah tersimpan tidak dapat dihapus'),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/mutasi\?baru=1$/);
     await expect(page.locator('.bo-tab')).toHaveCount(2);
 
@@ -56,7 +70,7 @@ test.describe('Transfer Stok (gambar 14 dan 15)', () => {
     await page.getByRole('button', { name: 'Batal' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Kosongkan', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/mutasi$/);
-    await expect(page.getByRole('button', { name: 'Buat Do Transfer' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tambah', exact: true })).toBeVisible();
   });
 });
 
@@ -66,14 +80,16 @@ test.describe('Koreksi Stok (gambar 16 dan 17)', () => {
   }) => {
     await loginBo(page);
     await page.goto('/#/bo/mutasi/koreksi');
-    await expect(page.getByRole('button', { name: 'Riwayat koreksi' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await expect(page.locator('.bo-mut-table tbody tr')).toHaveCount(2);
-    await expect(page.getByRole('button', { name: /Cetak Berita Acara KS-0002/ })).toBeVisible();
+    await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-trx-table tbody tr')).toHaveCount(2);
+    // Ubah membuka Berita Acara koreksi terpilih.
+    await page
+      .locator('.bo-tabpanel:not([hidden]) .bo-trx-table tbody tr', { hasText: 'KS-0002' })
+      .click();
+    await page.getByRole('button', { name: 'Ubah', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText('KS-0002');
+    await page.getByRole('dialog').getByRole('button', { name: 'Tutup', exact: true }).click();
 
-    await page.locator('.bo-mut-create').click();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/mutasi\/koreksi\?baru=1$/);
     await expect(page.getByRole('button', { name: 'Hapus', exact: true })).toHaveAttribute(
       'aria-disabled',
@@ -102,7 +118,7 @@ test.describe('Koreksi Stok (gambar 16 dan 17)', () => {
     await page.getByRole('button', { name: 'Simpan Koreksi' }).click();
     await expect(page.getByText('Koreksi stok KS-0003 tersimpan.')).toBeVisible();
     await expect(page).toHaveURL(/#\/bo\/mutasi\/koreksi$/);
-    const first = page.locator('.bo-mut-table tbody tr').first();
+    const first = page.locator('.bo-tabpanel:not([hidden]) .bo-trx-table tbody tr').first();
     await expect(first).toContainText('KS-0003');
     await expect(first).toContainText('BARANG RUSAK; BARANG DITEMUKAN');
   });
@@ -166,7 +182,7 @@ test.describe('Stok Opname PSO dan HSO (gambar 19 dan 20)', () => {
   }) => {
     await loginBo(page);
     await page.goto('/#/bo/opname');
-    await page.getByRole('button', { name: 'Stok Opname', exact: true }).click();
+    await page.getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/opname\?baru=1$/);
     await expect(page.getByLabel('No PSO')).toHaveValue('Otomatis');
     await page.getByRole('button', { name: 'Simpan', exact: true }).click();

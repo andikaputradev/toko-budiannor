@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generateDataset } from '../../src/shared/data/generator';
 import {
   createSearchIndex,
+  matchesPhrase,
   MIN_QUERY_LENGTH,
   normalize,
   SEARCH_BUDGET_MS,
@@ -111,5 +112,47 @@ describe('indeks pencarian', () => {
     );
     expect(max).toBeLessThan(SEARCH_BUDGET_MS);
     expect(index.buildMs).toBeLessThan(1000);
+  });
+});
+
+// Revisi BO (kolom pencarian): kata boleh berupa potongan di mana saja pada nama dan urutannya bebas.
+describe('pencarian frasa', () => {
+  const name = 'SEMEN GRESIK PCC 40KG';
+
+  it('mengenali contoh klien pada "semen gresik pcc 40kg"', () => {
+    for (const query of ['men gre', 'se sik', 'cc kg', 'resik', 'eme esi', 'esi eme']) {
+      expect(matchesPhrase(name, query), query).toBe(true);
+    }
+  });
+
+  it('menolak kata yang tidak ada di nama, walau kata lainnya ada', () => {
+    expect(matchesPhrase(name, 'semen holcim')).toBe(false);
+    expect(matchesPhrase(name, 'gresik 50kg')).toBe(false);
+  });
+
+  it('mengabaikan huruf besar kecil, spasi berlebih, dan aksen; teks kosong cocok semuanya', () => {
+    expect(matchesPhrase(name, '  SEMEN   gresik ')).toBe(true);
+    expect(matchesPhrase('Pípa Pvc', 'pipa')).toBe(true);
+    expect(matchesPhrase(name, '')).toBe(true);
+    expect(matchesPhrase(name, '   ')).toBe(true);
+  });
+
+  it('indeks mode potongan menemukan barang dari potongan kata, mode awal-kata tidak', () => {
+    const base = dataset.products[0];
+    if (base === undefined) {
+      throw new Error('data contoh kosong');
+    }
+    const semen = { ...base, id: 'X-1', code: 'X0001', barcode: '8990000009991', name };
+    const products = [semen, ...dataset.products.slice(1, 200)];
+    const loose = createSearchIndex(products, { substring: true });
+    const strict = createSearchIndex(products);
+    for (const query of ['men gre', 'se sik', 'cc kg', 'resik', 'eme esi', 'esi eme']) {
+      expect(
+        loose.search(query).hits.some((hit) => hit.id === 'X-1'),
+        query,
+      ).toBe(true);
+    }
+    expect(strict.search('resik').hits.some((hit) => hit.id === 'X-1')).toBe(false);
+    expect(loose.search('semen gresik pcc 40kg').hits[0]?.id).toBe('X-1');
   });
 });

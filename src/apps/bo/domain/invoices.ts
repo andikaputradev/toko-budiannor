@@ -1,3 +1,4 @@
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type {
   BillLine,
@@ -82,10 +83,7 @@ export function filterInvoices(
     if (query === '') {
       return true;
     }
-    return (
-      row.number.toLowerCase().includes(query) ||
-      (row.customerName ?? customerFallback).toLowerCase().includes(query)
-    );
+    return matchesPhrase(`${row.number} ${row.customerName ?? customerFallback}`, query);
   });
 }
 

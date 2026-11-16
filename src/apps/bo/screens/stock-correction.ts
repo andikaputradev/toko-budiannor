@@ -1,5 +1,7 @@
 import { el, nextId } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { matchesPhrase } from '../../../shared/data/search-index';
+import { wibDate } from '../../../shared/data/receivable';
 import { icon } from '../../../shared/icons';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import type { Product, WarehouseId } from '../../../shared/data/types';
@@ -22,7 +24,6 @@ import {
   OWNER_PIN_LIMIT,
   planCorrection,
   stockAfter,
-  warehousesOf,
   type CorrectionDoc,
   type CorrectionDraftLine,
   type CorrectionIssue,
@@ -32,7 +33,16 @@ import { formatSigned, formatSignedRupiah } from '../domain/stock-report';
 import { createProductPicker } from '../picker';
 import type { ScreenHandle } from './login';
 import { screenActive } from '../screen-active';
-import { createCreateBar, createListCard, createScrollRegion } from './mutasi/parts';
+import { dateRangeFor, type DateRangeKind } from '../domain/transaction-list';
+import { createScrollRegion } from './mutasi/parts';
+import {
+  createDateFilter,
+  createListPage,
+  createRefreshButton,
+  createRowSelection,
+  createSearchBox,
+  refuseDelete,
+} from './trx/list-page';
 import { MUT_TEXT } from './mutasi/text';
 
 const LIST_PATH = '/bo/mutasi/koreksi';
@@ -229,107 +239,147 @@ export function renderStockCorrection(
   return creating ? renderCorrectionForm(session, go) : renderCorrectionList(session, go);
 }
 
+const LIST_TEXT = {
+  segarkan: 'Segarkan',
+  cari: 'Cari koreksi...',
+  cariNama: 'Cari nomor koreksi, petugas, atau alasan',
+  kolomBarang: 'Jumlah Barang',
+  tidakCocok: 'Tidak ada koreksi yang sesuai filter.',
+  ditolak: 'Koreksi stok yang sudah tersimpan tidak dapat dihapus karena sudah mengubah stok.',
+} as const;
+
+// Daftar Koreksi Stok (gambar klien 16 dan 32): Tambah, Ubah, Hapus, Cetak, Keluar, filter Tanggal,
+// pencarian, dan tabel koreksi. Ubah membuka Berita Acara koreksi terpilih.
 function renderCorrectionList(session: BoSession, go: (path: string) => void): ScreenHandle {
   const ledger = ledgerFor(session.store);
+  const today = wibDate(session.now());
+  const selection = createRowSelection();
+  const dateSelect = createDateFilter();
+  const search = createSearchBox(LIST_TEXT.cariNama, LIST_TEXT.cari);
   const body = el('tbody');
-  const emptyBox = el('p', { className: 'bo-mut-empty', text: label('korRiwayatKosong') });
   const table = el(
-    'table',
-    { className: 'bo-mut-table bo-mut-table--log' },
+    'div',
+    {
+      className: 'bo-trx__lines',
+      attrs: { tabindex: '0', role: 'region', 'aria-label': MUT_TEXT.daftarKoreksi },
+    },
     el(
-      'thead',
-      {},
+      'table',
+      { className: 'bo-trx-table bo-trx-table--list' },
       el(
-        'tr',
+        'thead',
         {},
-        el('th', { text: label('korNoDokumen') }),
-        el('th', { text: label('kolomWaktu') }),
-        el('th', { text: label('korPetugas') }),
-        el('th', { text: label('kolomNamaBarang') }),
-        el('th', { className: 'is-end', text: label('korKolomNilai') }),
-        el('th', { text: label('korAlasan') }),
         el(
-          'th',
-          { className: 'is-action' },
-          el('span', { className: 'visually-hidden', text: label('korCetakBa') }),
+          'tr',
+          {},
+          el('th', { text: label('korNoDokumen') }),
+          el('th', { text: label('kolomWaktu') }),
+          el('th', { className: 'is-end', text: LIST_TEXT.kolomBarang }),
+          el('th', { text: label('korPetugas') }),
+          el('th', { className: 'is-end', text: label('korKolomNilai') }),
+          el('th', { text: label('korAlasan') }),
         ),
       ),
+      body,
     ),
-    body,
   );
-  const region = createScrollRegion(MUT_TEXT.daftarKoreksi, table);
 
-  const row = (doc: CorrectionDoc): HTMLElement => {
-    const open = createButton({
-      text: label('korCetakBa'),
-      variant: 'secondary',
-      icon: 'printer',
-      onClick: () => {
-        openReport(session, doc, false);
-      },
+  const docs = (): CorrectionDoc[] => [...ledger.docs()].reverse();
+
+  const paint = (): void => {
+    const all = docs();
+    const range = dateRangeFor(dateSelect.value as DateRangeKind, today);
+    const rows = all.filter((doc) => {
+      const day = wibDate(new Date(doc.at));
+      if (range.startDate !== undefined && day < range.startDate) {
+        return false;
+      }
+      if (range.endDate !== undefined && day > range.endDate) {
+        return false;
+      }
+      return matchesPhrase(
+        `${doc.number} ${doc.userName} ${doc.authorizedBy ?? ''} ${doc.reason}`,
+        search.input.value,
+      );
     });
-    open.setAttribute('aria-label', `${label('korCetakBa')} ${doc.number}`);
-    return el(
-      'tr',
-      { className: doc.number === justSaved ? 'is-selected' : '' },
-      el('td', {}, el('strong', { text: doc.number })),
-      el('td', { text: stamp(doc.at) }),
-      el(
-        'td',
-        {},
-        el('span', { text: doc.userName }),
-        doc.authorizedBy === undefined
-          ? false
-          : el('span', {
-              className: 'bo-mut-code',
-              text: label('korOtorisasiOleh', { nama: doc.authorizedBy }),
+    if (rows.length === 0) {
+      body.replaceChildren(
+        el(
+          'tr',
+          { className: 'bo-trx-table__empty' },
+          el('td', {
+            text: all.length === 0 ? label('korRiwayatKosong') : LIST_TEXT.tidakCocok,
+            attrs: { colspan: '6' },
+          }),
+        ),
+      );
+      return;
+    }
+    body.replaceChildren(
+      ...rows.map((doc) => {
+        const tr = el(
+          'tr',
+          { attrs: { 'data-number': doc.number } },
+          el('td', {}, el('strong', { className: 'bo-trx-link', text: doc.number })),
+          el('td', { className: 'bo-nowrap', text: stamp(doc.at) }),
+          el('td', { className: 'is-end', text: formatDecimal(doc.lines.length) }),
+          el(
+            'td',
+            {},
+            el('span', { text: doc.userName }),
+            doc.authorizedBy === undefined
+              ? false
+              : el('span', {
+                  className: 'bo-mut-code',
+                  text: label('korOtorisasiOleh', { nama: doc.authorizedBy }),
+                }),
+          ),
+          el(
+            'td',
+            { className: 'is-end' },
+            el('span', {
+              className: toneOf(doc.totalValue),
+              text: formatSignedRupiah(doc.totalValue),
             }),
-      ),
-      el(
-        'td',
-        {},
-        el('span', {
-          className: 'bo-mut-name',
-          text: label('korBarangJumlah', { jumlah: formatDecimal(doc.lines.length) }),
-        }),
-        el('span', {
-          className: 'bo-mut-code',
-          text: warehousesOf(doc)
-            .map((warehouse) => warehouseName(warehouse))
-            .join(', '),
-        }),
-      ),
-      el(
-        'td',
-        { className: 'is-end' },
-        el('span', { className: toneOf(doc.totalValue), text: formatSignedRupiah(doc.totalValue) }),
-      ),
-      el('td', { className: 'bo-mut-note-cell', text: doc.reason }),
-      el('td', { className: 'is-action' }, open),
+          ),
+          el('td', { className: 'bo-trx-notes', text: doc.reason, attrs: { title: doc.reason } }),
+        );
+        selection.attach(tr, doc.number);
+        return tr;
+      }),
     );
   };
 
-  const paint = (): void => {
-    const docs = [...ledger.docs()].reverse();
-    body.replaceChildren(...docs.map(row));
-    emptyBox.hidden = docs.length > 0;
-    table.hidden = docs.length === 0;
+  const open = (number: string): void => {
+    const doc = docs().find((item) => item.number === number);
+    if (doc !== undefined) {
+      openReport(session, doc, false);
+    }
   };
-  paint();
-  const stop = ledger.subscribe(paint);
 
-  const element = el(
-    'div',
-    { className: 'bo-mut' },
-    createCreateBar(label('korJudul'), () => {
+  dateSelect.addEventListener('change', paint);
+  search.input.addEventListener('input', paint);
+  const stop = ledger.subscribe(paint);
+  const element = createListPage({
+    title: label('korRiwayat'),
+    kpis: [],
+    selection,
+    onCreate: () => {
       go(FORM_PATH);
-    }),
-    createListCard({
-      title: label('korRiwayat'),
-      collapsible: true,
-      content: el('div', { className: 'bo-mut-card__body' }, region, emptyBox),
-    }),
-  );
+    },
+    onEdit: open,
+    onDelete: () => {
+      refuseDelete(LIST_TEXT.ditolak);
+    },
+    refresh: createRefreshButton(LIST_TEXT.segarkan, paint),
+    filters: [dateSelect],
+    search: search.root,
+    table,
+  });
+  paint();
+  if (justSaved !== undefined) {
+    selection.select(justSaved);
+  }
   return { element, destroy: stop };
 }
 

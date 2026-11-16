@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 // Revisi Back-Office putaran ketujuh (CATATAN klien): menu Transaksi dan Mutasi berupa halaman daftar
-// dengan tombol "+ Buat"; Faktur Penjualan, Faktur Pembelian, Retur, dan Deposit masing-masing satu
+// dengan tombol Tambah; Faktur Penjualan, Faktur Pembelian, Retur, dan Deposit masing-masing satu
 // halaman daftar. Rute Daftar Nota gabungan dialihkan.
 
 test.beforeEach(({ page }) => {
@@ -20,7 +20,7 @@ async function loginBo(page: Page): Promise<void> {
 const panel = (page: Page) => page.locator('.bo-tabpanel:not([hidden])');
 
 test.describe('Daftar per halaman pada menu Transaksi', () => {
-  test('menu Transaksi memuat Faktur Penjualan dan Pembelian sendiri tanpa Daftar Nota gabungan', async ({
+  test('menu Transaksi memuat Faktur sendiri, tanpa Daftar Nota dan Surat Jalan Ekspedisi (gambar 33)', async ({
     page,
   }) => {
     await loginBo(page);
@@ -35,9 +35,9 @@ test.describe('Daftar per halaman pada menu Transaksi', () => {
       'Faktur Penjualan',
       'Retur Penjualan',
       'Deposit Pelanggan',
-      'Surat Jalan Ekspedisi & Packing Koli',
     ]);
     await expect(entries.filter({ hasText: 'Daftar Nota' })).toHaveCount(0);
+    await expect(entries.filter({ hasText: 'Surat Jalan' })).toHaveCount(0);
   });
 
   test('Daftar Nota lama dialihkan ke Faktur Penjualan; Faktur Penjualan membuka daftar lalu formulir', async ({
@@ -49,12 +49,12 @@ test.describe('Daftar per halaman pada menu Transaksi', () => {
     await expect(
       panel(page).getByRole('heading', { name: 'Daftar Faktur Penjualan' }),
     ).toBeVisible();
-    await panel(page).getByRole('button', { name: 'Buat Faktur Baru' }).click();
+    await panel(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/penjualan$/);
     await expect(page.locator('.bo-tab--active')).toContainText('Form Faktur Penjualan');
   });
 
-  test('Retur Penjualan: daftar kosong, Buat Retur Baru membuka formulir pada tab yang sama, Batal kembali', async ({
+  test('Retur Penjualan: daftar kosong, Tambah membuka formulir pada tab yang sama, Batal kembali', async ({
     page,
   }) => {
     await loginBo(page);
@@ -63,7 +63,7 @@ test.describe('Daftar per halaman pada menu Transaksi', () => {
       panel(page).getByRole('heading', { name: 'Daftar Retur Penjualan' }),
     ).toBeVisible();
     await expect(panel(page).locator('.bo-trx-table__empty')).toContainText('Belum ada retur');
-    await panel(page).getByRole('button', { name: 'Buat Retur Baru' }).click();
+    await panel(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/retur-penjualan\?baru=1$/);
     await expect(page.locator('.bo-tab')).toHaveCount(2);
     await expect(panel(page).getByRole('button', { name: 'Retur Pembelian' })).toHaveCount(0);
@@ -88,7 +88,7 @@ test.describe('Daftar per halaman pada menu Transaksi', () => {
     ]);
   });
 
-  test('Deposit Pelanggan: daftar mutasi dengan saldo awal, Buat Setoran Deposit membuka formulir', async ({
+  test('Deposit Pelanggan: daftar mutasi dengan saldo awal, Tambah membuka formulir setoran', async ({
     page,
   }) => {
     await loginBo(page);
@@ -98,7 +98,7 @@ test.describe('Daftar per halaman pada menu Transaksi', () => {
     ).toBeVisible();
     await expect(panel(page).locator('.bo-trx-kpi')).toHaveCount(4);
     await expect(panel(page).locator('.bo-trx-table tbody tr').first()).toContainText('Saldo awal');
-    await panel(page).getByRole('button', { name: 'Buat Setoran Deposit' }).click();
+    await panel(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/deposit-pelanggan\?baru=1$/);
     await expect(panel(page).getByRole('button', { name: 'Kembali ke Daftar' })).toBeVisible();
     await panel(page).getByRole('button', { name: 'Kembali ke Daftar' }).click();

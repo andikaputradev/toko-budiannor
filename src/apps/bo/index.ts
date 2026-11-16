@@ -261,42 +261,42 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
     id: 'BO-03',
     load: async () => {
       const { renderMasterData } = await import('./screens/master-data');
-      return (session, go) => renderMasterData(session, go, 'kategori');
+      return (session) => renderMasterData(session, 'kategori');
     },
   },
   '/bo/master/merk': {
     id: 'BO-03',
     load: async () => {
       const { renderMasterData } = await import('./screens/master-data');
-      return (session, go) => renderMasterData(session, go, 'merk');
+      return (session) => renderMasterData(session, 'merk');
     },
   },
   '/bo/master/pemasok': {
     id: 'BO-08',
     load: async () => {
       const { renderMasterData } = await import('./screens/master-data');
-      return (session, go) => renderMasterData(session, go, 'pemasok');
+      return (session) => renderMasterData(session, 'pemasok');
     },
   },
   '/bo/master/pelanggan': {
     id: 'BO-11',
     load: async () => {
       const { renderMasterData } = await import('./screens/master-data');
-      return (session, go) => renderMasterData(session, go, 'pelanggan');
+      return (session) => renderMasterData(session, 'pelanggan');
     },
   },
   '/bo/master/sales': {
     id: 'BO-14',
     load: async () => {
       const { renderMasterData } = await import('./screens/master-data');
-      return (session, go) => renderMasterData(session, go, 'sales');
+      return (session) => renderMasterData(session, 'sales');
     },
   },
   '/bo/master/ekspedisi': {
     id: 'BO-12',
     load: async () => {
       const { renderMasterData } = await import('./screens/master-data');
-      return (session, go) => renderMasterData(session, go, 'ekspedisi');
+      return (session) => renderMasterData(session, 'ekspedisi');
     },
   },
   '/bo/master/cetak-barcode': {

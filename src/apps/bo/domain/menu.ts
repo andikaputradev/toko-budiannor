@@ -24,19 +24,6 @@ export interface MenuGroup {
 
 export const MENU_GROUPS: readonly MenuGroup[] = [
   {
-    id: 'dashboard',
-    label: 'grupDashboard',
-    icon: 'layout-dashboard',
-    entries: [
-      {
-        path: '/bo/dashboard',
-        label: 'menuDashboardRingkasan',
-        group: 'dashboard',
-        screenId: 'BO-02',
-      },
-    ],
-  },
-  {
     id: 'master-data',
     label: 'grupMasterData',
     icon: 'database',
@@ -131,12 +118,6 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         label: 'menuDepositPelanggan',
         group: 'transaksi',
         screenId: 'BO-11',
-      },
-      {
-        path: '/bo/transaksi/surat-jalan',
-        label: 'suratJalanJudul',
-        group: 'transaksi',
-        screenId: 'BO-12',
       },
     ],
   },
@@ -257,17 +238,10 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
       },
       {
         path: '/bo/laporan/daftar-harga',
-        label: 'menuDaftarHarga',
-        group: 'laporan',
-        screenId: 'BO-04',
-        dialog: 'harga',
-      },
-      // Halaman Satuan dan Harga (ubah harga) tetap ada seperti sebelumnya; kotak di atasnya khusus cetak.
-      {
-        path: '/bo/harga',
         label: 'menuPricelist',
         group: 'laporan',
         screenId: 'BO-04',
+        dialog: 'harga',
       },
     ],
   },
@@ -322,7 +296,44 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
   },
 ];
 
-export const MENU_ENTRIES: readonly MenuEntry[] = MENU_GROUPS.flatMap((group) => group.entries);
+// Dashboard adalah tab dasar (selalu ada di bilah tab), jadi tidak punya entri di laci menu.
+const DASHBOARD_GROUP: MenuGroup = {
+  id: 'dashboard',
+  label: 'grupDashboard',
+  icon: 'layout-dashboard',
+  entries: [
+    {
+      path: '/bo/dashboard',
+      label: 'menuDashboardRingkasan',
+      group: 'dashboard',
+      screenId: 'BO-02',
+    },
+  ],
+};
+
+// Halaman yang tidak tampil di laci menu tetapi tetap punya rute, judul tab, dan breadcrumb:
+// Surat Jalan dibuka dari formulir Faktur Penjualan (gambar klien 33), halaman Satuan dan Harga
+// dari kotak Price List.
+const HIDDEN_ENTRIES: readonly MenuEntry[] = [
+  ...DASHBOARD_GROUP.entries,
+  {
+    path: '/bo/transaksi/surat-jalan',
+    label: 'suratJalanJudul',
+    group: 'transaksi',
+    screenId: 'BO-12',
+  },
+  {
+    path: '/bo/harga',
+    label: 'menuPricelist',
+    group: 'laporan',
+    screenId: 'BO-04',
+  },
+];
+
+export const MENU_ENTRIES: readonly MenuEntry[] = [
+  ...MENU_GROUPS.flatMap((group) => group.entries),
+  ...HIDDEN_ENTRIES,
+];
 
 export function menuFor(role: Role): readonly MenuGroup[] {
   if (role !== 'owner' && role !== 'supervisor') {
@@ -337,5 +348,5 @@ export function entryFor(path: string): MenuEntry | undefined {
 }
 
 export function groupFor(groupId: string): MenuGroup | undefined {
-  return MENU_GROUPS.find((group) => group.id === groupId);
+  return [DASHBOARD_GROUP, ...MENU_GROUPS].find((group) => group.id === groupId);
 }

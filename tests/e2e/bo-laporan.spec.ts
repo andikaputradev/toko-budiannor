@@ -37,7 +37,6 @@ test.describe('Laporan berupa kotak pilihan', () => {
       'Pembelian',
       'Hutang Piutang',
       'Stok Barang',
-      'Daftar Harga dan Katalog',
       'Price List',
     ]);
     await page.keyboard.press('Escape');
@@ -119,7 +118,7 @@ test.describe('Laporan berupa kotak pilihan', () => {
     ).toContainText('PP-');
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
-    await openReport(page, 'Daftar Harga dan Katalog');
+    await openReport(page, 'Price List');
     dialog = page.getByRole('dialog', { name: 'Cetak Daftar Harga dan Katalog Barang' });
     for (const text of ['Harga Eceran', 'Harga Grosir', 'Tampilkan Hpp']) {
       await expect(dialog.getByRole('checkbox', { name: text })).toBeVisible();
@@ -134,7 +133,7 @@ test.describe('Laporan berupa kotak pilihan', () => {
     await openReport(page, 'Laba Rugi Kotor');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByText('Anda tidak memiliki hak akses ke halaman ini.')).toBeVisible();
-    await openReport(page, 'Daftar Harga dan Katalog');
+    await openReport(page, 'Price List');
     const dialog = page.getByRole('dialog', { name: 'Cetak Daftar Harga dan Katalog Barang' });
     await expect(dialog.getByRole('checkbox', { name: 'Tampilkan Hpp' })).toHaveCount(0);
   });
