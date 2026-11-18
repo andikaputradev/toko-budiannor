@@ -108,48 +108,54 @@ html[data-app='bo'] .field.bo-picker > :not(.field__label) {
   grid-column: 1;
 }
 
-/* ===== Data Barang: caption di kiri, satu isian per baris ===== */
-html[data-app='bo'] .bo-pd {
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-}
-
-/* Enam tombol Data Barang tetap satu baris seperti gambar klien. */
+/* ===== Data Barang: caption di kiri isian, lima kolom (gambar klien 37) ===== */
 html[data-app='bo'] .bo-pd-toolbar {
   flex-wrap: nowrap;
 }
 
 html[data-app='bo'] .bo-pd-btn {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
-  padding: 0 9px;
+  padding: 0 10px;
   white-space: nowrap;
 }
 
-html[data-app='bo'] .bo-pd-form {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0 16px;
+html[data-app='bo'] .bo-pd-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 html[data-app='bo'] .bo-pd-col {
-  --bo-label-w: 7.5rem;
-  gap: 6px;
+  gap: 5px;
 }
 
-html[data-app='bo'] .bo-pd-col:last-child {
-  --bo-label-w: 6.25rem;
+html[data-app='bo'] .bo-pd-col--a {
+  --bo-label-w: 4.4rem;
+}
+
+html[data-app='bo'] .bo-pd-col--b {
+  --bo-label-w: 4.2rem;
+}
+
+html[data-app='bo'] .bo-pd-col--c {
+  --bo-label-w: 6.9rem;
+}
+
+html[data-app='bo'] .bo-pd-col--d {
+  --bo-label-w: 5.8rem;
 }
 
 html[data-app='bo'] .bo-pd-row2 {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 html[data-app='bo'] .bo-pd-field {
   display: grid;
   grid-template-columns: var(--bo-label-w) minmax(0, 1fr);
   align-items: center;
-  gap: 0 10px;
+  gap: 0 8px;
 }
 
 html[data-app='bo'] .bo-pd-field > label,
@@ -162,12 +168,13 @@ html[data-app='bo'] .bo-pd-field:has(.bo-pd-units) {
 }
 
 html[data-app='bo'] .bo-pd-field:has(.bo-pd-units) > .bo-pd-label {
-  padding-top: 8px;
+  padding-top: 7px;
 }
 
 html[data-app='bo'] .bo-pd-input,
-html[data-app='bo'] .bo-pd-units__field {
-  height: 34px;
+html[data-app='bo'] .bo-pd-units__field,
+html[data-app='bo'] .bo-pd-units__factor {
+  height: 32px;
 }
 
 /* ===== Master (Kategori, Merk, Pemasok, Pelanggan, Sales, Ekspedisi): dua isian per baris ===== */
@@ -269,50 +276,63 @@ html[data-app='bo'] .bo-field-gap-top {
 }
 
 /* ===== Akuntansi satu halaman: lima tombol bagian dan Cetak (gambar klien 24 sampai 28) ===== */
+/* Kepala berukuran sama di kelima bagian (gambar klien 41 revisi BO putaran 9): tinggi tetap, satu
+   baris, subjudul terpotong rapi dan tombol bagian selebar isinya supaya keterangan mendapat ruang. */
 html[data-app='bo'] .bo-acc-head {
   display: flex;
   flex: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px 16px;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  height: 58px;
+  padding: 0 16px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
 }
 
 html[data-app='bo'] .bo-acc-head__title {
-  flex: 1 1 260px;
+  flex: 1 1 0;
   min-width: 0;
 }
 
 html[data-app='bo'] .bo-acc-head__title .bo-page-title {
   margin: 0;
+  overflow: hidden;
   font-size: 18px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 html[data-app='bo'] .bo-acc-head__title .bo-acc-sub {
-  margin: 2px 0 0;
-  white-space: normal;
+  max-width: none;
+  margin: 1px 0 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 html[data-app='bo'] .bo-acc-switch {
   display: flex;
-  flex: 3 1 640px;
-  gap: 10px;
+  flex: none;
+  gap: 8px;
   align-items: center;
 }
 
 html[data-app='bo'] .bo-acc-switch__btn {
-  flex: 1 1 0;
+  flex: none;
   min-width: 0;
-  height: 40px;
+  height: 36px;
+  padding: 0 14px;
 }
 
 html[data-app='bo'] .bo-acc-switch__print {
-  flex: 0 0 auto;
-  height: 40px;
+  flex: none;
+  height: 36px;
 }
 
 html[data-app='bo'] .bo-acc-filter__print {
@@ -434,16 +454,17 @@ html[data-app='bo'] .bo-actionbar .btn:disabled {
 /* Data Barang: blok Satuan selalu setinggi tiga baris dan panel Harga selalu setinggi tiga satuan,
    jadi daftar barang dan isian di bawahnya tidak bergeser walau barang hanya punya satu satuan. */
 html[data-app='bo'] .bo-pd-units {
-  min-height: calc(3 * 36px + 2 * 6px);
+  gap: 5px;
+  min-height: calc(3 * 32px + 2 * 5px);
 }
 
 html[data-app='bo'] .bo-pd-units__row {
-  min-height: 36px;
+  min-height: 32px;
 }
 
 html[data-app='bo'] .bo-pd-prices {
   flex: none;
-  height: 140px;
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -469,4 +490,20 @@ html[data-app='bo'] .bo-trx .bo-trx-filter {
   width: 156px;
   max-width: 156px;
   padding: 0 28px 0 10px;
+}
+
+/* Kartu angka Beban Usaha: label satu baris supaya semua kartu setinggi sama. */
+html[data-app='bo'] .bo-acc-stats--beban .bo-stat-card {
+  padding: 8px 10px;
+}
+
+html[data-app='bo'] .bo-acc-stats--beban .bo-stat-card > :first-child {
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-acc-switch__ghost {
+  visibility: hidden;
 }

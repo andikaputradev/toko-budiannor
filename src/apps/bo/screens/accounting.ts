@@ -59,6 +59,17 @@ export function renderAccountingScreen(
     }
   }
 
+  // Tempat Cetak dipertahankan di semua bagian (tak terlihat bila tak dipakai) supaya lima tombol
+  // bagian tidak bergeser saat berganti.
+  function placeholder(source: HTMLElement): HTMLElement {
+    const ghost = source.cloneNode(true) as HTMLElement;
+    ghost.classList.add('bo-acc-switch__ghost');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.setAttribute('tabindex', '-1');
+    ghost.setAttribute('disabled', '');
+    return ghost;
+  }
+
   // --- Top Bar & Navigation ---
   function createTopBar(): HTMLElement {
     let titleText = label('jurnalOtomatisJudul');
@@ -131,7 +142,7 @@ export function renderAccountingScreen(
           attrs: { role: 'group', 'aria-label': label('grupAkuntansi') },
         },
         ...tabButtons,
-        withPrint ? printButton : false,
+        withPrint ? printButton : placeholder(printButton),
       ),
     );
   }

@@ -116,19 +116,23 @@ test.describe('B2 satuan bertahap', () => {
     await page.getByLabel('Konversi satuan 2', { exact: true }).fill('12');
     await pickUnit(page, 'Satuan 3', 'DOS');
     await page.getByLabel('Konversi satuan 3', { exact: true }).fill('60');
-    const inputs = page.locator('.bo-pd-prices__input');
-    await inputs.nth(0).fill('1000');
-    await inputs.nth(1).fill('900');
+    // Harga barang baru diisi lewat dialog Isi Harga Jual Barang (klik baris harga, hanya Owner).
+    await page.locator('.bo-pd-prices__row').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Isi Harga Jual Barang' });
+    await dialog.getByLabel('Eceran Satuan 1', { exact: true }).fill('1000');
+    await dialog.getByLabel('Grosir Satuan 1', { exact: true }).fill('900');
+    await dialog.getByRole('button', { name: 'Simpan', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await save(page).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
 
     const rows = page.locator('.bo-pd-prices tbody tr');
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(0)).toContainText('1.000');
-    await expect(rows.nth(1)).toContainText('LSN = 12 Pcs');
+    await expect(rows.nth(1)).toContainText('LSN (12)');
     await expect(rows.nth(1)).toContainText('12.000');
     await expect(rows.nth(1)).toContainText('10.800');
-    await expect(rows.nth(2)).toContainText('DOS = 60 Pcs');
+    await expect(rows.nth(2)).toContainText('DOS (60)');
     await expect(rows.nth(2)).toContainText('60.000');
   });
 
@@ -159,13 +163,13 @@ test.describe('B2 satuan bertahap', () => {
 test.describe('B3 dan B4 komisi dan promo', () => {
   test('komisi terisi tersimpan sebagai persen dan kosong menghapusnya', async ({ page }) => {
     await openBarang(page);
-    await save(page).click();
+    await page.getByRole('button', { name: 'Ubah', exact: true }).click();
     await page.getByLabel('Komisi Sales', { exact: true }).fill('2,5');
     await save(page).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
     await expect(page.getByLabel('Komisi Sales', { exact: true })).toHaveValue('2,5');
 
-    await save(page).click();
+    await page.getByRole('button', { name: 'Ubah', exact: true }).click();
     await page.getByLabel('Komisi Sales', { exact: true }).fill('');
     await save(page).click();
     await expect(page.getByLabel('Komisi Sales', { exact: true })).toHaveValue('');
@@ -192,7 +196,7 @@ test.describe('B3 dan B4 komisi dan promo', () => {
     await openBarang(page);
     await searchFor(page, 'P001');
     await expect(page.getByLabel('Nama barang')).toHaveValue(/SEMEN GRESIK/i);
-    await save(page).click();
+    await page.getByRole('button', { name: 'Ubah', exact: true }).click();
     await page.getByLabel('Promo', { exact: true }).fill('15');
     await save(page).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
@@ -211,10 +215,14 @@ test.describe('B3 dan B4 komisi dan promo', () => {
 test.describe('B5 informasi biaya hanya untuk Owner', () => {
   test('Supervisor tidak melihat label dan kolom Harga Beli Akhir dan HPP', async ({ page }) => {
     await openBarang(page, SUPERVISOR);
-    await expect(page.getByLabel('Harga Beli Akhir', { exact: true })).toHaveCount(0);
-    await expect(page.getByLabel('HPP Avg', { exact: true })).toHaveCount(0);
+    const grid = page.locator('.bo-tabpanel:not([hidden]) .vtable__head');
+    await expect(grid).not.toContainText('Harga Beli Akhir');
+    await expect(grid).not.toContainText('Hpp Avg');
     await expect(page.locator('.bo-pd-form')).not.toContainText('HPP');
     await expect(page.locator('.bo-pd-form')).not.toContainText('Harga Beli Akhir');
+    // Supervisor tidak melihat biaya satuan Saldo Stok Awal dan tidak dapat menambahnya.
+    await expect(page.locator('.bo-pd-opening')).not.toContainText('Biaya Satuan');
+    await expect(page.locator('.bo-pd-opening').getByRole('button')).toHaveCount(0);
   });
 
   // B0004 punya satu dokumen koreksi contoh (KS-0001), jadi tab Koreksi berisi baris untuk kedua peran.
@@ -258,39 +266,45 @@ test.describe('B5 informasi biaya hanya untuk Owner', () => {
 
   test('Owner melihat keduanya', async ({ page }) => {
     await openBarang(page, OWNER);
-    await expect(page.getByLabel('Harga Beli Akhir', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('HPP Avg', { exact: true })).toBeVisible();
+    const grid = page.locator('.bo-tabpanel:not([hidden]) .vtable__head');
+    await expect(grid).toContainText('Harga Beli Akhir');
+    await expect(grid).toContainText('Hpp Avg');
+    await expect(page.locator('.bo-pd-opening')).toContainText('Biaya Satuan');
   });
 
   test('Owner lalu diganti Supervisor dari Panel Simulasi: kolom biaya hilang', async ({
     page,
   }) => {
     await openBarang(page, OWNER);
-    await expect(page.getByLabel('HPP Avg', { exact: true })).toBeVisible();
+    const grid = page.locator('.bo-tabpanel:not([hidden]) .vtable__head');
+    await expect(grid).toContainText('Hpp Avg');
     await page.getByRole('button', { name: 'Panel Simulasi' }).click();
     await page.locator('#sim-role').selectOption('supervisor');
     await page.getByRole('button', { name: 'Panel Simulasi' }).click();
     await expect(page.locator('.bo-pd-count')).toHaveText('3.607 barang');
-    await expect(page.getByLabel('HPP Avg', { exact: true })).toHaveCount(0);
+    await expect(page.locator('.bo-tabpanel:not([hidden]) .vtable__head')).not.toContainText(
+      'Hpp Avg',
+    );
   });
 });
 
 test.describe('B6 foto membesar', () => {
-  test('klik ikon perbesar membuka foto besar dan bisa ditutup', async ({ page }) => {
+  test('klik ikon perbesar membuka foto di tengah layar seluas setengah halaman dan bisa ditutup', async ({
+    page,
+  }) => {
     await openBarang(page);
     await page.getByRole('button', { name: 'Perbesar foto' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.locator('img')).toBeVisible();
-    const stage = dialog.locator('.bo-pd-zoom');
-    await expect(stage).toHaveAttribute('data-zoom', '1');
-    await expect(dialog.getByRole('button', { name: 'Perkecil', exact: true })).toBeDisabled();
-    await dialog.getByRole('button', { name: 'Perbesar', exact: true }).click();
-    await expect(stage).toHaveAttribute('data-zoom', '2');
-    await dialog.getByRole('button', { name: 'Perbesar', exact: true }).click();
-    await expect(stage).toHaveAttribute('data-zoom', '3');
-    await expect(dialog.getByRole('button', { name: 'Perbesar', exact: true })).toBeDisabled();
-    await dialog.getByRole('button', { name: 'Perkecil', exact: true }).click();
-    await expect(stage).toHaveAttribute('data-zoom', '2');
+    const box = await dialog.boundingBox();
+    const view = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(view).not.toBeNull();
+    // Kotak di tengah layar dan lebarnya tidak melebihi sekitar setengah halaman.
+    expect(Math.abs((box?.x ?? 0) + (box?.width ?? 0) / 2 - (view?.width ?? 0) / 2)).toBeLessThan(
+      4,
+    );
+    expect(box?.width ?? 9999).toBeLessThanOrEqual((view?.width ?? 0) * 0.55);
     await dialog.getByRole('button', { name: 'Tutup' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
@@ -325,42 +339,21 @@ test.describe('I1 Info Data Histori Barang (gambar 4 sampai 7)', () => {
 
   test('kolom setiap tab mengikuti gambar klien', async ({ page }) => {
     const dialog = await openInfo(page, 'B1183');
-    expect(await headers(dialog)).toEqual([
-      'Tgl Pembelian',
-      'No Faktur',
-      'Qty',
-      'Satuan',
-      'Harga',
-      'Pemasok',
-    ]);
+    await expect
+      .poll(() => headers(dialog))
+      .toEqual(['Tgl Pembelian', 'No Faktur', 'Qty', 'Satuan', 'Harga', 'Pemasok']);
     await dialog.getByRole('tab', { name: 'Penjualan' }).click();
-    expect(await headers(dialog)).toEqual([
-      'Tgl Penjualan',
-      'No Faktur',
-      'Qty',
-      'Satuan',
-      'Harga',
-      'Pelanggan',
-    ]);
+    await expect
+      .poll(() => headers(dialog))
+      .toEqual(['Tgl Penjualan', 'No Faktur', 'Qty', 'Satuan', 'Harga', 'Pelanggan']);
     await dialog.getByRole('tab', { name: 'Koreksi' }).click();
-    expect(await headers(dialog)).toEqual([
-      'Tgl Koreksi',
-      'No Koreksi',
-      'Qty Awal',
-      'Aksi',
-      'Qty',
-      'Qty Akhir',
-    ]);
+    await expect
+      .poll(() => headers(dialog))
+      .toEqual(['Tgl Koreksi', 'No Koreksi', 'Qty Awal', 'Aksi', 'Qty', 'Qty Akhir']);
     await dialog.getByRole('tab', { name: 'Mutasi' }).click();
-    expect(await headers(dialog)).toEqual([
-      'Tanggal',
-      'Nomor',
-      'Transaksi',
-      'Nama',
-      'Masuk',
-      'Keluar',
-      'Saldo',
-    ]);
+    await expect
+      .poll(() => headers(dialog))
+      .toEqual(['Tanggal', 'Nomor', 'Transaksi', 'Nama', 'Masuk', 'Keluar', 'Saldo']);
   });
 
   test('rentang bawaan tiga bulan dan filter tanggal termasuk rentang terbalik', async ({

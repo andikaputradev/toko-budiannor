@@ -6,6 +6,7 @@ import {
   dashboardWidgets,
   hppTone,
 } from '../../../src/apps/bo/domain/dashboard';
+import { axisLabel, niceStep } from '../../../src/apps/bo/dashboard-charts';
 
 describe('Dashboard Back-Office (Full Widgets)', () => {
   it('menghitung metrik omset harian dan bulanan dengan benar', () => {
@@ -137,5 +138,41 @@ describe('Dashboard sembilan widget', () => {
     expect(hppTone(94)).toBe('waspada');
     expect(hppTone(90)).toBe('waspada');
     expect(hppTone(89)).toBe('aman');
+  });
+
+  it('memecah omset menjadi transaksi lunas dan piutang yang jumlahnya sama dengan omset', () => {
+    const store = createStore({ dataset: generateDataset() });
+    const now = new Date('2026-10-19T10:00:00+07:00');
+    const data = computeFullDashboard(store.getState(), now, 'owner');
+    for (const info of [data.omset.dailyBreakdown, data.omset.monthlyBreakdown]) {
+      expect(info.lunas).toBeGreaterThanOrEqual(0);
+      expect(info.piutang).toBeGreaterThanOrEqual(0);
+      expect(info.lunas + info.piutang).toBe(info.current);
+    }
+  });
+
+  it('menyediakan urutan Penjualan Barang menurut nilai, frekuensi, dan laba', () => {
+    const store = createStore({ dataset: generateDataset() });
+    const now = new Date('2026-10-19T10:00:00+07:00');
+    const period = computeFullDashboard(store.getState(), now, 'owner').rankPeriods[0];
+    const by = period?.productsBy;
+    expect(by?.nilai[0]?.name).toBe('THINNER CEMERLANG A 5LT');
+    expect(by?.frekuensi[0]?.name).toBe('LEM QBOND XTRA');
+    expect(by?.frekuensi[0]?.display).toBe('305 kali');
+    expect(by?.laba[0]?.name).toBe('THINNER CEMERLANG A 5LT');
+    for (const metric of ['nilai', 'frekuensi', 'laba'] as const) {
+      const amounts = by?.[metric].map((item) => item.amount) ?? [];
+      expect(amounts).toEqual([...amounts].sort((a, b) => b - a));
+    }
+  });
+
+  it('skala grafik garis memakai langkah bulat dan angka sumbu ringkas', () => {
+    expect(niceStep(72_150_000)).toBe(25_000_000);
+    expect(niceStep(11_820_000)).toBe(5_000_000);
+    expect(axisLabel(0)).toBe('0');
+    expect(axisLabel(75_000_000)).toBe('75 Jt');
+    expect(axisLabel(2_500_000)).toBe('2,5 Jt');
+    expect(axisLabel(1_500_000_000)).toBe('1,5 M');
+    expect(axisLabel(5_000)).toBe('5 Rb');
   });
 });

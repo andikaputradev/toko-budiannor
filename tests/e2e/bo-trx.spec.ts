@@ -1089,9 +1089,11 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     await unit.click();
     await unit.fill('Pcs');
     await unit.press('Enter');
-    const prices = page.locator('.bo-pd-prices__input');
-    await prices.nth(0).fill('1000');
-    await prices.nth(1).fill('900');
+    await page.locator('.bo-pd-prices__row').first().click();
+    const priceDialog = page.getByRole('dialog', { name: 'Isi Harga Jual Barang' });
+    await priceDialog.getByLabel('Eceran Satuan 1', { exact: true }).fill('1000');
+    await priceDialog.getByLabel('Grosir Satuan 1', { exact: true }).fill('900');
+    await priceDialog.getByRole('button', { name: 'Simpan', exact: true }).click();
     await page.getByRole('button', { name: 'Simpan Barang' }).click();
     await expect(page.getByText('Barang tersimpan.')).toBeVisible();
 

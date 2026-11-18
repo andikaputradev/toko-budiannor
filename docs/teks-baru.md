@@ -1410,7 +1410,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1453: "Arus Kas". Kunci arusKasJudul.
 - TB-1454: "Periode Oktober 2026 - Metode langsung". Kunci arusKasSubJudul.
 - TB-1455: "Laporan Laba Rugi". Kunci labaRugiJudul.
-- TB-1456: "Periode 1 s.d. 19 Oktober 2026 | Dibuat otomatis dari jurnal transaksi". Kunci labaRugiSubJudul.
+- TB-1456: "Periode 1 s.d. 19 Oktober 2026, dari jurnal transaksi". Kunci labaRugiSubJudul.
 - TB-1457: "Neraca". Kunci neracaJudul.
 - TB-1458: "Posisi keuangan per 19 Oktober 2026". Kunci neracaSubJudul.
 - TB-1459: "Ekspor Excel (.xlsx)". Kunci eksporExcelXlsx.
@@ -1959,7 +1959,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2004: "Stok {gudang} berkurang untuk {jumlah} barang.". Kunci boReturDampakStokTurun.
 - TB-2005: "{gudang}". Kunci korGudangLabel.
 - TB-2006: "Beban Usaha". Kunci menuBebanUsaha.
-- TB-2007: "Jurnal terbentuk otomatis dari transaksi jual beli dan beban". Kunci jurnalSubJudul.
+- TB-2007: "Jurnal otomatis dari transaksi jual beli dan beban". Kunci jurnalSubJudul.
 - TB-2008: "Catatan beban usaha, jurnal otomatis ke Laba Rugi". Kunci bebanSubJudul.
 - TB-2009: "+ Input Beban Usaha". Kunci labelInputBebanOperasional.
 - TB-2010: "Laba Rugi Kotor". Kunci menuLabaRugi.

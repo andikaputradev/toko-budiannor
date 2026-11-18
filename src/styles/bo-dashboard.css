@@ -1,16 +1,18 @@
 /* Dashboard Back-Office: warna kategori grafik dan gaya grafik.
    Tata letak widget ditambahkan bersama layar Dashboard. */
 
-/* Tujuh nada kategori; kontras minimal 3:1 terhadap permukaan kartu (terang: putih, gelap:
-   night-900). Tetap sama pada semua palet tema karena melambangkan kategori data. */
+/* Tujuh nada kategori, tetap sama pada semua palet tema karena melambangkan kategori data. Mode
+   terang memakai warna cerah contoh klien (gambar 35 revisi BO putaran 9): biru, kuning, merah,
+   hijau, oranye. Teks tidak pernah memakai warna ini; hanya isian grafik dan titik legenda. */
 [data-app='bo'] {
   --chart-1: #2563eb;
-  --chart-2: #b7791f;
-  --chart-3: #dc2626;
-  --chart-4: #15803d;
-  --chart-5: #ea580c;
-  --chart-6: #7c3aed;
-  --chart-7: #0f766e;
+  --chart-2: #facc15;
+  --chart-3: #da020e;
+  --chart-4: #16ff00;
+  --chart-5: #ff6600;
+  --chart-6: #a855f7;
+  --chart-7: #06b6d4;
+  --dx-ok-text: #15803d;
 }
 
 [data-app='bo'][data-pos-scheme='gelap'] {
@@ -21,6 +23,7 @@
   --chart-5: #fb923c;
   --chart-6: #a78bfa;
   --chart-7: #2dd4bf;
+  --dx-ok-text: #4ade80;
 }
 
 .bo-tone-1 {
@@ -87,19 +90,19 @@
 }
 
 /* ===== Batang mendatar ===== */
+/* Satu grid untuk semua baris: titik, nama, batang, dan nilai berada di kolom yang sama, jadi batang
+   mulai dari garis yang sama dan nilai rata kanan (gambar klien 34). */
 .bo-hbars {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto auto minmax(40px, 1fr) auto;
+  align-items: center;
+  gap: 8px 8px;
   min-width: 0;
+  font-size: 13px;
 }
 
 .bo-hbars__row {
-  display: grid;
-  grid-template-columns: auto minmax(0, max-content) minmax(40px, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  display: contents;
 }
 
 .bo-hbars__dot {

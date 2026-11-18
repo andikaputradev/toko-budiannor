@@ -132,7 +132,8 @@ test.describe('kerangka Back-Office', () => {
     const barHeight = await page
       .locator('.bo-topbar')
       .evaluate((node) => node.getBoundingClientRect().height);
-    expect(Math.round(barHeight)).toBe(60);
+    // Header rendah (gambar klien 36 revisi BO putaran 9).
+    expect(Math.round(barHeight)).toBe(44);
     await page.getByRole('button', { name: 'Tutup menu' }).click();
     await expect(page.locator('.bo-menu')).toBeHidden();
 

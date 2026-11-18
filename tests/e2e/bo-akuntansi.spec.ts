@@ -61,7 +61,7 @@ test.describe('Akuntansi satu halaman', () => {
       'Transportasi Angkutan',
       'Katering Makan',
       'Listrik dan Internet',
-      'Sewa dan Peralatan Toko',
+      'Sewa Toko',
       'Beban Lain Lain',
     ]);
     await expect(panel(page).getByRole('button', { name: 'Cetak' })).toHaveCount(0);
