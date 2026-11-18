@@ -1,5 +1,5 @@
 import { balanceOf, overdueInvoices, wibDate } from '../../../shared/data/receivable';
-import type { DailyRevenue, Product, Role } from '../../../shared/data/types';
+import type { DailyRevenue, Product, Role, Sale } from '../../../shared/data/types';
 import { formatDate } from '../../../shared/format';
 import { totalStock } from '../../../shared/data/units';
 import type { AppState } from '../../../shared/store/store';
@@ -23,6 +23,9 @@ export interface MetricBreakdown {
   readonly total: number;
   readonly count: number;
   readonly average: number;
+  // Omset dipecah menjadi transaksi lunas dan transaksi piutang (jumlah keduanya sama dengan omset).
+  readonly lunas: number;
+  readonly piutang: number;
   readonly trendPercent: number;
   readonly trendDirection: 'naik' | 'turun';
 }
@@ -45,7 +48,12 @@ export interface RankedItem {
   readonly name: string;
   readonly amount: number;
   readonly percent: number;
+  // Teks nilai bila bukan rupiah (mis. "214 kali" pada urutan frekuensi).
+  readonly display?: string;
 }
+
+// Urutan Penjualan Barang: menurut nilai penjualan, frekuensi penjualan, atau laba penjualan.
+export type ProductMetric = 'nilai' | 'frekuensi' | 'laba';
 
 export interface HppMonitoringItem {
   readonly name: string;
@@ -81,6 +89,7 @@ export interface ExpenseBreakdown {
 export interface RankPeriod {
   readonly label: string;
   readonly products: readonly RankedItem[];
+  readonly productsBy: Readonly<Record<ProductMetric, readonly RankedItem[]>>;
   readonly customers: readonly RankedItem[];
 }
 
@@ -243,6 +252,12 @@ interface RankRow {
   readonly amount: number;
 }
 
+interface ProductRow extends RankRow {
+  // Berapa kali barang terjual dan laba penjualannya pada periode itu.
+  readonly count: number;
+  readonly profit: number;
+}
+
 // Persen = bagian dari seluruh penjualan periode (bukan hanya baris yang tampil), urut terbesar dulu.
 function ranked(rows: readonly RankRow[], total: number): RankedItem[] {
   return [...rows]
@@ -253,8 +268,10 @@ function ranked(rows: readonly RankRow[], total: number): RankedItem[] {
 const RANK_DATA: readonly {
   readonly customers: readonly RankRow[];
   readonly customerTotal: number;
-  readonly products: readonly RankRow[];
+  readonly products: readonly ProductRow[];
   readonly productTotal: number;
+  readonly countTotal: number;
+  readonly profitTotal: number;
 }[] = [
   {
     customers: [
@@ -268,15 +285,17 @@ const RANK_DATA: readonly {
     ],
     customerTotal: 261_000_000,
     products: [
-      { name: 'THINNER CEMERLANG A 5LT', amount: 8_780_000 },
-      { name: 'SENG GELOMBANG KECIL CAP KUDA', amount: 7_500_000 },
-      { name: 'SENG FIBER GELOMBANG KECIL', amount: 7_485_000 },
-      { name: 'THINNER PEGASUS HIJAU 5LT', amount: 5_760_000 },
-      { name: 'KERAMIK 50X50 GNET ELCHE', amount: 4_400_000 },
-      { name: 'LEM QBOND XTRA', amount: 4_150_000 },
-      { name: 'CAT NIPPON 1LT', amount: 3_960_000 },
+      { name: 'THINNER CEMERLANG A 5LT', amount: 8_780_000, count: 214, profit: 1_230_000 },
+      { name: 'SENG GELOMBANG KECIL CAP KUDA', amount: 7_500_000, count: 96, profit: 1_050_000 },
+      { name: 'SENG FIBER GELOMBANG KECIL', amount: 7_485_000, count: 88, profit: 920_000 },
+      { name: 'THINNER PEGASUS HIJAU 5LT', amount: 5_760_000, count: 143, profit: 690_000 },
+      { name: 'KERAMIK 50X50 GNET ELCHE', amount: 4_400_000, count: 41, profit: 610_000 },
+      { name: 'LEM QBOND XTRA', amount: 4_150_000, count: 305, profit: 830_000 },
+      { name: 'CAT NIPPON 1LT', amount: 3_960_000, count: 122, profit: 540_000 },
     ],
     productTotal: 130_000_000,
+    countTotal: 3_150,
+    profitTotal: 21_500_000,
   },
   {
     customers: [
@@ -289,14 +308,16 @@ const RANK_DATA: readonly {
     ],
     customerTotal: 318_000_000,
     products: [
-      { name: 'SENG GELOMBANG KECIL CAP KUDA', amount: 11_200_000 },
-      { name: 'THINNER CEMERLANG A 5LT', amount: 9_640_000 },
-      { name: 'LEM QBOND XTRA', amount: 6_900_000 },
-      { name: 'SENG FIBER GELOMBANG KECIL', amount: 6_120_000 },
-      { name: 'CAT NIPPON 1LT', amount: 5_330_000 },
-      { name: 'KERAMIK 50X50 GNET ELCHE', amount: 4_010_000 },
+      { name: 'SENG GELOMBANG KECIL CAP KUDA', amount: 11_200_000, count: 131, profit: 1_580_000 },
+      { name: 'THINNER CEMERLANG A 5LT', amount: 9_640_000, count: 236, profit: 1_340_000 },
+      { name: 'LEM QBOND XTRA', amount: 6_900_000, count: 402, profit: 1_410_000 },
+      { name: 'SENG FIBER GELOMBANG KECIL', amount: 6_120_000, count: 72, profit: 770_000 },
+      { name: 'CAT NIPPON 1LT', amount: 5_330_000, count: 160, profit: 720_000 },
+      { name: 'KERAMIK 50X50 GNET ELCHE', amount: 4_010_000, count: 38, profit: 540_000 },
     ],
     productTotal: 165_000_000,
+    countTotal: 4_100,
+    profitTotal: 26_800_000,
   },
 ];
 
@@ -310,10 +331,24 @@ function buildRankPeriods(now: Date): readonly RankPeriod[] {
     `${withoutYear(day(year, month - 1, 1))} - ${formatDate(now)}`,
     `${withoutYear(day(year, month - 2, 1))} - ${day(year, month - 1, 0)}`,
   ];
+  const byMetric = (
+    data: (typeof RANK_DATA)[number],
+  ): Readonly<Record<ProductMetric, readonly RankedItem[]>> => ({
+    nilai: ranked(data.products, data.productTotal),
+    frekuensi: ranked(
+      data.products.map((row) => ({ name: row.name, amount: row.count })),
+      data.countTotal,
+    ).map((item) => ({ ...item, display: `${String(item.amount)} kali` })),
+    laba: ranked(
+      data.products.map((row) => ({ name: row.name, amount: row.profit })),
+      data.profitTotal,
+    ),
+  });
   return RANK_DATA.map((data, index) => ({
     label: labels[index] ?? '',
     customers: ranked(data.customers, data.customerTotal),
     products: ranked(data.products, data.productTotal),
+    productsBy: byMetric(data),
   }));
 }
 
@@ -324,6 +359,22 @@ export function computeFullDashboard(
 ): FullDashboardData {
   const legacy = computeDashboard(state, now);
   const isOwner = role === 'owner';
+
+  const today = wibDate(now);
+  const todaySales = state.data.sales.filter((sale) => wibDate(new Date(sale.createdAt)) === today);
+  const monthSales = state.data.sales.filter(
+    (sale) => wibDate(new Date(sale.createdAt)).slice(0, 7) === today.slice(0, 7),
+  );
+  // Bagian transaksi yang sudah lunas (terbayar); sisanya piutang. Tanpa transaksi, 90 persen lunas.
+  const paidShare = (sales: readonly Sale[]): number => {
+    const total = sales.reduce((sum, sale) => sum + sale.total, 0);
+    const paid = sales.reduce((sum, sale) => sum + Math.min(sale.paid, sale.total), 0);
+    return total > 0 ? paid / total : 0.9;
+  };
+  const split = (amount: number, share: number): { lunas: number; piutang: number } => {
+    const lunas = Math.round(amount * share);
+    return { lunas, piutang: amount - lunas };
+  };
 
   const dailyOmzet = legacy.omzetToday || 2_450_000;
   const dailyCount = legacy.countToday || 90;
@@ -336,13 +387,13 @@ export function computeFullDashboard(
   const monthlyAvg = Math.round(monthlyTotal / monthlyCount);
 
   const dailyPoints: ChartPoint[] = [
-    { label: 'Mon', value: 1_850_000 },
-    { label: 'Tue', value: 2_100_000 },
-    { label: 'Wed', value: 1_950_000 },
-    { label: 'Thu', value: 2_600_000 },
-    { label: 'Fri', value: 2_200_000 },
-    { label: 'Sat', value: 2_850_000 },
-    { label: 'Sun', value: 2_450_000 },
+    { label: 'Mon', value: 45_250_000 },
+    { label: 'Tue', value: 52_400_000 },
+    { label: 'Wed', value: 48_100_000 },
+    { label: 'Thu', value: 68_975_000 },
+    { label: 'Fri', value: 55_300_000 },
+    { label: 'Sat', value: 72_150_000 },
+    { label: 'Sun', value: 62_400_000 },
   ];
 
   const monthlyPoints: ChartPoint[] = [
@@ -454,6 +505,7 @@ export function computeFullDashboard(
       total: dailyTotal,
       count: dailyCount,
       average: dailyAvg,
+      ...split(dailyOmzet, paidShare(todaySales)),
       trendPercent: 12.5,
       trendDirection: 'naik' as const,
     },
@@ -462,6 +514,7 @@ export function computeFullDashboard(
       total: monthlyTotal,
       count: monthlyCount,
       average: monthlyAvg,
+      ...split(monthlyOmzet, paidShare(monthSales)),
       trendPercent: 15.2,
       trendDirection: 'naik' as const,
     },

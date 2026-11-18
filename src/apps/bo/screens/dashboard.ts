@@ -18,11 +18,21 @@ import {
   type DashboardWidgetId,
   type ExpenseKind,
   type FullDashboardData,
+  type ProductMetric,
   type RankedItem,
 } from '../domain/dashboard';
 import type { ScreenHandle } from './login';
 
 type Period = 'harian' | 'bulanan';
+
+const TEXT = {
+  transaksiLunas: 'Transaksi Lunas',
+  transaksiPiutang: 'Transaksi Piutang',
+  nilai: 'Nilai',
+  frekuensi: 'Frekuensi',
+  laba: 'Laba',
+  urutan: 'Urutan penjualan barang',
+} as const;
 
 const EXPENSE_LABELS: Readonly<Record<ExpenseKind, LabelKey>> = {
   gaji: 'bebanGaji',
@@ -37,7 +47,7 @@ const EXPENSE_TONES: Readonly<Record<ExpenseKind, ChartTone>> = {
   katering: 2,
   bensin: 3,
   operasional: 4,
-  listrik: 6,
+  listrik: 5,
 };
 
 // Elemen yang mengisi lebar batang lewat CSSOM (variabel --bar); CSP menolak atribut style.
@@ -56,29 +66,33 @@ function scroller(name: string, ...children: HTMLElement[]): HTMLElement {
   );
 }
 
-function segmented(
+function segmented<T extends string>(
   groupName: string,
-  active: Period,
-  onSelect: (period: Period) => void,
+  options: readonly { readonly value: T; readonly text: string }[],
+  active: T,
+  onSelect: (value: T) => void,
 ): HTMLElement {
-  const option = (period: Period, text: string): HTMLElement => {
-    const button = el('button', {
-      className: `bo-dx-seg__btn${active === period ? ' bo-dx-seg__btn--active' : ''}`,
-      attrs: { type: 'button', 'aria-pressed': active === period ? 'true' : 'false' },
-      text,
-    });
-    button.addEventListener('click', () => {
-      onSelect(period);
-    });
-    return button;
-  };
   return el(
     'div',
     { className: 'bo-dx-seg', attrs: { role: 'group', 'aria-label': groupName } },
-    option('harian', label('omsetHarian')),
-    option('bulanan', label('omsetBulanan')),
+    ...options.map((item) => {
+      const button = el('button', {
+        className: `bo-dx-seg__btn${active === item.value ? ' bo-dx-seg__btn--active' : ''}`,
+        attrs: { type: 'button', 'aria-pressed': active === item.value ? 'true' : 'false' },
+        text: item.text,
+      });
+      button.addEventListener('click', () => {
+        onSelect(item.value);
+      });
+      return button;
+    }),
   );
 }
+
+const periodOptions = (): readonly { readonly value: Period; readonly text: string }[] => [
+  { value: 'harian', text: label('omsetHarian') },
+  { value: 'bulanan', text: label('omsetBulanan') },
+];
 
 function card(
   id: DashboardWidgetId,
@@ -135,7 +149,10 @@ function rankRow(position: number, item: RankedItem): HTMLElement {
         'div',
         { className: 'bo-dx-rank__line' },
         el('strong', { className: 'bo-dx-rank__name', text: item.name }),
-        el('span', { className: 'bo-dx-rank__amount', text: formatRupiah(item.amount) }),
+        el('span', {
+          className: 'bo-dx-rank__amount',
+          text: item.display ?? formatRupiah(item.amount),
+        }),
         el('span', { className: 'bo-dx-chip', text: `${String(item.percent)}%` }),
       ),
       bar(item.percent, 'bo-dx-bar__fill bo-tone-1'),
@@ -154,6 +171,7 @@ export function renderDashboard(session: BoSession): ScreenHandle {
     beban: 'harian',
   };
   const rankIndex = { pelanggan: 0, barang: 0 };
+  let barangMetric: ProductMetric = 'nilai';
 
   const refreshButton = (onRefresh: () => void): HTMLElement => {
     const button = el(
@@ -203,20 +221,25 @@ export function renderDashboard(session: BoSession): ScreenHandle {
             className: 'bo-dx-caption',
             text: label(periods.omset === 'harian' ? 'omsetHariIniJudul' : 'omsetBulanIniJudul'),
           }),
-          el('div', { className: 'bo-dx-big', text: formatRupiah(info.current) }),
+          el(
+            'div',
+            { className: 'bo-dx-bigrow' },
+            el('div', { className: 'bo-dx-big', text: formatRupiah(info.current) }),
+            el('span', {
+              className: 'bo-dx-chip bo-dx-chip--ok',
+              text: `+${String(info.trendPercent)}%`,
+            }),
+          ),
           el(
             'div',
             { className: 'bo-dx-stats' },
-            stat(label('dxTotal'), formatRupiah(info.total)),
             stat(label('totalTransaksiNilai'), `${String(info.count)} Kali`),
-            stat(label('rataRataTransaksi'), formatRupiah(info.average)),
+            stat(TEXT.transaksiLunas, formatRupiah(info.lunas)),
+            stat(TEXT.transaksiPiutang, formatRupiah(info.piutang)),
           ),
         ),
-        el('span', {
-          className: 'bo-dx-chip bo-dx-chip--ok',
-          text: `+${String(info.trendPercent)}%`,
-        }),
-        segmented(label('omsetSingkat'), periods.omset, setPeriod('omset')),
+        refreshButton(paint),
+        segmented(label('omsetSingkat'), periodOptions(), periods.omset, setPeriod('omset')),
       );
     };
 
@@ -230,10 +253,15 @@ export function renderDashboard(session: BoSession): ScreenHandle {
         el(
           'div',
           { className: 'bo-dx-card__body bo-dx-line' },
-          el('div', { className: 'bo-dx-line__chart' }, createLineChart(points, 420, 104)),
+          el(
+            'div',
+            { className: 'bo-dx-line__chart' },
+            createLineChart(points, 430, 100, formatRupiah),
+          ),
           el('p', { className: 'bo-dx-trend', text: data.chartSeries.trendText }),
         ),
-        segmented(label('dxGrafikJudul'), periods.grafik, setPeriod('grafik')),
+        refreshButton(paint),
+        segmented(label('dxGrafikJudul'), periodOptions(), periods.grafik, setPeriod('grafik')),
       );
     };
 
@@ -264,6 +292,7 @@ export function renderDashboard(session: BoSession): ScreenHandle {
             ),
           ),
         ),
+        refreshButton(paint),
       );
 
     const laba = (): HTMLElement => {
@@ -306,7 +335,8 @@ export function renderDashboard(session: BoSession): ScreenHandle {
             ),
           ),
         ),
-        segmented(label('labaJudul'), periods.laba, setPeriod('laba')),
+        refreshButton(paint),
+        segmented(label('labaJudul'), periodOptions(), periods.laba, setPeriod('laba')),
       );
     };
 
@@ -354,7 +384,8 @@ export function renderDashboard(session: BoSession): ScreenHandle {
             ),
           ),
         ),
-        segmented(label('bebanJudul'), periods.beban, setPeriod('beban')),
+        refreshButton(paint),
+        segmented(label('bebanJudul'), periodOptions(), periods.beban, setPeriod('beban')),
       );
     };
 
@@ -396,6 +427,7 @@ export function renderDashboard(session: BoSession): ScreenHandle {
             label('dxGrafikAset'),
           ),
         ),
+        refreshButton(paint),
       );
 
     const rank = (
@@ -406,7 +438,8 @@ export function renderDashboard(session: BoSession): ScreenHandle {
     ): HTMLElement => {
       const index = rankIndex[id];
       const period = data.rankPeriods[index];
-      const items = id === 'pelanggan' ? (period?.customers ?? []) : (period?.products ?? []);
+      const items =
+        id === 'pelanggan' ? (period?.customers ?? []) : (period?.productsBy[barangMetric] ?? []);
       const step = (delta: number): HTMLElement => {
         const target = index + delta;
         const disabled = data.rankPeriods[target] === undefined;
@@ -451,6 +484,23 @@ export function renderDashboard(session: BoSession): ScreenHandle {
           rankIndex[id] = 0;
           paint();
         }),
+        ...(id === 'barang'
+          ? [
+              segmented<ProductMetric>(
+                TEXT.urutan,
+                [
+                  { value: 'nilai', text: TEXT.nilai },
+                  { value: 'frekuensi', text: TEXT.frekuensi },
+                  { value: 'laba', text: TEXT.laba },
+                ],
+                barangMetric,
+                (metric) => {
+                  barangMetric = metric;
+                  paint();
+                },
+              ),
+            ]
+          : []),
       );
     };
 

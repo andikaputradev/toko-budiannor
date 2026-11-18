@@ -187,6 +187,17 @@
   font-size: 13px;
 }
 
+.bo-dx-bigrow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bo-dx-bigrow .bo-dx-chip {
+  margin-bottom: 4px;
+}
+
 .bo-dx-big {
   font-size: clamp(22px, 4.2vh, 36px);
   font-weight: 800;
@@ -235,6 +246,37 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.bo-chart-line {
+  position: relative;
+}
+
+/* Kotak nilai di atas titik yang ditunjuk; posisinya persen dari kotak grafik (CSSOM). */
+.bo-chart-tip {
+  position: absolute;
+  z-index: 2;
+  padding: 1px 6px;
+  border: 1px solid var(--color-text-primary);
+  border-radius: 4px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  transform: translate(-50%, -140%);
+  white-space: nowrap;
+}
+
+.bo-chart-line-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.bo-chart-line-axis {
+  fill: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .bo-chart-line-grid {
@@ -400,7 +442,7 @@
 }
 
 .bo-dx-headline--ok {
-  color: var(--chart-4);
+  color: var(--dx-ok-text);
 }
 
 .bo-dx-headline--bad {
@@ -543,4 +585,10 @@
 [data-app='bo'][data-pos-scheme='gelap'] .bo-dx-medal--3 {
   background: #7c2d12;
   color: #fed7aa;
+}
+
+/* Tiga pilihan (Penjualan Barang: Nilai, Frekuensi, Laba) dirapatkan supaya judul kartu tetap terbaca. */
+.bo-dx-seg:has(.bo-dx-seg__btn:nth-child(3)) .bo-dx-seg__btn {
+  padding: 0 9px;
+  font-size: 12px;
 }

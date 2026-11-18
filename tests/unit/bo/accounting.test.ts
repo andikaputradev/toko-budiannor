@@ -34,7 +34,7 @@ describe('Domain Akuntansi & Laporan Keuangan Back Office', () => {
       ['Transportasi Angkutan', 6_250_000, 11.9],
       ['Katering Makan', 1_100_000, 2.1],
       ['Listrik dan Internet', 3_200_000, 6.1],
-      ['Sewa dan Peralatan Toko', 9_600_000, 18.3],
+      ['Sewa Toko', 9_600_000, 18.3],
       ['Beban Lain Lain', 1_050_000, 2],
     ]);
     expect(summary.categories.reduce((sum, item) => sum + item.amount, 0)).toBe(summary.totalBeban);
@@ -59,7 +59,7 @@ describe('Domain Akuntansi & Laporan Keuangan Back Office', () => {
       'Transportasi Angkutan',
       'Katering Makan',
       'Listrik dan Internet',
-      'Sewa dan Peralatan Toko',
+      'Sewa Toko',
       'Beban Lain Lain',
     ]);
   });

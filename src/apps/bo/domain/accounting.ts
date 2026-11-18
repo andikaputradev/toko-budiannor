@@ -202,7 +202,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
   {
     id: 'BBN-06',
     date: '2026-10-01',
-    category: 'Sewa dan Peralatan Toko',
+    category: 'Sewa Toko',
     description: 'Sewa ruko dan gudang',
     amount: 9_600_000,
     paidFrom: 'Bank BCA',
@@ -304,7 +304,7 @@ export const EXPENSE_CATEGORIES: readonly string[] = [
   'Transportasi Angkutan',
   'Katering Makan',
   'Listrik dan Internet',
-  'Sewa dan Peralatan Toko',
+  'Sewa Toko',
   'Beban Lain Lain',
 ];
 

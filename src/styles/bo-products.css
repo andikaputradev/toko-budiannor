@@ -3,21 +3,25 @@
    dan matriks harga. Mengikuti gambar 3 dokumen klien. */
 
 .bo-pd {
-  display: grid;
+  display: flex;
   flex: 1 1 0;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   min-height: 0;
 }
 
+/* Formulir lima kolom (gambar klien 37 revisi BO putaran 9): data dasar, satuan dan catatan, stok
+   minimum dan berat, komisi dan promo, lalu foto dengan jumlah barang. Tidak menggulir sendiri supaya
+   daftar satuan yang terbuka tidak terpotong. */
 .bo-pd-form {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  flex: none;
+  grid-template-columns:
+    minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 0.95fr)
+    132px;
   align-content: start;
-  gap: 0 14px;
-  min-height: 0;
-  padding: 14px 16px;
-  overflow: auto;
+  gap: 0 16px;
+  padding: 8px 14px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
@@ -264,12 +268,12 @@
 /* ===== Foto ===== */
 .bo-pd-photo {
   display: flex;
-  flex: 1 1 0;
+  flex: none;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-height: 120px;
-  padding: 8px;
+  gap: 2px;
+  height: 118px;
+  padding: 4px;
   border: 1px dashed var(--bo-line-strong);
   border-radius: 10px;
   background: var(--bo-surface-soft);
@@ -341,7 +345,7 @@
 
 .bo-pd-photo__pick {
   flex: none;
-  padding: 5px 16px;
+  padding: 1px 12px;
   border: 1px solid var(--color-accent-default);
   border-radius: 999px;
   background: var(--color-bg-surface);
@@ -412,9 +416,10 @@
 .bo-pd-toolbar {
   display: flex;
   flex: none;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
-  padding: 6px;
+  align-items: center;
+  padding: 5px 6px;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-card);
   background: var(--color-bg-surface);
@@ -497,8 +502,8 @@
 }
 
 .bo-pd-search {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 160px;
+  min-width: 120px;
   height: 34px;
   padding: 0 12px;
   border: 1px solid var(--bo-line-strong);
@@ -864,4 +869,228 @@
 [data-app='bo'] .modal:has(.bo-cetak) {
   width: min(760px, calc(100% - 32px));
   max-width: none;
+}
+
+/* ===== Susunan baru (revisi BO putaran 9): kolom formulir, daftar selebar layar, panel bawah ===== */
+.bo-pd-col--e {
+  align-items: stretch;
+  gap: 4px;
+}
+
+.bo-pd-col--e .bo-pd-count {
+  text-align: center;
+}
+
+.bo-pd-bottom {
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  height: 120px;
+}
+
+.bo-pd-prices__row {
+  cursor: pointer;
+}
+
+.bo-pd-prices__row:hover td,
+.bo-pd-prices__row:focus-visible td {
+  background: var(--color-accent-soft);
+}
+
+.bo-pd-opening {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+}
+
+.bo-pd-opening__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-table-header);
+}
+
+.bo-pd-opening__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bo-pd-opening__tools {
+  display: flex;
+  gap: 6px;
+}
+
+.bo-pd-opening .bo-pd-opening__btn {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.bo-pd-opening__scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.bo-pd-opening table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.bo-pd-opening th,
+.bo-pd-opening td {
+  padding: 3px 10px;
+  border-bottom: 1px solid var(--color-border-default);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.bo-pd-opening thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg-surface);
+  font-weight: 700;
+}
+
+/* ===== Dialog Isi Harga Jual, Isi Saldo Awal, dan Perbesar Gambar ===== */
+.modal:has(.bo-pd-dlg) .modal__actions:empty {
+  display: none;
+}
+
+.bo-pd-modal {
+  max-height: calc(100dvh - 32px);
+}
+
+.modal.bo-pd-modal--harga {
+  width: min(800px, 94vw);
+  max-width: none;
+}
+
+.modal.bo-pd-modal--saldo {
+  width: min(520px, 94vw);
+  max-width: none;
+}
+
+.bo-pd-dlg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bo-pd-dlg--harga {
+  min-width: 0;
+}
+
+.bo-pd-dlg__head,
+.bo-pd-dlg__col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bo-pd-dlg__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 24px;
+}
+
+.bo-pd-dlg__row {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.bo-pd-dlg--saldo .bo-pd-dlg__row {
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+}
+
+.bo-pd-dlg__label {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.bo-pd-dlg__code {
+  color: var(--color-accent-pressed);
+  font-size: 16px;
+}
+
+.bo-pd-dlg__input,
+.bo-pd-dlg__box {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--bo-line-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 32px;
+}
+
+.bo-pd-dlg__box {
+  border-color: var(--color-border-default);
+  background: var(--bo-surface-soft);
+}
+
+.bo-pd-dlg__input:disabled {
+  background: var(--color-bg-disabled);
+  opacity: 0.7;
+}
+
+.bo-pd-dlg__error {
+  min-height: 0;
+  margin: 0;
+  color: var(--color-status-danger-fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bo-pd-dlg__error:empty {
+  display: none;
+}
+
+.bo-pd-dlg__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* Perbesar gambar: kotak di tengah layar seluas kira-kira setengah halaman. */
+.bo-pd-modal--foto {
+  width: min(50vw, 640px);
+  min-width: 320px;
+}
+
+.bo-pd-modal--foto .bo-pd-zoombox {
+  display: grid;
+  place-items: center;
+}
+
+.bo-pd-zoomimg {
+  display: block;
+  max-width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
 }

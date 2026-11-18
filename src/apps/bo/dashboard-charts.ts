@@ -18,24 +18,54 @@ export interface LineChartPoint {
   readonly value: number;
 }
 
+// Skala sumbu: puncak kelipatan tiga langkah "bulat" (1, 2, 2,5, 5 kali pangkat sepuluh) supaya
+// angka di samping grafik rapi, mis. 0, 25 Jt, 50 Jt, 75 Jt.
+export function niceStep(maxValue: number): number {
+  const raw = Math.max(1, maxValue) / 3;
+  const power = 10 ** Math.floor(Math.log10(raw));
+  const unit = [1, 2, 2.5, 5, 10].find((candidate) => candidate * power >= raw) ?? 10;
+  return unit * power;
+}
+
+export function axisLabel(value: number): string {
+  if (value === 0) {
+    return '0';
+  }
+  const trim = (n: number): string => String(Math.round(n * 10) / 10).replace('.', ',');
+  if (value >= 1_000_000_000) {
+    return `${trim(value / 1_000_000_000)} M`;
+  }
+  if (value >= 1_000_000) {
+    return `${trim(value / 1_000_000)} Jt`;
+  }
+  return value >= 1_000 ? `${trim(value / 1_000)} Rb` : trim(value);
+}
+
+// Grafik garis omset: angka skala di sisi kiri dan, saat penunjuk mengarah ke sebuah titik, kotak
+// kecil berisi nilainya. Kotak memakai posisi persen lewat CSSOM karena CSP menolak atribut style.
 export function createLineChart(
   data: readonly LineChartPoint[],
   width = 380,
   height = 140,
+  formatValue: (value: number) => string = String,
 ): HTMLElement {
-  const pad = { top: 18, right: 24, bottom: 28, left: 24 };
+  const pad = { top: 10, right: 14, bottom: 20, left: 46 };
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
   const max = Math.max(1, ...data.map((d) => d.value));
+  const step = niceStep(max);
+  const top = step * 3;
 
   const chart = svg('svg', {
     viewBox: `0 0 ${width} ${height}`,
     class: 'bo-chart-line-svg',
     role: 'img',
-    'aria-label': 'Grafik tren omset penjualan',
+    'aria-label': `Grafik tren omset penjualan: ${data
+      .map((d) => `${d.label} ${formatValue(d.value)}`)
+      .join(', ')}`,
   });
 
-  // Garis grid horizontal tipis
+  // Garis grid mendatar dan angka skalanya
   for (let i = 0; i <= 3; i += 1) {
     const y = pad.top + (innerH / 3) * i;
     chart.append(
@@ -47,18 +77,26 @@ export function createLineChart(
         class: 'bo-chart-line-grid',
       }),
     );
+    const tick = svg('text', {
+      x: String(pad.left - 6),
+      y: String(y + 3),
+      class: 'bo-chart-line-axis',
+      'text-anchor': 'end',
+    });
+    tick.textContent = axisLabel(top - step * i);
+    chart.append(tick);
   }
 
   // Hitung koordinat titik
   const points = data.map((d, index) => {
-    const step = data.length > 1 ? innerW / (data.length - 1) : innerW / 2;
-    const x = pad.left + index * step;
-    const y = pad.top + innerH - (d.value / max) * innerH;
+    const slot = data.length > 1 ? innerW / (data.length - 1) : innerW / 2;
+    const x = pad.left + index * slot;
+    const y = pad.top + innerH - (d.value / top) * innerH;
     return { x, y, ...d };
   });
 
   // Polyline garis grafik
-  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
+  const polylinePoints = points.map((p) => `${String(p.x)},${String(p.y)}`).join(' ');
   const line = svg('polyline', {
     points: polylinePoints,
     class: 'bo-chart-line-path',
@@ -67,20 +105,29 @@ export function createLineChart(
   chart.append(line);
 
   // Area di bawah garis
-  if (points.length > 0) {
-    const firstP = points[0];
-    const lastP = points[points.length - 1];
-    if (firstP && lastP) {
-      const areaPoints = `${polylinePoints} ${lastP.x},${pad.top + innerH} ${firstP.x},${pad.top + innerH}`;
-      const area = svg('polygon', {
-        points: areaPoints,
-        class: 'bo-chart-line-area',
-      });
-      chart.prepend(area);
-    }
+  const firstP = points[0];
+  const lastP = points[points.length - 1];
+  if (firstP && lastP) {
+    const base = String(pad.top + innerH);
+    const area = svg('polygon', {
+      points: `${polylinePoints} ${String(lastP.x)},${base} ${String(firstP.x)},${base}`,
+      class: 'bo-chart-line-area',
+    });
+    chart.prepend(area);
   }
 
-  // Titik lingkaran dan teks label
+  const tip = el('div', {
+    className: 'bo-chart-tip',
+    attrs: { hidden: '', 'aria-hidden': 'true' },
+  });
+  const showTip = (point: { x: number; y: number; value: number }): void => {
+    tip.textContent = formatValue(point.value);
+    tip.style.left = `${String((point.x / width) * 100)}%`;
+    tip.style.top = `${String((point.y / height) * 100)}%`;
+    tip.hidden = false;
+  };
+
+  // Titik lingkaran, teks label, dan sasaran sentuh yang lebih besar untuk penunjuk
   points.forEach((p) => {
     const circle = svg('circle', {
       cx: String(p.x),
@@ -88,11 +135,26 @@ export function createLineChart(
       r: '4',
       class: 'bo-chart-line-dot',
     });
-    chart.append(circle);
+    const hit = svg('circle', {
+      cx: String(p.x),
+      cy: String(p.y),
+      r: '11',
+      class: 'bo-chart-line-hit',
+    });
+    const hint = svg('title', {});
+    hint.textContent = `${p.label}: ${formatValue(p.value)}`;
+    hit.append(hint);
+    hit.addEventListener('pointerenter', () => {
+      showTip(p);
+    });
+    hit.addEventListener('pointerleave', () => {
+      tip.hidden = true;
+    });
+    chart.append(circle, hit);
 
     const text = svg('text', {
       x: String(p.x),
-      y: String(height - 8),
+      y: String(height - 6),
       class: 'bo-chart-line-label',
       'text-anchor': 'middle',
     });
@@ -100,7 +162,7 @@ export function createLineChart(
     chart.append(text);
   });
 
-  return el('div', { className: 'bo-chart-line' }, chart);
+  return el('div', { className: 'bo-chart-line' }, chart, tip);
 }
 
 // Warna kategori grafik: tujuh nada `--chart-1` sampai `--chart-7` (bo-dashboard.css), tetap sama
