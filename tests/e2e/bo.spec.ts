@@ -243,12 +243,9 @@ test.describe('BO-03 Barang', () => {
     await page.goto('/#/bo/barang');
     await page.getByRole('button', { name: 'Tambah Barang' }).click();
     const save = page.getByRole('button', { name: 'Simpan Barang' });
-    await save.click();
-    await expect(page.getByText('Kode barang wajib diisi.')).toBeVisible();
-    await page.getByLabel('Kode barang').fill('B0001');
-    await save.click();
-    await expect(page.getByText('Kode barang sudah dipakai.')).toBeVisible();
-    await page.getByLabel('Kode barang').fill('B9001');
+    // Kode barang baru dibuat otomatis (empat digit, melanjutkan angka terbesar) dan tidak diketik.
+    await expect(page.getByLabel('Kode barang')).toHaveValue('3601');
+    await expect(page.getByLabel('Kode barang')).toHaveAttribute('readonly', '');
     await save.click();
     await expect(page.getByText('Nama barang wajib diisi.')).toBeVisible();
     await page.getByLabel('Nama barang').fill('Barang Uji Baru');

@@ -651,7 +651,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-674: "Laporan Operasional". Kunci layarBo16.
 - TB-675: "Laporan Keuangan". Kunci layarBo17.
 - TB-676: "Price List". Kunci layarBo18.
-- TB-677: "Jurnal dan Beban Operasional". Kunci layarBo19.
+- TB-677: "Jurnal dan Beban Usaha". Kunci layarBo19.
 - TB-678: "Pengguna dan Hak Akses". Kunci layarBo20.
 - TB-679: "Log Aktivitas". Kunci layarBo21.
 - TB-680: "Pengaturan". Kunci layarBo22.
@@ -1113,7 +1113,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1156: "Reset". Kunci tombolReset.
 - TB-1157: "No. SO (Pending)". Kunci labelNoSoPending.
 - TB-1158: "Cari / pilih SO pending...". Kunci placeholderCariSo.
-- TB-1159: "Syarat Bayar *". Kunci labelSyaratBayarWajib.
+- TB-1159: "Cara Bayar *". Kunci labelSyaratBayarWajib.
 - TB-1160: "Info Piutang Pelanggan". Kunci labelInfoPiutangPelanggan.
 - TB-1161: "Piutang Jatuh Tempo". Kunci labelPiutangJatuhTempo.
 - TB-1162: "Plafon Kredit". Kunci labelPlafonKredit.
@@ -1410,9 +1410,9 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1453: "Arus Kas". Kunci arusKasJudul.
 - TB-1454: "Periode Oktober 2026 - Metode langsung". Kunci arusKasSubJudul.
 - TB-1455: "Laporan Laba Rugi". Kunci labaRugiJudul.
-- TB-1456: "Periode 1 s.d. 19 Oktober 2026, dari jurnal transaksi". Kunci labaRugiSubJudul.
+- TB-1456: "Periode 01/10/2026 s.d. 19/10/2026, dari jurnal transaksi". Kunci labaRugiSubJudul.
 - TB-1457: "Neraca". Kunci neracaJudul.
-- TB-1458: "Posisi keuangan per 19 Oktober 2026". Kunci neracaSubJudul.
+- TB-1458: "Posisi keuangan per 19/10/2026". Kunci neracaSubJudul.
 - TB-1459: "Ekspor Excel (.xlsx)". Kunci eksporExcelXlsx.
 - TB-1460: "Semua Sumber". Kunci labelSemuaSumber.
 - TB-1461: "Semua Status". Kunci labelSemuaStatus.
@@ -1526,18 +1526,18 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1569: "{entitas} "{nama}" ditambahkan.". Kunci masterSimpanBaru.
 - TB-1570: "{entitas} "{nama}" diperbarui.". Kunci masterSimpanUbah.
 - TB-1571: "{entitas} "{nama}" dihapus.". Kunci masterHapusOk.
-- TB-1572: "{entitas} "{nama}" dinonaktifkan.". Kunci masterNonaktifOk.
+- TB-1572: "{entitas} "{nama}" dihapus dari daftar aktif.". Kunci masterNonaktifOk.
 - TB-1573: "{entitas} "{nama}" diaktifkan kembali.". Kunci masterAktifOk.
 - TB-1574: "Info {entitas}: {nama}". Kunci masterInfoJudul.
 - TB-1575: "Hapus {entitas}". Kunci masterHapusJudul.
 - TB-1576: "Hapus "{nama}"? Data yang dihapus tidak dapat dikembalikan.". Kunci masterHapusIsi.
-- TB-1577: "Nonaktifkan {entitas}". Kunci masterNonaktifJudul.
-- TB-1578: "Nonaktifkan "{nama}"? Data tetap tersimpan dan dapat diaktifkan kembali kapan saja.". Kunci masterNonaktifIsi.
+- TB-1577: "Hapus {entitas}". Kunci masterNonaktifJudul.
+- TB-1578: "Hapus "{nama}"? Riwayat transaksinya tetap utuh dan data dapat diaktifkan kembali dari daftar.". Kunci masterNonaktifIsi.
 - TB-1579: "Tidak dapat diproses". Kunci masterTolakJudul.
 - TB-1580: "Kategori "{nama}" masih dipakai oleh {jumlah} barang. Pindahkan barangnya ke kategori lain terlebih dahulu.". Kunci masterTolakKategori.
 - TB-1581: "Merk "{nama}" masih dipakai oleh {jumlah} barang. Pindahkan barangnya ke merk lain terlebih dahulu.". Kunci masterTolakMerk.
-- TB-1582: "Pemasok "{nama}" masih memiliki hutang {jumlah}. Lunasi hutangnya sebelum dinonaktifkan.". Kunci masterTolakHutang.
-- TB-1583: "Pelanggan "{nama}" masih memiliki piutang {jumlah}. Selesaikan piutangnya sebelum dinonaktifkan.". Kunci masterTolakPiutang.
+- TB-1582: "Pemasok "{nama}" masih memiliki hutang {jumlah}. Lunasi hutangnya sebelum dihapus.". Kunci masterTolakHutang.
+- TB-1583: "Pelanggan "{nama}" masih memiliki piutang {jumlah}. Selesaikan piutangnya sebelum dihapus.". Kunci masterTolakPiutang.
 - TB-1584: ""{nama}" adalah akun pengguna aplikasi. Nonaktifkan lewat menu Pengguna, bukan dari daftar Sales.". Kunci masterTolakSalesPengguna.
 - TB-1585: "Sales "{nama}" tercatat pada {jumlah} penjualan bulan ini dan tidak dapat dihapus.". Kunci masterTolakSalesPakai.
 - TB-1586: "Ekspedisi "{nama}" dipakai sebagai pilihan awal Surat Jalan dan tidak dapat dihapus.". Kunci masterTolakEkspedisi.
@@ -1550,7 +1550,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1593: "{entitas} {nama} ditambahkan". Kunci masterLogTambah.
 - TB-1594: "{entitas} {nama} diubah". Kunci masterLogUbah.
 - TB-1595: "{entitas} {nama} dihapus". Kunci masterLogHapus.
-- TB-1596: "{entitas} {nama} dinonaktifkan". Kunci masterLogNonaktif.
+- TB-1596: "{entitas} {nama} dihapus dari daftar aktif". Kunci masterLogNonaktif.
 - TB-1597: "{entitas} {nama} diaktifkan kembali". Kunci masterLogAktif.
 - TB-1598: "{entitas}: impor {jumlah} data contoh". Kunci masterLogImpor.
 - TB-1599: "Daftar {entitas} ({jumlah} baris) dicetak: {format}". Kunci masterLogCetak.
@@ -1965,5 +1965,3 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2010: "Laba Rugi Kotor". Kunci menuLabaRugi.
 - TB-2011: "Price List". Kunci menuPricelist.
 - TB-2012: "Daftar Harga dan Katalog". Kunci menuDaftarHarga.
-- TB-2013: "{entitas} tidak dihapus agar riwayat transaksinya tetap utuh. Gunakan Nonaktifkan.". Kunci masterTidakDihapus.
-- TB-2014: "{entitas} yang tidak dipakai dihapus, tidak dinonaktifkan. Gunakan Hapus.". Kunci masterTidakDinonaktifkan.

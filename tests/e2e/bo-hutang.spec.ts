@@ -83,9 +83,9 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
       'Pelanggan',
       'Metode Bayar',
       'Kas / Bank',
-      'Total Bayar',
-      'Keterangan',
       'User',
+      'Keterangan',
+      'Total Bayar',
     ]);
     await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-trx-kpi')).toContainText(
       'Total Pembayaran Piutang Hari Ini',

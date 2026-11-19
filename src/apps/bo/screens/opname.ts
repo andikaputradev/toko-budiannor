@@ -2,7 +2,7 @@ import '../../../styles/bo-mutasi.css';
 import { el } from '../../../shared/dom';
 import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
-import { formatDate } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import type { BoSession } from '../bo-session';
 import type { OpnameOrder, OpnameStatus } from '../domain/opname';
 import { dateRangeFor, type DateRangeKind } from '../domain/transaction-list';

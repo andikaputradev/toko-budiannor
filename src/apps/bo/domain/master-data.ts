@@ -296,6 +296,10 @@ export function lockedFields(
   ctx: MasterContext,
 ): ReadonlySet<string> {
   const locked = new Set(row?.lockedFields ?? []);
+  // Kode dibuat otomatis berurutan dan tidak diketik (revisi BO putaran 10).
+  if (MASTER_CONFIGS[kind].fields.some((field) => field.key === 'code')) {
+    locked.add('code');
+  }
   for (const field of MASTER_CONFIGS[kind].fields) {
     if (field.permission !== undefined && !ctx.allowed(field.permission)) {
       locked.add(field.key);

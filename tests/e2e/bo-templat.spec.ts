@@ -20,23 +20,24 @@ const panel = (page: Page) => page.locator('.bo-tabpanel:not([hidden])');
 const rows = (page: Page) => panel(page).locator('.bo-trx-table tbody tr');
 
 test.describe('Halaman data (gambar 31)', () => {
-  test('bilah tombol sama di semua halaman data; tombol yang tidak berlaku tidak aktif', async ({
+  test('bilah tombol halaman data: tanpa Nonaktifkan, Impor hanya Pemasok dan Pelanggan', async ({
     page,
   }) => {
     await loginBo(page);
-    const names = ['Tambah', 'Ubah', 'Hapus', 'Nonaktifkan', 'Info', 'Impor', 'Cetak', 'Keluar'];
-    for (const [path, off] of [
-      ['kategori', 'Nonaktifkan'],
-      ['merk', 'Nonaktifkan'],
-      ['pelanggan', 'Hapus'],
-      ['pemasok', 'Hapus'],
-      ['sales', 'Nonaktifkan'],
-      ['ekspedisi', 'Nonaktifkan'],
+    const base = ['Tambah', 'Ubah', 'Hapus', 'Info', 'Cetak', 'Keluar'];
+    const withImport = ['Tambah', 'Ubah', 'Hapus', 'Info', 'Impor', 'Cetak', 'Keluar'];
+    for (const [path, names] of [
+      ['kategori', base],
+      ['merk', base],
+      ['pelanggan', withImport],
+      ['pemasok', withImport],
+      ['sales', base],
+      ['ekspedisi', base],
     ] as const) {
       await page.goto(`/#/bo/master/${path}`);
       const bar = panel(page).locator('.bo-master__bar button');
       await expect(bar).toHaveText(names);
-      await expect(bar.filter({ hasText: off })).toBeDisabled();
+      await expect(panel(page).getByRole('button', { name: 'Nonaktifkan' })).toHaveCount(0);
       await expect(panel(page).getByRole('button', { name: 'Ekspor Excel' })).toHaveCount(0);
     }
   });

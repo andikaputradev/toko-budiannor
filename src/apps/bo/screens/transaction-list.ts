@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { slashIso } from '../short-date';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 import type { BoSession } from '../bo-session';
@@ -22,6 +23,7 @@ import {
   createRefreshButton,
   createRowSelection,
   createSearchBox,
+  fixColumns,
   refuseDelete,
 } from './trx/list-page';
 
@@ -116,13 +118,21 @@ export function renderTransactionList(
 
   const head = el('tr', {});
   const body = el('tbody', {});
+  const grid = el(
+    'table',
+    { className: 'bo-trx-table bo-trx-table--list' },
+    el('thead', {}, head),
+    body,
+  );
+  // Faktur Beli dan Faktur Jual memakai kolom dan lebar yang sama.
+  fixColumns(grid, [140, 115, 105, undefined, 140, 120, 110, 80, undefined, 130]);
   const table = el(
     'div',
     {
       className: 'bo-trx__lines',
       attrs: { tabindex: '0', role: 'region', 'aria-label': TEXT.daftar },
     },
-    el('table', { className: 'bo-trx-table bo-trx-table--list' }, el('thead', {}, head), body),
+    grid,
   );
 
   function rebuildPartyFilter(): void {
@@ -162,9 +172,9 @@ export function renderTransactionList(
       el('th', { text: TEXT.pembayaran }),
       el('th', { text: label('kolomStatus') }),
       el('th', { className: 'is-center', text: label('labelUmurNota') }),
-      el('th', { className: 'is-end', text: label('kolomTotal') }),
       el('th', { text: TEXT.user }),
       el('th', { text: TEXT.keterangan }),
+      el('th', { className: 'is-end', text: label('kolomTotal') }),
     );
     body.replaceChildren(...rowsOf(filtered, buyer));
   }
@@ -195,14 +205,14 @@ export function renderTransactionList(
           }),
         ),
         el('td', { className: 'bo-trx-link-ref', text: row.refNumber }),
-        el('td', { className: 'bo-nowrap', text: row.date }),
+        el('td', { className: 'bo-nowrap', text: slashIso(row.date) }),
         el('td', { className: 'is-bold', text: row.partyName }),
         el('td', { className: 'bo-nowrap', text: row.paymentTerms }),
         el('td', {}, statusBadge(row.status)),
         el('td', { className: 'is-center', text: `${formatDecimal(row.ageDays)} Hari` }),
-        el('td', { className: 'is-end is-bold', text: formatRupiah(row.total) }),
         el('td', { text: row.user }),
         el('td', { className: 'bo-trx-notes', text: row.notes, attrs: { title: row.notes } }),
+        el('td', { className: 'is-end is-bold', text: formatRupiah(row.total) }),
       );
       selection.attach(tr, row.number);
       return tr;

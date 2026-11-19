@@ -12,7 +12,7 @@ export const PAY_METHODS: readonly { readonly value: PayMethod; readonly text: s
   { value: 'edc', text: 'EDC' },
 ];
 
-export const CASH_ACCOUNTS: readonly string[] = ['Kas Toko', 'Bank BCA', 'Bank Mandiri'];
+export const CASH_ACCOUNTS: readonly string[] = ['Kas', 'Bank'];
 
 export function methodText(method: PayMethod): string {
   return PAY_METHODS.find((item) => item.value === method)?.text ?? method;
@@ -106,55 +106,25 @@ export function seedDebtPayments(dataset: Dataset, ownerId: string): readonly De
           },
         ];
   return [
-    ...make(
-      'pelanggan',
-      1,
-      day(-12),
-      customers[3],
-      'edc',
-      'Bank BCA',
-      7_500_000,
-      'Lunas',
-      staff(1),
-    ),
-    ...make('pelanggan', 2, day(-6), customers[2], 'transfer', 'Bank BCA', 2_000_000, '', staff(2)),
-    ...make('pelanggan', 3, day(-1), customers[0], 'tunai', 'Kas Toko', 3_500_000, '', ownerId),
+    ...make('pelanggan', 1, day(-12), customers[3], 'edc', 'Bank', 7_500_000, 'Lunas', staff(1)),
+    ...make('pelanggan', 2, day(-6), customers[2], 'transfer', 'Bank', 2_000_000, '', staff(2)),
+    ...make('pelanggan', 3, day(-1), customers[0], 'tunai', 'Kas', 3_500_000, '', ownerId),
     ...make(
       'pelanggan',
       4,
       day(0),
       customers[0],
       'tunai',
-      'Kas Toko',
+      'Kas',
       5_000_000,
       'Janji sisa minggu depan',
       ownerId,
     ),
-    ...make('pelanggan', 5, day(0), customers[1], 'transfer', 'Bank BCA', 200_000, '', staff(2)),
-    ...make(
-      'pelanggan',
-      6,
-      day(0),
-      customers[4],
-      'edc',
-      'Bank Mandiri',
-      12_650_000,
-      'Lunas',
-      staff(1),
-    ),
-    ...make('pemasok', 1, day(-14), suppliers[0], 'transfer', 'Bank BCA', 10_000_000, '', ownerId),
-    ...make(
-      'pemasok',
-      2,
-      day(-4),
-      suppliers[1],
-      'tunai',
-      'Kas Toko',
-      2_500_000,
-      'Cicilan',
-      ownerId,
-    ),
-    ...make('pemasok', 3, day(0), suppliers[2], 'transfer', 'Bank Mandiri', 6_000_000, '', ownerId),
+    ...make('pelanggan', 5, day(0), customers[1], 'transfer', 'Bank', 200_000, '', staff(2)),
+    ...make('pelanggan', 6, day(0), customers[4], 'edc', 'Bank', 12_650_000, 'Lunas', staff(1)),
+    ...make('pemasok', 1, day(-14), suppliers[0], 'transfer', 'Bank', 10_000_000, '', ownerId),
+    ...make('pemasok', 2, day(-4), suppliers[1], 'tunai', 'Kas', 2_500_000, 'Cicilan', ownerId),
+    ...make('pemasok', 3, day(0), suppliers[2], 'transfer', 'Bank', 6_000_000, '', ownerId),
   ];
 }
 

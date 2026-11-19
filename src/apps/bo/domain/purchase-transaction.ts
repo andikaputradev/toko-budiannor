@@ -2,6 +2,7 @@ import type { Dataset, PurchaseOrder, Supplier } from '../../../shared/data/type
 import type { DocLine } from './doc-line';
 import { buildTransactionRows } from './transaction-list';
 import { calculateTieredDiscount } from './discount';
+import { formatDocNumber } from './doc-number';
 
 export interface PurchaseInvoiceLine {
   readonly id: string;
@@ -73,9 +74,10 @@ export function calculatePurchaseTotals(
 
 let purchaseCounter = 1234;
 
-export function generatePurchaseInvoiceNumber(): string {
+// Nomor faktur pembelian otomatis: FB, tahun dan bulan faktur, lalu urutan empat digit.
+export function generatePurchaseInvoiceNumber(dateIso: string): string {
   purchaseCounter += 1;
-  return `FB2610${String(purchaseCounter).padStart(4, '0')}`;
+  return formatDocNumber('FB', dateIso, purchaseCounter);
 }
 
 function emptyPurchaseDraft(invoiceNumber: string, date: string): PurchaseInvoiceDraft {
@@ -105,7 +107,7 @@ export function createPurchaseInvoiceDraft(
   dataset: Dataset,
   defaultDate = dataset.referenceDate.slice(0, 10),
 ): PurchaseInvoiceDraft {
-  return emptyPurchaseDraft(generatePurchaseInvoiceNumber(), defaultDate);
+  return emptyPurchaseDraft(generatePurchaseInvoiceNumber(defaultDate), defaultDate);
 }
 
 // Faktur untuk tautan nomor di Daftar Nota: kepala saja (tanggal, pemasok, PO asal, syarat,
@@ -181,14 +183,14 @@ export function importFromPurchaseOrder(po: PurchaseOrder, dataset: Dataset): Pu
     return {
       id: `POL-${idx + 1}`,
       productId: l.productId,
-      productName: prod?.name ?? l.productId,
+      productName: l.alias ?? prod?.name ?? l.productId,
       productCode: prod?.code ?? '',
       destination: po.warehouse === 'display' ? 'toko' : 'gudang',
       unit: l.unit,
       quantity: l.quantity,
       unitPrice: l.unitPrice,
       discountExpr: '',
-      shipping: 0,
+      shipping: l.shipping ?? 0,
       lastPurchasePrice: prod?.lastPurchasePrice ?? l.unitPrice,
       lastPurchaseDate: prod?.lastPurchaseDate ?? '2026-09-12',
     };
@@ -197,7 +199,7 @@ export function importFromPurchaseOrder(po: PurchaseOrder, dataset: Dataset): Pu
   const totals = calculatePurchaseTotals(lines, 0, 0);
 
   return {
-    invoiceNumber: generatePurchaseInvoiceNumber(),
+    invoiceNumber: generatePurchaseInvoiceNumber(po.createdAt.slice(0, 10)),
     date: po.createdAt.slice(0, 10),
     receivedDate: po.createdAt.slice(0, 10),
     poNumber: po.number,
@@ -207,8 +209,8 @@ export function importFromPurchaseOrder(po: PurchaseOrder, dataset: Dataset): Pu
     supplierPhone: supplier?.phone ?? '',
     supplierInvoiceNumber: `SR-${po.number.replace(/[^0-9]/g, '')}`,
     notes: `Diimpor dari Purchase Order ${po.number}`,
-    paymentTerms: 'hutang',
-    tempoDays: 30,
+    paymentTerms: po.payment ?? 'hutang',
+    tempoDays: po.tempoDays ?? 30,
     paymentChannel: 'bank',
     lines,
     subtotal: totals.subtotal,

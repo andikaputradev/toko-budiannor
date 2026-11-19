@@ -137,7 +137,7 @@ export const DEFAULT_JOURNAL_ENTRIES: readonly JournalRow[] = [
     date: '2026-10-16',
     source: 'Bayar utang supplier',
     debitAccount: 'Utang Usaha',
-    creditAccount: 'Bank BCA',
+    creditAccount: 'Bank',
     amount: 20_000_000,
     status: 'terposting',
   },
@@ -160,7 +160,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Gaji dan Komisi',
     description: 'Komisi sales minggu ke-3',
     amount: 2_150_000,
-    paidFrom: 'Kas Toko',
+    paidFrom: 'Kas',
     status: 'terjurnal',
   },
   {
@@ -169,7 +169,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Listrik dan Internet',
     description: 'Listrik toko dan gudang Okt',
     amount: 3_200_000,
-    paidFrom: 'Bank BCA',
+    paidFrom: 'Bank',
     status: 'terjurnal',
   },
   {
@@ -178,7 +178,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Transportasi Angkutan',
     description: 'Bensin dan sewa truk kirim',
     amount: 850_000,
-    paidFrom: 'Kas Toko',
+    paidFrom: 'Kas',
     status: 'terjurnal',
   },
   {
@@ -187,7 +187,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Beban Lain Lain',
     description: 'ATK dan kantong plastik',
     amount: 420_000,
-    paidFrom: 'Kas Toko',
+    paidFrom: 'Kas',
     status: 'terjurnal',
   },
   {
@@ -196,7 +196,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Gaji dan Komisi',
     description: 'Gaji karyawan (6 orang)',
     amount: 24_000_000,
-    paidFrom: 'Bank BCA',
+    paidFrom: 'Bank',
     status: 'terjurnal',
   },
   {
@@ -205,7 +205,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Sewa Toko',
     description: 'Sewa ruko dan gudang',
     amount: 9_600_000,
-    paidFrom: 'Bank BCA',
+    paidFrom: 'Bank',
     status: 'terjurnal',
   },
   {
@@ -214,7 +214,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Gaji dan Komisi',
     description: 'Komisi sales minggu ke-1 & ke-2',
     amount: 5_250_000,
-    paidFrom: 'Kas Toko',
+    paidFrom: 'Kas',
     status: 'terjurnal',
   },
   {
@@ -223,7 +223,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Transportasi Angkutan',
     description: 'Biaya ekspedisi armada pengiriman',
     amount: 5_400_000,
-    paidFrom: 'Bank BCA',
+    paidFrom: 'Bank',
     status: 'terjurnal',
   },
   {
@@ -232,7 +232,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Beban Lain Lain',
     description: 'Pemeliharaan etalase dan perlengkapan',
     amount: 630_000,
-    paidFrom: 'Kas Toko',
+    paidFrom: 'Kas',
     status: 'terjurnal',
   },
   {
@@ -241,7 +241,7 @@ export const DEFAULT_EXPENSE_ITEMS: readonly OperatingExpenseItem[] = [
     category: 'Katering Makan',
     description: 'Katering makan karyawan minggu ke-2',
     amount: 1_100_000,
-    paidFrom: 'Kas Toko',
+    paidFrom: 'Kas',
     status: 'terjurnal',
   },
 ];
@@ -376,13 +376,13 @@ export function generateCashFlowStatement(
 
   const cashPositions = [
     {
-      account: 'Bank BCA',
+      account: 'Bank',
       amount: bankBcaAmount,
       percent: Math.round((bankBcaAmount / endingCash) * 1000) / 10,
       barColor: '#3b82f6',
     },
     {
-      account: 'Kas Toko',
+      account: 'Kas',
       amount: kasTokoAmount,
       percent: Math.round((kasTokoAmount / endingCash) * 1000) / 10,
       barColor: '#f97316',
@@ -427,7 +427,7 @@ export function generateProfitLossStatement(
   const netProfitPercentFromSales = Math.round((netProfit / netSales) * 1000) / 10; // 17.5%
 
   return {
-    periodLabel: 'Periode 1 s.d. 19 Oktober 2026',
+    periodLabel: 'Periode 01/10/2026 s.d. 19/10/2026',
     revenue: {
       netSales,
       cogs,
@@ -470,7 +470,7 @@ export function generateBalanceSheetStatement(
   const totalLiabilitiesAndEquity = totalLiabilities + totalEquity; // 1.794.350.000
 
   return {
-    asOfDate: '19 Oktober 2026',
+    asOfDate: '19/10/2026',
     currentAssets: [
       { label: 'Kas dan Bank', amount: cashTotal },
       { label: 'Piutang Usaha', amount: piutangUsaha },

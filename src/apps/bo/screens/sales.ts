@@ -1,5 +1,6 @@
 import { el, nextId } from '../../../shared/dom';
-import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import { wibDate } from '../../../shared/data/receivable';
 import type { PaymentMethod } from '../../../shared/data/types';

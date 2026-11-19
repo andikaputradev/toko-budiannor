@@ -3,6 +3,7 @@ import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
+import { slashStamp } from '../short-date';
 import type { ScreenHandle } from './login';
 import { DEFAULT_AUDIT_LOGS, filterAuditLogs, type AuditLogEntry } from '../domain/settings-rbac';
 import { exportTableToCsv } from '../domain/accounting';
@@ -94,7 +95,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
     { value: 'Kasir POS', text: 'Kasir POS' },
     { value: 'Penjualan', text: 'Penjualan & Piutang' },
     { value: 'Mutasi Stok', text: 'Mutasi Stok' },
-    { value: 'Beban Operasional', text: 'Beban Operasional' },
+    { value: 'Beban Usaha', text: 'Beban Usaha' },
     { value: 'Akuntansi', text: 'Akuntansi & Laporan' },
     { value: 'Sistem', text: 'Sistem & Backup' },
   ].forEach((m) => {
@@ -163,7 +164,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
         el(
           'tr',
           {},
-          el('td', {}, el('span', { className: 't-label', text: log.timestamp })),
+          el('td', {}, el('span', { className: 't-label', text: slashStamp(log.timestamp) })),
           el(
             'td',
             {},
@@ -217,7 +218,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
       'Status',
     ];
     const rows = logs.map((l) => [
-      l.timestamp,
+      slashStamp(l.timestamp),
       l.username,
       l.role,
       l.module,
@@ -233,7 +234,7 @@ export function renderAuditLogScreen(session: BoSession, go: (path: string) => v
   function handleExportPdf(): void {
     const columns = ['Waktu', 'Pengguna', 'Modul', 'Aksi', 'Detail Transaksi', 'Status'];
     const rows = logs.map((l) => [
-      l.timestamp,
+      slashStamp(l.timestamp),
       `${l.username} (${l.role})`,
       l.module,
       l.action,

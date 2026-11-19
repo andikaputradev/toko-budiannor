@@ -1,5 +1,5 @@
 import { el } from '../../shared/dom';
-import { formatDayDateTime } from '../../shared/format';
+import { formatDayDateTime } from './short-date';
 import { icon } from '../../shared/icons';
 import { label, message, type LabelKey } from '../../shared/messages';
 import { createBanner } from '../../shared/ui/banner';

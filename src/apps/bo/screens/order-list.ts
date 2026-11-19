@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { slashIso } from '../short-date';
 import { wibDate } from '../../../shared/data/receivable';
 import { formatRupiah } from '../../../shared/format';
 import { showToast } from '../../../shared/ui/toast';
@@ -22,6 +23,7 @@ import {
   createRefreshButton,
   createRowSelection,
   createSearchBox,
+  fixColumns,
   logDeleted,
   refuseDelete,
 } from './trx/list-page';
@@ -78,7 +80,7 @@ const DATE_OPTIONS: readonly { readonly value: DateRangeKind; readonly text: str
 ];
 
 const STATUS_TEXT: Readonly<Record<OrderStatus, string>> = {
-  'on-proses': 'On Proses',
+  'on-proses': 'Proses',
   partial: 'Partial',
   selesai: 'Selesai',
 };
@@ -139,13 +141,21 @@ export function renderOrderList(
     el('th', { className: 'is-end', text: TEXT.total }),
   );
   const body = el('tbody', {});
+  const grid = el(
+    'table',
+    { className: 'bo-trx-table bo-trx-table--list' },
+    el('thead', {}, head),
+    body,
+  );
+  // PO dan SO memakai kolom dan lebar yang sama: nomor, tanggal, pihak, keterangan, status, total.
+  fixColumns(grid, [150, 110, undefined, undefined, 110, 150]);
   const table = el(
     'div',
     {
       className: 'bo-trx__lines',
       attrs: { tabindex: '0', role: 'region', 'aria-label': TEXT.daftar },
     },
-    el('table', { className: 'bo-trx-table bo-trx-table--list' }, el('thead', {}, head), body),
+    grid,
   );
 
   function rebuildPartyFilter(): void {
@@ -217,7 +227,7 @@ export function renderOrderList(
                   },
                 }),
           ),
-          el('td', { className: 'bo-nowrap', text: row.date }),
+          el('td', { className: 'bo-nowrap', text: slashIso(row.date) }),
           el('td', { className: 'is-bold', text: row.partyName }),
           el('td', { className: 'bo-trx-notes', text: row.notes, attrs: { title: row.notes } }),
           el(

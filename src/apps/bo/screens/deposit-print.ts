@@ -1,6 +1,7 @@
 import { el } from '../../../shared/dom';
 import type { DepositEntry } from '../../../shared/data/types';
-import { formatDate, formatRupiah, formatTime } from '../../../shared/format';
+import { formatRupiah, formatTime } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { label } from '../../../shared/messages';
 import { openModal } from '../../../shared/ui/modal';
 import type { BoSession } from '../bo-session';

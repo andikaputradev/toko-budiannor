@@ -1,6 +1,7 @@
 import '../../../styles/bo-stok.css';
 import { el, nextId } from '../../../shared/dom';
-import { formatDate, formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { icon, SVG_NAMESPACE, type IconName } from '../../../shared/icons';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import { wibDate } from '../../../shared/data/receivable';

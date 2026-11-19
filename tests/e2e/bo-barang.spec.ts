@@ -38,10 +38,10 @@ async function pickUnit(page: Page, name: string, code: string): Promise<void> {
 
 const save = (page: Page) => page.getByRole('button', { name: 'Simpan Barang' });
 
-// Mulai barang baru dengan kode, nama, dan satuan dasar Pcs.
-async function startNewProduct(page: Page, code: string, name: string): Promise<void> {
+// Mulai barang baru dengan nama dan satuan dasar Pcs; kode barang terisi otomatis (empat digit).
+async function startNewProduct(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Tambah Barang' }).click();
-  await page.getByLabel('Kode barang').fill(code);
+  await expect(page.getByLabel('Kode barang')).toHaveValue(/^\d{4}$/);
   await page.getByLabel('Nama barang').fill(name);
   await pickUnit(page, 'Satuan dasar', 'Pcs');
 }
@@ -111,7 +111,7 @@ test.describe('B2 satuan bertahap', () => {
     page,
   }) => {
     await openBarang(page);
-    await startNewProduct(page, 'B9100', 'Barang Tiga Satuan');
+    await startNewProduct(page, 'Barang Tiga Satuan');
     await pickUnit(page, 'Satuan 2', 'LSN');
     await page.getByLabel('Konversi satuan 2', { exact: true }).fill('12');
     await pickUnit(page, 'Satuan 3', 'DOS');
@@ -140,7 +140,7 @@ test.describe('B2 satuan bertahap', () => {
     page,
   }) => {
     await openBarang(page);
-    await startNewProduct(page, 'B9101', 'Barang Satuan Ganda');
+    await startNewProduct(page, 'Barang Satuan Ganda');
     await pickUnit(page, 'Satuan 2', 'pcs');
     await page.getByLabel('Konversi satuan 2', { exact: true }).fill('12');
     await save(page).click();
@@ -177,7 +177,7 @@ test.describe('B3 dan B4 komisi dan promo', () => {
 
   test('persen promo dan komisi di luar batas ditolak pada kolomnya', async ({ page }) => {
     await openBarang(page);
-    await startNewProduct(page, 'B9102', 'Barang Persen Salah');
+    await startNewProduct(page, 'Barang Persen Salah');
     await page.getByLabel('Promo', { exact: true }).fill('101');
     await save(page).click();
     await expect(page.getByText('Promo harus berupa persen 0 sampai 100.')).toBeVisible();

@@ -2,7 +2,6 @@ import '../../../styles/bo-trx.css';
 import { el } from '../../../shared/dom';
 import { wibDate } from '../../../shared/data/receivable';
 import type { Dataset, PurchaseOrder, SalesOrder } from '../../../shared/data/types';
-import { formatDecimal } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
@@ -26,6 +25,7 @@ import { createDocHead } from './trx/doc-head';
 import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
+import { createPaymentFields } from './trx/payment-fields';
 import { itemCountText, TRX_TEXT as T } from './trx/text';
 import { ORDER_PATH } from './order-list';
 
@@ -47,10 +47,6 @@ const COPY = {
     pilihDulu: 'Pilih pemasok dahulu.',
     kosong: 'PO belum memiliki item barang.',
     simpan: (number: string) => `PO ${number} berhasil disimpan.`,
-    terms: [
-      ['hutang', 'HUTANG'],
-      ['tunai', 'TUNAI'],
-    ] as const,
   },
   so: {
     judul: 'Data pesanan penjualan',
@@ -61,16 +57,12 @@ const COPY = {
     pilihDulu: 'Pilih pelanggan dahulu.',
     kosong: 'SO belum memiliki item barang.',
     simpan: (number: string) => `SO ${number} berhasil disimpan.`,
-    terms: [
-      ['piutang', 'PIUTANG'],
-      ['tunai', 'TUNAI'],
-    ] as const,
   },
 } as const;
 
 const TEXT = {
   tanggal: 'Tanggal',
-  syaratBayar: 'Syarat Bayar *',
+  syaratBayar: 'Cara Bayar',
   tempo: 'Tempo',
   ekspedisi: 'Ekspedisi',
   keterangan: 'Keterangan',
@@ -99,14 +91,14 @@ function linesOfPurchaseOrder(order: PurchaseOrder, dataset: Dataset): DocLine[]
     return {
       id: nextLineId(),
       productId: line.productId,
-      productName: product?.name ?? line.productId,
+      productName: line.alias ?? product?.name ?? line.productId,
       code: product?.code ?? '',
       warehouse: order.warehouse === 'display' ? 'toko' : 'gudang',
       unit: line.unit,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
       discountExpr: '',
-      shipping: 0,
+      shipping: line.shipping ?? 0,
       koli: false,
     };
   });
@@ -118,7 +110,7 @@ function linesOfSalesOrder(order: SalesOrder, dataset: Dataset): DocLine[] {
     return {
       id: nextLineId(),
       productId: line.productId,
-      productName: product?.name ?? line.productId,
+      productName: line.alias ?? product?.name ?? line.productId,
       code: product?.code ?? '',
       warehouse: 'toko',
       unit: line.unit,
@@ -162,7 +154,6 @@ export function renderOrderForm(
   // Pesanan yang sudah ada dibuka tampil-saja: store tidak punya aksi ubah PO dan SO.
   const viewOnly = existing !== undefined;
   let lines: DocLine[] = [];
-  let extraTouched = false;
   // Dibaca dari store tiap kali: barang bisa dibuat di tab lain selagi formulir ini terbuka.
   const productOf = (id: string) => store.getState().data.products.find((item) => item.id === id);
 
@@ -193,13 +184,10 @@ export function renderOrderForm(
       value: buy ? (session.state().user?.name ?? '') : 'Salahudin',
     },
   });
-  const termsEl = selectWith(copy.terms);
-  const tempoEl = selectWith([
-    ['30', '30 HARI'],
-    ['14', '14 HARI'],
-    ['7', '7 HARI'],
-    ['0', 'CASH / 0 HARI'],
-  ]);
+  // Cara Bayar menentukan Tempo: hutang atau piutang mengisi lama hari, tunai menonaktifkannya.
+  const pay = createPaymentFields({ credit: buy ? 'hutang' : 'piutang', withChannel: false });
+  const termsEl = pay.terms;
+  const tempoEl = pay.tempo;
   const expeditionEl = selectWith(EXPEDITIONS.map((name) => [name, name] as const));
   const notesEl = el('input', {
     className: 'input',
@@ -213,7 +201,7 @@ export function renderOrderForm(
       { key: 'party', label: copy.pihak, control: partyEl, col: 2, row: 1 },
       { key: 'staff', label: copy.petugas, control: staffEl, col: 2, row: 2 },
       { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 3, row: 1 },
-      { key: 'tempo', label: TEXT.tempo, control: tempoEl, col: 3, row: 2 },
+      { key: 'tempo', label: TEXT.tempo, control: pay.tempoBox, labelFor: tempoEl, col: 3, row: 2 },
       { key: 'expedition', label: TEXT.ekspedisi, control: expeditionEl, col: 4, row: 1 },
       { key: 'notes', label: TEXT.keterangan, control: notesEl, col: 4, row: 2 },
     ],
@@ -225,15 +213,14 @@ export function renderOrderForm(
   // --- Barang dan total ---
   const countEl = el('span', { className: 'bo-trx__count', text: itemCountText(0, 0) });
   const totals = createTotalsBox({
-    onChange: (source) => {
-      if (source === 'extra') {
-        extraTouched = true;
-      }
+    withExtra: !buy,
+    onChange: () => {
       recalc();
     },
   });
   const table = createLinesTable({
     mode: 'order',
+    shipping: buy,
     lines: () => lines,
     onEdit: (id) => {
       if (!viewOnly) {
@@ -293,17 +280,15 @@ export function renderOrderForm(
   }
 
   function recalc(): void {
-    if (buy && !extraTouched) {
-      totals.extra.value = formatDecimal(
-        lines.reduce((sum, line) => sum + line.shipping, 0),
-        2,
-      );
-    }
     const summary = docSummary(lines);
     totals.setTotals({ subtotal: summary.subtotal, total: grandTotal() });
     countEl.textContent = itemCountText(summary.count, summary.quantity);
     table.refresh();
   }
+
+  // Alias hanya disimpan bila berbeda dari nama barang.
+  const aliasOf = (line: DocLine): string | undefined =>
+    line.productName === productOf(line.productId)?.name ? undefined : line.productName;
 
   // --- Simpan dan Cetak ---
   function save(): void {
@@ -340,10 +325,14 @@ export function renderOrderForm(
           unit: line.unit,
           quantity: line.quantity,
           unitPrice: netUnitPrice(line),
+          alias: aliasOf(line),
+          shipping: line.shipping,
         })),
         total,
         status: 'dipesan',
         notes,
+        payment: termsEl.value === 'tunai' ? 'tunai' : 'hutang',
+        tempoDays: pay.tempoDays(),
       });
     } else {
       store.addSalesOrder({
@@ -357,9 +346,11 @@ export function renderOrderForm(
           unit: line.unit,
           quantity: line.quantity,
           unitPrice: netUnitPrice(line),
+          alias: aliasOf(line),
         })),
         total,
         payment: termsEl.value === 'tunai' ? 'tunai' : 'piutang',
+        tempoDays: pay.tempoDays(),
         downPayment: 0,
         status: 'draf',
         source: 'owner',
@@ -408,10 +399,13 @@ export function renderOrderForm(
       dataset.users.find((user) => user.id === existing.createdBy)?.name ?? existing.createdBy;
     if ('supplierId' in existing) {
       partyEl.value = existing.supplierId;
+      pay.setTerms(existing.payment ?? 'hutang');
+      pay.tempo.value = pay.terms.value === 'tunai' ? '0' : String(existing.tempoDays ?? 30);
       lines = linesOfPurchaseOrder(existing, dataset);
     } else {
       partyEl.value = existing.customerId ?? '';
-      termsEl.value = existing.payment === 'tunai' ? 'tunai' : 'piutang';
+      pay.setTerms(existing.payment === 'tunai' ? 'tunai' : 'piutang');
+      pay.tempo.value = pay.terms.value === 'tunai' ? '0' : String(existing.tempoDays ?? 30);
       lines = linesOfSalesOrder(existing, dataset);
     }
   }

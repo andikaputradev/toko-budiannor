@@ -7,6 +7,7 @@ import { createButton } from '../../../../shared/ui/button';
 import { openModal } from '../../../../shared/ui/modal';
 import { showToast } from '../../../../shared/ui/toast';
 import type { BoSession } from '../../bo-session';
+import { slashIso } from '../../short-date';
 import {
   buildWhatsAppBillStatement,
   getPayableBalances,
@@ -143,8 +144,8 @@ export function renderDebtSaldo(session: BoSession, type: PartyType): ScreenHand
           el('td', { className: 'is-center' }, box),
           el('td', { className: 'is-center', text: String(index + 1) }),
           el('td', {}, el('strong', { className: 'bo-trx-link', text: invoice.invoiceNumber })),
-          el('td', { className: 'bo-nowrap', text: invoice.date }),
-          el('td', { className: 'bo-nowrap', text: invoice.dueDate }),
+          el('td', { className: 'bo-nowrap', text: slashIso(invoice.date) }),
+          el('td', { className: 'bo-nowrap', text: slashIso(invoice.dueDate) }),
           el('td', { className: 'is-end', text: formatRupiah(invoice.amount) }),
           el(
             'td',
@@ -289,8 +290,8 @@ export function renderDebtSaldo(session: BoSession, type: PartyType): ScreenHand
               el('td', { text: String(index + 1) }),
               el('td', { text: row.party.name }),
               el('td', { text: row.invoice.invoiceNumber }),
-              el('td', { text: row.invoice.date }),
-              el('td', { text: row.invoice.dueDate }),
+              el('td', { text: slashIso(row.invoice.date) }),
+              el('td', { text: slashIso(row.invoice.dueDate) }),
               el('td', { className: 'is-end', text: formatRupiah(row.invoice.remaining) }),
             ),
           ),

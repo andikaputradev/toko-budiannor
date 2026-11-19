@@ -1,6 +1,7 @@
 import { el } from '../../../shared/dom';
 import type { ReturnNote } from '../../../shared/data/types';
-import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { label } from '../../../shared/messages';
 import { openModal } from '../../../shared/ui/modal';
 import type { BoSession } from '../bo-session';

@@ -77,9 +77,16 @@ export function openLineDialog(options: LineDialogOptions): void {
     shipping: nextId('dlg-ongkos'),
   };
 
+  // Nama barang boleh diubah menjadi alias; alias tampil di tabel baris dan hasil cetak.
   const nameInput = el('input', {
     className: 'input',
-    attrs: { id: ids.name, type: 'text', readonly: '', value: product.name },
+    attrs: {
+      id: ids.name,
+      type: 'text',
+      maxlength: '80',
+      autocomplete: 'off',
+      value: base.productName === '' ? product.name : base.productName,
+    },
   });
   const clearName = el(
     'button',
@@ -274,7 +281,8 @@ export function openLineDialog(options: LineDialogOptions): void {
   const nextButton = createButton({ text: T.lanjut, variant: 'primary', type: 'submit' });
   form.append(el('div', { className: 'bo-trx-dlg__actions' }, removeButton, nextButton));
   clearName.addEventListener('click', () => {
-    handle.close();
+    nameInput.value = '';
+    nameInput.focus();
   });
 
   const fail = (text: string, control: HTMLElement): void => {
@@ -313,6 +321,7 @@ export function openLineDialog(options: LineDialogOptions): void {
     }
     options.onCommit({
       ...base,
+      productName: nameInput.value.trim() === '' ? product.name : nameInput.value.trim(),
       warehouse: warehouseSelect.value === 'gudang' ? 'gudang' : 'toko',
       unit: unitSelect.value,
       quantity: quantity(),

@@ -1,7 +1,8 @@
 import '../../../styles/bo-retur.css';
 import { el, nextId } from '../../../shared/dom';
 import type { Product, WarehouseId } from '../../../shared/data/types';
-import { formatDate, formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { icon } from '../../../shared/icons';
 import { label } from '../../../shared/messages';
 import { createBanner } from '../../../shared/ui/banner';

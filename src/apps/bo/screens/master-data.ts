@@ -104,15 +104,9 @@ export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHa
   const btnEdit = action(label('masterUbah'), 'pencil', 'secondary', 'u', () => {
     startEdit();
   });
-  const btnRemove = action(
-    label(config.removeStyle === 'hapus' ? 'hapus' : 'masterNonaktifkan'),
-    'trash-2',
-    'danger',
-    'h',
-    () => {
-      askRemove();
-    },
-  );
+  const btnRemove = action(label('hapus'), 'trash-2', 'danger', 'h', () => {
+    askRemove();
+  });
   const btnInfo = action(label('masterInfo'), 'info', 'secondary', 'i', () => {
     const row = rowOf(selectedId);
     if (row === undefined) {
@@ -131,25 +125,10 @@ export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHa
     requestCloseTab(container);
   });
 
-  // Gambar klien 31: Tambah, Ubah, Hapus, Nonaktifkan, Info, Impor, Cetak, Keluar pada semua halaman
-  // data. Tombol yang tidak berlaku bagi data ini tetap tampil tetapi tidak aktif: Kategori, Merk,
-  // Sales, dan Ekspedisi dihapus; Pemasok dan Pelanggan dinonaktifkan agar riwayat transaksinya utuh.
-  const unavailable = (text: string, iconName: IconName, reason: string): HTMLButtonElement => {
-    const button = createButton({ text, icon: iconName, variant: 'danger', disabled: true });
-    button.title = reason;
-    return button;
-  };
-  const removes = config.removeStyle === 'hapus';
-  const btnDelete = removes
-    ? btnRemove
-    : unavailable(label('hapus'), 'trash-2', label('masterTidakDihapus', { entitas: entity }));
-  const btnDeactivate = removes
-    ? unavailable(
-        label('masterNonaktifkan'),
-        'trash-2',
-        label('masterTidakDinonaktifkan', { entitas: entity }),
-      )
-    : btnRemove;
+  // Revisi BO putaran 10: tanpa tombol Nonaktifkan di halaman master; Hapus pada Pemasok dan
+  // Pelanggan menyembunyikan data dari daftar aktif (riwayat transaksi tetap utuh). Impor hanya ada
+  // pada Pemasok dan Pelanggan; Data Barang punya halaman dan tombol Impor sendiri.
+  const withImport = kind === 'pemasok' || kind === 'pelanggan';
 
   const bar = el(
     'div',
@@ -162,10 +141,9 @@ export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHa
       { className: 'bo-master__group' },
       btnAdd,
       btnEdit,
-      btnDelete,
-      btnDeactivate,
+      btnRemove,
       btnInfo,
-      btnImport,
+      withImport ? btnImport : false,
       btnPrint,
       btnExit,
     ),
@@ -259,7 +237,7 @@ export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHa
       el(
         'div',
         { className: 'bo-master__tools' },
-        el('div', { className: 'bo-master__search' }, icon('search'), searchInput),
+        el('div', { className: 'bo-master__search' }, searchInput),
         btnRefresh,
       ),
     ),
@@ -379,10 +357,7 @@ export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHa
       editing || row === undefined || row.sealed,
       shortcut(label('masterUbah'), 'u'),
     );
-    const removeText =
-      config.removeStyle === 'hapus'
-        ? label('hapus')
-        : label(restoring ? 'masterAktifkan' : 'masterNonaktifkan');
+    const removeText = label(restoring ? 'masterAktifkan' : 'hapus');
     setButton(btnRemove, restoring ? 'check' : 'trash-2', removeText);
     btnRemove.classList.toggle('btn--danger', !restoring);
     btnRemove.classList.toggle('btn--secondary', restoring);
@@ -393,7 +368,9 @@ export function renderMasterData(session: BoSession, kind: MasterKind): ScreenHa
       shortcut(removeText, 'h'),
     );
     gate(btnInfo, true, editing || row === undefined, shortcut(label('masterInfo'), 'i'));
-    gate(btnImport, ctx.allowed(config.importing), editing, undefined);
+    if (withImport) {
+      gate(btnImport, ctx.allowed(config.importing), editing, undefined);
+    }
   };
 
   const applyMode = (): void => {
