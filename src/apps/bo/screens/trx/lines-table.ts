@@ -15,6 +15,9 @@ export interface LinesTableOptions {
   readonly onReorder: (from: number, to: number) => void;
   readonly onKoli?: ((id: string, value: boolean) => void) | undefined;
   readonly isPromo?: ((line: DocLine) => boolean) | undefined;
+  // Kolom Ongkir (ongkos kirim per satuan) untuk faktur pembelian dan PO: tidak masuk total
+  // dokumen, tetapi ikut menentukan HPP rata-rata barang.
+  readonly shipping?: boolean | undefined;
 }
 
 export interface LinesTable {
@@ -39,6 +42,7 @@ export function discountText(expr: string): string {
 // kode, gudang, kuantitas, satuan, @harga, diskon, total harga. Klik nama atau baris mengubah baris.
 export function createLinesTable(options: LinesTableOptions): LinesTable {
   const withKoli = options.mode === 'penjualan';
+  const withShipping = options.shipping === true;
   const body = el('tbody', {});
   const head = el(
     'tr',
@@ -56,6 +60,7 @@ export function createLinesTable(options: LinesTableOptions): LinesTable {
     el('th', { className: 'is-center bo-trx-col-satuan', text: T.kolSatuan }),
     el('th', { className: 'is-end bo-trx-col-harga', text: T.kolHarga }),
     el('th', { className: 'is-end bo-trx-col-diskon', text: T.kolDiskon }),
+    withShipping ? el('th', { className: 'is-end bo-trx-col-ongkir', text: T.kolOngkir }) : false,
     el('th', { className: 'is-end bo-trx-col-total', text: T.kolTotal }),
   );
   const root = el(
@@ -66,7 +71,7 @@ export function createLinesTable(options: LinesTableOptions): LinesTable {
     },
     el('table', { className: 'bo-trx-table bo-trx-table--lines' }, el('thead', {}, head), body),
   );
-  const columns = withKoli ? 10 : 9;
+  const columns = (withKoli ? 10 : 9) + (withShipping ? 1 : 0);
   let dragFrom = -1;
 
   const refresh = (): void => {
@@ -158,6 +163,9 @@ export function createLinesTable(options: LinesTableOptions): LinesTable {
           el('td', { className: 'is-center', text: line.unit }),
           el('td', { className: 'is-end', text: formatDecimal(line.unitPrice) }),
           el('td', { className: 'is-end', text: discountText(line.discountExpr) }),
+          withShipping
+            ? el('td', { className: 'is-end', text: formatDecimal(line.shipping) })
+            : false,
           el('td', { className: 'is-end is-bold', text: formatDecimal(lineAmount(line)) }),
         );
         row.addEventListener('click', () => {
@@ -190,6 +198,8 @@ export function createLinesTable(options: LinesTableOptions): LinesTable {
 export interface TotalsBoxOptions {
   // `source` menyebut isian yang diketik, supaya pemanggil tahu Total Biaya diubah pengguna.
   readonly onChange: (source: 'discount' | 'extra') => void;
+  // Tanpa Total Biaya (faktur pembelian dan PO): ongkos kirim masuk HPP, bukan total dokumen.
+  readonly withExtra?: boolean | undefined;
 }
 
 export interface TotalsBox {
@@ -245,7 +255,7 @@ export function createTotalsBox(options: TotalsBoxOptions): TotalsBox {
     { className: 'bo-trx-totals' },
     cell(T.subTotal, subtotal),
     cell(T.diskonNota, prefixed(discount), discountId),
-    cell(T.totalBiaya, prefixed(extra), extraId),
+    options.withExtra === false ? false : cell(T.totalBiaya, prefixed(extra), extraId),
     cell(T.total, total),
   );
   const parse = (input: HTMLInputElement): number => {

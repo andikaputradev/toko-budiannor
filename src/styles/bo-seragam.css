@@ -179,7 +179,7 @@ html[data-app='bo'] .bo-pd-units__factor {
 
 /* ===== Master (Kategori, Merk, Pemasok, Pelanggan, Sales, Ekspedisi): dua isian per baris ===== */
 html[data-app='bo'] .bo-master__split {
-  grid-template-columns: minmax(400px, 42fr) minmax(0, 58fr);
+  grid-template-columns: minmax(460px, 49fr) minmax(0, 51fr);
 }
 
 html[data-app='bo'] .bo-master__form {
@@ -506,4 +506,60 @@ html[data-app='bo'] .bo-acc-stats--beban .bo-stat-card > :first-child {
 
 html[data-app='bo'] .bo-acc-switch__ghost {
   visibility: hidden;
+}
+
+/* ===== Revisi BO putaran 10: caption satu baris dan kepala daftar yang membeku ===== */
+/* Caption isian dan kartu angka tidak pernah terpotong menjadi dua baris; lebar kolom caption
+   disesuaikan per formulir di bawah supaya isian tetap sejajar. */
+html[data-app='bo']
+  :is(.field__label, .bo-trx-head__label, .bo-trx-totals__label, .bo-trx-kpi__label) {
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-master__form {
+  --bo-label-w: 9.2rem;
+}
+
+html[data-app='bo'] .bo-form-meta-grid {
+  --bo-label-w: 17rem;
+}
+
+html[data-app='bo'] .bo-form-meta-grid .field.bo-field-gap-top,
+html[data-app='bo'] .field.bo-field-gap-top {
+  --bo-label-w: 21rem;
+}
+
+html[data-app='bo'] .bo-trx-kpis {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+html[data-app='bo'] .bo-trx-kpis > .bo-trx-kpi {
+  flex: 1 1 auto;
+}
+
+/* Kepala tabel daftar tetap terlihat saat isi digulir. */
+html[data-app='bo'] .pos-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Retur: panel Penyelesaian cukup lebar agar caption dan alasan cepat tidak terpotong. */
+html[data-app='bo'] .bo-ret-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(520px, 46vw, 640px);
+}
+
+html[data-app='bo'] .bo-ret-settle .field {
+  --bo-label-w: 9.6rem;
+}
+
+html[data-app='bo'] .bo-ret-chips {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+html[data-app='bo'] .bo-ret-reason-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }

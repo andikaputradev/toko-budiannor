@@ -77,9 +77,9 @@ test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masin
       'Pembayaran',
       'Status',
       'Umur Faktur',
-      'Total',
       'User',
       'Keterangan',
+      'Total',
     ]);
     await openPage(page, '/bo/transaksi/faktur-pembelian');
     await expect(
@@ -94,9 +94,9 @@ test.describe('T2 Daftar Faktur (gambar 8): Penjualan dan Pembelian masing-masin
       'Pembayaran',
       'Status',
       'Umur Faktur',
-      'Total',
       'User',
       'Keterangan',
+      'Total',
     ]);
     await expect(list(page).getByLabel('Pemasok', { exact: true })).toBeVisible();
   });
@@ -204,28 +204,29 @@ test.describe('T3 Faktur Penjualan (gambar 9)', () => {
     await loginBo(page);
     await openPage(page, '/bo/penjualan');
     const root = active(page);
+    // Kepala mengikuti gambar klien 44: Alamat, Telepon, dan Tgl Terima tidak ada lagi.
     for (const name of [
+      'Nomor',
       'Tanggal',
-      'No. Invoice',
       'No. SO',
-      'Keterangan',
       'Pelanggan',
-      'Alamat',
-      'Telepon',
-      'Syarat Bayar',
+      'Cara Bayar',
+      'Keterangan',
       'Tempo',
-      'Metode Pembayaran',
+      'Kas / Bank',
       'Sales',
       'Ekspedisi',
     ]) {
-      await expect(root.getByLabel(name)).toHaveCount(1);
+      await expect(root.getByLabel(name, { exact: true })).toHaveCount(1);
+    }
+    for (const name of ['Alamat', 'Telepon', 'No. Invoice']) {
+      await expect(root.getByLabel(name, { exact: true })).toHaveCount(0);
     }
     const card = root.locator('.bo-trx-head__aside');
     await expect(card).toContainText('Info Piutang Pelanggan');
     for (const text of ['Total Piutang', 'Piutang Jatuh Tempo', 'Plafon Kredit', 'Sisa Plafon']) {
       await expect(card.getByText(text)).toBeVisible();
     }
-    await expect(root.getByPlaceholder('Alamat Pengiriman')).toBeVisible();
     await expect(root.getByRole('button', { name: 'Simpan', exact: true })).toBeVisible();
     await expect(root.getByRole('button', { name: 'Cetak', exact: true })).toBeVisible();
     await expect(root.getByRole('button', { name: 'Isi SJ Ekspedisi' })).toBeVisible();
@@ -243,7 +244,7 @@ test.describe('T3 Faktur Penjualan (gambar 9)', () => {
       'Total Harga',
     ]);
     await root.getByLabel('Pelanggan', { exact: true }).selectOption({ index: 1 });
-    await expect(root.getByLabel('Telepon')).not.toHaveValue('');
+    await expect(card.getByText('Total Piutang')).toBeVisible();
   });
 
   test('cari barang menyorot teks cocok, memilih membuka Rincian Barang, Lanjut menambah baris', async ({
@@ -412,21 +413,23 @@ test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
     await loginBo(page);
     await openPage(page, '/bo/pembelian');
     const root = active(page);
+    // Kepala mengikuti gambar klien 43: Alamat, Telepon, dan Tgl Terima tidak ada lagi.
     for (const name of [
+      'Nomor',
       'Tanggal',
-      'Tgl Terima',
-      'No. Invoice',
       'No. PO',
-      'No. Faktur Pemasok',
       'Pemasok',
-      'Alamat',
-      'Telepon',
-      'Syarat Bayar',
-      'Tempo',
-      'Metode Pembayaran',
+      'Cara Bayar',
       'Keterangan',
+      'Tempo',
+      'Kas / Bank',
+      'No. Faktur',
+      'Ekspedisi',
     ]) {
-      await expect(root.getByLabel(name).first()).toBeVisible();
+      await expect(root.getByLabel(name, { exact: true })).toBeVisible();
+    }
+    for (const name of ['Tgl Terima', 'Alamat', 'Telepon']) {
+      await expect(root.getByLabel(name, { exact: true })).toHaveCount(0);
     }
     const card = root.locator('.bo-trx-head__aside');
     await expect(card).toContainText('Info Hutang Pemasok');
@@ -442,11 +445,12 @@ test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
       'Satuan',
       '@Harga',
       'Diskon',
+      'Ongkir',
       'Total Harga',
     ]);
     await expect(countText(page)).toHaveText('0 Barang (0)');
     await root.getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
-    await expect(root.getByLabel('Telepon')).not.toHaveValue('');
+    await expect(card.getByText('Total Hutang')).toBeVisible();
   });
 
   test('Rincian Barang pembelian memuat Ongkos Kirim dan Harga Histori Beli untuk Owner', async ({
@@ -479,7 +483,7 @@ test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
     await expect(rowsOf(page).first().locator('td').nth(6)).toHaveText(/\d/);
   });
 
-  test('Ongkos Kirim per baris otomatis masuk Total Biaya sampai pengguna mengubahnya', async ({
+  test('Ongkos Kirim per baris tampil di kolom Ongkir dan tidak masuk Total; tanpa Total Biaya', async ({
     page,
   }) => {
     await loginBo(page);
@@ -491,14 +495,11 @@ test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
     await dialog.getByLabel('Ongkos Kirim').fill('5000');
     await dialog.getByRole('button', { name: 'Lanjut' }).click();
     const totals = active(page).locator('.bo-trx-totals');
-    await expect(totals.getByLabel('Total Biaya')).toHaveValue('5.000');
-    const sub = rupiah(await totals.locator('.bo-trx-totals__value').first().textContent());
-    await expect(totals.locator('.bo-trx-totals__value.is-total')).toHaveText(
-      `Rp ${idr(sub + 5000)}`,
-    );
-    await totals.getByLabel('Total Biaya').fill('7000');
-    await addItem(page, 'semen', '1', 1);
-    await expect(totals.getByLabel('Total Biaya')).toHaveValue(/^7\.?000$/);
+    await expect(totals.getByLabel('Total Biaya')).toHaveCount(0);
+    await expect(rowsOf(page).first().locator('td').nth(8)).toHaveText('5.000');
+    const values = totals.locator('.bo-trx-totals__value');
+    const sub = rupiah(await values.first().textContent());
+    await expect(totals.locator('.bo-trx-totals__value.is-total')).toHaveText(`Rp ${idr(sub)}`);
   });
 
   test('Simpan tanpa barang ditolak; dengan barang berhasil', async ({ page }) => {
@@ -537,6 +538,7 @@ const orderHeaders = (page: Page): Promise<string[]> =>
   orderList(page).locator('thead th').allTextContents();
 const toast = (page: Page, text: string | RegExp): Locator => page.getByText(text);
 
+// Formulir PO punya kolom Ongkir (ongkos kirim per satuan) sebelum Total Harga.
 const ORDER_LINE_HEADERS = [
   'Urut',
   'Nama Barang',
@@ -546,6 +548,7 @@ const ORDER_LINE_HEADERS = [
   'Satuan',
   '@Harga',
   'Diskon',
+  'Ongkir',
   'Total Harga',
 ];
 
@@ -576,8 +579,8 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await expect(root.locator('tbody tr').first().locator('td').nth(0)).toHaveText('PO26101234');
     await expect(root.locator('a.bo-trx-link')).toHaveCount(0);
     await expect(root.locator('.bo-trx-status')).toHaveText([
-      'On Proses',
-      'On Proses',
+      'Proses',
+      'Proses',
       'Partial',
       'Partial',
       'Selesai',
@@ -598,7 +601,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
       'No PO',
       'Pemasok',
       'Pemesan',
-      'Syarat Bayar',
+      'Cara Bayar',
       'Tempo',
       'Ekspedisi',
       'Keterangan',
@@ -615,7 +618,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     );
   });
 
-  test('Simpan ditolak tanpa pemasok lalu tanpa barang; berhasil tampil di daftar On Proses', async ({
+  test('Simpan ditolak tanpa pemasok lalu tanpa barang; berhasil tampil di daftar Proses', async ({
     page,
   }) => {
     await loginBo(page);
@@ -644,7 +647,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await expect(row.locator('td').nth(0)).toHaveText(/^PO\d{8}$/);
     await expect(row.locator('td').nth(2)).toHaveText(supplier.replace(/\s*\(.*\)$/, ''));
     await expect(row.locator('td').nth(3)).toHaveText('URGEN DEVELOPER');
-    await expect(row.locator('td').nth(4)).toHaveText('On Proses');
+    await expect(row.locator('td').nth(4)).toHaveText('Proses');
     await expect(row.locator('td').nth(5)).toHaveText(/^Rp /);
   });
 
@@ -665,7 +668,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await expect(orderList(page).locator('tbody tr')).toHaveCount(2);
     await orderList(page)
       .getByLabel('Status', { exact: true })
-      .selectOption({ label: 'Status: On Proses' });
+      .selectOption({ label: 'Status: Proses' });
     await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(1);
     await orderList(page)
       .getByRole('searchbox', { name: /Cari No PO/ })
@@ -708,7 +711,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
       'No SO',
       'Pelanggan',
       'Sales',
-      'Syarat Bayar',
+      'Cara Bayar',
       'Tempo',
       'Ekspedisi',
       'Keterangan',
@@ -736,7 +739,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
     const row = orderList(page).locator('tbody tr').first();
     const number = (await row.locator('td').nth(0).textContent()) ?? '';
     expect(number).toMatch(/^SO\d{8}$/);
-    await expect(row.locator('td').nth(4)).toHaveText('On Proses');
+    await expect(row.locator('td').nth(4)).toHaveText('Proses');
 
     await openPage(page, '/bo/penjualan');
     const select = active(page).getByLabel('No. SO');
@@ -1006,7 +1009,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     await expect(link).toHaveAttribute('href', '#/bo/penjualan?no=T-000131');
     await link.click();
     await expect(page).toHaveURL(/#\/bo\/penjualan\?no=T-000131$/);
-    await expect(active(page).getByLabel('No. Invoice')).toHaveValue('T-000131');
+    await expect(active(page).getByLabel('Nomor', { exact: true })).toHaveValue('T-000131');
     await expect(rowsOf(page).first()).toBeVisible();
     expect(await customerShown(page)).toContain('UD Tiga Saudara');
     await expect(countText(page)).not.toHaveText('0 Barang (0)');
@@ -1019,7 +1022,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     await openPage(page, '/bo/transaksi/faktur-penjualan');
     await orderList(page).getByRole('link', { name: 'FJ26101234', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/penjualan\?no=FJ26101234$/);
-    await expect(active(page).getByLabel('No. Invoice')).toHaveValue('FJ26101234');
+    await expect(active(page).getByLabel('Nomor', { exact: true })).toHaveValue('FJ26101234');
     expect(await customerShown(page)).toContain('Bu Sherly Tjoandra');
     await expect(active(page).getByLabel('Tanggal', { exact: true })).toHaveValue('2026-10-25');
   });
@@ -1029,7 +1032,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     await openPage(page, '/bo/transaksi/faktur-pembelian');
     await orderList(page).getByRole('link', { name: 'FB26101234', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/pembelian\?no=FB26101234$/);
-    await expect(active(page).getByLabel('No. Invoice')).toHaveValue('FB26101234');
+    await expect(active(page).getByLabel('Nomor', { exact: true })).toHaveValue('FB26101234');
     const supplier = await active(page)
       .getByLabel('Pemasok', { exact: true })
       .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
@@ -1083,7 +1086,6 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     await openPage(page, '/bo/penjualan');
     await openPage(page, '/bo/barang');
     await page.getByRole('button', { name: 'Tambah Barang' }).click();
-    await page.getByLabel('Kode barang').fill('B9200');
     await page.getByLabel('Nama barang').fill('Barang Baru Tab');
     const unit = page.getByLabel('Satuan dasar', { exact: true });
     await unit.click();
@@ -1214,7 +1216,7 @@ test.describe('Tinjauan akhir: formulir PO dan SO memakai tab sendiri dan tangga
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
     await expect(
       orderList(page).locator('tbody tr[data-number]').first().locator('td').nth(1),
-    ).toHaveText('2026-10-01');
+    ).toHaveText('01/10/2026');
   });
 
   test('PO yang sudah ada dibuka tampil-saja: isian terkunci, tanpa Simpan, tetap bisa Cetak', async ({

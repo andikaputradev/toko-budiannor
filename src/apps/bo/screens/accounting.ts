@@ -5,6 +5,7 @@ import { canOpenScreen } from '../../../shared/permissions';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
+import { slashIso } from '../short-date';
 import type { ScreenHandle } from './login';
 import {
   DEFAULT_JOURNAL_ENTRIES,
@@ -237,7 +238,7 @@ export function renderAccountingScreen(
             'tr',
             {},
             el('td', {}, el('strong', { className: 'bo-text-primary', text: row.id })),
-            el('td', { text: row.date }),
+            el('td', { text: slashIso(row.date) }),
             el(
               'td',
               {},
@@ -342,7 +343,7 @@ export function renderAccountingScreen(
     return viewContainer;
   }
 
-  // --- TAB 2: Beban Operasional ---
+  // --- TAB 2: Beban Usaha ---
   function renderExpensesView(): HTMLElement {
     const viewContainer = el('div', { className: 'bo-act-view' });
 
@@ -391,9 +392,8 @@ export function renderAccountingScreen(
 
     const sourceFundSelect = el('select', { className: 'input is-select' });
     [
-      { value: 'Kas Toko', text: 'Kas Toko' },
-      { value: 'Bank BCA', text: 'Bank BCA' },
-      { value: 'Bank Mandiri', text: 'Bank Mandiri' },
+      { value: 'Kas', text: 'Kas' },
+      { value: 'Bank', text: 'Bank' },
     ].forEach((f) => {
       sourceFundSelect.appendChild(el('option', { text: f.text, attrs: { value: f.value } }));
     });
@@ -497,7 +497,7 @@ export function renderAccountingScreen(
         el(
           'tr',
           {},
-          el('td', { text: item.date }),
+          el('td', { text: slashIso(item.date) }),
           el('td', {}, el('span', { className: 'bo-badge is-gudang', text: item.category })),
           el(
             'td',
@@ -560,7 +560,7 @@ export function renderAccountingScreen(
         { className: 'bo-panel bo-stat-card' },
         el('span', { className: 'bo-stat-card__lbl', text: label('labelKasAwalPeriode') }),
         el('span', { className: 'bo-stat-card__val', text: formatRupiah(cf.initialCash) }),
-        el('span', { className: 't-label', text: '1 Okt 2026' }),
+        el('span', { className: 't-label', text: '01/10/2026' }),
       ),
       el(
         'div',
@@ -725,7 +725,7 @@ export function renderAccountingScreen(
       el(
         'div',
         { className: 'bo-report-line is-subtotal' },
-        el('strong', { text: 'Total Beban Operasional' }),
+        el('strong', { text: 'Total Beban Usaha' }),
         el('strong', { text: `(${formatRupiah(pl.expenses.totalExpense)})` }),
       ),
       el(
@@ -917,7 +917,7 @@ export function renderAccountingScreen(
         ],
         rows: shownJournal.map((r) => [
           r.id,
-          r.date,
+          slashIso(r.date),
           `${r.source} ${r.warehouse ?? ''}`.trim(),
           r.debitAccount,
           r.creditAccount,
@@ -932,7 +932,7 @@ export function renderAccountingScreen(
         fileName: 'Beban-Usaha-Okt-2026',
         columns: ['Tanggal', 'Kategori', 'Keterangan', 'Sumber Dana', 'Nominal (Rp)'],
         rows: expenseItems.map((e) => [
-          e.date,
+          slashIso(e.date),
           e.category,
           e.description,
           e.paidFrom,
@@ -973,7 +973,7 @@ export function renderAccountingScreen(
             `Beban: ${it.category}`,
             `(${formatRupiah(it.amount)})`,
           ]),
-          ['Total Beban Operasional', `(${formatRupiah(pl.expenses.totalExpense)})`],
+          ['Total Beban Usaha', `(${formatRupiah(pl.expenses.totalExpense)})`],
           ['Laba Bersih', formatRupiah(pl.netProfit)],
         ],
       };

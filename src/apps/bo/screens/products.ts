@@ -27,6 +27,7 @@ import { BRAND_OPTIONS, CATEGORY_OPTIONS } from '../domain/product-options';
 import {
   CODE_MAX,
   draftOf,
+  nextProductCode,
   parseMin,
   splitMin,
   type ProductDraft,
@@ -279,6 +280,8 @@ export function renderProducts(session: BoSession): ScreenHandle {
 
   const nama = input('Nama', label('namaBarang'));
   const kode = input('Kode', label('kodeBarang'), { maxLength: CODE_MAX });
+  // Kode dibuat otomatis saat Tambah dan tidak diketik.
+  kode.control.readOnly = true;
   const barcode = input('Barcode', label('barcode'), { inputMode: 'numeric' });
   const kategori = select('Kategori', label('kategori'), CATEGORY_OPTIONS);
   const merk = select('Merk', label('merek'), BRAND_OPTIONS);
@@ -939,8 +942,9 @@ export function renderProducts(session: BoSession): ScreenHandle {
     isNew = true;
     selectedId = undefined;
     fillForm(undefined);
+    kode.control.value = nextProductCode(products());
     setFormEnabled(true);
-    kode.control.focus();
+    nama.control.focus();
     showToast({ kind: 'info', text: 'Silakan isi data barang baru' });
   });
 

@@ -1,6 +1,5 @@
 import { el, nextId } from '../../../../shared/dom';
 import type { Product } from '../../../../shared/data/types';
-import { icon } from '../../../../shared/icons';
 import { message } from '../../../../shared/messages';
 import { findProducts } from '../../search';
 import { TRX_TEXT as T } from './text';
@@ -164,13 +163,7 @@ export function createItemSearch(options: ItemSearchOptions): ItemSearch {
     }
   });
 
-  const root = el(
-    'div',
-    { className: 'bo-trx-search' },
-    input,
-    el('span', { className: 'bo-trx-search__icon' }, icon('search')),
-    list,
-  );
+  const root = el('div', { className: 'bo-trx-search' }, input, list);
   return {
     root,
     input,

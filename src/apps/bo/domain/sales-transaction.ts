@@ -3,6 +3,7 @@ import type { Customer, Dataset, SalesOrder } from '../../../shared/data/types';
 import type { DocLine } from './doc-line';
 import { buildTransactionRows } from './transaction-list';
 import { calculateTieredDiscount } from './discount';
+import { formatDocNumber } from './doc-number';
 
 export interface SalesInvoiceLine {
   readonly id: string;
@@ -109,9 +110,10 @@ export function calculateSalesTotals(
 
 let invoiceCounter = 1234;
 
-export function generateSalesInvoiceNumber(): string {
+// Nomor faktur penjualan otomatis: FJ, tahun dan bulan faktur, lalu urutan empat digit.
+export function generateSalesInvoiceNumber(dateIso: string): string {
   invoiceCounter += 1;
-  return `FJ2610${String(invoiceCounter).padStart(4, '0')}`;
+  return formatDocNumber('FJ', dateIso, invoiceCounter);
 }
 
 function emptyDraft(invoiceNumber: string, date: string): SalesInvoiceDraft {
@@ -141,7 +143,7 @@ export function createSalesInvoiceDraft(
   dataset: Dataset,
   defaultDate = dataset.referenceDate.slice(0, 10),
 ): SalesInvoiceDraft {
-  return emptyDraft(generateSalesInvoiceNumber(), defaultDate);
+  return emptyDraft(generateSalesInvoiceNumber(defaultDate), defaultDate);
 }
 
 // Faktur untuk tautan nomor di Daftar Nota. Penjualan POS memuat barisnya; draf proposal contoh
@@ -245,8 +247,8 @@ export function importFromSalesOrder(so: SalesOrder, dataset: Dataset): SalesInv
     return {
       id: `SOL-${idx + 1}`,
       productId: l.productId,
-      productName: prod?.name ?? l.productId,
-      aliasName: prod?.name ?? '',
+      productName: l.alias ?? prod?.name ?? l.productId,
+      aliasName: l.alias ?? prod?.name ?? '',
       warehouse: 'toko',
       unit: l.unit,
       quantity: l.quantity,
@@ -259,7 +261,7 @@ export function importFromSalesOrder(so: SalesOrder, dataset: Dataset): SalesInv
   const totals = calculateSalesTotals(lines, 0, 0);
 
   return {
-    invoiceNumber: generateSalesInvoiceNumber(),
+    invoiceNumber: generateSalesInvoiceNumber(so.createdAt.slice(0, 10)),
     date: so.createdAt.slice(0, 10),
     soNumber: so.number,
     customerId: customer?.id,
@@ -270,7 +272,7 @@ export function importFromSalesOrder(so: SalesOrder, dataset: Dataset): SalesInv
     salesPerson: 'Salahudin',
     expedition: 'JNE Cargo',
     paymentTerms: so.payment === 'piutang' ? 'piutang' : 'tunai',
-    tempoDays: 30,
+    tempoDays: so.tempoDays ?? 30,
     paymentChannel: 'kas',
     lines,
     subtotal: totals.subtotal,

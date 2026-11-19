@@ -19,6 +19,7 @@ import {
   createRefreshButton,
   createRowSelection,
   createSearchBox,
+  fixColumns,
   refuseDelete,
 } from './trx/list-page';
 
@@ -90,35 +91,37 @@ export function renderReturnListPage(
   const search = createSearchBox(TEXT.cariNama, sale ? TEXT.cariPenjualan : TEXT.cariPembelian);
   const selection = createRowSelection();
   const body = el('tbody', {});
+  const grid = el(
+    'table',
+    { className: 'bo-trx-table bo-trx-table--list' },
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        el('th', { text: TEXT.kolomNomor }),
+        el('th', { text: TEXT.kolomTanggal }),
+        el('th', { text: TEXT.kolomFaktur }),
+        el('th', { text: sale ? 'Pelanggan' : 'Pemasok' }),
+        el('th', { className: 'is-end', text: TEXT.kolomBarang }),
+        el('th', { text: TEXT.kolomPenyelesaian }),
+        el('th', { text: TEXT.kolomStatus }),
+        el('th', { text: TEXT.kolomAlasan }),
+        el('th', { className: 'is-end', text: TEXT.kolomNilai }),
+      ),
+    ),
+    body,
+  );
+  // Retur Beli dan Retur Jual memakai kolom dan lebar yang sama.
+  fixColumns(grid, [120, 105, 120, undefined, 90, 140, 170, undefined, 120]);
   const table = el(
     'div',
     {
       className: 'bo-trx__lines',
       attrs: { tabindex: '0', role: 'region', 'aria-label': TEXT.daftar },
     },
-    el(
-      'table',
-      { className: 'bo-trx-table bo-trx-table--list' },
-      el(
-        'thead',
-        {},
-        el(
-          'tr',
-          {},
-          el('th', { text: TEXT.kolomNomor }),
-          el('th', { text: TEXT.kolomTanggal }),
-          el('th', { text: TEXT.kolomFaktur }),
-          el('th', { text: sale ? 'Pelanggan' : 'Pemasok' }),
-          el('th', { className: 'is-end', text: TEXT.kolomBarang }),
-          el('th', { text: TEXT.kolomPenyelesaian }),
-          el('th', { className: 'is-end', text: TEXT.kolomNilai }),
-          el('th', { text: TEXT.kolomStatus }),
-          el('th', { text: TEXT.kolomAlasan }),
-          el('th', {}, el('span', { className: 'visually-hidden', text: 'Aksi' })),
-        ),
-      ),
-      body,
-    ),
+    grid,
   );
 
   const matches = (note: ReturnNote): boolean => {
@@ -152,7 +155,7 @@ export function renderReturnListPage(
           { className: 'bo-trx-table__empty' },
           el('td', {
             text: all.length === 0 ? TEXT.kosong : TEXT.tidakCocok,
-            attrs: { colspan: '10' },
+            attrs: { colspan: '9' },
           }),
         ),
       );
@@ -160,12 +163,17 @@ export function renderReturnListPage(
     }
     body.replaceChildren(
       ...rows.map((note) => {
-        const open = el('button', {
-          className: 'bo-trx-link bo-link-button',
+        // Nomor retur berupa tautan biasa seperti nomor di daftar lain; klik membuka fakturnya.
+        const open = el('a', {
+          className: 'bo-trx-link',
           text: note.number,
-          attrs: { type: 'button', 'aria-label': `${label('boReturCetakNota')} ${note.number}` },
+          attrs: {
+            href: `#${RETURN_PATH[kind]}?no=${encodeURIComponent(note.number)}`,
+            title: `${label('boReturCetakNota')} ${note.number}`,
+          },
         });
-        open.addEventListener('click', () => {
+        open.addEventListener('click', (event) => {
+          event.preventDefault();
           openReturnNote(session, note);
         });
         const confirm =
@@ -200,17 +208,21 @@ export function renderReturnListPage(
             text: TEXT.barang.replace('{jumlah}', String(noteItemCount(note))),
           }),
           el('td', { text: label(settlementLabelKey(note.kind, note.settlement)) }),
-          el('td', { className: 'is-end is-bold', text: formatRupiah(note.total) }),
           el(
             'td',
             {},
-            el('span', {
-              className: `bo-trx-status ${note.status === 'menunggu' ? 'is-warning' : 'is-lunas'}`,
-              text: note.status === 'menunggu' ? TEXT.menungguStatus : TEXT.selesai,
-            }),
+            el(
+              'span',
+              { className: 'bo-trx-status-cell' },
+              el('span', {
+                className: `bo-trx-status ${note.status === 'menunggu' ? 'is-warning' : 'is-lunas'}`,
+                text: note.status === 'menunggu' ? TEXT.menungguStatus : TEXT.selesai,
+              }),
+              confirm,
+            ),
           ),
           el('td', { className: 'bo-trx-notes', text: note.reason, attrs: { title: note.reason } }),
-          el('td', { className: 'is-action' }, confirm),
+          el('td', { className: 'is-end is-bold', text: formatRupiah(note.total) }),
         );
         selection.attach(tr, note.number);
         return tr;

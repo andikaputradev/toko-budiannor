@@ -4,6 +4,7 @@ import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
+import { slashStamp } from '../short-date';
 import type { ScreenHandle } from './login';
 import {
   DEFAULT_SYSTEM_USERS,
@@ -117,7 +118,7 @@ export function renderRbacScreen(
               text: u.active ? 'Aktif' : 'Nonaktif',
             }),
           ),
-          el('td', { text: u.lastLogin }),
+          el('td', { text: slashStamp(u.lastLogin) }),
           el(
             'td',
             { className: 'is-center' },

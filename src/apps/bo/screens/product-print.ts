@@ -1,7 +1,7 @@
 import { el, nextId } from '../../../shared/dom';
 import { wibDate } from '../../../shared/data/receivable';
 import type { Product, Role } from '../../../shared/data/types';
-import { formatDate } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { label, message, type LabelKey } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';

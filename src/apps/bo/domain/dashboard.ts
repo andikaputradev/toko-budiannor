@@ -1,6 +1,6 @@
 import { balanceOf, overdueInvoices, wibDate } from '../../../shared/data/receivable';
 import type { DailyRevenue, Product, Role, Sale } from '../../../shared/data/types';
-import { formatDate } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { totalStock } from '../../../shared/data/units';
 import type { AppState } from '../../../shared/store/store';
 import { LAST_BACKUP, type BackupInfo } from './backup';
@@ -326,10 +326,9 @@ function buildRankPeriods(now: Date): readonly RankPeriod[] {
   const [year = 0, month = 1] = wibDate(now).split('-').map(Number);
   const day = (y: number, monthIndex: number, dayOfMonth: number): string =>
     formatDate(new Date(Date.UTC(y, monthIndex, dayOfMonth)));
-  const withoutYear = (text: string): string => text.replace(/ \d{4}$/, '');
   const labels = [
-    `${withoutYear(day(year, month - 1, 1))} - ${formatDate(now)}`,
-    `${withoutYear(day(year, month - 2, 1))} - ${day(year, month - 1, 0)}`,
+    `${day(year, month - 1, 1)} - ${formatDate(now)}`,
+    `${day(year, month - 2, 1)} - ${day(year, month - 1, 0)}`,
   ];
   const byMetric = (
     data: (typeof RANK_DATA)[number],
@@ -406,7 +405,7 @@ export function computeFullDashboard(
   const upcomingEvents: UpcomingEvent[] = [
     {
       id: 'EV-1',
-      dateText: '17 Okt',
+      dateText: '17/10/2026',
       code: 'FB26VIII0083',
       type: 'utang',
       name: 'DANA KHARISMA',
@@ -414,7 +413,7 @@ export function computeFullDashboard(
     },
     {
       id: 'EV-2',
-      dateText: '20 Okt',
+      dateText: '20/10/2026',
       code: 'V8Y',
       type: 'piutang',
       name: 'SURYA MANDIRI',
@@ -422,7 +421,7 @@ export function computeFullDashboard(
     },
     {
       id: 'EV-3',
-      dateText: '26 Okt',
+      dateText: '26/10/2026',
       code: '26100077',
       type: 'piutang',
       name: 'TIARA',

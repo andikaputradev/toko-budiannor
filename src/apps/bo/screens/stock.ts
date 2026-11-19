@@ -11,7 +11,7 @@ import { showToast } from '../../../shared/ui/toast';
 import { createVirtualGrid } from '../../../shared/ui/virtual-grid';
 import type { BoSession } from '../bo-session';
 import { wibDate } from '../../../shared/data/receivable';
-import { formatDate } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import {
   matchesFilter,
   minimumIn,

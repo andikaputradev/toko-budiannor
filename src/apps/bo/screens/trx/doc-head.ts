@@ -9,6 +9,8 @@ export interface HeadField {
   readonly row: number;
   // Berapa pasangan lebar isian membentang (bawaan 1), mis. Keterangan melebar tiga pasangan.
   readonly span?: number;
+  // Isian yang diberi label bila `control` hanya pembungkus (mis. Tempo dengan satuan "Hari").
+  readonly labelFor?: HTMLElement;
 }
 
 export interface DocHead {
@@ -39,10 +41,14 @@ export function createDocHead(
     if (item.control.id === '') {
       item.control.id = nextId('trx-fld');
     }
+    const target = item.labelFor ?? item.control;
+    if (target.id === '') {
+      target.id = nextId('trx-fld');
+    }
     const caption = el('label', {
       className: 'bo-trx-head__label',
       text: item.label,
-      attrs: { for: item.control.id },
+      attrs: { for: target.id },
     });
     caption.style.setProperty('grid-column', String(item.col * 2 - 1));
     caption.style.setProperty('grid-row', String(item.row));

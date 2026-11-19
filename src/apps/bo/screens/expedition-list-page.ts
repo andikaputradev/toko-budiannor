@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { slashIso } from '../short-date';
 import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import { formatDecimal } from '../../../shared/format';
@@ -135,7 +136,7 @@ export function renderExpeditionListPage(
               attrs: { href: `#${EXPEDITION_PATH}?no=${encodeURIComponent(note.noteNumber)}` },
             }),
           ),
-          el('td', { className: 'bo-nowrap', text: note.date }),
+          el('td', { className: 'bo-nowrap', text: slashIso(note.date) }),
           el('td', { className: 'bo-trx-link-ref', text: note.invoiceNumber }),
           el('td', { text: note.expeditionName }),
           el('td', { text: note.vehicle }),

@@ -71,13 +71,23 @@ export function createSearchBox(
   });
   return {
     input,
-    root: el(
-      'div',
-      { className: 'bo-trx-searchbox' },
-      input,
-      el('span', { className: 'bo-trx-search__icon' }, icon('search')),
-    ),
+    root: el('div', { className: 'bo-trx-searchbox' }, input),
   };
+}
+
+// Lebar kolom tetap untuk daftar yang berpasangan (PO dan SO, Faktur Beli dan Jual, Retur Beli dan
+// Jual, Pembayaran Hutang dan Piutang) supaya keduanya berukuran sama; kolom tanpa angka berbagi sisa.
+export function fixColumns(table: HTMLElement, widths: readonly (number | undefined)[]): void {
+  table.classList.add('bo-trx-table--fixed');
+  const group = el('colgroup', {});
+  for (const width of widths) {
+    const col = el('col', {});
+    if (width !== undefined) {
+      col.style.width = `${String(width)}px`;
+    }
+    group.append(col);
+  }
+  table.prepend(group);
 }
 
 export function createRefreshButton(label: string, onClick: () => void): HTMLButtonElement {

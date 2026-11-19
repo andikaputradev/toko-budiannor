@@ -115,6 +115,8 @@ export interface BillLine {
   readonly listPrice?: number | undefined;
   readonly note?: string | undefined;
   readonly sellerId?: string | undefined;
+  // Nama alias barang yang diketik di dialog Rincian Barang BO; kosong berarti nama barang.
+  readonly alias?: string | undefined;
 }
 
 export interface HeldBill {
@@ -268,6 +270,7 @@ export interface SalesOrder {
   readonly source: 'owner' | 'sales';
   // Keterangan pesanan yang diisi di BO; kosong pada SO dari Owner dan Sales.
   readonly notes?: string | undefined;
+  readonly tempoDays?: number | undefined;
   readonly approvalId?: string | undefined;
   readonly synced?: boolean | undefined;
 }
@@ -277,6 +280,9 @@ export interface PurchaseOrderLine {
   readonly unit: string;
   readonly quantity: number;
   readonly unitPrice: number;
+  // Nama alias dan ongkos kirim per satuan dari dialog Rincian Barang BO.
+  readonly alias?: string | undefined;
+  readonly shipping?: number | undefined;
 }
 
 export interface PurchaseOrder {
@@ -290,6 +296,9 @@ export interface PurchaseOrder {
   readonly total: number;
   readonly status: 'draf' | 'dipesan' | 'diterima-sebagian' | 'diterima';
   readonly notes?: string | undefined;
+  // Cara bayar dan tempo (hari) yang diisi di BO.
+  readonly payment?: 'tunai' | 'hutang' | undefined;
+  readonly tempoDays?: number | undefined;
 }
 
 // Retur yang dicatat di Back-Office (BO-10). Penjualan: barang kembali dari pelanggan; pembelian:

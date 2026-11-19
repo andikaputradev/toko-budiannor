@@ -1,5 +1,6 @@
 import { el, nextId } from '../../../shared/dom';
-import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import { icon } from '../../../shared/icons';

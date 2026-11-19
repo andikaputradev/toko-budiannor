@@ -69,7 +69,7 @@ export function openRemoveDialog(
     actions: [
       { text: label('batal'), variant: 'secondary' },
       {
-        text: label(soft ? 'masterNonaktifkan' : 'hapus'),
+        text: label('hapus'),
         variant: 'danger',
         icon: 'trash-2',
         onClick: onConfirm,

@@ -27,25 +27,23 @@ import { createDocHead } from './trx/doc-head';
 import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
+import { createPaymentFields } from './trx/payment-fields';
 import { itemCountText, TRX_TEXT as T } from './trx/text';
 
 const TEXT = {
   tanggal: 'Tanggal',
-  noInvoice: 'No. Invoice',
+  nomor: 'Nomor',
   kepala: 'Data faktur penjualan',
   noSo: 'No. SO',
   keterangan: 'Keterangan',
   pelanggan: 'Pelanggan',
-  alamat: 'Alamat',
-  telepon: 'Telepon',
-  syaratBayar: 'Syarat Bayar *',
+  syaratBayar: 'Cara Bayar',
   tempo: 'Tempo',
-  metode: 'Metode Pembayaran',
+  metode: 'Kas / Bank',
   sales: 'Sales',
   ekspedisi: 'Ekspedisi',
   pilihPelanggan: '-- Pilih Pelanggan --',
   pilihSo: '-- Pilih SO Pending --',
-  alamatPengiriman: 'Alamat Pengiriman',
   catatan: 'Catatan pengiriman ...',
   simpan: 'Simpan',
   cetak: 'Cetak',
@@ -98,24 +96,19 @@ export function renderSalesForm(
   const codeOf = (id: string): string => productOf(id)?.code ?? '';
 
   // --- Kepala ---
+  // Alamat dan telepon tidak lagi ada di kepala faktur: keduanya diambil dari data pelanggan.
+  const contact = { address: '', phone: '' };
   const dateEl = el('input', {
     className: 'input',
     attrs: { type: 'date', value: draft.date },
   });
+  // Nomor dibuat otomatis (tidak diketik) dan dilewati papan ketik.
   const invoiceNumEl = el('input', {
     className: 'input is-readonly',
-    attrs: { type: 'text', readonly: 'true', value: draft.invoiceNumber },
+    attrs: { type: 'text', readonly: 'true', tabindex: '-1', value: draft.invoiceNumber },
   });
   const soSelectEl = el('select', { className: 'input is-select' });
   const customerSelectEl = el('select', { className: 'input is-select' });
-  const addressEl = el('input', {
-    className: 'input',
-    attrs: { type: 'text', placeholder: TEXT.alamatPengiriman },
-  });
-  const phoneEl = el('input', {
-    className: 'input',
-    attrs: { type: 'tel', placeholder: '0812...' },
-  });
   const notesEl = el('input', {
     className: 'input',
     attrs: { type: 'text', placeholder: TEXT.catatan },
@@ -125,20 +118,10 @@ export function renderSalesForm(
     attrs: { type: 'text', value: draft.salesPerson },
   });
   const expeditionEl = selectWith(EXPEDITIONS.map((name) => [name, name] as const));
-  const termsEl = selectWith([
-    ['piutang', 'PIUTANG'],
-    ['tunai', 'TUNAI'],
-  ]);
-  const tempoEl = selectWith([
-    ['30', '30 HARI'],
-    ['14', '14 HARI'],
-    ['7', '7 HARI'],
-    ['0', 'CASH / 0 HARI'],
-  ]);
-  const channelEl = selectWith([
-    ['kas', 'KAS TOKO'],
-    ['bank', 'TRANSFER BANK'],
-  ]);
+  // Cara Bayar menentukan isian lain: piutang membuka Tempo, tunai membuka Kas / Bank.
+  const pay = createPaymentFields({ credit: 'piutang', withChannel: true });
+  const termsEl = pay.terms;
+  const channelEl = pay.channel ?? selectWith([]);
 
   const creditBoxEl = el('div', { className: 'bo-credit-box' });
   const aside = el(
@@ -148,24 +131,31 @@ export function renderSalesForm(
     creditBoxEl,
   );
 
+  // Urutan fokus: tanggal, No. SO, pelanggan, cara bayar, tempo, kas / bank, sales, ekspedisi,
+  // lalu keterangan terakhir.
   const head = createDocHead(
     [
-      { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 1 },
-      { key: 'invoice', label: TEXT.noInvoice, control: invoiceNumEl, col: 1, row: 2 },
+      { key: 'invoice', label: TEXT.nomor, control: invoiceNumEl, col: 1, row: 1 },
+      { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 2 },
       { key: 'so', label: TEXT.noSo, control: soSelectEl, col: 1, row: 3 },
       { key: 'customer', label: TEXT.pelanggan, control: customerSelectEl, col: 2, row: 1 },
-      { key: 'address', label: TEXT.alamat, control: addressEl, col: 2, row: 2 },
-      { key: 'phone', label: TEXT.telepon, control: phoneEl, col: 2, row: 3 },
-      { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 3, row: 1 },
-      { key: 'tempo', label: TEXT.tempo, control: tempoEl, col: 3, row: 2 },
-      { key: 'channel', label: TEXT.metode, control: channelEl, col: 3, row: 3 },
+      { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 2, row: 2 },
+      {
+        key: 'tempo',
+        label: TEXT.tempo,
+        control: pay.tempoBox,
+        labelFor: pay.tempo,
+        col: 3,
+        row: 1,
+      },
+      { key: 'channel', label: TEXT.metode, control: channelEl, col: 3, row: 2 },
       { key: 'sales', label: TEXT.sales, control: salesPersonEl, col: 4, row: 1 },
       { key: 'expedition', label: TEXT.ekspedisi, control: expeditionEl, col: 4, row: 2 },
-      { key: 'notes', label: TEXT.keterangan, control: notesEl, col: 1, row: 4, span: 3 },
+      { key: 'notes', label: TEXT.keterangan, control: notesEl, col: 2, row: 3, span: 3 },
     ],
     aside,
     TEXT.kepala,
-    [1.25, 1.2, 0.95, 1.2],
+    [1.05, 1.3, 0.85, 1.3],
   );
 
   // --- Barang dan total ---
@@ -292,13 +282,13 @@ export function renderSalesForm(
       date: dateEl.value,
       customerId: customer?.id,
       customerName: named ? customerSelectEl.value.slice(NAMED.length) : (customer?.name ?? ''),
-      customerAddress: addressEl.value,
-      customerPhone: phoneEl.value,
+      customerAddress: contact.address,
+      customerPhone: contact.phone,
       notes: notesEl.value,
       salesPerson: salesPersonEl.value,
       expedition: expeditionEl.value,
       paymentTerms: termsEl.value === 'tunai' ? 'tunai' : 'piutang',
-      tempoDays: Number(tempoEl.value),
+      tempoDays: pay.tempoDays(),
       paymentChannel: channelEl.value === 'bank' ? 'bank' : 'kas',
       lines: invoiceLines,
       ...sums,
@@ -311,10 +301,12 @@ export function renderSalesForm(
     dateEl.value = source.date;
     selectCustomer(source.customerId, source.customerName);
     totals.discount.value = formatDecimal(source.invoiceDiscount, 2);
-    addressEl.value = source.customerAddress;
-    phoneEl.value = source.customerPhone;
+    contact.address = source.customerAddress;
+    contact.phone = source.customerPhone;
     notesEl.value = source.notes;
-    termsEl.value = source.paymentTerms;
+    pay.setTerms(source.paymentTerms);
+    pay.tempo.value = source.paymentTerms === 'tunai' ? '0' : String(source.tempoDays);
+    channelEl.value = source.paymentChannel;
     lines = source.lines.map((line) => toDocLine(line, codeOf(line.productId)));
     recalc();
   }
@@ -416,7 +408,7 @@ export function renderSalesForm(
           text: label('tombolKirimWa'),
           variant: 'primary',
           onClick: () => {
-            const phone = phoneEl.value || current.customerPhone || '0811230988';
+            const phone = current.customerPhone || '0811230988';
             window.open(generateWhatsAppUrl(phone, preview), '_blank');
             showToast({ kind: 'success', text: 'Tautan WhatsApp telah dibuka.' });
           },
@@ -516,8 +508,8 @@ export function renderSalesForm(
   customerSelectEl.addEventListener('focus', refreshCustomerOptions);
   customerSelectEl.addEventListener('change', () => {
     const customer = dataset.customers.find((item) => item.id === customerSelectEl.value);
-    addressEl.value = customer?.address ?? '';
-    phoneEl.value = customer?.phone ?? '';
+    contact.address = customer?.address ?? '';
+    contact.phone = customer?.phone ?? '';
     recalc();
   });
   soSelectEl.addEventListener('focus', refreshSoOptions);

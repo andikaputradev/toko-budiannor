@@ -119,8 +119,8 @@ describe('Dashboard sembilan widget', () => {
   it('peringkat punya dua periode: bulan berjalan sampai hari ini dan bulan lalu penuh', () => {
     const { rankPeriods } = owner();
     expect(rankPeriods.map((period) => period.label)).toEqual([
-      '1 Okt - 19 Okt 2026',
-      '1 Sep - 30 Sep 2026',
+      '01/10/2026 - 19/10/2026',
+      '01/09/2026 - 30/09/2026',
     ]);
     for (const period of rankPeriods) {
       const amounts = period.customers.map((item) => item.amount);

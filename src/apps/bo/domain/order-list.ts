@@ -1,6 +1,7 @@
 import { matchesPhrase } from '../../../shared/data/search-index';
 import { wibDate } from '../../../shared/data/receivable';
 import type { AppState } from '../../../shared/store/store';
+import { docNumberPrefix } from './doc-number';
 
 export type OrderKind = 'po' | 'so';
 export type OrderStatus = 'on-proses' | 'partial' | 'selesai';
@@ -125,11 +126,11 @@ export function nextOrderNumber(
   existing: readonly string[],
   today: string,
 ): string {
-  const prefix = `${kind === 'po' ? 'PO' : 'SO'}${today.slice(2, 4)}${today.slice(5, 7)}`;
+  const prefix = docNumberPrefix(kind === 'po' ? 'PO' : 'SO', today);
   const pattern = new RegExp(`^${prefix}(\\d+)$`);
   const last = existing.reduce((max, number) => {
     const found = pattern.exec(number);
     return found?.[1] === undefined ? max : Math.max(max, Number(found[1]));
   }, 1000);
-  return `${prefix}${String(last + 1)}`;
+  return `${prefix}${String(last + 1).padStart(4, '0')}`;
 }

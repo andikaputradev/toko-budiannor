@@ -1,7 +1,8 @@
 import { el } from '../../../../shared/dom';
 import { matchesPhrase } from '../../../../shared/data/search-index';
 import { wibDate } from '../../../../shared/data/receivable';
-import { formatDate, formatRupiah } from '../../../../shared/format';
+import { formatRupiah } from '../../../../shared/format';
+import { formatDate } from '../../short-date';
 import type { BoSession } from '../../bo-session';
 import { dateRangeFor, type DateRangeKind } from '../../domain/transaction-list';
 import { methodText, type DebtPayment } from '../../domain/debt-payments';
@@ -15,6 +16,7 @@ import {
   createRefreshButton,
   createRowSelection,
   createSearchBox,
+  fixColumns,
   refuseDelete,
 } from '../trx/list-page';
 import { userName } from '../mutasi/parts';
@@ -58,33 +60,36 @@ export function renderPaymentList(
   const filters = el('div', { className: 'bo-trx-filters__slot' });
 
   const body = el('tbody', {});
+  const grid = el(
+    'table',
+    { className: 'bo-trx-table bo-trx-table--list' },
+    el(
+      'thead',
+      {},
+      el(
+        'tr',
+        {},
+        el('th', { text: DEBT_TEXT.kolomNomorBayar }),
+        el('th', { text: DEBT_TEXT.kolomTanggal }),
+        el('th', { text: copy.kolomPihak }),
+        el('th', { text: DEBT_TEXT.kolomMetode }),
+        el('th', { text: DEBT_TEXT.kolomKasBank }),
+        el('th', { text: DEBT_TEXT.kolomUser }),
+        el('th', { text: DEBT_TEXT.kolomKeterangan }),
+        el('th', { className: 'is-end', text: DEBT_TEXT.kolomTotalBayar }),
+      ),
+    ),
+    body,
+  );
+  // Pembayaran Hutang dan Piutang memakai kolom dan lebar yang sama.
+  fixColumns(grid, [160, 105, undefined, 115, 130, 110, undefined, 140]);
   const table = el(
     'div',
     {
       className: 'bo-trx__lines',
       attrs: { tabindex: '0', role: 'region', 'aria-label': DEBT_TEXT.daftarPembayaran },
     },
-    el(
-      'table',
-      { className: 'bo-trx-table bo-trx-table--list' },
-      el(
-        'thead',
-        {},
-        el(
-          'tr',
-          {},
-          el('th', { text: DEBT_TEXT.kolomNomorBayar }),
-          el('th', { text: DEBT_TEXT.kolomTanggal }),
-          el('th', { text: copy.kolomPihak }),
-          el('th', { text: DEBT_TEXT.kolomMetode }),
-          el('th', { text: DEBT_TEXT.kolomKasBank }),
-          el('th', { className: 'is-end', text: DEBT_TEXT.kolomTotalBayar }),
-          el('th', { text: DEBT_TEXT.kolomKeterangan }),
-          el('th', { text: DEBT_TEXT.kolomUser }),
-        ),
-      ),
-      body,
-    ),
+    grid,
   );
 
   const mine = (): DebtPayment[] =>
@@ -153,13 +158,13 @@ export function renderPaymentList(
           el('td', { className: 'is-bold', text: payment.partyName }),
           el('td', { text: methodText(payment.method) }),
           el('td', { text: payment.account }),
-          el('td', { className: 'is-end is-bold', text: formatRupiah(payment.total) }),
+          el('td', { text: userName(session.store, payment.userId) }),
           el('td', {
             className: 'bo-trx-notes',
             text: payment.note,
             attrs: { title: payment.note },
           }),
-          el('td', { text: userName(session.store, payment.userId) }),
+          el('td', { className: 'is-end is-bold', text: formatRupiah(payment.total) }),
         );
         selection.attach(tr, payment.number);
         return tr;

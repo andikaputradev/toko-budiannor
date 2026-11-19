@@ -81,10 +81,9 @@ test.describe('Daftar per halaman pada menu Transaksi', () => {
       'Pemasok',
       'Barang',
       'Penyelesaian',
-      'Nilai Retur',
       'Status',
       'Alasan',
-      'Aksi',
+      'Nilai Retur',
     ]);
   });
 

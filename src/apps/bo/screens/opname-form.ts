@@ -1,6 +1,7 @@
 import { el, nextId } from '../../../shared/dom';
 import { icon } from '../../../shared/icons';
-import { formatDate, formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDecimal, formatRupiah } from '../../../shared/format';
+import { formatDate } from '../short-date';
 import { label, message } from '../../../shared/messages';
 import type { Product, WarehouseId } from '../../../shared/data/types';
 import { createButton } from '../../../shared/ui/button';

@@ -3,10 +3,6 @@
 export const boMasterLabels = {
   // Tombol dan bilah
   masterTambah: 'Tambah',
-  masterTidakDihapus:
-    '{entitas} tidak dihapus agar riwayat transaksinya tetap utuh. Gunakan Nonaktifkan.',
-  masterTidakDinonaktifkan:
-    '{entitas} yang tidak dipakai dihapus, tidak dinonaktifkan. Gunakan Hapus.',
   masterUbah: 'Ubah',
   masterInfo: 'Info',
   masterImpor: 'Impor',
@@ -138,25 +134,25 @@ export const boMasterLabels = {
   masterSimpanBaru: '{entitas} "{nama}" ditambahkan.',
   masterSimpanUbah: '{entitas} "{nama}" diperbarui.',
   masterHapusOk: '{entitas} "{nama}" dihapus.',
-  masterNonaktifOk: '{entitas} "{nama}" dinonaktifkan.',
+  masterNonaktifOk: '{entitas} "{nama}" dihapus dari daftar aktif.',
   masterAktifOk: '{entitas} "{nama}" diaktifkan kembali.',
 
   // Dialog
   masterInfoJudul: 'Info {entitas}: {nama}',
   masterHapusJudul: 'Hapus {entitas}',
   masterHapusIsi: 'Hapus "{nama}"? Data yang dihapus tidak dapat dikembalikan.',
-  masterNonaktifJudul: 'Nonaktifkan {entitas}',
+  masterNonaktifJudul: 'Hapus {entitas}',
   masterNonaktifIsi:
-    'Nonaktifkan "{nama}"? Data tetap tersimpan dan dapat diaktifkan kembali kapan saja.',
+    'Hapus "{nama}"? Riwayat transaksinya tetap utuh dan data dapat diaktifkan kembali dari daftar.',
   masterTolakJudul: 'Tidak dapat diproses',
   masterTolakKategori:
     'Kategori "{nama}" masih dipakai oleh {jumlah} barang. Pindahkan barangnya ke kategori lain terlebih dahulu.',
   masterTolakMerk:
     'Merk "{nama}" masih dipakai oleh {jumlah} barang. Pindahkan barangnya ke merk lain terlebih dahulu.',
   masterTolakHutang:
-    'Pemasok "{nama}" masih memiliki hutang {jumlah}. Lunasi hutangnya sebelum dinonaktifkan.',
+    'Pemasok "{nama}" masih memiliki hutang {jumlah}. Lunasi hutangnya sebelum dihapus.',
   masterTolakPiutang:
-    'Pelanggan "{nama}" masih memiliki piutang {jumlah}. Selesaikan piutangnya sebelum dinonaktifkan.',
+    'Pelanggan "{nama}" masih memiliki piutang {jumlah}. Selesaikan piutangnya sebelum dihapus.',
   masterTolakSalesPengguna:
     '"{nama}" adalah akun pengguna aplikasi. Nonaktifkan lewat menu Pengguna, bukan dari daftar Sales.',
   masterTolakSalesPakai:
@@ -177,7 +173,7 @@ export const boMasterLabels = {
   masterLogTambah: '{entitas} {nama} ditambahkan',
   masterLogUbah: '{entitas} {nama} diubah',
   masterLogHapus: '{entitas} {nama} dihapus',
-  masterLogNonaktif: '{entitas} {nama} dinonaktifkan',
+  masterLogNonaktif: '{entitas} {nama} dihapus dari daftar aktif',
   masterLogAktif: '{entitas} {nama} diaktifkan kembali',
   masterLogImpor: '{entitas}: impor {jumlah} data contoh',
   masterLogCetak: 'Daftar {entitas} ({jumlah} baris) dicetak: {format}',

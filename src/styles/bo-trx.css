@@ -84,6 +84,30 @@
     calc(100% - 9px) calc(50% - 1px);
 }
 
+/* Tempo: isian angka hari dengan satuan "Hari" di sisi kanan. */
+.bo-trx .bo-trx-tempo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bo-trx .bo-trx-tempo .input {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: right;
+}
+
+.bo-trx .bo-trx-tempo__unit {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bo-trx .bo-trx-tempo.is-disabled .bo-trx-tempo__unit {
+  opacity: 0.55;
+}
+
 .bo-trx .bo-trx-head__aside {
   flex: none;
   width: 226px;
@@ -298,6 +322,10 @@
 
 .bo-trx-col-diskon {
   width: 92px;
+}
+
+.bo-trx-col-ongkir {
+  width: 96px;
 }
 
 .bo-trx-col-total {
@@ -729,6 +757,11 @@
   height: 40px;
 }
 
+/* Daftar berpasangan memakai lebar kolom tetap dari <colgroup> (lihat fixColumns). */
+.bo-trx-table--fixed {
+  table-layout: fixed;
+}
+
 .bo-trx-link {
   color: var(--color-accent-pressed);
   font-weight: 700;
@@ -746,6 +779,14 @@
 
 .bo-trx-notes {
   max-width: 220px;
+}
+
+/* Status dan tombol aksinya (mis. "Tandai Dana Diterima") sebaris, tanpa kolom aksi tersendiri. */
+.bo-trx-status-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
 }
 
 .bo-trx-status {

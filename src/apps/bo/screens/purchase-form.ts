@@ -16,29 +16,36 @@ import {
   type PurchaseInvoiceDraft,
 } from '../domain/purchase-transaction';
 import { docGrandTotal, docSummary, moveLine, type DocLine } from '../domain/doc-line';
+import { purchaseCostUpdates } from '../domain/landed-cost';
 import { createDocHead } from './trx/doc-head';
 import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
+import { createPaymentFields } from './trx/payment-fields';
 import { itemCountText, TRX_TEXT as T } from './trx/text';
+
+const EXPEDITIONS = [
+  'JNE Cargo',
+  'Dakota Cargo',
+  'Indah Logistik',
+  'Armada Truk Toko',
+  'Ambil Sendiri',
+] as const;
 
 const TEXT = {
   tanggal: 'Tanggal',
-  tglTerima: 'Tgl Terima',
-  noInvoice: 'No. Invoice',
+  nomor: 'Nomor',
   noPo: 'No. PO',
-  noFakturPemasok: 'No. Faktur Pemasok',
+  noFaktur: 'No. Faktur',
   pemasok: 'Pemasok',
-  alamat: 'Alamat',
-  telepon: 'Telepon',
-  syaratBayar: 'Syarat Bayar *',
+  syaratBayar: 'Cara Bayar',
   tempo: 'Tempo',
-  metode: 'Metode Pembayaran',
+  metode: 'Kas / Bank',
+  ekspedisi: 'Ekspedisi',
   keterangan: 'Keterangan',
   kepala: 'Data faktur pembelian',
   pilihPemasok: '-- Pilih Pemasok --',
   pilihPo: '-- Pilih PO Pending --',
-  alamatPemasok: 'Alamat Pemasok',
   nomorSuratJalan: 'Nomor Surat Jalan / Faktur Supplier',
   catatan: 'Catatan penerimaan barang ...',
   simpan: 'Simpan',
@@ -77,31 +84,20 @@ export function renderPurchaseForm(
 
   let draft: PurchaseInvoiceDraft = createPurchaseInvoiceDraft(dataset);
   let lines: DocLine[] = [];
-  // Total Biaya mengikuti jumlah ongkos kirim baris sampai pengguna mengetikkan nilainya sendiri.
-  let extraTouched = false;
+  // Faktur yang sudah disimpan tidak menghitung ulang HPP bila disimpan lagi.
+  const costedInvoices = new Set<string>();
   // Dibaca dari store tiap kali: barang bisa dibuat di tab lain selagi formulir ini terbuka.
   const productOf = (id: string) => store.getState().data.products.find((item) => item.id === id);
 
   // --- Kepala ---
   const dateEl = el('input', { className: 'input', attrs: { type: 'date', value: draft.date } });
-  const receivedEl = el('input', {
-    className: 'input',
-    attrs: { type: 'date', value: draft.receivedDate },
-  });
+  // Nomor dibuat otomatis (tidak diketik) dan dilewati papan ketik.
   const invoiceNumEl = el('input', {
     className: 'input is-readonly',
-    attrs: { type: 'text', readonly: 'true', value: draft.invoiceNumber },
+    attrs: { type: 'text', readonly: 'true', tabindex: '-1', value: draft.invoiceNumber },
   });
   const poSelectEl = el('select', { className: 'input is-select' });
   const supplierSelectEl = el('select', { className: 'input is-select' });
-  const addressEl = el('input', {
-    className: 'input',
-    attrs: { type: 'text', placeholder: TEXT.alamatPemasok },
-  });
-  const phoneEl = el('input', {
-    className: 'input',
-    attrs: { type: 'tel', placeholder: '0811...' },
-  });
   const supplierInvNoEl = el('input', {
     className: 'input',
     attrs: { type: 'text', placeholder: TEXT.nomorSuratJalan },
@@ -110,20 +106,11 @@ export function renderPurchaseForm(
     className: 'input',
     attrs: { type: 'text', placeholder: TEXT.catatan },
   });
-  const termsEl = selectWith([
-    ['hutang', 'HUTANG'],
-    ['tunai', 'TUNAI'],
-  ]);
-  const tempoEl = selectWith([
-    ['30', '30 HARI'],
-    ['60', '60 HARI'],
-    ['14', '14 HARI'],
-    ['0', 'CASH / 0 HARI'],
-  ]);
-  const channelEl = selectWith([
-    ['kas', 'KAS TOKO'],
-    ['bank', 'TRANSFER BANK'],
-  ]);
+  const expeditionEl = selectWith(EXPEDITIONS.map((name) => [name, name] as const));
+  // Cara Bayar menentukan isian lain: hutang membuka Tempo, tunai membuka Kas / Bank.
+  const pay = createPaymentFields({ credit: 'hutang', withChannel: true });
+  const termsEl = pay.terms;
+  const channelEl = pay.channel ?? selectWith([]);
   const debtBoxEl = el('div', { className: 'bo-credit-box' });
   const aside = el(
     'aside',
@@ -132,38 +119,43 @@ export function renderPurchaseForm(
     debtBoxEl,
   );
 
+  // Urutan fokus: tanggal, No. PO, pemasok, cara bayar, tempo, kas / bank, lalu keterangan terakhir.
   const head = createDocHead(
     [
-      { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 1 },
-      { key: 'received', label: TEXT.tglTerima, control: receivedEl, col: 1, row: 2 },
-      { key: 'invoice', label: TEXT.noInvoice, control: invoiceNumEl, col: 1, row: 3 },
+      { key: 'invoice', label: TEXT.nomor, control: invoiceNumEl, col: 1, row: 1 },
+      { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 2 },
+      { key: 'po', label: TEXT.noPo, control: poSelectEl, col: 1, row: 3 },
       { key: 'supplier', label: TEXT.pemasok, control: supplierSelectEl, col: 2, row: 1 },
-      { key: 'address', label: TEXT.alamat, control: addressEl, col: 2, row: 2 },
-      { key: 'phone', label: TEXT.telepon, control: phoneEl, col: 2, row: 3 },
-      { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 3, row: 1 },
-      { key: 'tempo', label: TEXT.tempo, control: tempoEl, col: 3, row: 2 },
-      { key: 'channel', label: TEXT.metode, control: channelEl, col: 3, row: 3 },
-      { key: 'po', label: TEXT.noPo, control: poSelectEl, col: 4, row: 1 },
-      { key: 'supplierInv', label: TEXT.noFakturPemasok, control: supplierInvNoEl, col: 4, row: 2 },
-      { key: 'notes', label: TEXT.keterangan, control: notesEl, col: 1, row: 4, span: 3 },
+      { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 2, row: 2 },
+      {
+        key: 'tempo',
+        label: TEXT.tempo,
+        control: pay.tempoBox,
+        labelFor: pay.tempo,
+        col: 3,
+        row: 1,
+      },
+      { key: 'channel', label: TEXT.metode, control: channelEl, col: 3, row: 2 },
+      { key: 'supplierInv', label: TEXT.noFaktur, control: supplierInvNoEl, col: 4, row: 1 },
+      { key: 'expedition', label: TEXT.ekspedisi, control: expeditionEl, col: 4, row: 2 },
+      { key: 'notes', label: TEXT.keterangan, control: notesEl, col: 2, row: 3, span: 3 },
     ],
     aside,
     TEXT.kepala,
-    [1, 1.15, 0.9, 1.5],
+    [1.05, 1.3, 0.85, 1.3],
   );
 
   // --- Barang dan total ---
   const countEl = el('span', { className: 'bo-trx__count', text: itemCountText(0, 0) });
   const totals = createTotalsBox({
-    onChange: (source) => {
-      if (source === 'extra') {
-        extraTouched = true;
-      }
+    withExtra: false,
+    onChange: () => {
       recalc();
     },
   });
   const table = createLinesTable({
     mode: 'pembelian',
+    shipping: true,
     lines: () => lines,
     onEdit: (id) => {
       editLine(id);
@@ -240,15 +232,12 @@ export function renderPurchaseForm(
   }
 
   function recalc(): void {
-    if (!extraTouched) {
-      const shipping = lines.reduce((sum, line) => sum + line.shipping, 0);
-      totals.extra.value = formatDecimal(shipping, 2);
-    }
+    // Ongkos kirim tidak masuk total nota; ia hanya menambah HPP barang saat faktur disimpan.
     const summary = docSummary(lines);
     const values = totals.values();
     totals.setTotals({
       subtotal: summary.subtotal,
-      total: docGrandTotal(summary.subtotal, values.discount, values.extra),
+      total: docGrandTotal(summary.subtotal, values.discount, 0),
     });
     countEl.textContent = itemCountText(summary.count, summary.quantity);
     table.refresh();
@@ -258,15 +247,12 @@ export function renderPurchaseForm(
     draft = source;
     invoiceNumEl.value = source.invoiceNumber;
     dateEl.value = source.date;
-    receivedEl.value = source.receivedDate;
     selectSupplier(source.supplierId, source.supplierName);
-    extraTouched = false;
     totals.discount.value = formatDecimal(source.invoiceDiscount, 2);
-    addressEl.value = source.supplierAddress;
-    phoneEl.value = source.supplierPhone;
     supplierInvNoEl.value = source.supplierInvoiceNumber;
     notesEl.value = source.notes;
-    termsEl.value = source.paymentTerms;
+    pay.setTerms(source.paymentTerms);
+    pay.tempo.value = source.paymentTerms === 'tunai' ? '0' : String(source.tempoDays);
     channelEl.value = source.paymentChannel;
     lines = source.lines.map(purchaseToDocLine);
     syncSupplierInfo();
@@ -327,6 +313,23 @@ export function renderPurchaseForm(
     poSelectEl.value = chosen;
   }
 
+  // Simpan memperbarui HPP rata-rata dan Harga Beli Akhir: ongkos kirim per satuan ikut menjadi
+  // biaya barang. Satu faktur dihitung sekali supaya Simpan berulang tidak menggeser HPP.
+  function applyPurchaseCost(): void {
+    if (costedInvoices.has(draft.invoiceNumber)) {
+      return;
+    }
+    costedInvoices.add(draft.invoiceNumber);
+    for (const update of purchaseCostUpdates(lines, productOf)) {
+      store.saveProduct({
+        ...update.product,
+        hppAvg: update.hppAvg,
+        lastPurchasePrice: update.lastPurchasePrice,
+        lastPurchaseDate: dateEl.value,
+      });
+    }
+  }
+
   // --- Tombol bilah ---
   const saveButton = createButton({
     text: TEXT.simpan,
@@ -337,6 +340,7 @@ export function renderPurchaseForm(
         showToast({ kind: 'info', text: TEXT.belumBarang });
         return;
       }
+      applyPurchaseCost();
       showToast({
         kind: 'success',
         text: `Faktur Pembelian ${draft.invoiceNumber} berhasil disimpan.`,
@@ -360,7 +364,6 @@ export function renderPurchaseForm(
     variant: 'secondary',
     icon: 'plus',
     onClick: () => {
-      extraTouched = false;
       totals.discount.value = '0';
       poSelectEl.value = '';
       fillFromDraft(createPurchaseInvoiceDraft(dataset));
@@ -381,9 +384,6 @@ export function renderPurchaseForm(
 
   supplierSelectEl.addEventListener('focus', refreshSupplierOptions);
   supplierSelectEl.addEventListener('change', () => {
-    const supplier = dataset.suppliers.find((item) => item.id === supplierSelectEl.value);
-    addressEl.value = supplier === undefined ? '' : 'Jl. Pergudangan Industri No. 8';
-    phoneEl.value = supplier?.phone ?? '';
     syncSupplierInfo();
   });
   poSelectEl.addEventListener('focus', refreshPoOptions);

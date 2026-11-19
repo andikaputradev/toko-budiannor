@@ -83,7 +83,7 @@ test.describe('K3 dan K4 header dan Keluar', () => {
   }) => {
     await loginBo(page);
     await expect(page.locator('.bo-topbar__date')).toHaveText(
-      /^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu), \d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} WIB$/,
+      /^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu), \d{2}\/\d{2}\/\d{4}, \d{2}:\d{2} WIB$/,
     );
     const user = page.locator('.bo-topbar__user');
     await expect(user).toContainText('Bapak Haris');
@@ -108,7 +108,7 @@ test.describe('K5 tab halaman', () => {
   test('tab menyimpan isi formulir saat berpindah tab', async ({ page }) => {
     await loginBo(page);
     await openPage(page, '/bo/penjualan');
-    const address = page.getByPlaceholder('Alamat Pengiriman');
+    const address = page.getByPlaceholder('Catatan pengiriman ...');
     await address.fill('Jl. Uji Tab 1');
     await openPage(page, '/bo/barang');
     await expect(tabs(page)).toHaveCount(3);

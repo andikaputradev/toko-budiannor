@@ -75,7 +75,7 @@
 /* Dua kolom: formulir dan daftar */
 .bo-master__split {
   display: grid;
-  grid-template-columns: minmax(340px, 36fr) minmax(0, 64fr);
+  grid-template-columns: minmax(420px, 44fr) minmax(0, 56fr);
   gap: var(--primitive-space-4);
   align-items: start;
 }

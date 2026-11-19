@@ -198,6 +198,19 @@ export function draftOf(product: Product): ProductDraft {
   };
 }
 
+// Kode barang baru dibuat otomatis: empat digit berurutan (0001, 0002, ...) yang melanjutkan
+// angka terbesar pada kode yang sudah ada, termasuk kode lama berawalan huruf (B0042 lanjut 0043).
+export function nextProductCode(products: readonly Pick<Product, 'code'>[]): string {
+  let highest = 0;
+  for (const item of products) {
+    const digits = /(\d+)\s*$/.exec(item.code)?.[1];
+    if (digits !== undefined) {
+      highest = Math.max(highest, Number(digits));
+    }
+  }
+  return String(highest + 1).padStart(4, '0');
+}
+
 export function emptyDraft(): ProductDraft {
   return {
     code: '',

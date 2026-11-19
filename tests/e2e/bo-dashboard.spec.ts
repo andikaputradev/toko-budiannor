@@ -103,15 +103,15 @@ test.describe('D3 widget peringkat dan Monitoring HPP', () => {
   }) => {
     await loginBo(page, 'haris.owner', 'Kunci2026A');
     const widget = page.locator('[data-widget="pelanggan"]');
-    await expect(widget.locator('.bo-dx-period__label')).toHaveText('1 Okt - 19 Okt 2026');
+    await expect(widget.locator('.bo-dx-period__label')).toHaveText('01/10/2026 - 19/10/2026');
     await expect(widget.getByRole('button', { name: 'Periode berikutnya' })).toBeDisabled();
 
     await widget.getByRole('button', { name: 'Periode sebelumnya' }).click();
-    await expect(widget.locator('.bo-dx-period__label')).toHaveText('1 Sep - 30 Sep 2026');
+    await expect(widget.locator('.bo-dx-period__label')).toHaveText('01/09/2026 - 30/09/2026');
     await expect(widget.getByRole('button', { name: 'Periode sebelumnya' })).toBeDisabled();
 
     await widget.getByRole('button', { name: 'Segarkan' }).click();
-    await expect(widget.locator('.bo-dx-period__label')).toHaveText('1 Okt - 19 Okt 2026');
+    await expect(widget.locator('.bo-dx-period__label')).toHaveText('01/10/2026 - 19/10/2026');
   });
 
   test('daftar peringkat bertanda 1 sampai 3 dan bisa difokus papan ketik', async ({ page }) => {
