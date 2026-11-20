@@ -3,7 +3,6 @@ import { el } from '../../../shared/dom';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
-import { icon } from '../../../shared/icons';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
 import type { ScreenHandle } from './login';
@@ -26,7 +25,7 @@ import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
 import { openSalesPrintDialog } from './trx/print-dialog';
-import { itemCountText, TRX_TEXT as T } from './trx/text';
+import { itemCountText } from './trx/text';
 
 const TEXT = {
   tanggal: 'Tanggal',
@@ -46,11 +45,9 @@ const TEXT = {
   simpan: 'Simpan',
   cetak: 'Cetak',
   isiSj: 'Isi SJ Ekspedisi',
-  baru: 'Baru',
   infoPiutang: 'Info Piutang Pelanggan',
   belumBarang: 'Faktur belum memiliki item barang.',
   tandaiKoli: 'Tandai barang pada kolom Koli dahulu.',
-  fakturBaru: 'Faktur baru siap diisi.',
 } as const;
 
 const EXPEDITIONS = [
@@ -416,31 +413,6 @@ export function renderSalesForm(
       go(`/bo/transaksi/surat-jalan?inv=${current.invoiceNumber}&v=${String(nextSeedVersion())}`);
     },
   });
-  const newButton = createButton({
-    text: TEXT.baru,
-    variant: 'secondary',
-    icon: 'plus',
-    onClick: () => {
-      fillFromDraft(createSalesInvoiceDraft(dataset));
-      totals.discount.value = '0';
-      totals.extra.value = '0';
-      soSelectEl.value = '';
-      salesPersonEl.value = draft.salesPerson;
-      recalc();
-      showToast({ kind: 'info', text: TEXT.fakturBaru });
-    },
-  });
-  const findButton = el(
-    'button',
-    {
-      className: 'bo-trx-iconbtn',
-      attrs: { type: 'button', 'aria-label': T.tombolCariBarang, title: T.tombolCariBarang },
-    },
-    icon('search'),
-  );
-  findButton.addEventListener('click', () => {
-    search.focus();
-  });
 
   // --- Peristiwa kepala ---
   customerSelectEl.addEventListener('focus', refreshCustomerOptions);
@@ -471,8 +443,6 @@ export function renderSalesForm(
     saveButton,
     printButton,
     sjButton,
-    newButton,
-    findButton,
     countEl,
   );
   const container = el(

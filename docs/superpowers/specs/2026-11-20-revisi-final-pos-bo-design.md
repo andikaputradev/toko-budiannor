@@ -27,8 +27,23 @@ Acuan: dokumen klien "Revisi Penyesuain Final POS&BO.docx" (20 November 2026) da
 | --- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------- |
 | A1  | Tanggal ISO (2026-10-19) pada Info barang (Saldo awal) dan Laporan Penagihan/Pembayaran             | `slashIso` pada `product-info.ts` dan `debt/saldo.ts`                       | `bo-revisi11` F5, `bo-hutang` |
 | A2  | "Beban operasional" masih tampil di Akuntansi (opsi sumber Jurnal, kartu Jurnal Otomatis, Arus Kas) | Diganti "Beban Usaha" di `screens/accounting.ts` dan `domain/accounting.ts` | `bo-revisi11` F5              |
-| A3  | Kolom dan filter "Metode Bayar" di Daftar Pembayaran Hutang/Piutang (gambar 22: "Cara Bayar")       | `debt/text.ts`, `debt/payment-list.ts`                                      | `bo-hutang`                   |
+| A3  | (Dibatalkan) "Metode Bayar" di Daftar Pembayaran tetap: gambar 49 dan 50 memakainya                 | Tidak ada perubahan                                                         | `bo-hutang`                   |
 | A4  | Kotak Cetak Form Penjualan tanpa gaya: tidak menyerupai gambar 52                                   | CSS `bo-pm*` di `bo-trx.css`                                                | `bo-revisi11` F5              |
+
+## Pencocokan ulang gambar klien (putaran kedua audit)
+
+Semua layar ditangkap pada 1280x640 dan dibandingkan berdampingan dengan gambar dokumen (1 sampai 56).
+
+| #   | Temuan                                                                            | Perbaikan                                                                             | Bukti            |
+| --- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------- |
+| B1  | Data Barang menampilkan 3,5 baris daftar; gambar 51 menampilkan 4                 | Baris 36 px, kepala 40 px, bantalan formulir kecil (`bo-seragam.css`)                 | `bo-revisi12` G1 |
+| B2  | Perbesar Gambar mengikuti ukuran asli gambar kecil, bukan setengah halaman        | `.bo-pd-zoomimg` tinggi 50vh (`bo-products.css`)                                      | `bo-revisi12` G1 |
+| B3  | Master: nama, alamat melipat 2 sampai 3 baris, baris tidak rata                   | Satu baris dengan elipsis dan lebar kolom tetap (`master-table.ts`, `bo-seragam.css`) | `bo-revisi12` G2 |
+| B4  | Daftar Faktur: nama pemasok dan pelanggan terpotong, lencana status terpotong     | `fixColumns` di `transaction-list.ts`                                                 | `bo-revisi12` G3 |
+| B5  | Form PO dan SO tanpa tombol Info; form faktur punya ikon dan tombol Baru tambahan | Info (kotak hutang atau piutang), buang ikon cari dan Baru                            | `bo-revisi12` G4 |
+| B6  | Riwayat Beban: Keterangan melipat 3 sampai 4 baris; tanggal bawaan tanggal mesin  | Panel formulir 1:2, tanggal dari `referenceDate`                                      | `bo-revisi12` G5 |
+| B7  | Layar masuk berupa ilustrasi CSS, bukan foto seperti gambar 56                    | Foto Unsplash berlapis biru-hijau (`login-split.css`, `public/login`)                 | `bo-revisi12` G6 |
+| B8  | "Cara Bayar" (A3) ternyata bertentangan dengan gambar 49 dan 50                   | Dikembalikan ke "Metode Bayar" (asumsi R13-25)                                        | `bo-hutang`      |
 
 ## Pengguna dan Hak Akses
 

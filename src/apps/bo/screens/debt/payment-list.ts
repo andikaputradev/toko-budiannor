@@ -51,10 +51,10 @@ export function renderPaymentList(
   let partySelect = createFilterSelect(copy.saldoPihak, [{ value: '', text: copy.semuaPihak }]);
   const dateSelect = createDateFilter();
   const methodSelect = createFilterSelect(DEBT_TEXT.kolomMetode, [
-    { value: '', text: `${DEBT_TEXT.kolomMetode}: Semua` },
+    { value: '', text: 'Metode: Semua' },
     ...(['tunai', 'transfer', 'qris', 'edc'] as const).map((method) => ({
       value: method,
-      text: `${DEBT_TEXT.kolomMetode}: ${methodText(method)}`,
+      text: `Metode: ${methodText(method)}`,
     })),
   ]);
   const filters = el('div', { className: 'bo-trx-filters__slot' });

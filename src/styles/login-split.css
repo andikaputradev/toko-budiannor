@@ -1,37 +1,15 @@
-/* Layar masuk POS dan Back-Office berbelah dua (gambar klien 56, revisi final): kiri ilustrasi tablet
-   kasir di atas latar biru tua, kanan panel kaca gelap berisi formulir masuk, dan nomor versi di
-   pojok kiri bawah. Ilustrasi murni CSS (tanpa gambar), jadi tidak menambah berkas maupun JS. */
+/* Layar masuk POS dan Back-Office berbelah dua (gambar klien 56, revisi final): kiri foto tablet
+   kasir di dudukannya dengan lapisan biru-hijau, kanan panel kaca berisi formulir masuk, dan nomor
+   versi di pojok kiri bawah. Foto: public/login/kasir-tablet.jpg (Unsplash, lihat LISENSI.txt). */
 
 .login-split__art {
   position: relative;
   min-width: 0;
   overflow: hidden;
   background:
-    radial-gradient(70% 60% at 30% 40%, rgb(74 126 190 / 0.3), transparent 70%),
-    linear-gradient(135deg, #0c2037 0%, #123a60 52%, #0a1829 100%);
-}
-
-/* Tablet kasir miring dengan kartu barang berwarna dan panel tagihan di kirinya. */
-.login-split__art::before {
-  content: '';
-  position: absolute;
-  top: 26%;
-  left: 12%;
-  width: min(62%, 640px);
-  border: 14px solid rgb(206 217 232 / 0.5);
-  border-radius: 30px;
-  background:
-    radial-gradient(circle at 80% 24%, rgb(255 168 76 / 0.55) 0 7%, transparent 7.5%),
-    radial-gradient(circle at 62% 24%, rgb(125 210 120 / 0.5) 0 7%, transparent 7.5%),
-    radial-gradient(circle at 80% 52%, rgb(236 98 90 / 0.5) 0 7%, transparent 7.5%),
-    radial-gradient(circle at 62% 52%, rgb(255 213 90 / 0.5) 0 7%, transparent 7.5%),
-    radial-gradient(circle at 80% 80%, rgb(110 175 235 / 0.5) 0 7%, transparent 7.5%),
-    radial-gradient(circle at 62% 80%, rgb(190 140 230 / 0.45) 0 7%, transparent 7.5%),
-    linear-gradient(90deg, rgb(255 255 255 / 0.12) 0 36%, transparent 36%), rgb(210 226 245 / 0.14);
-  box-shadow: 0 50px 90px rgb(0 0 0 / 0.5);
-  aspect-ratio: 4 / 3;
-  transform: perspective(1500px) rotateY(20deg) rotateX(4deg) rotateZ(-6deg);
-  transform-origin: left center;
+    linear-gradient(rgb(10 52 76 / 0.8), rgb(10 52 76 / 0.8)),
+    url('/login/kasir-tablet.jpg') center / cover no-repeat,
+    #0a2f47;
 }
 
 /* Bayangan meja di bagian bawah. */
@@ -39,9 +17,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, transparent 55%, rgb(5 12 22 / 0.65) 100%),
-    radial-gradient(40% 30% at 85% 85%, rgb(255 255 255 / 0.06), transparent 70%);
+  background: linear-gradient(180deg, transparent 55%, rgb(4 22 34 / 0.6) 100%);
 }
 
 /* Nomor versi di pojok kiri bawah, dibuat dari CSS karena hanya hiasan. */
@@ -63,7 +39,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: #0a1829;
+  background: #0a2f47;
 }
 
 .bo--login .bo-topbar {
@@ -98,7 +74,7 @@
   padding: 72px 44px 56px;
   border: 0;
   border-radius: 0;
-  background: rgb(12 26 42 / 0.86);
+  background: rgb(18 66 94 / 0.86);
   box-shadow: -24px 0 60px rgb(0 0 0 / 0.35);
   color: var(--login-ink);
 }
@@ -181,7 +157,7 @@ html[data-app='bo'] .bo--login .bo-login__show {
   gap: 0;
   align-content: stretch;
   padding: 0;
-  background: #0a1829;
+  background: #0a2f47;
 }
 
 .pos-login__side {
@@ -191,7 +167,7 @@ html[data-app='bo'] .bo--login .bo-login__show {
   min-height: 0;
   padding: 24px 32px;
   overflow-y: auto;
-  background: rgb(12 26 42 / 0.86);
+  background: rgb(18 66 94 / 0.86);
   box-shadow: -24px 0 60px rgb(0 0 0 / 0.35);
 }
 

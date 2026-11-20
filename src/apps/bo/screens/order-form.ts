@@ -2,11 +2,15 @@ import '../../../styles/bo-trx.css';
 import { el } from '../../../shared/dom';
 import { wibDate } from '../../../shared/data/receivable';
 import type { Dataset, PurchaseOrder, SalesOrder } from '../../../shared/data/types';
-import { icon } from '../../../shared/icons';
+import { formatRupiah } from '../../../shared/format';
+import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
+import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
 import type { ScreenHandle } from './login';
+import { getSupplierDebtInfo } from '../domain/purchase-transaction';
+import { getCustomerCreditInfo } from '../domain/sales-transaction';
 import {
   docGrandTotal,
   docSummary,
@@ -26,7 +30,7 @@ import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
-import { itemCountText, TRX_TEXT as T } from './trx/text';
+import { itemCountText } from './trx/text';
 import { ORDER_PATH } from './order-list';
 
 const EXPEDITIONS = [
@@ -69,6 +73,10 @@ const TEXT = {
   simpan: 'Simpan',
   cetak: 'Cetak',
   belumCetak: 'Belum ada barang untuk dicetak.',
+  info: 'Info',
+  infoHutang: 'Info Hutang Pemasok',
+  infoPiutang: 'Info Piutang Pelanggan',
+  tutup: 'Tutup',
 } as const;
 
 const option = (text: string, value: string): HTMLOptionElement =>
@@ -379,16 +387,71 @@ export function renderOrderForm(
       window.print();
     },
   });
-  const findButton = el(
-    'button',
-    {
-      className: 'bo-trx-iconbtn',
-      attrs: { type: 'button', 'aria-label': T.tombolCariBarang, title: T.tombolCariBarang },
+  // Info (gambar klien 42 dan 43): ringkasan hutang pemasok atau piutang pelanggan yang dipilih,
+  // sama dengan kotak info pada Faktur Pembelian dan Faktur Penjualan.
+  const infoButton = createButton({
+    text: TEXT.info,
+    variant: 'secondary',
+    icon: 'info',
+    onClick: () => {
+      dataset = store.getState().data;
+      const stat = (text: string, value: string, tone = ''): HTMLElement =>
+        el(
+          'div',
+          { className: `bo-credit-stat${tone === '' ? '' : ` ${tone}`}` },
+          el('span', { className: 'bo-credit-stat__lbl', text }),
+          el('span', { className: 'bo-credit-stat__val', text: value }),
+        );
+      const rows: HTMLElement[] = [];
+      let partyName = '';
+      if (buy) {
+        const supplier = dataset.suppliers.find((item) => item.id === partyEl.value);
+        if (supplier === undefined) {
+          showToast({ kind: 'info', text: copy.pilihDulu });
+          return;
+        }
+        partyName = supplier.name;
+        const debt = getSupplierDebtInfo(supplier);
+        rows.push(
+          stat(label('labelTotalHutang'), formatRupiah(debt.totalHutang)),
+          stat(label('labelHutangJatuhTempo'), formatRupiah(debt.hutangJatuhTempo), 'is-warning'),
+        );
+      } else {
+        const customer = dataset.customers.find((item) => item.id === partyEl.value);
+        if (customer === undefined) {
+          showToast({ kind: 'info', text: copy.pilihDulu });
+          return;
+        }
+        partyName = customer.name;
+        const credit = getCustomerCreditInfo(customer, grandTotal());
+        rows.push(
+          stat(label('labelTotalPiutang'), formatRupiah(credit.totalPiutang)),
+          stat(
+            label('labelPiutangJatuhTempo'),
+            formatRupiah(credit.piutangJatuhTempo),
+            'is-warning',
+          ),
+          stat(label('labelPlafonKredit'), formatRupiah(credit.creditLimit)),
+          stat(
+            label('labelSisaPlafon'),
+            credit.isOverlimit
+              ? label('labelPeringatanOverlimit')
+              : formatRupiah(credit.remainingCredit),
+            credit.isOverlimit ? 'is-danger' : 'is-success',
+          ),
+        );
+      }
+      openModal({
+        title: buy ? TEXT.infoHutang : TEXT.infoPiutang,
+        body: el(
+          'div',
+          { className: 'bo-info-party' },
+          el('p', { className: 'bo-info-party__name', text: partyName }),
+          el('div', { className: 'bo-credit-box' }, ...rows),
+        ),
+        actions: [{ text: TEXT.tutup, variant: 'secondary' }],
+      });
     },
-    icon('search'),
-  );
-  findButton.addEventListener('click', () => {
-    search.focus();
   });
 
   // --- Isi awal untuk pesanan yang sudah ada ---
@@ -422,7 +485,6 @@ export function renderOrderForm(
       search.input,
       totals.discount,
       totals.extra,
-      findButton,
     ]) {
       control.disabled = true;
     }
@@ -442,7 +504,7 @@ export function renderOrderForm(
         search.root,
         ...(viewOnly ? [] : [saveButton]),
         printButton,
-        findButton,
+        infoButton,
         countEl,
       ),
       table.root,
