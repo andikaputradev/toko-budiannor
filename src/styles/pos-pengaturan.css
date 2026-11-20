@@ -185,8 +185,15 @@
   align-items: baseline;
 }
 
+/* Nama barang pada katalog Daftar tampil penuh (tidak dipotong); bila sangat panjang boleh dua baris. */
 .pos-grid--daftar .pos-card__name {
+  display: block;
+  overflow: visible;
   font-size: 15px;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-line-clamp: unset;
 }
 
 .pos-grid--daftar .pos-card__code {
@@ -248,6 +255,7 @@
 .pos-grid--daftar .pos-card__stockrow {
   flex: none;
   flex-direction: row;
+  text-align: left;
   gap: var(--primitive-space-3);
   justify-content: space-between;
 }

@@ -29,11 +29,11 @@ async function searchFor(page: Page, text: string): Promise<void> {
 
 const unitRows = (page: Page) => page.locator('.bo-pd-units__row:not([hidden])');
 
+// Satuan diketik bebas (video klien), tanpa kotak cari atau daftar pilihan; Enter memindahkan kursor.
 async function pickUnit(page: Page, name: string, code: string): Promise<void> {
-  const search = page.getByLabel(name, { exact: true });
-  await search.click();
-  await search.fill(code);
-  await search.press('Enter');
+  const field = page.getByLabel(name, { exact: true });
+  await field.fill(code);
+  await field.press('Enter');
 }
 
 const save = (page: Page) => page.getByRole('button', { name: 'Simpan Barang' });
@@ -69,10 +69,15 @@ test.describe('B1 satu halaman penuh tanpa scroll', () => {
     });
   }
 
-  test('Keluar menutup tab Data Barang dan kembali ke tab sebelumnya', async ({ page }) => {
+  test('tanpa tombol Keluar di bilah; Alt+K dan tanda silang tab menutup Data Barang', async ({
+    page,
+  }) => {
     await openBarang(page);
     await expect(page.locator('.bo-tab')).toHaveCount(2);
-    await page.getByRole('button', { name: 'Keluar', exact: true }).click();
+    await expect(
+      page.locator('.bo-pd-toolbar').getByRole('button', { name: 'Keluar' }),
+    ).toHaveCount(0);
+    await page.keyboard.press('Alt+k');
     await expect(page).toHaveURL(/#\/bo\/dashboard$/);
     await expect(page.locator('.bo-tab')).toHaveCount(1);
   });
@@ -103,8 +108,10 @@ test.describe('B2 satuan bertahap', () => {
     await page.getByLabel('Konversi satuan 2', { exact: true }).fill('12');
     await expect(unitRows(page)).toHaveCount(3);
 
-    await page.getByRole('button', { name: /Hapus satuan 2/ }).click();
+    // Mengosongkan satuan 2 menghapus baris itu beserta konversinya.
+    await page.getByLabel('Satuan 2', { exact: true }).fill('');
     await expect(unitRows(page)).toHaveCount(2);
+    await expect(page.getByLabel('Konversi satuan 2', { exact: true })).toHaveValue('');
   });
 
   test('barang tiga satuan tersimpan dan tampil di matriks harga dengan harga turunan', async ({
@@ -148,7 +155,7 @@ test.describe('B2 satuan bertahap', () => {
       page.getByText('Satuan tidak boleh sama dengan satuan lain pada barang ini.'),
     ).toBeVisible();
 
-    await page.getByRole('button', { name: /Hapus satuan 2/ }).click();
+    await page.getByLabel('Satuan 2', { exact: true }).fill('');
     await pickUnit(page, 'Satuan 2', 'LSN');
     await page.getByLabel('Konversi satuan 2', { exact: true }).fill('0');
     await save(page).click();
@@ -429,7 +436,7 @@ test.describe('B8 Cetak', () => {
     await expect(page.getByRole('dialog').getByLabel('Harga Beli Akhir')).toBeVisible();
     await page.getByRole('dialog').getByRole('button', { name: 'Tutup' }).click();
 
-    await page.getByRole('button', { name: 'Keluar', exact: true }).click();
+    await page.keyboard.press('Alt+k');
     await page.getByRole('button', { name: 'Buka menu' }).click();
     await page.locator('.bo-sidebar button').last().click();
     await openBarang(page, SUPERVISOR);

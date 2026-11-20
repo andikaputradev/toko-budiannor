@@ -251,8 +251,7 @@ test.describe('BO-03 Barang', () => {
     await page.getByLabel('Nama barang').fill('Barang Uji Baru');
     await save.click();
     await expect(page.getByText('Satuan dasar wajib dipilih.')).toBeVisible();
-    await page.getByLabel('Satuan dasar', { exact: true }).click();
-    await page.locator('.bo-pd-units__option', { hasText: /^Pcs$/ }).click();
+    await page.getByLabel('Satuan dasar', { exact: true }).fill('Pcs');
     await page.getByLabel('Stok minimum Toko').fill('-1');
     await save.click();
     await expect(page.getByText('Stok minimum tidak boleh negatif.')).toBeVisible();

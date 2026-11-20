@@ -3,6 +3,8 @@ import type { Product, UnitDef } from '../../../shared/data/types';
 // Satuan barang: satuan dasar (baris 1) dan paling banyak dua satuan lebih besar (baris 2 dan 3).
 // Konversi setiap satuan lebih besar selalu terhadap satuan dasar, mis. LSN = 12 PCS.
 export const MAX_UNITS = 3;
+// Satuan diketik bebas (huruf apa saja); panjangnya dibatasi supaya kolom dan label tetap muat.
+export const MAX_UNIT_CODE = 10;
 
 export interface UnitRowDraft {
   readonly code: string;

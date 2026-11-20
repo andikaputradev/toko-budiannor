@@ -94,6 +94,7 @@ export const ICON_NAMES = [
   'user-check',
   'maximize-2',
   'chart-area',
+  'chevrons-up-down',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];

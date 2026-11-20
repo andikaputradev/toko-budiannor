@@ -178,7 +178,7 @@ export function renderAccountingScreen(
       { value: 'HPP', text: 'HPP rata-rata (HPP Average)' },
       { value: 'Pelunasan', text: 'Pelunasan piutang pelanggan' },
       { value: 'PO', text: 'Pembelian faktur PO' },
-      { value: 'Beban', text: 'Beban operasional toko' },
+      { value: 'Beban', text: 'Beban Usaha' },
       { value: 'Bayar', text: 'Bayar utang supplier' },
       { value: 'Retur', text: 'Retur penjualan' },
     ].forEach((o) => {
@@ -779,7 +779,7 @@ export function renderAccountingScreen(
       el('h4', { className: 'bo-form-sec-title', text: label('jurnalOtomatisJudul') }),
       el('p', {
         className: 't-label bo-acc-note',
-        text: 'Setiap transaksi kasir, penerimaan barang, retur, dan beban operasional membentuk jurnal otomatis ke laporan ini.',
+        text: 'Setiap transaksi kasir, penerimaan barang, retur, dan beban usaha membentuk jurnal otomatis ke laporan ini.',
       }),
       btnBukaBeban,
     );

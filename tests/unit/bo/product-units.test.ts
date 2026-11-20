@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_UNIT_CODE,
   MAX_UNITS,
   UNIT_CODES,
   normalizeRows,
@@ -141,5 +142,18 @@ describe('UNIT_CODES', () => {
     for (const code of ['LSN', 'DOS', 'BOX', 'PCS', 'KRG']) {
       expect(lower).toContain(code.toLowerCase());
     }
+  });
+});
+
+describe('satuan diketik bebas', () => {
+  it('panjang satuan dibatasi supaya kolom tetap muat', () => {
+    expect(MAX_UNIT_CODE).toBe(10);
+  });
+
+  it('spasi di tepi satuan dipangkas dan baris di bawah baris kosong ikut kosong', () => {
+    const rows = normalizeRows([row('  PCS '), row(''), row('DOS', '12')]);
+    expect(rows[0]?.code).toBe('PCS');
+    expect(rows[1]?.code).toBe('');
+    expect(rows[2]).toEqual({ code: '', factor: '' });
   });
 });

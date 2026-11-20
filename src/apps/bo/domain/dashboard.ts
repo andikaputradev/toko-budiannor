@@ -172,6 +172,7 @@ export interface FullDashboardData {
     readonly daily: readonly ChartPoint[];
     readonly monthly: readonly ChartPoint[];
     readonly trendText: string;
+    readonly monthlyTrendText: string;
   };
   readonly upcomingEvents: readonly UpcomingEvent[];
   readonly topProducts: readonly RankedItem[];
@@ -192,6 +193,28 @@ export interface FullDashboardData {
   readonly overdueCustomers: readonly OverdueCustomer[];
   readonly legacy: DashboardData;
 }
+
+// Nama hari (Senin sampai Minggu) dan bulan pada grafik memakai bahasa Indonesia.
+const DAY_SHORT: readonly string[] = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+const MONTH_SHORT: readonly string[] = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
+];
+
+// Omset enam bulan terakhir yang berakhir di bulan ini; bulan ini sama dengan Omset Bulan Ini.
+export const MONTHLY_HISTORY: readonly number[] = [
+  33_900_000, 37_450_000, 35_200_000, 40_600_000, 41_980_000,
+];
 
 export const CRITICAL_ROWS = 4;
 export const SERIES_DAYS = 7;
@@ -322,7 +345,8 @@ const RANK_DATA: readonly {
 ];
 
 // Periode pertama: tanggal 1 bulan berjalan sampai hari ini. Kedua: bulan lalu penuh.
-function buildRankPeriods(now: Date): readonly RankPeriod[] {
+// Laba penjualan barang hanya untuk Owner: bagi peran lain urutan Laba dikosongkan.
+function buildRankPeriods(now: Date, includeProfit: boolean): readonly RankPeriod[] {
   const [year = 0, month = 1] = wibDate(now).split('-').map(Number);
   const day = (y: number, monthIndex: number, dayOfMonth: number): string =>
     formatDate(new Date(Date.UTC(y, monthIndex, dayOfMonth)));
@@ -338,10 +362,12 @@ function buildRankPeriods(now: Date): readonly RankPeriod[] {
       data.products.map((row) => ({ name: row.name, amount: row.count })),
       data.countTotal,
     ).map((item) => ({ ...item, display: `${String(item.amount)} kali` })),
-    laba: ranked(
-      data.products.map((row) => ({ name: row.name, amount: row.profit })),
-      data.profitTotal,
-    ),
+    laba: includeProfit
+      ? ranked(
+          data.products.map((row) => ({ name: row.name, amount: row.profit })),
+          data.profitTotal,
+        )
+      : [],
   });
   return RANK_DATA.map((data, index) => ({
     label: labels[index] ?? '',
@@ -385,22 +411,21 @@ export function computeFullDashboard(
   const monthlyTotal = 48_500_000;
   const monthlyAvg = Math.round(monthlyTotal / monthlyCount);
 
-  const dailyPoints: ChartPoint[] = [
-    { label: 'Mon', value: 45_250_000 },
-    { label: 'Tue', value: 52_400_000 },
-    { label: 'Wed', value: 48_100_000 },
-    { label: 'Thu', value: 68_975_000 },
-    { label: 'Fri', value: 55_300_000 },
-    { label: 'Sat', value: 72_150_000 },
-    { label: 'Sun', value: 62_400_000 },
+  const dailyValues = [
+    45_250_000, 52_400_000, 48_100_000, 68_975_000, 55_300_000, 72_150_000, 62_400_000,
   ];
+  const dailyPoints: ChartPoint[] = dailyValues.map((value, index) => ({
+    label: DAY_SHORT[index] ?? '',
+    value,
+  }));
 
-  const monthlyPoints: ChartPoint[] = [
-    { label: 'M1', value: 9_800_000 },
-    { label: 'M2', value: 10_500_000 },
-    { label: 'M3', value: 11_200_000 },
-    { label: 'M4', value: 11_820_000 },
-  ];
+  // Enam bulan berakhir di bulan berjalan; sumbu grafik mengikuti besar omset bulanan.
+  const currentMonth = Number(today.slice(5, 7)) - 1;
+  const monthlyValues = [...MONTHLY_HISTORY, monthlyOmzet];
+  const monthlyPoints: ChartPoint[] = monthlyValues.map((value, index) => ({
+    label: MONTH_SHORT[(currentMonth - (monthlyValues.length - 1 - index) + 120) % 12] ?? '',
+    value,
+  }));
 
   const upcomingEvents: UpcomingEvent[] = [
     {
@@ -429,7 +454,7 @@ export function computeFullDashboard(
     },
   ];
 
-  const rankPeriods = buildRankPeriods(now);
+  const rankPeriods = buildRankPeriods(now, isOwner);
   const topProducts = rankPeriods[0]?.products ?? [];
   const topCustomers = rankPeriods[0]?.customers ?? [];
 
@@ -528,7 +553,8 @@ export function computeFullDashboard(
     chartSeries: {
       daily: dailyPoints,
       monthly: monthlyPoints,
-      trendText: 'Tren naik 12.5%',
+      trendText: 'Tren naik 12,5%',
+      monthlyTrendText: 'Tren naik 15,2%',
     },
     upcomingEvents,
     topProducts,

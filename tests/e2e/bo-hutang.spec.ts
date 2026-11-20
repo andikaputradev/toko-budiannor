@@ -44,6 +44,8 @@ test.describe('Saldo Piutang dan Saldo Hutang (gambar 21)', () => {
     await expect(page.getByText('Daftar faktur yang dicetak tersimpan.')).toBeVisible();
     await page.getByRole('button', { name: 'Cetak', exact: true }).click();
     await expect(page.getByRole('dialog')).toContainText('Laporan Penagihan');
+    // Catatan klien: tanggal di semua halaman berbentuk hari/bulan/tahun dengan garis miring.
+    await expect(page.getByRole('dialog')).toContainText(/Tanggal cetak: \d{2}\/\d{2}\/\d{4}/);
     await page.getByRole('dialog').getByRole('button', { name: 'Tutup', exact: true }).click();
     // Centang bertahan setelah pindah halaman karena Simpan menyimpannya di sesi.
     await page.goto('/#/bo/hutang-piutang/saldo-hutang');
@@ -81,7 +83,7 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
       'Nomor Pembayaran',
       'Tanggal',
       'Pelanggan',
-      'Metode Bayar',
+      'Cara Bayar',
       'Kas / Bank',
       'User',
       'Keterangan',

@@ -34,14 +34,14 @@ describe('Domain Pengaturan, RBAC, Barcode, & Audit Trail Back Office', () => {
 
     // Di POS-04 (pembayaran & closing), Frontliner dilarang
     pos04?.items.forEach((item) => {
-      expect(item.frontliner).toBe(false);
-      expect(item.owner).toBe(true);
+      expect(item.frontliner).toBe('tidak');
+      expect(item.owner).toBe('ya');
     });
 
     // Di POS-05 (hold bill), Frontliner diizinkan simpan draf
     const pos05 = matrix.find((m) => m.screenCode === 'POS-05');
     const draftAction = pos05?.items.find((it) => it.action.includes('Cetak Struk Draf'));
-    expect(draftAction?.frontliner).toBe(true);
+    expect(draftAction?.frontliner).toBe('ya');
   });
 
   it('dapat memfilter log aktivitas audit trail dengan kriteria tertentu', () => {

@@ -841,6 +841,77 @@
   display: none;
 }
 
+/* ===== Kotak Cetak Form Penjualan (gambar klien 52) =====
+   Judul dan Gudang di tengah, lima pilihan dokumen menurun satu per baris, tiga pilihan kertas
+   sebaris, dan kelima tombol sebaris. */
+html[data-app='bo'] .modal:has(.bo-pm) {
+  --modal-width-max: 700px;
+}
+
+.bo-pm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bo-pm__list {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.bo-pm__warehouse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.bo-pm__warehouse > label {
+  font-weight: 700;
+}
+
+.bo-pm__warehouse .bo-pm__select {
+  flex: 0 1 220px;
+  min-width: 0;
+}
+
+.bo-pm__radios {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 24px 0;
+}
+
+.bo-pm__radio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bo-pm__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 28px;
+  padding: 0 24px;
+}
+
+html[data-app='bo'] .modal:has(.bo-pm) .modal__actions {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  margin-top: var(--primitive-space-4);
+}
+
+@media (max-width: 719px) {
+  html[data-app='bo'] .modal:has(.bo-pm) .modal__actions {
+    flex-wrap: wrap;
+  }
+}
+
 /* ===== Surat Jalan Ekspedisi dan Packing Koli ===== */
 .bo-trx .bo-trx-sjhead {
   display: flex;

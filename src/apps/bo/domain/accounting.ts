@@ -360,7 +360,7 @@ export function generateCashFlowStatement(
   const operatingInflows = [{ label: 'Penerimaan dari pelanggan', amount: penerimaanPelanggan }];
   const operatingOutflows = [
     { label: 'Pembayaran ke supplier', amount: pembayaranSupplier },
-    { label: 'Pembayaran beban operasional', amount: totalBeban },
+    { label: 'Pembayaran beban usaha', amount: totalBeban },
   ];
 
   const netOperatingCash = penerimaanPelanggan - pembayaranSupplier - totalBeban; // 102.850.000

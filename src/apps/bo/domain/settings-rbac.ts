@@ -1,6 +1,16 @@
 import { matchesPhrase } from '../../../shared/data/search-index';
-import type { Role } from '../../../shared/data/types';
-import { PERMISSION_ROWS } from '../../../shared/permissions';
+import { ROLES, type Role } from '../../../shared/data/types';
+import { PIN_PATTERN } from '../../../shared/domain/pin';
+import {
+  PERMISSION_ROWS,
+  PERMISSION_RULES,
+  accessFor,
+  canOpenScreen,
+  canOverrideAccess,
+  defaultAccessFor,
+  type Access,
+} from '../../../shared/permissions';
+import { createPersistence, type StorageLike } from '../../../shared/store/persistence';
 
 export interface StoreProfile {
   name: string;
@@ -277,78 +287,306 @@ export function filterAuditLogs(
   });
 }
 
-/**
- * Mengambil matriks RBAC terstruktur berdasarkan PERMISSION_ROWS
- */
+// ===== Matriks hak akses =====
+
+// Kolom matriks. Owner selalu penuh dan terkunci; Supervisor, Kasir, dan Frontliner dapat diubah Owner.
+export type MatrixRole = 'owner' | 'supervisor' | 'kasir' | 'frontliner';
+
+export const MATRIX_ROLES: readonly MatrixRole[] = ['owner', 'supervisor', 'kasir', 'frontliner'];
+
+export interface RbacMatrixItem {
+  readonly action: string;
+  readonly owner: Access;
+  readonly supervisor: Access;
+  readonly kasir: Access;
+  readonly frontliner: Access;
+}
+
 export interface RbacMatrixGroup {
   readonly screenCode: string;
   readonly screenName: string;
-  readonly items: {
-    readonly action: string;
-    readonly owner: boolean;
-    readonly supervisor: boolean;
-    readonly kasir: boolean;
-    readonly frontliner: boolean;
-  }[];
+  readonly items: readonly RbacMatrixItem[];
 }
 
+// Seluruh layar POS dan Back-Office. Layar OWN dan SALES milik aplikasi Owner dan Sales Lapangan,
+// bukan peran yang diatur di sini.
+const SCREEN_NAMES: Readonly<Record<string, string>> = {
+  'POS-01': 'POS Kasir - Otentikasi & PIN',
+  'POS-02': 'POS Kasir - Pemilihan Barang & Transaksi',
+  'POS-03': 'POS Kasir - Multi Satuan & Ubah Harga',
+  'POS-04': 'POS Kasir - Multi Pembayaran & Closing',
+  'POS-05': 'POS Kasir - Hold Bill & Cetak Draf',
+  'POS-06': 'POS Kasir - Riwayat Transaksi',
+  'POS-07': 'POS Kasir - Biaya Kasir',
+  'POS-08': 'POS Kasir - Pelanggan Baru',
+  'POS-09': 'POS Kasir - Status Sinkronisasi',
+  'POS-10': 'POS Kasir - Otorisasi Owner',
+  'POS-11': 'POS Kasir - Karyawan & Laporan Shift',
+  'POS-12': 'POS Kasir - Pengaturan',
+  'BO-01': 'Back Office - Masuk',
+  'BO-02': 'Back Office - Dashboard Ringkasan',
+  'BO-03': 'Back Office - Master Data Barang & Impor Excel',
+  'BO-04': 'Back Office - Satuan & Harga',
+  'BO-05': 'Back Office - Monitoring Stok Multi-Gudang',
+  'BO-06': 'Back Office - Transfer Antar Gudang',
+  'BO-07': 'Back Office - Stok Opname',
+  'BO-08': 'Back Office - PO & Pembelian',
+  'BO-09': 'Back Office - SO & Faktur Penjualan',
+  'BO-10': 'Back Office - Retur',
+  'BO-11': 'Back Office - Hutang Piutang & Pembayaran',
+  'BO-12': 'Back Office - Ekspedisi & Packing Koli',
+  'BO-13': 'Back Office - Cetak Barcode Massal',
+  'BO-14': 'Back Office - Aturan Komisi Sales',
+  'BO-15': 'Back Office - Impor Data',
+  'BO-16': 'Back Office - Laporan',
+  'BO-17': 'Back Office - Laba Rugi',
+  'BO-18': 'Back Office - Jurnal, Arus Kas & Neraca',
+  'BO-19': 'Back Office - Beban Usaha',
+  'BO-20': 'Back Office - Pengguna & Hak Akses',
+  'BO-21': 'Back Office - Log Aktivitas / Audit Trail',
+  'BO-22': 'Back Office - Profil Toko & Pengaturan',
+};
+
+// Layar masuk mengikuti status akun pengguna, bukan matriks, sehingga selnya terkunci.
+const LOGIN_SCREENS: ReadonlySet<string> = new Set(['POS-01', 'BO-01']);
+
+// Hak akses efektif (bawaan ditambah penimpaan Owner) seluruh layar POS dan Back-Office.
 export function getStructuredRbacMatrix(): readonly RbacMatrixGroup[] {
-  const groups = new Map<
-    string,
-    { screenName: string; items: RbacMatrixGroup['items'][number][] }
-  >();
-
-  const screenNames: Record<string, string> = {
-    'POS-01': 'POS Kasir - Otentikasi & PIN',
-    'POS-02': 'POS Kasir - Pemilihan Barang & Transaksi',
-    'POS-03': 'POS Kasir - Multi Satuan & Ubah Harga',
-    'POS-04': 'POS Kasir - Multi Pembayaran & Closing',
-    'POS-05': 'POS Kasir - Hold Bill & Cetak Draf',
-    'BO-02': 'Back Office - Dashboard Ringkasan',
-    'BO-03': 'Back Office - Master Data Barang & Impor Excel',
-    'BO-05': 'Back Office - Monitoring Stok Multi-Gudang',
-    'BO-06': 'Back Office - Transfer Antar Gudang',
-    'BO-08': 'Back Office - PO & Pembelian',
-    'BO-09': 'Back Office - SO & Faktur Penjualan',
-    'BO-11': 'Back Office - Hutang Piutang & Pembayaran',
-    'BO-12': 'Back Office - Ekspedisi & Packing Koli',
-    'BO-13': 'Back Office - Cetak Barcode Massal',
-    'BO-17': 'Back Office - Laba Rugi',
-    'BO-18': 'Back Office - Jurnal, Arus Kas & Neraca',
-    'BO-19': 'Back Office - Beban Usaha',
-    'BO-20': 'Back Office - Manajemen Pengguna & RBAC',
-    'BO-21': 'Back Office - Log Aktivitas / Audit Trail',
-    'BO-22': 'Back Office - Profil Toko & Pengaturan',
-  };
-
-  for (const [code, action, permissions] of PERMISSION_ROWS) {
-    if (!screenNames[code]) continue;
-    if (!groups.has(code)) {
-      groups.set(code, { screenName: screenNames[code] ?? code, items: [] });
+  const groups = new Map<string, RbacMatrixItem[]>();
+  for (const [code, action] of PERMISSION_ROWS) {
+    if (SCREEN_NAMES[code] === undefined) {
+      continue;
     }
-
-    const o = permissions.startsWith('Y');
-    const s = permissions.charAt(1) === 'Y';
-    const k = permissions.charAt(2) === 'Y';
-    // Frontliner: hanya bisa POS-01, POS-02 (tambah item), POS-05 (hold bill), dan lihat stok
-    const isFrontliner =
-      code === 'POS-01' ||
-      (code === 'POS-02' && !action.toLowerCase().includes('bayar')) ||
-      (code === 'POS-05' && !action.toLowerCase().includes('hapus')) ||
-      action.toLowerCase().includes('cek stok');
-
-    groups.get(code)?.items.push({
+    const items = groups.get(code) ?? [];
+    items.push({
       action,
-      owner: o,
-      supervisor: s,
-      kasir: k,
-      frontliner: isFrontliner,
+      owner: accessFor('owner', code, action),
+      supervisor: accessFor('supervisor', code, action),
+      kasir: accessFor('kasir', code, action),
+      frontliner: accessFor('frontliner', code, action),
     });
+    groups.set(code, items);
   }
-
-  return [...groups.entries()].map(([screenCode, val]) => ({
+  return [...groups].map(([screenCode, items]) => ({
     screenCode,
-    screenName: val.screenName,
-    items: val.items,
+    screenName: SCREEN_NAMES[screenCode] ?? screenCode,
+    items,
   }));
+}
+
+// Nama aksi pada matriks; istilah Invoice pada kunci aturan ditampilkan sebagai Faktur.
+export function actionLabel(action: string): string {
+  return action.replaceAll('Invoice', 'Faktur');
+}
+
+export type LockReason = 'owner' | 'layar' | 'masuk' | 'bayar';
+
+// Alasan sel tidak dapat diubah; undefined bila Owner boleh mengubahnya.
+export function lockReason(
+  role: MatrixRole,
+  screen: string,
+  action: string,
+): LockReason | undefined {
+  if (role === 'owner') {
+    return 'owner';
+  }
+  if (!canOpenScreen(role, screen)) {
+    return 'layar';
+  }
+  if (LOGIN_SCREENS.has(screen)) {
+    return 'masuk';
+  }
+  return canOverrideAccess(role, screen, action) ? undefined : 'bayar';
+}
+
+// Hanya aksi yang pada matriks bawaan memang mengenal otorisasi Owner yang memiliki status Otorisasi.
+export function accessCycle(screen: string, action: string): readonly Access[] {
+  const known = PERMISSION_RULES.some(
+    (rule) =>
+      rule.screen === screen &&
+      rule.action === action &&
+      [rule.owner, rule.supervisor, rule.kasir, rule.sales].includes('otorisasi'),
+  );
+  return known ? ['ya', 'otorisasi', 'tidak'] : ['ya', 'tidak'];
+}
+
+export function nextAccess(screen: string, action: string, current: Access): Access {
+  const cycle = accessCycle(screen, action);
+  const index = cycle.indexOf(current);
+  // Status di luar lingkar (isi penyimpanan yang diubah manual) jatuh ke Tidak.
+  return index === -1 ? 'tidak' : (cycle[(index + 1) % cycle.length] ?? 'tidak');
+}
+
+export function isAccessChanged(role: MatrixRole, screen: string, action: string): boolean {
+  return accessFor(role, screen, action) !== defaultAccessFor(role, screen, action);
+}
+
+// Jumlah sel yang berbeda dari matriks bawaan.
+export function countAccessChanges(): number {
+  let total = 0;
+  for (const group of getStructuredRbacMatrix()) {
+    for (const item of group.items) {
+      for (const role of MATRIX_ROLES) {
+        if (isAccessChanged(role, group.screenCode, item.action)) {
+          total += 1;
+        }
+      }
+    }
+  }
+  return total;
+}
+
+// ===== Pengguna =====
+
+export type UserIssue = 'kosong' | 'username-ganda' | 'pin' | 'owner-terakhir';
+
+export interface UserDraft {
+  readonly fullName: string;
+  readonly username: string;
+  readonly role: Role;
+  readonly active: boolean;
+  // Wajib 6 angka pada pengguna baru; pada pengubahan boleh kosong (PIN tidak berubah).
+  readonly pin: string;
+}
+
+const hasOtherActiveOwner = (users: readonly SystemUser[], id: string | undefined): boolean =>
+  users.some((user) => user.id !== id && user.role === 'owner' && user.active);
+
+export function validateUserDraft(
+  users: readonly SystemUser[],
+  draft: UserDraft,
+  editingId?: string,
+): UserIssue | undefined {
+  const username = draft.username.trim().toLowerCase();
+  if (draft.fullName.trim() === '' || username === '') {
+    return 'kosong';
+  }
+  if (users.some((user) => user.id !== editingId && user.username.toLowerCase() === username)) {
+    return 'username-ganda';
+  }
+  if ((editingId === undefined || draft.pin !== '') && !PIN_PATTERN.test(draft.pin)) {
+    return 'pin';
+  }
+  const current = users.find((user) => user.id === editingId);
+  const stepsDown = current?.role === 'owner' && current.active;
+  if (
+    stepsDown &&
+    (draft.role !== 'owner' || !draft.active) &&
+    !hasOtherActiveOwner(users, editingId)
+  ) {
+    return 'owner-terakhir';
+  }
+  return undefined;
+}
+
+function nextUserId(users: readonly SystemUser[]): string {
+  const highest = Math.max(0, ...users.map((user) => Number(/\d+$/.exec(user.id)?.[0] ?? 0)));
+  return `USR-${String(highest + 1).padStart(2, '0')}`;
+}
+
+export function addSystemUser(
+  users: readonly SystemUser[],
+  draft: UserDraft,
+): readonly SystemUser[] {
+  const created: SystemUser = {
+    id: nextUserId(users),
+    username: draft.username.trim(),
+    fullName: draft.fullName.trim(),
+    role: draft.role,
+    pin: draft.pin,
+    active: draft.active,
+    lastLogin: 'Belum pernah',
+  };
+  return [...users, created];
+}
+
+// Nama pengguna tidak berubah; PIN hanya berganti bila diisi.
+export function changeSystemUser(
+  users: readonly SystemUser[],
+  id: string,
+  draft: UserDraft,
+): readonly SystemUser[] {
+  return users.map((user) =>
+    user.id === id
+      ? {
+          ...user,
+          fullName: draft.fullName.trim(),
+          role: draft.role,
+          active: draft.active,
+          pin: draft.pin === '' ? user.pin : draft.pin,
+        }
+      : user,
+  );
+}
+
+export function resetSystemUserPin(
+  users: readonly SystemUser[],
+  id: string,
+  pin: string,
+): readonly SystemUser[] {
+  return users.map((user) => (user.id === id ? { ...user, pin } : user));
+}
+
+// PIN sementara 6 angka untuk Reset PIN.
+export function temporaryPin(): string {
+  const [value = 0] = crypto.getRandomValues(new Uint32Array(1));
+  return String(value % 1_000_000).padStart(6, '0');
+}
+
+// Daftar pengguna hidup selama sesi peramban: muat ulang dan pindah halaman tidak menghapusnya,
+// sedangkan PIN tidak tertinggal di penyimpanan permanen.
+export const SYSTEM_USERS_KEY = 'budiannor.pengguna-sistem';
+
+function isSystemUser(value: unknown): value is SystemUser {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const user = value as Readonly<Record<string, unknown>>;
+  return (
+    typeof user['id'] === 'string' &&
+    typeof user['username'] === 'string' &&
+    typeof user['fullName'] === 'string' &&
+    typeof user['pin'] === 'string' &&
+    typeof user['active'] === 'boolean' &&
+    typeof user['lastLogin'] === 'string' &&
+    ROLES.some((role) => role === user['role'])
+  );
+}
+
+function parseSystemUsers(raw: unknown): readonly SystemUser[] | undefined {
+  return Array.isArray(raw) && raw.length > 0 && raw.every(isSystemUser) ? raw : undefined;
+}
+
+function sessionStorageOrNone(): StorageLike | undefined {
+  try {
+    return sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+export interface SystemUserStore {
+  load(): readonly SystemUser[];
+  save(users: readonly SystemUser[]): void;
+  clear(): void;
+}
+
+export function createSystemUserStore(
+  storage: StorageLike | undefined = sessionStorageOrNone(),
+): SystemUserStore {
+  const persistence = createPersistence<readonly SystemUser[]>({
+    key: SYSTEM_USERS_KEY,
+    parse: parseSystemUsers,
+    storage,
+    createChannel: () => undefined,
+  });
+  return {
+    load: () => persistence.load() ?? DEFAULT_SYSTEM_USERS,
+    save: (users) => {
+      persistence.save(users);
+    },
+    clear: () => {
+      persistence.clear();
+    },
+  };
 }

@@ -32,6 +32,8 @@ const EXTRA_ROUTES = [
   '/bo/akuntansi?bagian=arus-kas',
   '/bo/akuntansi?bagian=laba-rugi',
   '/bo/akuntansi?bagian=neraca',
+  // Pengguna dan Hak Akses: sub-tab Matriks Hak Akses (gambar klien 54).
+  '/bo/pengaturan/pengguna?bagian=matriks',
 ];
 
 // Isi harus terlihat, bukan hanya muat: tabel baris halaman Transaksi minimal 150 px tingginya.

@@ -289,3 +289,32 @@ describe('satuan dasar barang yang sudah ada', () => {
     expect(validateProduct(draft, products, undefined, undefined)).toBeUndefined();
   });
 });
+
+describe('satuan diketik bebas (revisi final)', () => {
+  const first = products[0];
+  if (first === undefined) {
+    throw new Error('data kosong');
+  }
+  const row = (code: string, factor = '') => ({ code, factor });
+
+  it('huruf besar dan kecil pada satuan dasar tidak dianggap penggantian satuan', () => {
+    const draft = { ...draftOf(first), unitRows: [row(first.baseUnit.toUpperCase())] };
+    expect(validateProduct(draft, products, first.id, first)).toBeUndefined();
+  });
+
+  it('satuan yang diketik berbeda huruf memakai penulisan satuan lama, jadi harga dan stok tetap', () => {
+    const draft = { ...draftOf(first), unitRows: [row(first.baseUnit.toUpperCase())] };
+    const rebuilt = buildProduct(draft, first, first.id);
+    expect(rebuilt.baseUnit).toBe(first.baseUnit);
+    expect(rebuilt.units[0]?.code).toBe(first.baseUnit);
+    expect(rebuilt.prices[first.baseUnit]).toEqual(first.prices[first.baseUnit]);
+  });
+
+  it('satuan baru boleh berisi huruf apa saja dan tersimpan apa adanya', () => {
+    const draft = { ...base, unitRows: [row('Tabung'), row('Krat X', '24')] };
+    expect(validateProduct(draft, products, undefined, undefined)).toBeUndefined();
+    const built = buildProduct(draft, undefined, 'P-9999');
+    expect(built.units.map((unit) => unit.code)).toEqual(['Tabung', 'Krat X']);
+    expect(built.units[1]?.factor).toBe(24);
+  });
+});

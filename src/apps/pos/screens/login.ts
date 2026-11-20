@@ -1,3 +1,4 @@
+import '../../../styles/login-split.css';
 import { el } from '../../../shared/dom';
 import { label } from '../../../shared/messages';
 import { failureText } from '../failure';
@@ -123,14 +124,19 @@ export function renderLogin(session: PosSession, go: (path: string) => void): Sc
     el(
       'main',
       { className: 'pos-login' },
-      users.length === 0 ? empty : list,
+      el('div', { className: 'login-split__art', attrs: { 'aria-hidden': 'true' } }),
       el(
-        'section',
-        { className: 'pos-login__panel' },
-        el('p', { className: 'pos-login__pin-label t-label', text: label('pinLabel') }),
-        pad.element,
-        submit,
-        error,
+        'div',
+        { className: 'pos-login__side' },
+        users.length === 0 ? empty : list,
+        el(
+          'section',
+          { className: 'pos-login__panel' },
+          el('p', { className: 'pos-login__pin-label t-label', text: label('pinLabel') }),
+          pad.element,
+          submit,
+          error,
+        ),
       ),
     ),
   );

@@ -1035,12 +1035,10 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1077: "Stok". Kunci menuLaporanStok.
 - TB-1078: "Price List". Kunci menuPricelist.
 - TB-1079: "Profil Toko". Kunci menuProfilToko.
-- TB-1080: "Pengguna". Kunci menuPengguna.
-- TB-1081: "Hak Akses". Kunci menuHakAkses.
+- TB-1080: "Pengguna dan Hak Akses". Kunci menuPengguna.
 - TB-1082: "Log Aktivitas". Kunci menuLogAktivitas.
 - TB-1083: "Cetak Barcode". Kunci menuCetakBarcode.
 - TB-1084: "Tampilan dan Tema". Kunci menuTema.
-- TB-1085: "Lainnya". Kunci menuLainnya.
 - TB-1086: "Kegiatan Mendatang". Kunci kegiatanMendatang.
 - TB-1087: "Halaman Sedang Dipersiapkan". Kunci tahapSelanjutnyaJudul.
 - TB-1088: "Fitur ini dijadwalkan pada tahap revisi berikutnya sesuai urutan pengerjaan.". Kunci tahapSelanjutnyaDesc.
@@ -1081,7 +1079,7 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-1123: "Info". Kunci btnAksiInfo.
 - TB-1124: "Cetak". Kunci btnAksiCetak.
 - TB-1125: "Impor". Kunci btnAksiImpor.
-- TB-1126: "CARI NAMA , KODE ..........". Kunci placeholderCariBarang.
+- TB-1126: "CARI NAMA , KODE". Kunci placeholderCariBarang.
 - TB-1127: "Stok Toko". Kunci kolomStokTokoSingkat.
 - TB-1128: "Stok Gudang". Kunci kolomStokGdgSingkat.
 - TB-1129: "Qty PO". Kunci kolomQtyPoSingkat.

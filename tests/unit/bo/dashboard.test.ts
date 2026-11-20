@@ -176,3 +176,60 @@ describe('Dashboard sembilan widget', () => {
     expect(axisLabel(5_000)).toBe('5 Rb');
   });
 });
+
+describe('Dashboard revisi final: Laba hanya Owner dan grafik berbahasa Indonesia', () => {
+  const store = createStore({ dataset: generateDataset() });
+  const now = new Date('2026-10-19T10:00:00+07:00');
+
+  it('urutan Laba pada Penjualan Barang hanya ada untuk Owner', () => {
+    const owner = computeFullDashboard(store.getState(), now, 'owner').rankPeriods[0];
+    const supervisor = computeFullDashboard(store.getState(), now, 'supervisor').rankPeriods[0];
+    expect(owner?.productsBy.laba.length).toBeGreaterThan(0);
+    expect(supervisor?.productsBy.laba).toEqual([]);
+    // Nilai dan Frekuensi tetap tersedia bagi Supervisor.
+    expect(supervisor?.productsBy.nilai.length).toBeGreaterThan(0);
+    expect(supervisor?.productsBy.frekuensi.length).toBeGreaterThan(0);
+  });
+
+  it('nama hari Senin sampai Minggu dalam bahasa Indonesia', () => {
+    const { daily } = computeFullDashboard(store.getState(), now, 'owner').chartSeries;
+    expect(daily.map((point) => point.label)).toEqual([
+      'Sen',
+      'Sel',
+      'Rab',
+      'Kam',
+      'Jum',
+      'Sab',
+      'Min',
+    ]);
+  });
+
+  it('Bulanan menampilkan enam bulan berakhir bulan ini dengan nama bulan Indonesia', () => {
+    const data = computeFullDashboard(store.getState(), now, 'owner');
+    const { monthly } = data.chartSeries;
+    expect(monthly.map((point) => point.label)).toEqual(['Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt']);
+    // Bulan ini sama dengan Omset Bulan Ini pada widget Omset.
+    expect(monthly.at(-1)?.value).toBe(data.omset.monthly);
+  });
+
+  it('bulan berganti tahun tetap berurutan (Januari didahului Agustus sampai Desember)', () => {
+    const january = new Date('2027-01-10T10:00:00+07:00');
+    const { monthly } = computeFullDashboard(store.getState(), january, 'owner').chartSeries;
+    expect(monthly.map((point) => point.label)).toEqual(['Agu', 'Sep', 'Okt', 'Nov', 'Des', 'Jan']);
+  });
+
+  it('sumbu grafik bulanan menyesuaikan omset, bukan tetap seperti harian', () => {
+    const { daily, monthly } = computeFullDashboard(store.getState(), now, 'owner').chartSeries;
+    const top = (points: readonly { value: number }[]): number =>
+      niceStep(Math.max(...points.map((point) => point.value))) * 3;
+    expect(axisLabel(top(daily))).toBe('75 Jt');
+    expect(axisLabel(top(monthly))).toBe('60 Jt');
+    expect(top(monthly)).not.toBe(top(daily));
+  });
+
+  it('teks tren memakai koma desimal', () => {
+    const { chartSeries } = computeFullDashboard(store.getState(), now, 'owner');
+    expect(chartSeries.trendText).toBe('Tren naik 12,5%');
+    expect(chartSeries.monthlyTrendText).toBe('Tren naik 15,2%');
+  });
+});

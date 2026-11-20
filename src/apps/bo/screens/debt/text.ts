@@ -103,7 +103,7 @@ export const DEBT_TEXT = {
   kolomNomorBayar: 'Nomor Pembayaran',
   kolomTotalBayar: 'Total Bayar',
   kolomCaraBayar: 'Cara Bayar',
-  kolomMetode: 'Metode Bayar',
+  kolomMetode: 'Cara Bayar',
   kolomKasBank: 'Kas / Bank',
   kolomKeterangan: 'Keterangan',
   kolomUser: 'User',

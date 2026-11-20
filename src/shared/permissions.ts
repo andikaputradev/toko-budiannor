@@ -271,8 +271,35 @@ export function actionsOf(screen: string): readonly string[] {
   return PERMISSION_RULES.filter((rule) => rule.screen === screen).map((rule) => rule.action);
 }
 
-export function accessFor(role: Role, screen: string, action: string): Access {
-  const rule = PERMISSION_RULES.find((item) => item.screen === screen && item.action === action);
+// Penimpaan hak akses yang diatur Owner di Pengguna dan Hak Akses (kunci peran|layar|aksi).
+// Disimpan di localStorage dan dimuat saat modul dimuat; tanpa isi, perilaku sama dengan matriks.
+const OVERRIDES_KEY = 'budiannor.hak-akses';
+
+function loadOverrides(): [string, Access][] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(OVERRIDES_KEY) ?? '[]');
+    return Array.isArray(stored)
+      ? stored.filter(
+          (item): item is [string, Access] =>
+            Array.isArray(item) &&
+            typeof item[0] === 'string' &&
+            Object.values<unknown>(CODES).includes(item[1]),
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+const overrides = new Map<string, Access>(loadOverrides());
+
+function ruleOf(screen: string, action: string): PermissionRule | undefined {
+  return PERMISSION_RULES.find((item) => item.screen === screen && item.action === action);
+}
+
+// Hak bawaan matriks tanpa penimpaan.
+export function defaultAccessFor(role: Role, screen: string, action: string): Access {
+  const rule = ruleOf(screen, action);
   if (rule === undefined) {
     return 'tidak';
   }
@@ -281,6 +308,56 @@ export function accessFor(role: Role, screen: string, action: string): Access {
     return allowed ? 'ya' : 'tidak';
   }
   return rule[role];
+}
+
+// Owner selalu penuh. Peran lain hanya dapat diubah pada layar yang boleh dibukanya (SCREEN_ROLES);
+// Frontliner tidak pernah menutup pembayaran karena layar bayar (POS-04) tertutup baginya.
+export function canOverrideAccess(role: Role, screen: string, action: string): boolean {
+  return (
+    role !== 'owner' &&
+    canOpenScreen(role, screen) &&
+    ruleOf(screen, action) !== undefined &&
+    `${role}|${screen}|${action}` !== 'frontliner|POS-02|Bayar'
+  );
+}
+
+export function setAccessOverride(
+  role: Role,
+  screen: string,
+  action: string,
+  access: Access,
+): boolean {
+  if (!canOverrideAccess(role, screen, action)) {
+    return false;
+  }
+  const key = `${role}|${screen}|${action}`;
+  if (access === defaultAccessFor(role, screen, action)) {
+    overrides.delete(key);
+  } else {
+    overrides.set(key, access);
+  }
+  saveOverrides();
+  return true;
+}
+
+export function clearAccessOverrides(): void {
+  overrides.clear();
+  saveOverrides();
+}
+
+function saveOverrides(): void {
+  try {
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify([...overrides]));
+  } catch {
+    return;
+  }
+}
+
+export function accessFor(role: Role, screen: string, action: string): Access {
+  const forced = overrides.get(`${role}|${screen}|${action}`);
+  return forced !== undefined && canOverrideAccess(role, screen, action)
+    ? forced
+    : defaultAccessFor(role, screen, action);
 }
 
 export function isAllowed(role: Role, screen: string, action: string): boolean {

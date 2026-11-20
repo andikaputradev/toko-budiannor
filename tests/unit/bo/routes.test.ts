@@ -32,7 +32,9 @@ describe('Rute Navigasi Back-Office', () => {
   it('memastikan rute pengaturan, RBAC, barcode, dan audit log terdaftar di BO', () => {
     expect(entryFor('/bo/pengaturan/profil')?.screenId).toBe('BO-22');
     expect(entryFor('/bo/pengaturan/pengguna')?.screenId).toBe('BO-20');
-    expect(entryFor('/bo/pengaturan/hak-akses')?.screenId).toBe('BO-20');
+    // Hak Akses digabung ke Pengguna dan Hak Akses (gambar klien 54): rute lama dialihkan di index.ts.
+    expect(entryFor('/bo/pengaturan/hak-akses')).toBeUndefined();
+    expect(entryFor('/bo/pengaturan/lainnya')).toBeUndefined();
     expect(entryFor('/bo/pengaturan/audit-log')?.screenId).toBe('BO-21');
     expect(entryFor('/bo/pengaturan/barcode')?.screenId).toBe('BO-13');
   });
