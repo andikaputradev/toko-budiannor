@@ -22,12 +22,15 @@ function badge(text: string, tone: MasterTone): HTMLSpanElement {
 
 function renderCell(column: ColumnDef, cell: MasterCell | undefined): HTMLTableCellElement {
   const td = el('td', {
+    attrs: { 'data-col': column.key },
     className:
       column.align === 'end'
         ? 'is-end bo-master__num'
         : column.key === 'name'
-          ? 'bo-master__name'
-          : '',
+          ? 'bo-master__name bo-master__clip'
+          : column.key === 'address'
+            ? 'bo-master__clip'
+            : '',
   });
   if (cell === undefined) {
     return td;
@@ -39,7 +42,7 @@ function renderCell(column: ColumnDef, cell: MasterCell | undefined): HTMLTableC
   const main = el(
     'div',
     { className: 'bo-master__main' },
-    el('span', { className: 'bo-master__text', text: cell.text }),
+    el('span', { className: 'bo-master__text', text: cell.text, attrs: { title: cell.text } }),
   );
   if (cell.flag !== undefined) {
     main.append(badge(cell.flag.text, cell.flag.tone));
@@ -63,7 +66,7 @@ export function createMasterTable(
       el('th', {
         className: column.align === 'end' ? 'is-end' : '',
         text: label(column.label),
-        attrs: { scope: 'col' },
+        attrs: { scope: 'col', 'data-col': column.key },
       }),
     ),
   );

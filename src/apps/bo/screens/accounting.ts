@@ -377,7 +377,7 @@ export function renderAccountingScreen(
     // Form Input Beban Baru (Kiri)
     const dateInput = el('input', {
       className: 'input',
-      attrs: { type: 'date', value: new Date().toISOString().slice(0, 10) },
+      attrs: { type: 'date', value: session.store.getState().data.referenceDate.slice(0, 10) },
     });
 
     const categorySelect = el('select', { className: 'input is-select' });

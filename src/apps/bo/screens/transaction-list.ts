@@ -125,7 +125,7 @@ export function renderTransactionList(
     body,
   );
   // Faktur Beli dan Faktur Jual memakai kolom dan lebar yang sama.
-  fixColumns(grid, [140, 115, 105, undefined, 140, 120, 110, 80, undefined, 130]);
+  fixColumns(grid, [126, 112, 100, 204, 132, 124, 110, 72, undefined, 124]);
   const table = el(
     'div',
     {

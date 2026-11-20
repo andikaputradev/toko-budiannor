@@ -1,7 +1,6 @@
 import '../../../styles/bo-trx.css';
 import { el } from '../../../shared/dom';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
-import { icon } from '../../../shared/icons';
 import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { showToast } from '../../../shared/ui/toast';
@@ -22,7 +21,7 @@ import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
-import { itemCountText, TRX_TEXT as T } from './trx/text';
+import { itemCountText } from './trx/text';
 
 const EXPEDITIONS = [
   'JNE Cargo',
@@ -49,12 +48,10 @@ const TEXT = {
   nomorSuratJalan: 'Nomor Surat Jalan / Faktur Supplier',
   catatan: 'Catatan penerimaan barang ...',
   simpan: 'Simpan',
-  baru: 'Baru',
   cetak: 'Cetak',
   belumCetak: 'Belum ada barang untuk dicetak.',
   infoHutang: 'Info Hutang Pemasok',
   belumBarang: 'Faktur pembelian belum memiliki item barang.',
-  fakturBaru: 'Faktur pembelian baru siap diisi.',
 } as const;
 
 const option = (text: string, value: string): HTMLOptionElement =>
@@ -359,28 +356,6 @@ export function renderPurchaseForm(
       window.print();
     },
   });
-  const newButton = createButton({
-    text: TEXT.baru,
-    variant: 'secondary',
-    icon: 'plus',
-    onClick: () => {
-      totals.discount.value = '0';
-      poSelectEl.value = '';
-      fillFromDraft(createPurchaseInvoiceDraft(dataset));
-      showToast({ kind: 'info', text: TEXT.fakturBaru });
-    },
-  });
-  const findButton = el(
-    'button',
-    {
-      className: 'bo-trx-iconbtn',
-      attrs: { type: 'button', 'aria-label': T.tombolCariBarang, title: T.tombolCariBarang },
-    },
-    icon('search'),
-  );
-  findButton.addEventListener('click', () => {
-    search.focus();
-  });
 
   supplierSelectEl.addEventListener('focus', refreshSupplierOptions);
   supplierSelectEl.addEventListener('change', () => {
@@ -406,8 +381,6 @@ export function renderPurchaseForm(
     search.root,
     saveButton,
     printButton,
-    newButton,
-    findButton,
     countEl,
   );
   const container = el(

@@ -527,3 +527,78 @@ html[data-app='bo'] .bo-ret-reason-chip {
   flex: 0 0 auto;
   white-space: nowrap;
 }
+
+/* ===== Master: nama dan alamat satu baris, dipotong dengan elipsis bila kepanjangan (isi penuh ada
+   pada tooltip), sehingga tinggi baris rata. Kolom selain nama dan alamat berlebar tetap menurut
+   isinya; sisa lebar untuk nama (dan alamat). ===== */
+html[data-app='bo'] .bo-master .bo-master__table td.bo-master__clip {
+  max-width: 0;
+  overflow: hidden;
+}
+
+html[data-app='bo'] .bo-master .bo-master__clip .bo-master__main {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+html[data-app='bo'] .bo-master .bo-master__clip .bo-master__text,
+html[data-app='bo'] .bo-master .bo-master__clip .bo-master__sub {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table [data-col='code'] {
+  width: 84px;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table [data-col='tier'] {
+  width: 92px;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table [data-col='limit'],
+html[data-app='bo'] .bo-master .bo-master__table [data-col='target'] {
+  width: 126px;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table [data-col='balance'] {
+  width: 138px;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table [data-col='fee'],
+html[data-app='bo'] .bo-master .bo-master__table [data-col='revenue'] {
+  width: 118px;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table [data-col='commission'],
+html[data-app='bo'] .bo-master .bo-master__table [data-col='count'],
+html[data-app='bo'] .bo-master .bo-master__table [data-col='related'] {
+  width: 96px;
+}
+
+html[data-app='bo'] .bo-master .bo-master__table th[data-col='name'] {
+  width: 36%;
+}
+
+/* ===== Data Barang (gambar klien 51): empat baris daftar tampil penuh pada layar 1280x640.
+   Kepala daftar dan baris sedikit dirampingkan, bantalan formulir dikurangi. ===== */
+html[data-app='bo'] .bo-pd-list .vtable {
+  --row-height: 36px;
+}
+
+html[data-app='bo'] .bo-pd-list .vtable__head {
+  height: 40px;
+}
+
+html[data-app='bo'] .bo-pd-form {
+  gap: 4px 16px;
+  padding: 5px 14px;
+}
+
+/* ===== Akuntansi, Beban Usaha (gambar klien 25): formulir lebih ramping, Riwayat Beban lebih lebar
+   sehingga Keterangan tidak melipat berkali-kali. ===== */
+html[data-app='bo'] .bo-acc-split:has(> .bo-acc-form-panel) {
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr);
+}

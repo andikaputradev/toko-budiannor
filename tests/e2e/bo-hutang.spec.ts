@@ -83,7 +83,7 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
       'Nomor Pembayaran',
       'Tanggal',
       'Pelanggan',
-      'Cara Bayar',
+      'Metode Bayar',
       'Kas / Bank',
       'User',
       'Keterangan',
