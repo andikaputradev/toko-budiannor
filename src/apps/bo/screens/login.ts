@@ -1,3 +1,4 @@
+import '../../../styles/login-split.css';
 import { el, nextId } from '../../../shared/dom';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
@@ -124,6 +125,7 @@ export function renderLogin(session: BoSession, go: (path: string) => void): Scr
     el(
       'main',
       { className: 'bo-login' },
+      el('div', { className: 'login-split__art', attrs: { 'aria-hidden': 'true' } }),
       el(
         'section',
         { className: 'bo-login__card' },

@@ -33,6 +33,132 @@
   height: 30px;
 }
 
+/* ===== Lonceng notifikasi di samping tanggal (revisi final) ===== */
+.bo-topbar__bell {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.bo-topbar__bell:hover {
+  background: var(--bo-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.bo-topbar__bell:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.bo-topbar__bell .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.bo-topbar__badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--color-status-danger-fg);
+  color: var(--color-bg-surface);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.bo-topbar__badge[hidden] {
+  display: none;
+}
+
+.bo-notif {
+  position: fixed;
+  top: calc(var(--bo-topbar-h) + 4px);
+  right: var(--space-screen-margin);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(60vh, 420px);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-surface);
+  box-shadow: var(--bo-shadow-pop);
+}
+
+.bo-notif[hidden] {
+  display: none;
+}
+
+.bo-notif__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.bo-notif__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bo-notif__close {
+  width: 32px;
+  height: 32px;
+}
+
+.bo-notif__list {
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.bo-notif__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.bo-notif__item:hover,
+.bo-notif__item:focus-visible {
+  background: var(--color-accent-soft);
+}
+
+.bo-notif__item .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-status-danger-fg);
+}
+
+.bo-notif__empty {
+  padding: 12px 10px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
 /* ===== Laci menu: baris Keluar di dasar ===== */
 .bo-menu__footer {
   flex: none;
@@ -113,14 +239,15 @@
   display: none;
 }
 
-/* Tab tidak menyusut: judul selalu terbaca, tab berlebih digeser mendatar (roda tetikus juga
-   menggeser) dan seluruh tab terbuka tetap terdaftar di tombol jumlah. */
+/* Tab tidak menyusut: judul selalu terbaca (240 px memuat Pengguna dan Hak Akses), tab berlebih
+   digeser mendatar (roda tetikus juga menggeser) dan seluruh tab terbuka tetap terdaftar di tombol
+   jumlah. */
 .bo-tab {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   min-width: 132px;
-  max-width: 220px;
+  max-width: 240px;
   height: 36px;
   border: 1px solid var(--color-border-default);
   border-bottom: 0;

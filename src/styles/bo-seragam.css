@@ -37,8 +37,9 @@ html[data-app='bo'] .bo-ret-chip,
 html[data-app='bo'] .bo-lapstok__tab,
 html[data-app='bo'] .bo-pd-photo__pick,
 html[data-app='bo'] .bo-pd-input,
-html[data-app='bo'] .bo-pd-units__field,
-html[data-app='bo'] .bo-pd-units__search {
+html[data-app='bo'] .bo-pd-units__code,
+html[data-app='bo'] .bo-pd-units__factor,
+html[data-app='bo'] .bo-pd-filter {
   border-radius: var(--bo-radius);
 }
 
@@ -116,39 +117,17 @@ html[data-app='bo'] .bo-pd-toolbar {
 html[data-app='bo'] .bo-pd-btn {
   flex: 0 0 auto;
   min-width: 0;
-  padding: 0 10px;
+  padding: 0 7px;
   white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-pd-toolbar {
+  gap: 4px;
 }
 
 html[data-app='bo'] .bo-pd-btn:disabled {
   opacity: 0.5;
   cursor: default;
-}
-
-html[data-app='bo'] .bo-pd-col {
-  gap: 5px;
-}
-
-html[data-app='bo'] .bo-pd-col--a {
-  --bo-label-w: 4.4rem;
-}
-
-html[data-app='bo'] .bo-pd-col--b {
-  --bo-label-w: 4.2rem;
-}
-
-html[data-app='bo'] .bo-pd-col--c {
-  --bo-label-w: 6.9rem;
-}
-
-html[data-app='bo'] .bo-pd-col--d {
-  --bo-label-w: 5.8rem;
-}
-
-html[data-app='bo'] .bo-pd-row2 {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
 }
 
 html[data-app='bo'] .bo-pd-field {
@@ -163,16 +142,8 @@ html[data-app='bo'] .bo-pd-field > .bo-pd-label {
   line-height: 1.25;
 }
 
-html[data-app='bo'] .bo-pd-field:has(.bo-pd-units) {
-  align-items: start;
-}
-
-html[data-app='bo'] .bo-pd-field:has(.bo-pd-units) > .bo-pd-label {
-  padding-top: 7px;
-}
-
 html[data-app='bo'] .bo-pd-input,
-html[data-app='bo'] .bo-pd-units__field,
+html[data-app='bo'] .bo-pd-units__code,
 html[data-app='bo'] .bo-pd-units__factor {
   height: 32px;
 }
@@ -451,16 +422,9 @@ html[data-app='bo'] .bo-actionbar .btn:disabled {
 }
 
 /* ===== 7. Tampilan baku (gambar klien 30): ukuran tidak berubah karena isi ===== */
-/* Data Barang: blok Satuan selalu setinggi tiga baris dan panel Harga selalu setinggi tiga satuan,
-   jadi daftar barang dan isian di bawahnya tidak bergeser walau barang hanya punya satu satuan. */
-html[data-app='bo'] .bo-pd-units {
-  gap: 5px;
-  min-height: calc(3 * 32px + 2 * 5px);
-}
-
-html[data-app='bo'] .bo-pd-units__row {
-  min-height: 32px;
-}
+/* Data Barang: formulir selalu empat baris grid setinggi isian (blok Satuan tiga baris) dan panel
+   Harga selalu setinggi tiga satuan, jadi daftar barang dan isian di bawahnya tidak bergeser walau
+   barang hanya punya satu satuan. */
 
 html[data-app='bo'] .bo-pd-prices {
   flex: none;

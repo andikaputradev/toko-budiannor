@@ -156,7 +156,7 @@ test.describe('Data Barang (gambar 37 sampai 40)', () => {
   const tambah = (page: Page) => panel(page).getByRole('button', { name: 'Tambah Barang' });
   const batal = (page: Page) => panel(page).getByRole('button', { name: 'Batal', exact: true });
 
-  test('urutan tombol sesuai gambar dan Tambah berubah menjadi Batal saat mengisi', async ({
+  test('urutan tombol sesuai gambar 51 (tanpa Keluar) dan Tambah berubah menjadi Batal saat mengisi', async ({
     page,
   }) => {
     await loginBo(page);
@@ -170,7 +170,6 @@ test.describe('Data Barang (gambar 37 sampai 40)', () => {
       'Nonaktifkan',
       'Info',
       'Cetak',
-      'Keluar',
     ]);
     const simpan = panel(page).getByRole('button', { name: 'Simpan Barang' });
     await expect(simpan).toBeDisabled();

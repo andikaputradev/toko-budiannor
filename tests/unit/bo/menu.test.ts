@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { label } from '../../../src/shared/messages';
 import {
   MENU_GROUPS,
   MENU_ENTRIES,
@@ -99,5 +100,26 @@ describe('Menu Navigasi Back-Office', () => {
     ]);
     // Halaman Satuan dan Harga tidak lagi di laci menu, tetapi rutenya tetap dikenal.
     expect(entryFor('/bo/harga')?.group).toBe('laporan');
+  });
+
+  it('grup Pengaturan berisi lima entri persis gambar klien 54, tanpa Hak Akses dan Lainnya terpisah', () => {
+    const pengaturan = groupFor('pengaturan');
+    expect(pengaturan?.entries.map((entry) => entry.path)).toEqual([
+      '/bo/pengaturan/profil',
+      '/bo/pengaturan/pengguna',
+      '/bo/pengaturan/audit-log',
+      '/bo/pengaturan/barcode',
+      '/bo/pengaturan/tema',
+    ]);
+    expect(pengaturan?.entries.map((entry) => label(entry.label))).toEqual([
+      'Profil Toko',
+      'Pengguna dan Hak Akses',
+      'Log Aktivitas',
+      'Cetak Barcode',
+      'Tampilan dan Tema',
+    ]);
+    expect(pengaturan?.entries.find((entry) => entry.path.endsWith('/pengguna'))?.screenId).toBe(
+      'BO-20',
+    );
   });
 });

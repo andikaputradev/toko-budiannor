@@ -53,6 +53,15 @@ export function createShell(session: BoSession, go: (path: string) => void): She
   const titleEl = el('h1', { className: 'bo-topbar__title t-screen-title' });
   const dateEl = el('span', { className: 'bo-topbar__date' });
   const userEl = el('div', { className: 'bo-topbar__user' });
+  // Lonceng notifikasi di samping tanggal; isinya dipasang malas oleh ./notifications.
+  const bellBadge = el('span', { className: 'bo-topbar__badge', attrs: { 'aria-hidden': 'true' } });
+  bellBadge.hidden = true;
+  const bell = el(
+    'button',
+    { className: 'bo-topbar__bell', attrs: { type: 'button', 'aria-label': 'Notifikasi' } },
+    icon('bell'),
+    bellBadge,
+  );
   const tabsHost = el('div', { className: 'bo-tabs' });
 
   const skip = el('a', {
@@ -145,6 +154,7 @@ export function createShell(session: BoSession, go: (path: string) => void): She
       'div',
       { className: 'bo-topbar__end' },
       el('div', { className: 'bo-topbar__date-pill' }, icon('calendar'), dateEl),
+      bell,
       userEl,
     ),
   );
@@ -352,12 +362,28 @@ export function createShell(session: BoSession, go: (path: string) => void): She
   const interval = window.setInterval(render, 30000);
   render();
 
+  let detachNotifications: (() => void) | undefined;
+  let destroyed = false;
+  void import('./notifications').then(({ attachNotifications }) => {
+    if (!destroyed) {
+      detachNotifications = attachNotifications({
+        button: bell,
+        badge: bellBadge,
+        host: element,
+        session,
+        go,
+      });
+    }
+  });
+
   return {
     element,
     tabsHost,
     content,
     setPage,
     destroy: () => {
+      destroyed = true;
+      detachNotifications?.();
       unsubscribe();
       window.clearInterval(interval);
       document.removeEventListener('focusout', onFocusOut);

@@ -84,8 +84,10 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     },
   });
   const searchError = el('p', { className: 'pos-search__error', attrs: { role: 'alert' } });
+  // Katalog Daftar punya ruang lebar, jadi nama barang tampil penuh; kartu tetap satu baris (maks 32).
+  const listView = loadCatalogView() === 'daftar';
   const grid = el('div', {
-    className: loadCatalogView() === 'daftar' ? 'pos-grid pos-grid--daftar' : 'pos-grid',
+    className: listView ? 'pos-grid pos-grid--daftar' : 'pos-grid',
   });
   const note = el('p', { className: 't-label pos-note' });
   const orderId = nextId('pesanan');
@@ -218,7 +220,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
         { className: 'pos-card__head' },
         el('span', {
           className: 'pos-card__name',
-          text: clipName(product.name),
+          text: listView ? product.name : clipName(product.name),
           attrs: { title: product.name },
         }),
         el('span', { className: 'pos-card__code t-label', text: product.code }),

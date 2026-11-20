@@ -1,0 +1,293 @@
+/* Layar masuk POS dan Back-Office berbelah dua (gambar klien 56, revisi final): kiri ilustrasi tablet
+   kasir di atas latar biru tua, kanan panel kaca gelap berisi formulir masuk, dan nomor versi di
+   pojok kiri bawah. Ilustrasi murni CSS (tanpa gambar), jadi tidak menambah berkas maupun JS. */
+
+.login-split__art {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 60% at 30% 40%, rgb(74 126 190 / 0.3), transparent 70%),
+    linear-gradient(135deg, #0c2037 0%, #123a60 52%, #0a1829 100%);
+}
+
+/* Tablet kasir miring dengan kartu barang berwarna dan panel tagihan di kirinya. */
+.login-split__art::before {
+  content: '';
+  position: absolute;
+  top: 26%;
+  left: 12%;
+  width: min(62%, 640px);
+  border: 14px solid rgb(206 217 232 / 0.5);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 80% 24%, rgb(255 168 76 / 0.55) 0 7%, transparent 7.5%),
+    radial-gradient(circle at 62% 24%, rgb(125 210 120 / 0.5) 0 7%, transparent 7.5%),
+    radial-gradient(circle at 80% 52%, rgb(236 98 90 / 0.5) 0 7%, transparent 7.5%),
+    radial-gradient(circle at 62% 52%, rgb(255 213 90 / 0.5) 0 7%, transparent 7.5%),
+    radial-gradient(circle at 80% 80%, rgb(110 175 235 / 0.5) 0 7%, transparent 7.5%),
+    radial-gradient(circle at 62% 80%, rgb(190 140 230 / 0.45) 0 7%, transparent 7.5%),
+    linear-gradient(90deg, rgb(255 255 255 / 0.12) 0 36%, transparent 36%), rgb(210 226 245 / 0.14);
+  box-shadow: 0 50px 90px rgb(0 0 0 / 0.5);
+  aspect-ratio: 4 / 3;
+  transform: perspective(1500px) rotateY(20deg) rotateX(4deg) rotateZ(-6deg);
+  transform-origin: left center;
+}
+
+/* Bayangan meja di bagian bawah. */
+.login-split__art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 55%, rgb(5 12 22 / 0.65) 100%),
+    radial-gradient(40% 30% at 85% 85%, rgb(255 255 255 / 0.06), transparent 70%);
+}
+
+/* Nomor versi di pojok kiri bawah, dibuat dari CSS karena hanya hiasan. */
+.bo--login::after,
+.pos-login::after {
+  content: 'Ver. 1.0 \00a9 2026 Toko Budiannor';
+  position: absolute;
+  bottom: 14px;
+  left: 18px;
+  z-index: 3;
+  color: rgb(255 255 255 / 0.88);
+  font-size: 13px;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+/* ===== Back-Office ===== */
+.bo.bo--login {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #0a1829;
+}
+
+.bo--login .bo-topbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.bo--login .bo-topbar__brand {
+  color: #fff;
+}
+
+.bo--login .bo-login {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 34%);
+  place-items: stretch;
+  padding: 0;
+}
+
+.bo--login .bo-login__card {
+  --login-ink: #fff;
+  --login-soft: #c7d3e0;
+  --login-line: rgb(255 255 255 / 0.5);
+  align-self: stretch;
+  justify-content: flex-start;
+  width: auto;
+  padding: 72px 44px 56px;
+  border: 0;
+  border-radius: 0;
+  background: rgb(12 26 42 / 0.86);
+  box-shadow: -24px 0 60px rgb(0 0 0 / 0.35);
+  color: var(--login-ink);
+}
+
+.bo--login .bo-login__logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+}
+
+.bo--login .bo-login__logo .icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Judul bergaya tab dengan garis di bawahnya, seperti "Email / Kode Staff" pada gambar klien. */
+.bo--login .bo-login__title {
+  align-self: stretch;
+  margin: 8px 0 28px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--login-line);
+  color: var(--login-ink);
+  font-size: 19px;
+}
+
+html[data-app='bo'] .bo--login .bo-login__form > .field__label {
+  color: var(--login-soft);
+  font-size: 13px;
+}
+
+html[data-app='bo'] .bo--login .bo-login__input {
+  height: 40px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1px solid var(--login-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--login-ink);
+  font-size: 16px;
+}
+
+html[data-app='bo'] .bo--login .bo-login__input:focus {
+  border-bottom-color: #8ec5ff;
+}
+
+/* Cincin fokus tetap tampak (WCAG 2.4.7) walau kolomnya hanya bergaris bawah. */
+html[data-app='bo'] .bo--login .bo-login__input:focus-visible {
+  outline: 2px solid #8ec5ff;
+  outline-offset: 3px;
+}
+
+html[data-app='bo'] .bo--login .bo-login__show:focus-visible {
+  outline: 2px solid #8ec5ff;
+  outline-offset: 2px;
+}
+
+html[data-app='bo'] .bo--login .bo-login__show {
+  height: 40px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: #cfe3ff;
+  text-decoration: underline;
+}
+
+.bo--login .bo-login__error:not(:empty) {
+  background: rgb(255 255 255 / 0.12);
+  color: #ffc2b8;
+}
+
+.bo--login .bo-login__help {
+  color: var(--login-soft);
+}
+
+/* ===== POS ===== */
+.pos .pos-login {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 34%);
+  gap: 0;
+  align-content: stretch;
+  padding: 0;
+  background: #0a1829;
+}
+
+.pos-login__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-4);
+  min-height: 0;
+  padding: 24px 32px;
+  overflow-y: auto;
+  background: rgb(12 26 42 / 0.86);
+  box-shadow: -24px 0 60px rgb(0 0 0 / 0.35);
+}
+
+.pos .pos-login__cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--primitive-space-2);
+}
+
+.pos .pos-login__card {
+  flex-direction: row;
+  justify-content: flex-start;
+  height: 60px;
+  padding: 0 var(--primitive-space-3);
+  border-color: rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  text-align: left;
+}
+
+.pos .pos-login__card[aria-checked='true'] {
+  border: 2px solid var(--color-accent-default);
+  background: rgb(255 255 255 / 0.18);
+}
+
+.pos .pos-login__avatar {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+}
+
+.pos .pos-login__who {
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.pos .pos-login__who strong {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos .pos-login__who .t-label {
+  color: #c7d3e0;
+}
+
+.pos .pos-login__panel {
+  align-self: stretch;
+  width: auto;
+}
+
+.pos .pos-login__submit {
+  width: 100%;
+}
+
+.pos .pos-login .pinpad {
+  --pinpad-key-width: 60px;
+  --pinpad-key-height: 60px;
+  --pinpad-gap: 10px;
+}
+
+.pos .pos-login .pinpad__dots {
+  gap: var(--primitive-space-3);
+}
+
+.pos .pos-login .pinpad__dot {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== Layar sempit: ilustrasi disembunyikan, panel memenuhi lebar ===== */
+@media (max-width: 899px) {
+  .login-split__art {
+    display: none;
+  }
+
+  .bo--login .bo-login {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bo--login .bo-login__card {
+    padding: 72px var(--primitive-space-5) var(--primitive-space-8);
+  }
+
+  .pos .pos-login {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Ruang di kiri tetap disisakan untuk tab Panel Simulasi supaya tidak menimpa papan PIN. */
+  .pos-login__side {
+    padding: 20px var(--space-screen-margin) 20px calc(var(--space-screen-margin) + 56px);
+  }
+
+  .pos .pos-login__panel {
+    align-self: center;
+    width: 100%;
+    max-width: 360px;
+  }
+}

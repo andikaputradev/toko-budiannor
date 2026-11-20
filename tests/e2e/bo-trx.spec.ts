@@ -364,14 +364,20 @@ test.describe('T3 Faktur Penjualan (gambar 9)', () => {
     await expect(page).toHaveURL(/#\/bo\/transaksi\/surat-jalan\?inv=FJ/);
   });
 
-  test('Simpan tanpa barang ditolak; dengan barang membuka dialog cetak', async ({ page }) => {
+  test('Simpan tanpa barang ditolak; dengan barang tersimpan tanpa kotak cetak, Cetak membukanya', async ({
+    page,
+  }) => {
     await loginBo(page);
     await openPage(page, '/bo/penjualan');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page.getByText('Faktur belum memiliki item barang.')).toBeVisible();
     await addItem(page, 'semen', '1');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByText(/berhasil disimpan/)).toBeVisible();
+    // Revisi final: setelah Simpan tidak keluar kotak cetak; kotak itu hanya dari tombol Cetak.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await active(page).getByRole('button', { name: 'Cetak', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Cetak Form Penjualan' })).toBeVisible();
   });
 
   test('muat satu layar di 1280x640 dengan banyak baris: tabel menggulir, halaman tidak', async ({

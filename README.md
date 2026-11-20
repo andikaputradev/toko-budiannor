@@ -26,6 +26,10 @@ Permintaan klien tanggal 7 November 2026 (PDF acuan dipakai untuk gaya dan alur 
 
 Dokumen klien "Revisi Penyesuaian Pos" (11 November 2026): login PIN dengan Enter, Akhiri Shift langsung keluar, stok PO diganti No Rak dan batas jual hanya stok Toko, nama pelanggan di atas keranjang, header hari dan tanggal, foto kosong berupa huruf awal, kartu barang ringkas dengan pita PROMO dan kode barang, menu titik tiga (Open Bill, Diskon Transaksi, Mulai Pesanan Baru), modal barang tanpa scroll bar dan tanpa Tenaga Penjual, Cek Stok, dan Catatan, Uang Pas dengan dua pecahan di atas total, Non-Tunai hanya QRIS, Transfer, dan EDC (tanpa kode QR), Split maksimal tiga, Piutang 7, 14, dan 30 hari, kolom catatan di semua tab pembayaran, diskon per satuan, ubah harga tanpa harga asli, Open Bill dengan "+N Barang Lainnya", lima jenis Biaya baru, retur terposting di Riwayat, katalog Daftar yang dirapikan, papan angka 0, 00, 000, serta palet Merah dan Kuning. Matriks keterlacakan: `docs/superpowers/specs/2026-11-11-revisi-pos-3-design.md`; asumsi di `docs/asumsi.md` bagian 15.
 
+### Revisi final POS dan Back-Office (November 2026)
+
+Dokumen klien "Revisi Penyesuain Final POS&BO" (20 November 2026) dan video contoh input satuan: Data Barang final (filter Kategori, Merk, Pemasok, urut A-Z, Z-A, 0-9, 9-0, satuan diketik manual, urutan kursor sesuai dokumen), Cetak Barcode memakai kertas label Tom & Jerry No 125, 108, 121 dengan pilihan model dan jumlah cetakan, Pengguna dan Hak Akses digabung dengan hak akses yang dapat diubah Owner, PIN 6 angka, lonceng notifikasi di header, grafik Dashboard berbahasa Indonesia, Laba hanya untuk Owner, form penjualan tanpa kotak cetak setelah Simpan, letak stok kartu barang POS dan nama penuh pada katalog Daftar, serta layar masuk POS dan Back-Office berbelah. Matriks keterlacakan: `docs/superpowers/specs/2026-11-20-revisi-final-pos-bo-design.md`; asumsi di `docs/asumsi.md` bagian 25.
+
 ## Prasyarat
 
 - Node.js 22.12 atau lebih baru (diuji pada 22.13.0) dan npm 10.
@@ -85,6 +89,7 @@ Uji e2e yang bersifat verifikasi rilis (folder `tests/e2e`):
 
 - `pos-revisi.spec.ts`: shift, menu samping, tema (axe pada tiap tema), layar jual, pembayaran, riwayat, dan retur POS.
 - `pos-revisi3.spec.ts`: putaran ketiga per poin dokumen klien (A: Pesanan Baru, B: modal tanpa scroll bar pada empat ukuran layar, C: pembayaran, D: tambahan fitur), ditambah axe pada layar dan modal baru.
+- `bo-revisi11.spec.ts` dan `pos-revisi5.spec.ts`: revisi final per butir dokumen klien (Data Barang, Dashboard, lonceng, kotak cetak form penjualan, layar masuk berbelah, letak stok kartu POS), ditambah axe pada layar dan kotak baru.
 - `pos-revisi2.spec.ts`: putaran kedua per bagian: mode otomatis dan palet, riwayat dan retur, penerimaan (bayar, QR, Split), Detail Barang, Open Bill, Selesai Shift, Karyawan, Biaya, Pelanggan, Pengaturan, susunan kartu barang, dan pemuatan malas; axe pada mode terang dan gelap untuk setiap layar baru.
 - `responsif.spec.ts`: ponsel 360 x 800 dan tablet potret 768 x 1024: tanpa scroll horizontal, kontrol tidak tertutup Panel Simulasi, modal layar penuh, dan satu panel dengan tombol Kembali untuk layar dua panel.
 - `audit.spec.ts`: seluruh rute dipindai axe (WCAG 2.0, 2.1, 2.2 level A dan AA) pada empat viewport, ditambah lembar dan modal POS-03, POS-10, SALES-04 pada kerangka rancangannya. Tangkapan layar tiap rute ke `verifikasi/screenshots/<viewport>/` dan hasil axe ke `verifikasi/axe/`.

@@ -1,10 +1,24 @@
 import { el } from '../dom';
+import { icon } from '../icons';
 import { computeWindow } from '../virtual-window';
+
+export type SortDirection = 'asc' | 'desc';
+
+// Kolom yang bisa diurut: tombol di kepala kolom bergantian menaik dan menurun. Teks arah memakai
+// istilah pengurutan yang sesuai isi kolom, mis. 'A-Z' dan 'Z-A' untuk nama, '0-9' dan '9-0' untuk kode.
+export interface GridSort {
+  // Nama pendek isi kolom pada label tombol, mis. 'nama' atau 'kode' ("Urutkan nama A-Z").
+  readonly name: string;
+  readonly asc: string;
+  readonly desc: string;
+  readonly onSort: (direction: SortDirection) => void;
+}
 
 export interface GridColumn<T> {
   readonly header: string;
   readonly width: string;
   readonly align?: 'start' | 'end';
+  readonly sort?: GridSort;
   readonly cell: (row: T) => string | Node;
 }
 
@@ -21,12 +35,15 @@ export interface VirtualGrid<T> {
   readonly element: HTMLDivElement;
   setRows(rows: readonly T[]): void;
   select(index: number): void;
+  // Menandai kolom yang sedang diurut pada kepala tabel (tanpa memanggil onSort); undefined = tidak diurut.
+  setSort(index: number | undefined, direction?: SortDirection): void;
   selectedIndex(): number;
   selectedRow(): T | undefined;
   refresh(): void;
 }
 
 const FALLBACK_ROW_HEIGHT = 48;
+const SORT_VERB = 'Urutkan';
 
 function cellClass(column: { readonly align?: 'start' | 'end' }): string {
   return column.align === 'end' ? 'vtable__cell is-end' : 'vtable__cell';
@@ -48,16 +65,76 @@ export function createVirtualGrid<T>(options: VirtualGridOptions<T>): VirtualGri
     },
   });
   root.style.setProperty('--vtable-columns', columns.map((column) => column.width).join(' '));
+  let sorted: { readonly index: number; readonly direction: SortDirection } | undefined;
+  const sortButtons = new Map<number, HTMLButtonElement>();
+  const headerCells = columns.map((column, index) => {
+    const cell = el('div', {
+      className: cellClass(column),
+      attrs: {
+        role: 'columnheader',
+        'aria-colindex': String(index + 1),
+        'aria-sort': column.sort === undefined ? false : 'none',
+      },
+    });
+    if (column.sort === undefined) {
+      cell.textContent = column.header;
+    } else {
+      const sort = column.sort;
+      const button = el('button', {
+        className: 'vtable__sort',
+        attrs: { type: 'button' },
+      });
+      button.append(icon('chevrons-up-down'));
+      button.addEventListener('click', () => {
+        const next: SortDirection =
+          sorted?.index === index && sorted.direction === 'asc' ? 'desc' : 'asc';
+        paintSort(index, next);
+        sort.onSort(next);
+      });
+      sortButtons.set(index, button);
+      cell.classList.add('vtable__cell--sortable');
+      cell.append(button, el('span', { text: column.header }));
+    }
+    return cell;
+  });
+
+  function paintSort(index: number | undefined, direction: SortDirection = 'asc'): void {
+    sorted = index === undefined ? undefined : { index, direction };
+    columns.forEach((column, position) => {
+      const button = sortButtons.get(position);
+      const cell = headerCells[position];
+      if (column.sort === undefined || button === undefined || cell === undefined) {
+        return;
+      }
+      const active = sorted?.index === position;
+      const current = active ? sorted?.direction : undefined;
+      // Tombol selalu menawarkan urutan berikutnya: setelah menaik, menurun; selain itu, menaik.
+      const offer: SortDirection = current === 'asc' ? 'desc' : 'asc';
+      const offerText = offer === 'asc' ? column.sort.asc : column.sort.desc;
+      cell.setAttribute(
+        'aria-sort',
+        current === 'asc' ? 'ascending' : current === 'desc' ? 'descending' : 'none',
+      );
+      button.setAttribute('aria-label', `${SORT_VERB} ${column.sort.name} ${offerText}`);
+      button.title = `${SORT_VERB} ${offerText}`;
+      button.dataset['direction'] = current ?? 'none';
+      button.replaceChildren(
+        icon(
+          current === 'asc'
+            ? 'chevron-up'
+            : current === 'desc'
+              ? 'chevron-down'
+              : 'chevrons-up-down',
+        ),
+      );
+    });
+  }
+  paintSort(undefined);
+
   const head = el(
     'div',
     { className: 'vtable__row vtable__head', attrs: { role: 'row', 'aria-rowindex': '1' } },
-    ...columns.map((column, index) =>
-      el('div', {
-        className: cellClass(column),
-        text: column.header,
-        attrs: { role: 'columnheader', 'aria-colindex': String(index + 1) },
-      }),
-    ),
+    ...headerCells,
   );
   const viewport = el('div', {
     className: 'vtable__viewport',
@@ -202,6 +279,9 @@ export function createVirtualGrid<T>(options: VirtualGridOptions<T>): VirtualGri
       update();
     },
     select,
+    setSort: (index, direction) => {
+      paintSort(index, direction);
+    },
     selectedIndex: () => selected,
     selectedRow: () => rows[selected],
     refresh: update,

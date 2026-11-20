@@ -9,12 +9,9 @@ export const boBarangLabels = {
   produkErrKodePendek: 'Kode barang minimal 3 karakter.',
   produkErrMinToko: 'Min stok toko tidak boleh melebihi minimal stok (ALL).',
   // Pemilih satuan dan layar Data Barang
-  boHapusSatuan: 'Hapus satuan {nomor} ({kode})',
-  boSatuanKosong: 'Tidak ada satuan yang cocok',
   boCariPilih: 'Cari/Pilih...',
   boSatuanDasar: 'Satuan dasar',
   boSatuanKe: 'Satuan {nomor}',
-  boPilihSatuan: 'Pilih satuan',
   boKonversiSatuan: 'Konversi satuan {nomor}',
   boPerbesarFoto: 'Perbesar foto',
   boImporExcel: 'Impor Excel',

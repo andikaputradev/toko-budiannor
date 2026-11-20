@@ -259,7 +259,7 @@ export function renderDebtSaldo(session: BoSession, type: PartyType): ScreenHand
         el('p', {
           className: 't-label',
           text: debt('laporanTanggal', {
-            tanggal: store.getState().data.referenceDate.slice(0, 10),
+            tanggal: slashIso(store.getState().data.referenceDate),
           }),
         }),
       ),

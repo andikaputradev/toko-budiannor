@@ -4,16 +4,13 @@ import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
 import { icon } from '../../../shared/icons';
-import { openModal } from '../../../shared/ui/modal';
 import { showToast } from '../../../shared/ui/toast';
 import type { BoSession } from '../bo-session';
 import type { ScreenHandle } from './login';
 import {
-  buildSalesInvoiceWhatsAppMessage,
   calculateSalesTotals,
   createSalesInvoiceDraft,
   fromDocLine,
-  generateWhatsAppUrl,
   getCustomerCreditInfo,
   importedSoNumbers,
   importFromSalesOrder,
@@ -28,6 +25,7 @@ import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
+import { openSalesPrintDialog } from './trx/print-dialog';
 import { itemCountText, TRX_TEXT as T } from './trx/text';
 
 const TEXT = {
@@ -365,66 +363,6 @@ export function renderSalesForm(
     soSelectEl.value = chosen;
   }
 
-  // --- Cetak dan WhatsApp ---
-  function openPrintWaModal(): void {
-    const current = snapshot();
-    const check = (id: string, checked: boolean): HTMLInputElement =>
-      el('input', { attrs: { type: 'checkbox', checked: checked && 'true', id } });
-    const item = (box: HTMLInputElement, text: string): HTMLElement =>
-      el('label', { className: 'bo-chk-lbl' }, box, el('span', { text }));
-    const preview = buildSalesInvoiceWhatsAppMessage(current, 'Toko Budiannor');
-    const body = el(
-      'div',
-      { className: 'bo-print-modal-content' },
-      el('h3', { className: 'bo-modal-sec-title', text: label('labelPilihanDokumen') }),
-      el(
-        'div',
-        { className: 'bo-chk-grid' },
-        item(check('chk-faktur', true), label('labelCetakFaktur')),
-        item(check('chk-sj', true), label('labelCetakSuratJalan')),
-        item(check('chk-so', false), label('labelCetakSuratOrder')),
-        item(check('chk-do', false), label('labelCetakDoPengambilan')),
-      ),
-      el('h3', { className: 'bo-modal-sec-title', text: label('labelOpsiCetak') }),
-      el(
-        'div',
-        { className: 'bo-chk-grid' },
-        item(check('opt-kertas', true), label('labelKertasBesar')),
-        item(check('opt-noheader', false), label('labelTanpaHeader')),
-        item(check('opt-rekening', true), label('labelTampilkanNoRekening')),
-      ),
-      el('h3', { className: 'bo-modal-sec-title', text: 'Salinan Pesan WhatsApp' }),
-      el('textarea', {
-        className: 'input is-textarea bo-wa-preview',
-        text: preview,
-        attrs: { readonly: 'true', rows: '6', 'aria-label': 'Salinan Pesan WhatsApp' },
-      }),
-    );
-    openModal({
-      title: label('labelModalCetakWa'),
-      body,
-      actions: [
-        {
-          text: label('tombolKirimWa'),
-          variant: 'primary',
-          onClick: () => {
-            const phone = current.customerPhone || '0811230988';
-            window.open(generateWhatsAppUrl(phone, preview), '_blank');
-            showToast({ kind: 'success', text: 'Tautan WhatsApp telah dibuka.' });
-          },
-        },
-        {
-          text: 'Cetak Dokumen',
-          variant: 'secondary',
-          onClick: () => {
-            window.print();
-          },
-        },
-        { text: label('tutup'), variant: 'secondary' },
-      ],
-    });
-  }
-
   // --- Tombol bilah ---
   const saveButton = createButton({
     text: TEXT.simpan,
@@ -435,8 +373,8 @@ export function renderSalesForm(
         showToast({ kind: 'info', text: TEXT.belumBarang });
         return;
       }
+      // Setelah Simpan tidak ada kotak cetak (revisi final); Cetak tetap lewat tombolnya sendiri.
       showToast({ kind: 'success', text: `Faktur ${draft.invoiceNumber} berhasil disimpan.` });
-      openPrintWaModal();
     },
   });
   const printButton = createButton({
@@ -448,7 +386,7 @@ export function renderSalesForm(
         showToast({ kind: 'info', text: TEXT.belumBarang });
         return;
       }
-      openPrintWaModal();
+      openSalesPrintDialog({ current: snapshot, lines: () => lines });
     },
   });
   const sjButton = createButton({

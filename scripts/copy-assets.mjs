@@ -103,6 +103,7 @@ const ICONS = [
   'user-check',
   'maximize-2',
   'chart-area',
+  'chevrons-up-down',
 ];
 const ALLOWED_TAGS = new Set(['path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse']);
 

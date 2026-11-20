@@ -263,12 +263,6 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
         screenId: 'BO-20',
       },
       {
-        path: '/bo/pengaturan/hak-akses',
-        label: 'menuHakAkses',
-        group: 'pengaturan',
-        screenId: 'BO-20',
-      },
-      {
         path: '/bo/pengaturan/audit-log',
         label: 'menuLogAktivitas',
         group: 'pengaturan',
@@ -283,12 +277,6 @@ export const MENU_GROUPS: readonly MenuGroup[] = [
       {
         path: '/bo/pengaturan/tema',
         label: 'menuTema',
-        group: 'pengaturan',
-        screenId: 'BO-22',
-      },
-      {
-        path: '/bo/pengaturan/lainnya',
-        label: 'menuLainnya',
         group: 'pengaturan',
         screenId: 'BO-22',
       },

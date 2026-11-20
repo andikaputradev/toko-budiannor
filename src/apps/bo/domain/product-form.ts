@@ -118,7 +118,8 @@ export function validateProduct(
   }
   // Stok, HPP, dan harga barang lama tercatat dalam satuan dasarnya; mengganti satuan dasar akan
   // membuat harga satuan baru bernilai nol, jadi tidak diizinkan dari formulir ini.
-  if (editing !== undefined && baseUnit !== editing.baseUnit) {
+  // Satuan diketik bebas, jadi huruf besar dan kecil tidak dianggap berbeda ("KG" sama dengan "Kg").
+  if (editing !== undefined && baseUnit.toLowerCase() !== editing.baseUnit.toLowerCase()) {
     return { field: 'baseUnit', messageId: undefined, labelKey: 'produkErrSatuanDasarTetap' };
   }
   const unitIssue = draft.unitRows === undefined ? undefined : validateUnitRows(draft.unitRows);
@@ -289,7 +290,15 @@ export function buildProduct(
   const display = parseMin(draft.minDisplay) ?? parseMin(draft.minStockToko ?? '') ?? 0;
   const besar = parseMin(draft.minBesar) ?? 0;
 
-  const defs = draft.unitRows === undefined ? [] : toUnitDefs(draft.unitRows);
+  // Satuan yang diketik memakai penulisan satuan lama bila hanya huruf besar-kecilnya yang berbeda,
+  // karena harga dan stok barang lama dicatat dengan kode satuan itu.
+  const known = (code: string): string =>
+    base?.units.find((unit) => unit.code.toLowerCase() === code.toLowerCase())?.code ?? code;
+  const defs = (draft.unitRows === undefined ? [] : toUnitDefs(draft.unitRows)).map((def) => ({
+    ...def,
+    code: known(def.code),
+    name: known(def.code),
+  }));
   const baseUnit = defs[0]?.code ?? draft.baseUnit;
   const keep = base?.baseUnit === baseUnit ? base : undefined;
   const units: UnitDef[] =

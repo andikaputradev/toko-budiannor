@@ -3,6 +3,7 @@
 
 // Benih Surat Jalan: Faktur Penjualan mengisinya saat "Isi SJ Ekspedisi" dan layar Surat Jalan
 // membacanya menurut nomor faktur. Kosong bila Surat Jalan dibuka tanpa melewati faktur.
+import type { SavedPrintJob } from './barcode-labels';
 import type { ExpeditionNote } from './expedition';
 import type { OpeningEntry } from './opening-balance';
 
@@ -28,6 +29,9 @@ export const savedExpeditionNotes = new Map<string, ExpeditionNote>();
 // Saldo Stok Awal per barang (Data Barang), menurut id barang; dibangkitkan dari stok saat pertama dibuka.
 export const openingBalances = new Map<string, OpeningEntry[]>();
 
+// Daftar cetak barcode yang disimpan (Cetak Barcode, tombol Simpan), menurut id pengguna.
+export const savedBarcodePrints = new Map<string, SavedPrintJob>();
+
 // Nomor SO yang sudah diimpor ke Faktur Penjualan pada sesi ini (Daftar SO menampilkannya Selesai).
 export const importedSoNumbers = new Set<string>();
 
@@ -44,5 +48,6 @@ export function resetSessionDrafts(): void {
   expeditionSeeds.clear();
   savedExpeditionNotes.clear();
   openingBalances.clear();
+  savedBarcodePrints.clear();
   importedSoNumbers.clear();
 }

@@ -9,7 +9,7 @@ import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
 import { createProductPhoto, productPhotoUrl } from '../../../shared/ui/product-photo';
 import { showToast } from '../../../shared/ui/toast';
-import { createVirtualGrid } from '../../../shared/ui/virtual-grid';
+import { createVirtualGrid, type SortDirection } from '../../../shared/ui/virtual-grid';
 import { BO_DEVICE, BO_IP, type BoSession } from '../bo-session';
 import { getSampleExcelProducts } from '../domain/import-excel';
 import {
@@ -33,7 +33,7 @@ import {
   type ProductDraft,
   type ProductIssue,
 } from '../domain/product-form';
-import { UNIT_CODES, rowsOf, type UnitRowDraft } from '../domain/product-units';
+import { rowsOf, type UnitRowDraft } from '../domain/product-units';
 import { findProducts } from '../search';
 import { requestCloseTab, screenActive } from '../screen-active';
 import type { ScreenHandle } from './login';
@@ -62,6 +62,12 @@ const TEXT = {
   hargaBeliAkhir: 'Harga Beli Akhir',
   hppAvg: 'Hpp Avg',
   minStokAll: 'Min Stok (All)',
+  komisi: 'Komisi',
+  semua: 'Semua',
+  kategori: 'Kategori',
+  merk: 'Merk',
+  urutNama: { name: 'nama', asc: 'A-Z', desc: 'Z-A' },
+  urutKode: { name: 'kode', asc: '0-9', desc: '9-0' },
   saldoKosong: 'Belum ada saldo awal.',
   pilihBarang: 'Pilih barang dari daftar dulu.',
   hanyaOwner: 'Hanya Owner yang dapat membuka halaman ini.',
@@ -122,8 +128,33 @@ export function renderProducts(session: BoSession): ScreenHandle {
     { ecer: '', grosir: '' },
   ];
 
+  // Filter Kategori, Merk, dan Pemasok di samping kolom cari; kosong berarti Semua.
+  const filters = { category: '', brand: '', supplier: '' };
+  // Urutan daftar: nama A-Z atau Z-A, kode 0-9 atau 9-0; tanpa urutan, daftar mengikuti hasil cari.
+  let sorting: { readonly key: 'name' | 'code'; readonly direction: SortDirection } | undefined;
+  const collator = new Intl.Collator('id', { numeric: true, sensitivity: 'base' });
+
   const products = (): readonly Product[] => store.getState().data.products;
-  const rows = (): readonly Product[] => findProducts(products(), query, products().length);
+  // Pencarian selalu atas seluruh barang (indeks pencarian di-cache menurut daftar barang), lalu disaring.
+  const rows = (): readonly Product[] => {
+    const found = findProducts(products(), query, products().length);
+    const scoped =
+      filters.category === '' && filters.brand === '' && filters.supplier === ''
+        ? found
+        : found.filter(
+            (item) =>
+              (filters.category === '' || item.category === filters.category) &&
+              (filters.brand === '' || item.brand === filters.brand) &&
+              (filters.supplier === '' || (item.supplierName ?? '') === filters.supplier),
+          );
+    if (sorting === undefined) {
+      return scoped;
+    }
+    const sign = sorting.direction === 'asc' ? 1 : -1;
+    const pick =
+      sorting.key === 'name' ? (item: Product) => item.name : (item: Product) => item.code;
+    return [...scoped].sort((first, second) => sign * collator.compare(pick(first), pick(second)));
+  };
   const productById = (id: string | undefined): Product | undefined =>
     products().find((item) => item.id === id);
 
@@ -172,7 +203,6 @@ export function renderProducts(session: BoSession): ScreenHandle {
     label('nonaktifkanBarang'),
   );
   btnNonaktif.hidden = !session.allowed('BO-03', 'Nonaktifkan Barang');
-  const btnKeluar = actionButton('log-out', sentenceCase(label('btnAksiKeluar')), 'Keluar (Alt+K)');
   const btnInfo = actionButton('info', sentenceCase(label('btnAksiInfo')), 'Info SKU');
   const btnCetak = actionButton('printer', sentenceCase(label('btnAksiCetak')), 'Cetak (Alt+C)');
 
@@ -205,6 +235,25 @@ export function renderProducts(session: BoSession): ScreenHandle {
     },
     icon('download'),
   );
+  const filterSelect = (
+    caption: string,
+    kind: string,
+  ): { readonly control: HTMLSelectElement; readonly element: HTMLElement } => {
+    const id = nextId('bo-pd-filter');
+    const control = el('select', { className: 'bo-pd-filter__select', attrs: { id } });
+    return {
+      control,
+      element: el(
+        'div',
+        { className: `bo-pd-filter bo-pd-filter--${kind}` },
+        el('label', { className: 'bo-pd-filter__caption', attrs: { for: id }, text: caption }),
+        control,
+      ),
+    };
+  };
+  const filterKategori = filterSelect(TEXT.kategori, 'kategori');
+  const filterMerk = filterSelect(TEXT.merk, 'merk');
+  const filterPemasok = filterSelect(TEXT.pemasok, 'pemasok');
   const formError = el('p', { className: 'bo-pd-error', attrs: { role: 'alert' } });
 
   // --- Isian formulir ---
@@ -282,6 +331,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
   const kode = input('Kode', label('kodeBarang'), { maxLength: CODE_MAX });
   // Kode dibuat otomatis saat Tambah dan tidak diketik.
   kode.control.readOnly = true;
+  kode.control.tabIndex = -1;
   const barcode = input('Barcode', label('barcode'), { inputMode: 'numeric' });
   const kategori = select('Kategori', label('kategori'), CATEGORY_OPTIONS);
   const merk = select('Merk', label('merek'), BRAND_OPTIONS);
@@ -302,28 +352,17 @@ export function renderProducts(session: BoSession): ScreenHandle {
   const minToko = input(label('labelMinStokTokoSingkat'), label('stokMinDisplay'), {
     inputMode: 'decimal',
   });
-  const komisi = percentInput(label('labelKomisiSales'), label('labelKomisiSales'));
+  const komisi = percentInput(TEXT.komisi, label('labelKomisiSales'));
   const promo = percentInput(label('labelPromo'), label('labelPromo'));
-
-  const knownCodes = (): readonly string[] => {
-    const seen = new Set(UNIT_CODES.map((code) => code.toLowerCase()));
-    const extra: string[] = [];
-    for (const item of products()) {
-      for (const unit of item.units) {
-        if (!seen.has(unit.code.toLowerCase())) {
-          seen.add(unit.code.toLowerCase());
-          extra.push(unit.code);
-        }
-      }
-    }
-    return [...UNIT_CODES, ...extra];
-  };
 
   const priceBody = el('tbody');
   const unitPicker = createUnitPicker({
-    codes: knownCodes(),
     onChange: () => {
       renderMatrix();
+    },
+    // Enter di isian satuan terakhir melanjutkan kursor ke Barcode.
+    onDone: () => {
+      barcode.control.focus();
     },
   });
 
@@ -384,9 +423,25 @@ export function renderProducts(session: BoSession): ScreenHandle {
       {
         header: 'Nama Barang',
         width: 'minmax(170px, 2.2fr)',
+        sort: {
+          ...TEXT.urutNama,
+          onSort: (direction) => {
+            applySort('name', direction);
+          },
+        },
         cell: (p) => (p.active === false ? `${p.name} (Nonaktif)` : p.name),
       },
-      { header: TEXT.kode, width: '76px', cell: (p) => p.code },
+      {
+        header: TEXT.kode,
+        width: '92px',
+        sort: {
+          ...TEXT.urutKode,
+          onSort: (direction) => {
+            applySort('code', direction);
+          },
+        },
+        cell: (p) => p.code,
+      },
       { header: 'Satuan', width: '72px', cell: (p) => p.baseUnit },
       {
         header: label('kolomStokTokoSingkat'),
@@ -427,6 +482,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
         : []),
     ],
     rows: rows(),
+    rowKey: (item) => item.id,
     onSelect: (item) => {
       selectedId = item.id;
       isNew = false;
@@ -842,8 +898,79 @@ export function renderProducts(session: BoSession): ScreenHandle {
   const refreshList = (): void => {
     const list = rows();
     count.textContent = label('jumlahBarang', { jumlah: formatDecimal(list.length) });
+    refreshFilterOptions();
     grid.setRows(list);
   };
+
+  // Pilihan filter diambil dari barang yang ada; dibangun ulang hanya bila daftarnya berubah.
+  const optionSignature = new Map<HTMLSelectElement, string>();
+  const fillFilter = (
+    control: HTMLSelectElement,
+    values: readonly (string | undefined)[],
+    current: string,
+  ): void => {
+    const distinct = [...new Set(values.filter((value): value is string => !!value))].sort(
+      collator.compare,
+    );
+    const signature = distinct.join('\u0001');
+    if (optionSignature.get(control) !== signature) {
+      optionSignature.set(control, signature);
+      control.replaceChildren(
+        el('option', { text: TEXT.semua, attrs: { value: '' } }),
+        ...distinct.map((value) => el('option', { text: value, attrs: { value } })),
+      );
+    }
+    control.value = distinct.includes(current) ? current : '';
+  };
+  function refreshFilterOptions(): void {
+    const all = products();
+    fillFilter(
+      filterKategori.control,
+      all.map((item) => item.category),
+      filters.category,
+    );
+    fillFilter(
+      filterMerk.control,
+      all.map((item) => item.brand),
+      filters.brand,
+    );
+    fillFilter(
+      filterPemasok.control,
+      all.map((item) => item.supplierName),
+      filters.supplier,
+    );
+  }
+
+  // Setelah filter atau urutan berubah, formulir mengikuti barang yang tersorot (kecuali sedang diisi).
+  const syncSelection = (): void => {
+    const list = rows();
+    if (isEditing || list.length === 0) {
+      return;
+    }
+    const keep = list.findIndex((item) => item.id === selectedId);
+    grid.select(keep >= 0 ? keep : 0);
+  };
+
+  // Setelah diurut, daftar kembali ke baris teratas dan baris itu yang tersorot (kecuali sedang diisi).
+  function applySort(key: 'name' | 'code', direction: SortDirection): void {
+    sorting = { key, direction };
+    refreshList();
+    if (!isEditing && rows().length > 0) {
+      grid.select(0);
+    }
+  }
+
+  for (const [control, key] of [
+    [filterKategori.control, 'category'],
+    [filterMerk.control, 'brand'],
+    [filterPemasok.control, 'supplier'],
+  ] as const) {
+    control.addEventListener('change', () => {
+      filters[key] = control.value;
+      refreshList();
+      syncSelection();
+    });
+  }
 
   const digits = (text: string | undefined): string => (text ?? '').replace(/\D/g, '');
 
@@ -909,6 +1036,8 @@ export function renderProducts(session: BoSession): ScreenHandle {
     btnTambah.setAttribute('aria-label', cancelling ? TEXT.batal : label('tambahBarang'));
     btnUbah.disabled = isEditing || productById(selectedId) === undefined;
     btnSimpan.disabled = !isEditing;
+    // Barang baru belum ada yang bisa dinonaktifkan.
+    btnNonaktif.disabled = isNew;
     openingAdd.disabled = isEditing || isNew || productById(selectedId) === undefined;
     openingImport.disabled = openingAdd.disabled;
   };
@@ -1008,7 +1137,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
   btnNonaktif.addEventListener('click', () => {
     const target = productById(selectedId);
     if (!target) {
-      showToast({ kind: 'info', text: 'Pilih barang yang ingin dihapus' });
+      showToast({ kind: 'info', text: 'Pilih barang yang ingin dinonaktifkan' });
       return;
     }
     openModal({
@@ -1030,10 +1159,10 @@ export function renderProducts(session: BoSession): ScreenHandle {
     });
   });
 
-  // Keluar menutup tab Data Barang dan kembali ke tab sebelumnya.
-  btnKeluar.addEventListener('click', () => {
+  // Keluar (Alt+K atau tanda silang pada tab) menutup tab Data Barang dan kembali ke tab sebelumnya.
+  const closeScreen = (): void => {
     requestCloseTab(container);
-  });
+  };
 
   // Info dan Cetak dimuat malas supaya layar Data Barang tetap kecil.
   btnInfo.addEventListener('click', () => {
@@ -1089,6 +1218,11 @@ export function renderProducts(session: BoSession): ScreenHandle {
   btnRefresh.addEventListener('click', () => {
     query = '';
     searchInput.value = '';
+    filters.category = '';
+    filters.brand = '';
+    filters.supplier = '';
+    sorting = undefined;
+    grid.setSort(undefined);
     refreshList();
   });
   searchInput.addEventListener('input', () => {
@@ -1142,7 +1276,7 @@ export function renderProducts(session: BoSession): ScreenHandle {
       btnNonaktif.click();
     } else if (event.altKey && key === 'k') {
       event.preventDefault();
-      btnKeluar.click();
+      closeScreen();
     } else if (event.altKey && key === 'c') {
       event.preventDefault();
       btnCetak.click();
@@ -1155,23 +1289,71 @@ export function renderProducts(session: BoSession): ScreenHandle {
 
   // --- Susunan layar (gambar klien 37): bilah tombol dan pencarian, formulir lima kolom, daftar
   // barang selebar layar, lalu panel Harga dan Saldo Stok Awal berdampingan. ---
-  const column = (className: string, ...children: (HTMLElement | false)[]): HTMLElement =>
-    el('div', { className: `bo-pd-col ${className}` }, ...children);
-  const satuanField = el(
-    'div',
-    { className: 'bo-pd-field' },
-    el('span', { className: 'bo-pd-label', text: TEXT.satuan }),
-    unitPicker.element,
-  );
+  // Setiap isian diberi kelas sendiri (bo-pd-f--*) supaya grid CSS menaruhnya di kolom dan baris
+  // gambar klien 51, sedangkan urutan DOM sama dengan urutan kursor dokumen klien: nama, satuan 1 sampai
+  // 3, barcode, kategori, merk, min stok all, min stok toko, berat, komisi, promo, rak, catatan, foto.
+  // Kode otomatis dan hanya terbaca, jadi dilewati kursor.
+  const place = (name: string, field: HTMLElement): HTMLElement => {
+    field.classList.add('bo-pd-f', `bo-pd-f--${name}`);
+    return field;
+  };
   const formSection = el(
     'section',
     { className: 'bo-pd-form', attrs: { 'aria-label': label('formBarang') } },
-    column('bo-pd-col--a', nama.field, barcode.field, kategori.field, merk.field),
-    column('bo-pd-col--b', satuanField, catatan.field),
-    column('bo-pd-col--c', minAll.field, minToko.field, berat.field, kode.field),
-    column('bo-pd-col--d', komisi.field, promo.field, rak.field),
-    el('div', { className: 'bo-pd-col bo-pd-col--e' }, photoBox, count),
+    place('nama', nama.field),
+    unitPicker.element,
+    place('barcode', barcode.field),
+    place('kategori', kategori.field),
+    place('merk', merk.field),
+    place('minall', minAll.field),
+    place('mintoko', minToko.field),
+    place('berat', berat.field),
+    place('komisi', komisi.field),
+    place('promo', promo.field),
+    place('rak', rak.field),
+    place('catatan', catatan.field),
+    place('kode', kode.field),
+    el('div', { className: 'bo-pd-photocol' }, photoBox, count),
   );
+
+  // Enter memindahkan kursor ke isian berikutnya menurut urutan di atas (Tab mengikuti urutan DOM yang
+  // sama). Isian satuan mengatur Enter-nya sendiri; Enter pada pemilih foto tetap membuka berkas.
+  formSection.addEventListener('keydown', (event) => {
+    const target = event.target;
+    if (
+      event.key !== 'Enter' ||
+      event.defaultPrevented ||
+      !(target instanceof HTMLInputElement || target instanceof HTMLSelectElement) ||
+      target === fileInput ||
+      unitPicker.element.contains(target)
+    ) {
+      return;
+    }
+    const order: readonly HTMLElement[] = [
+      nama.control,
+      ...unitPicker.focusables(),
+      barcode.control,
+      kategori.control,
+      merk.control,
+      minAll.control,
+      minToko.control,
+      berat.control,
+      komisi.control,
+      promo.control,
+      rak.control,
+      catatan.control,
+      fileInput,
+    ].filter(
+      (field) =>
+        !(field instanceof HTMLInputElement || field instanceof HTMLSelectElement) ||
+        !field.disabled,
+    );
+    const at = order.indexOf(target);
+    if (at >= 0) {
+      event.preventDefault();
+      order[at + 1]?.focus();
+    }
+  });
   const openingPanel = el(
     'section',
     { className: 'bo-pd-opening', attrs: { 'aria-label': TEXT.saldoAwal } },
@@ -1203,10 +1385,12 @@ export function renderProducts(session: BoSession): ScreenHandle {
       btnNonaktif,
       btnInfo,
       btnCetak,
-      btnKeluar,
       btnRefresh,
       btnImpor,
       searchInput,
+      filterKategori.element,
+      filterMerk.element,
+      filterPemasok.element,
     ),
     formError,
     formSection,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { label } from '../../../src/shared/messages';
 import {
   DASHBOARD_PATH,
   MAX_TABS,
@@ -131,6 +132,17 @@ describe('tabTitleKey', () => {
     expect(tabTitleKey('/bo/laporan/neraca')).toBe('grupAkuntansi');
     expect(tabTitleKey('/bo/master/cetak-barcode')).toBe('menuCetakBarcode');
     expect(tabTitleKey('/bo/pengaturan/rekening')).toBe('menuProfilToko');
+  });
+
+  it('rute Pengaturan lama tetap berjudul sah setelah menu digabung (gambar klien 54)', () => {
+    expect(tabTitleKey('/bo/pengaturan/pengguna')).toBe('menuPengguna');
+    expect(tabTitleKey('/bo/pengaturan/hak-akses')).toBe('menuPengguna');
+    expect(tabTitleKey('/bo/pengaturan/lainnya')).toBe('menuProfilToko');
+    expect(tabTitleKey('/bo/pengaturan/printer')).toBe('menuProfilToko');
+    expect(tabTitleKey('/bo/pengaturan/backup')).toBe('menuProfilToko');
+    expect(label('menuPengguna')).toBe('Pengguna dan Hak Akses');
+    expect(tabEntryFor('/bo/pengaturan/hak-akses')?.group).toBe('pengaturan');
+    expect(tabEntryFor('/bo/pengaturan/pengguna?bagian=matriks')?.screenId).toBe('BO-20');
   });
 
   it('mengembalikan undefined untuk rute tak dikenal', () => {

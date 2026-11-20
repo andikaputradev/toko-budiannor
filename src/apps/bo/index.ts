@@ -334,25 +334,12 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
       return (session, go) => renderSettingsScreen(session, go, 'backup');
     },
   },
-  '/bo/pengaturan/lainnya': {
-    id: 'BO-22',
-    load: async () => {
-      const { renderSettingsScreen } = await import('./screens/settings');
-      return (session, go) => renderSettingsScreen(session, go, 'profil');
-    },
-  },
   '/bo/pengaturan/pengguna': {
     id: 'BO-20',
     load: async () => {
       const { renderRbacScreen } = await import('./screens/rbac');
-      return (session, go) => renderRbacScreen(session, go, 'pengguna');
-    },
-  },
-  '/bo/pengaturan/hak-akses': {
-    id: 'BO-20',
-    load: async () => {
-      const { renderRbacScreen } = await import('./screens/rbac');
-      return (session, go) => renderRbacScreen(session, go, 'matriks');
+      return (session, go, query) =>
+        renderRbacScreen(session, go, query.get('bagian') === 'matriks' ? 'matriks' : 'pengguna');
     },
   },
   '/bo/pengaturan/audit-log': {
@@ -365,7 +352,10 @@ const ROUTES: Readonly<Record<string, RouteEntry>> = {
 };
 
 // Rute Akuntansi lama (satu tab per bagian) dialihkan ke satu halaman Akuntansi (gambar klien 24 sampai 28).
+// Hak Akses dan Lainnya digabung ke Pengguna dan Hak Akses dan Profil Toko (gambar klien 54).
 const LEGACY_PATHS: Readonly<Record<string, string>> = {
+  '/bo/pengaturan/hak-akses': '/bo/pengaturan/pengguna?bagian=matriks',
+  '/bo/pengaturan/lainnya': '/bo/pengaturan/profil',
   '/bo/transaksi/daftar-nota': '/bo/transaksi/faktur-penjualan',
   '/bo/akuntansi/jurnal': '/bo/akuntansi?bagian=jurnal',
   '/bo/akuntansi/beban': '/bo/akuntansi?bagian=beban',

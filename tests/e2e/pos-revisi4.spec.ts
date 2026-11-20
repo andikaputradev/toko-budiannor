@@ -541,7 +541,7 @@ test.describe('U. Isian huruf kapital di POS dan BO', () => {
     await page.getByLabel('Kata sandi', { exact: true }).fill('Kunci2026A');
     await page.getByRole('button', { name: 'Masuk' }).click();
     await expect(page).toHaveURL(/#\/bo\/dashboard$/);
-    await page.goto('/#/bo/pengaturan/hak-akses');
+    await page.goto('/#/bo/pengaturan/pengguna');
     await page.getByRole('button', { name: 'Tambah Pengguna Baru' }).click();
     const dialog = page.getByRole('dialog');
     const name = dialog.getByPlaceholder('Nama lengkap...');

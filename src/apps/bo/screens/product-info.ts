@@ -19,7 +19,7 @@ import {
 import { ledgerFor } from '../domain/stock-correction';
 import type { WarehouseFilter } from '../domain/stock-view';
 import { movementSourcesFor } from '../movement-sources';
-import { shortDate } from '../short-date';
+import { shortDate, slashIso } from '../short-date';
 
 // Teks modal ini hanya dipakai di sini, jadi ikut dimuat malas bersama layar Data Barang (label
 // bersama dimuat semua aplikasi dan anggaran JS POS hampir habis).
@@ -408,13 +408,13 @@ export function openProductInfo(session: BoSession, product: Product): void {
           ? label('infoTanpaSaldoAwal')
           : isOwner
             ? label('infoSaldoAwal', {
-                tanggal: initialStock.date ?? '-',
+                tanggal: slashIso(initialStock.date ?? ''),
                 jumlah: formatDecimal(initialStock.quantity ?? 0),
                 satuan: initialStock.unit ?? product.baseUnit,
                 nilai: formatRupiah(initialStock.unitPrice ?? product.hpp),
               })
             : label('infoSaldoAwalTanpaNilai', {
-                tanggal: initialStock.date ?? '-',
+                tanggal: slashIso(initialStock.date ?? ''),
                 jumlah: formatDecimal(initialStock.quantity ?? 0),
                 satuan: initialStock.unit ?? product.baseUnit,
               }),

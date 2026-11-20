@@ -1,0 +1,210 @@
+/* Pengguna dan Hak Akses (BO-20). Dimuat bersama layar ini saja. Aturan memakai awalan
+   html[data-app='bo'] agar menang atas aturan umum Back-Office yang dimuat lebih dulu.
+   Panel mengisi sisa tinggi halaman; hanya daftar atau matriks di dalamnya yang menggulir, dengan
+   kepala tabel membeku. */
+
+html[data-app='bo'] .bo-rbac-panel {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-app='bo'] .bo-rbac-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+html[data-app='bo'] .bo-rbac-scroll:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+html[data-app='bo'] .bo-rbac-table {
+  width: 100%;
+}
+
+html[data-app='bo'] .bo-rbac-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg-table-header);
+}
+
+/* Baris judul layar dan nama aksi bukan kepala kolom: tidak ikut membeku. */
+html[data-app='bo'] .bo-rbac-scroll tbody th {
+  position: static;
+}
+
+html[data-app='bo'] .bo-rbac-group-row th {
+  display: table-cell;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 0;
+  background: var(--bo-surface-soft);
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+html[data-app='bo'] .bo-rbac-group-row th > * + * {
+  margin-left: 12px;
+}
+
+html[data-app='bo'] .bo-rbac-scroll th.bo-rbac-action {
+  height: 38px;
+  padding: 3px var(--primitive-space-2);
+  border-bottom: 1px solid var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-weight: 400;
+  text-align: left;
+  text-transform: none;
+}
+
+/* Matriks panjang: baris rapat, dengan zebra dan sorot yang sama pada kolom nama aksi. */
+html[data-app='bo'] .bo-rbac-matrix-table tbody td {
+  height: 38px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+html[data-app='bo'] .bo-rbac-matrix-table tbody tr:nth-child(even) th.bo-rbac-action {
+  background: var(--bo-zebra);
+}
+
+html[data-app='bo'] .bo-rbac-matrix-table tbody tr:hover th.bo-rbac-action {
+  background: var(--bo-surface-hover);
+}
+
+html[data-app='bo'] .bo-rbac-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+/* Bilah keterangan di atas matriks. */
+html[data-app='bo'] .bo-rbac-bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 24px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-subtle);
+}
+
+html[data-app='bo'] .bo-rbac-bar .bo-rbac-info__text {
+  flex: 1 1 520px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+html[data-app='bo'] .bo-rbac-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 13px;
+}
+
+html[data-app='bo'] .bo-rbac-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-rbac-legend__dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent-default);
+}
+
+html[data-app='bo'] .bo-rbac-count {
+  font-weight: 700;
+}
+
+/* Status hak akses: teks selalu tampil (YA, OTORISASI, -), warna hanya penegas. */
+html[data-app='bo'] .bo-rbac-mark,
+html[data-app='bo'] button.bo-rbac-cell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 104px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--bo-radius);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-rbac-legend .bo-rbac-mark {
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+}
+
+html[data-app='bo'] .bo-rbac-mark[data-access='ya'],
+html[data-app='bo'] button.bo-rbac-cell[data-access='ya'] {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}
+
+html[data-app='bo'] .bo-rbac-mark[data-access='otorisasi'],
+html[data-app='bo'] button.bo-rbac-cell[data-access='otorisasi'] {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-fg);
+}
+
+html[data-app='bo'] .bo-rbac-mark[data-access='tidak'],
+html[data-app='bo'] button.bo-rbac-cell[data-access='tidak'] {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+/* Sel yang dapat diubah Owner: berbingkai dan berupa tombol. */
+html[data-app='bo'] button.bo-rbac-cell {
+  border-color: var(--bo-line-strong);
+  cursor: pointer;
+}
+
+html[data-app='bo'] button.bo-rbac-cell:hover {
+  border-color: var(--color-text-primary);
+}
+
+html[data-app='bo'] button.bo-rbac-cell:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+html[data-app='bo'] button.bo-rbac-cell.is-changed::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--color-bg-surface);
+  border-radius: 50%;
+  background: var(--color-accent-default);
+}
+
+/* Dialog Tambah dan Ubah Pengguna: caption lebih lebar agar tetap satu baris. */
+html[data-app='bo'] .bo-rbac-form {
+  --bo-label-w: 10rem;
+  min-width: min(520px, 80vw);
+}
+
+html[data-app='bo'] .bo-rbac-form .bo-error {
+  min-height: 1.25em;
+  margin: 0;
+}

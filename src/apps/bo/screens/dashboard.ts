@@ -258,7 +258,13 @@ export function renderDashboard(session: BoSession): ScreenHandle {
             { className: 'bo-dx-line__chart' },
             createLineChart(points, 430, 100, formatRupiah),
           ),
-          el('p', { className: 'bo-dx-trend', text: data.chartSeries.trendText }),
+          el('p', {
+            className: 'bo-dx-trend',
+            text:
+              periods.grafik === 'harian'
+                ? data.chartSeries.trendText
+                : data.chartSeries.monthlyTrendText,
+          }),
         ),
         refreshButton(paint),
         segmented(label('dxGrafikJudul'), periodOptions(), periods.grafik, setPeriod('grafik')),
@@ -491,7 +497,8 @@ export function renderDashboard(session: BoSession): ScreenHandle {
                 [
                   { value: 'nilai', text: TEXT.nilai },
                   { value: 'frekuensi', text: TEXT.frekuensi },
-                  { value: 'laba', text: TEXT.laba },
+                  // Laba penjualan barang hanya terlihat oleh Owner.
+                  ...(data.isOwner ? [{ value: 'laba' as const, text: TEXT.laba }] : []),
                 ],
                 barangMetric,
                 (metric) => {
@@ -563,6 +570,9 @@ export function renderDashboard(session: BoSession): ScreenHandle {
   function paint(): void {
     const role = store.getState().role;
     const data = computeFullDashboard(store.getState(), session.now(), role);
+    if (!data.isOwner && barangMetric === 'laba') {
+      barangMetric = 'nilai';
+    }
     const builders = widgetBuilders(data);
     const widgets = dashboardWidgets(role);
     container.classList.toggle('bo-dx--spv', widgets.length === 5);

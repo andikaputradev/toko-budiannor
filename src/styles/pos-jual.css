@@ -318,7 +318,10 @@
 }
 
 /* Stok kartu: tiga kolom sama lebar (Toko, Gudang, No Rak). Kolom tidak bergantung pada isi, jadi
-   tulisan No Rak selalu berada di tempat yang sama pada setiap kartu. */
+   tulisan No Rak selalu berada di tempat yang sama pada setiap kartu. Revisi final: tiga kolom itu
+   disebar rata di seluruh lebar kartu dengan teks Toko rata kiri, Gudang di tengah, dan No Rak rata
+   kanan, supaya seimbang dan enak dilihat (bukan menumpuk di sisi kiri). Letak kolom tetap sama
+   pada setiap kartu karena lebarnya tidak bergantung pada isi. */
 .pos-card__stock {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -334,6 +337,14 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.pos-card__stockrow:nth-child(2) {
+  text-align: center;
+}
+
+.pos-card__stockrow:nth-child(3) {
+  text-align: right;
 }
 
 .pos-card__stockrow dt {
