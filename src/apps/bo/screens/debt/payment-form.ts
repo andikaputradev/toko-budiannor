@@ -14,6 +14,7 @@ import {
   sumAllocations,
   type DebtPayment,
   type DebtPaymentDraft,
+  type DebtPaymentPart,
   type PayMethod,
 } from '../../domain/debt-payments';
 import { moneyText, parseMoney } from '../../domain/master-fields';
@@ -139,7 +140,9 @@ export function renderPaymentForm(
     className: 'input bo-debt-money',
     attrs: { id: nominalId, type: 'text', inputmode: 'numeric', autocomplete: 'off' },
   });
-  nominalInput.value = existing === undefined ? '' : moneyText(existing.total);
+  // Pembayaran Split tercatat menampilkan nominal bagian pertama; total ada di Total Bayar.
+  nominalInput.value =
+    existing === undefined ? '' : moneyText(existing.parts?.[0]?.amount ?? existing.total);
   nominalInput.disabled = readOnly;
   const spread = el(
     'button',
@@ -154,6 +157,73 @@ export function renderPaymentForm(
     icon('refresh-cw'),
   );
   spread.disabled = readOnly;
+
+  // --- Split (revisi tambahan): centang untuk membayar dengan dua cara, mis. tunai 75.000 dan
+  // transfer 25.000 untuk bayar 100.000. Bagian kedua punya Cara Bayar, Kas / Bank, dan Nominal sendiri.
+  const second = existing?.parts?.[1];
+  let splitOn = second !== undefined;
+  let firstTouched = false;
+  let secondTouched = false;
+  const splitId = fieldId();
+  const splitCheck = el('input', {
+    className: 'bo-debt-split__check',
+    attrs: { id: splitId, type: 'checkbox' },
+  });
+  splitCheck.checked = splitOn;
+  splitCheck.disabled = readOnly;
+  const splitRow = el(
+    'div',
+    { className: 'bo-debt-split' },
+    el('label', {
+      className: 'bo-debt-split__label',
+      text: DEBT_TEXT.split,
+      attrs: { for: splitId },
+    }),
+    splitCheck,
+  );
+  const method2Id = fieldId();
+  const method2 = selectBox(
+    method2Id,
+    [{ value: '', text: '' }, ...PAY_METHODS.map((m) => ({ value: m.value, text: m.text }))],
+    second?.method ?? '',
+  );
+  const account2Id = fieldId();
+  const account2 = selectBox(
+    account2Id,
+    [
+      { value: '', text: '' },
+      ...CASH_ACCOUNTS.map((account) => ({ value: account, text: account })),
+    ],
+    second?.account ?? '',
+  );
+  const nominal2Id = fieldId();
+  const nominal2 = el('input', {
+    className: 'input bo-debt-money',
+    attrs: { id: nominal2Id, type: 'text', inputmode: 'numeric', autocomplete: 'off' },
+  });
+  nominal2.value = second === undefined ? '' : moneyText(second.amount);
+  const splitGroup = el(
+    'div',
+    {
+      className: 'bo-debt-splitgroup',
+      attrs: { role: 'group', 'aria-label': DEBT_TEXT.splitGrup },
+    },
+    row(DEBT_TEXT.caraBayar, wrapSelect(method2), method2Id),
+    row(DEBT_TEXT.kasBank, wrapSelect(account2), account2Id),
+    row(DEBT_TEXT.nominal, nominal2, nominal2Id),
+  );
+  const setSplitEnabled = (on: boolean): void => {
+    method2.disabled = readOnly || !on;
+    account2.disabled = readOnly || !on;
+    nominal2.disabled = readOnly || !on;
+    splitGroup.classList.toggle('is-off', !on);
+  };
+  setSplitEnabled(splitOn);
+
+  const money = (input: HTMLInputElement): number => parseMoney(input.value) ?? 0;
+  const setMoney = (input: HTMLInputElement, value: number): void => {
+    input.value = value > 0 ? moneyText(value) : '';
+  };
 
   const paintTotal = (): void => {
     const total = readOnly ? existing.total : sumAllocations(allocations);
@@ -243,8 +313,11 @@ export function renderPaymentForm(
           allocations[invoice.invoiceNumber] = Math.min(invoice.remaining, value);
           input.removeAttribute('aria-invalid');
           error.textContent = '';
-          nominalInput.value =
-            sumAllocations(allocations) > 0 ? moneyText(sumAllocations(allocations)) : '';
+          if (splitOn) {
+            syncSplit('tabel');
+          } else {
+            setMoney(nominalInput, sumAllocations(allocations));
+          }
           paintTotal();
         });
         input.addEventListener('blur', () => {
@@ -266,21 +339,69 @@ export function renderPaymentForm(
     paintTotal();
   }
 
+  const redistribute = (nominal: number): void => {
+    allocations = distribute(invoices, nominal);
+    error.textContent = '';
+    paintTable();
+  };
+
+  // Menjaga jumlah kedua bagian Split sama dengan Total Bayar (jumlah Pembayaran per faktur).
+  // 'tabel': Pembayaran per faktur berubah; 'pertama' dan 'kedua': salah satu Nominal diketik. Selama
+  // Nominal lain belum diketik sendiri dan Total Bayar sudah ada, mengetik satu Nominal mengisi sisanya
+  // ke Nominal lain tanpa mengubah total (tunai 75.000 menyisakan transfer 25.000 dari total 100.000).
+  // Sesudah keduanya diketik, total = Nominal pertama + Nominal kedua dan dibagi ke faktur terlama.
+  function syncSplit(source: 'tabel' | 'pertama' | 'kedua'): void {
+    const total = sumAllocations(allocations);
+    const first = money(nominalInput);
+    if (source === 'tabel') {
+      const keep = first > 0 && first <= total ? first : total;
+      setMoney(nominalInput, keep);
+      setMoney(nominal2, total - keep);
+      return;
+    }
+    const typed = source === 'pertama' ? first : money(nominal2);
+    const other = source === 'pertama' ? secondTouched : firstTouched;
+    if (source === 'pertama') {
+      firstTouched = true;
+    } else {
+      secondTouched = true;
+    }
+    if (!other && total > 0 && typed <= total) {
+      setMoney(nominalInput, source === 'pertama' ? typed : total - typed);
+      setMoney(nominal2, source === 'pertama' ? total - typed : typed);
+      return;
+    }
+    redistribute(first + money(nominal2));
+    const got = sumAllocations(allocations);
+    // Bila melebihi sisa faktur, bagian kedua dikurangi lebih dulu.
+    const keepFirst = Math.min(first, got);
+    setMoney(nominalInput, keepFirst);
+    setMoney(nominal2, got - keepFirst);
+  }
+
   const applyNominal = (): void => {
     if (readOnly || invoices.length === 0) {
       return;
     }
-    const nominal = parseMoney(nominalInput.value) ?? 0;
-    allocations = distribute(invoices, nominal);
-    nominalInput.value =
-      sumAllocations(allocations) > 0 ? moneyText(sumAllocations(allocations)) : '';
-    error.textContent = '';
-    paintTable();
+    if (splitOn) {
+      syncSplit('pertama');
+      return;
+    }
+    redistribute(money(nominalInput));
+    setMoney(nominalInput, sumAllocations(allocations));
+  };
+  const applySecond = (): void => {
+    if (!readOnly && splitOn && invoices.length > 0) {
+      syncSplit('kedua');
+    }
   };
 
   partySelect.addEventListener('change', () => {
     partyId = partySelect.value;
     nominalInput.value = '';
+    nominal2.value = '';
+    firstTouched = false;
+    secondTouched = false;
     error.textContent = '';
     loadInvoices();
   });
@@ -291,7 +412,49 @@ export function renderPaymentForm(
       applyNominal();
     }
   });
-  spread.addEventListener('click', applyNominal);
+  // Tanda galat pada bagian kedua hilang begitu isiannya diubah.
+  for (const control of [method2, account2, nominal2]) {
+    control.addEventListener('change', () => {
+      control.removeAttribute('aria-invalid');
+    });
+  }
+  nominal2.addEventListener('change', applySecond);
+  nominal2.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applySecond();
+    }
+  });
+  // Tombol bagi otomatis membagi ulang jumlah kedua Nominal ke faktur terlama.
+  spread.addEventListener('click', () => {
+    if (splitOn) {
+      firstTouched = true;
+      secondTouched = true;
+      applySecond();
+    } else {
+      applyNominal();
+    }
+  });
+  splitCheck.addEventListener('change', () => {
+    splitOn = splitCheck.checked;
+    firstTouched = false;
+    secondTouched = false;
+    setSplitEnabled(splitOn);
+    if (!splitOn) {
+      method2.value = '';
+      account2.value = '';
+    }
+    for (const control of [method2, account2, nominal2]) {
+      control.removeAttribute('aria-invalid');
+    }
+    // Nominal pertama memegang seluruh total sampai Nominal kedua diisi.
+    setMoney(nominalInput, sumAllocations(allocations));
+    nominal2.value = '';
+    error.textContent = '';
+    if (splitOn) {
+      method2.focus();
+    }
+  });
 
   const draft = (): DebtPaymentDraft => ({
     type,
@@ -301,10 +464,44 @@ export function renderPaymentForm(
     method: methodSelect.value as PayMethod,
     account: accountSelect.value,
     allocations,
+    split: splitOn
+      ? {
+          method: method2.value as PayMethod | '',
+          account: account2.value,
+          firstAmount: money(nominalInput),
+          amount: money(nominal2),
+        }
+      : undefined,
   });
 
   const partyName = (): string =>
     existing?.partyName ?? parties().find((party) => party.partyId === partyId)?.name ?? '-';
+
+  // Rincian cara bayar pada kuitansi: satu bagian, atau dua bagian dengan nominalnya bila Split.
+  const methodLine = (): string => {
+    const parts: readonly DebtPaymentPart[] =
+      existing?.parts ??
+      (splitOn && method2.value !== ''
+        ? [
+            {
+              method: methodSelect.value as PayMethod,
+              account: accountSelect.value,
+              amount: money(nominalInput),
+            },
+            {
+              method: method2.value as PayMethod,
+              account: account2.value,
+              amount: money(nominal2),
+            },
+          ]
+        : []);
+    if (parts.length < 2) {
+      return `${methodText(methodSelect.value as PayMethod)} | ${accountSelect.value} | ${dateInput.value}`;
+    }
+    return `${parts
+      .map((part) => `${methodText(part.method)} ${formatRupiah(part.amount)} | ${part.account}`)
+      .join(' + ')} | ${dateInput.value}`;
+  };
 
   const openReceipt = (): void => {
     const current: DebtPayment | undefined = existing;
@@ -353,11 +550,7 @@ export function renderPaymentForm(
           text: noteInput.value.trim() === '' ? copy.untukPembayaran : noteInput.value.trim(),
         }),
       ),
-      el(
-        'p',
-        { className: 't-label' },
-        `${methodText(methodSelect.value as PayMethod)} | ${accountSelect.value} | ${dateInput.value}`,
-      ),
+      el('p', { className: 't-label' }, methodLine()),
       el(
         'div',
         { className: 'bo-signature-grid' },
@@ -413,8 +606,17 @@ export function renderPaymentForm(
       tanggal: DEBT_TEXT.isiTanggal,
       nominal: DEBT_TEXT.isiNominal,
       lebih: debt('lebihSisa', { faktur: result.invoiceNumber ?? '' }),
+      splitCara: DEBT_TEXT.splitCara,
+      splitJumlah: DEBT_TEXT.splitJumlah,
     } as const;
     error.textContent = messages[result.issue];
+    if (result.issue === 'splitCara') {
+      method2.setAttribute('aria-invalid', 'true');
+      account2.setAttribute('aria-invalid', 'true');
+    }
+    if (result.issue === 'splitJumlah') {
+      nominal2.setAttribute('aria-invalid', 'true');
+    }
     if (result.invoiceNumber !== undefined) {
       document
         .querySelector<HTMLElement>(`[data-invoice="${result.invoiceNumber}"]`)
@@ -475,6 +677,8 @@ export function renderPaymentForm(
           el('div', { className: 'bo-debt-nominal' }, nominalInput, spread),
           nominalId,
         ),
+        splitRow,
+        splitGroup,
         error,
         readOnly ? el('p', { className: 'bo-debt-note', text: DEBT_TEXT.bayarTerkunci }) : '',
       ),

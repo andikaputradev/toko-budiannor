@@ -117,8 +117,9 @@ test.describe('Daftar dan formulir pembayaran (gambar 22 dan 23)', () => {
     await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-debt-table tbody tr')).toHaveCount(2);
     await page.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page.getByText('Isi pembayaran minimal pada satu faktur.')).toBeVisible();
-    await page.getByLabel('Nominal').fill('1000000');
-    await page.getByLabel('Nominal').press('Enter');
+    // Ada dua isian Nominal (bagian kedua untuk Split): yang pertama adalah total pembayaran.
+    await page.getByLabel('Nominal', { exact: true }).first().fill('1000000');
+    await page.getByLabel('Nominal', { exact: true }).first().press('Enter');
     await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-debt-total__value')).toHaveText(
       'Rp 1.000.000',
     );

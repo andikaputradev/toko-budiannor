@@ -13,7 +13,7 @@ import type {
 } from '../../../shared/data/types';
 import { findProducts } from '../search';
 import type { DebtPayment } from './debt-payments';
-import { methodText } from './debt-payments';
+import { paymentMethodText } from './debt-payments';
 import { getPayableBalances, getUnpaidInvoicesForParty } from './receivable-payable';
 import {
   buildStockCard,
@@ -618,7 +618,7 @@ export function buildDebtReport(
         shortDate(payment.date),
         payment.number,
         payment.partyName,
-        methodText(payment.method),
+        paymentMethodText(payment),
         payment.note,
         formatRupiah(payment.total),
       ]),

@@ -8,6 +8,7 @@ export const posRevisi3Labels = {
   promoTanda: 'PROMO',
   menuOpenBill: 'Open Bill',
   menuDiskonTransaksi: 'Diskon Transaksi',
+  menuBiayaKirim: 'Biaya Kirim',
   menuPesananBaru: 'Mulai Pesanan Baru',
   pesananBaruJudul: 'Konfirmasi Pesanan Baru',
   pesananBaruIsi: 'Barang yang ada di keranjang tidak akan tersimpan.',

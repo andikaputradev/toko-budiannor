@@ -5,7 +5,12 @@ import { formatRupiah } from '../../../../shared/format';
 import { formatDate } from '../../short-date';
 import type { BoSession } from '../../bo-session';
 import { dateRangeFor, type DateRangeKind } from '../../domain/transaction-list';
-import { methodText, type DebtPayment } from '../../domain/debt-payments';
+import {
+  methodText,
+  paymentAccountText,
+  paymentMethodText,
+  type DebtPayment,
+} from '../../domain/debt-payments';
 import type { PartyType } from '../../domain/receivable-payable';
 import type { ScreenHandle } from '../login';
 import {
@@ -81,8 +86,9 @@ export function renderPaymentList(
     ),
     body,
   );
-  // Pembayaran Hutang dan Piutang memakai kolom dan lebar yang sama.
-  fixColumns(grid, [160, 105, undefined, 115, 130, 110, undefined, 140]);
+  // Pembayaran Hutang dan Piutang memakai kolom dan lebar yang sama; Metode Bayar cukup lebar untuk dua
+  // cara bayar pembayaran Split ("Tunai + Transfer").
+  fixColumns(grid, [160, 105, undefined, 165, 125, 110, undefined, 140]);
   const table = el(
     'div',
     {
@@ -123,7 +129,8 @@ export function renderPaymentList(
         (payment) =>
           (range.startDate === undefined || payment.date >= range.startDate) &&
           (range.endDate === undefined || payment.date <= range.endDate) &&
-          (methodSelect.value === '' || payment.method === methodSelect.value) &&
+          (methodSelect.value === '' ||
+            (payment.parts ?? [payment]).some((part) => part.method === methodSelect.value)) &&
           (partySelect.value === '' || payment.partyName === partySelect.value) &&
           matchesPhrase(`${payment.number} ${payment.partyName}`, search.input.value),
       );
@@ -156,8 +163,8 @@ export function renderPaymentList(
           ),
           el('td', { className: 'bo-nowrap', text: shortDate(payment.date) }),
           el('td', { className: 'is-bold', text: payment.partyName }),
-          el('td', { text: methodText(payment.method) }),
-          el('td', { text: payment.account }),
+          el('td', { text: paymentMethodText(payment) }),
+          el('td', { text: paymentAccountText(payment) }),
           el('td', { text: userName(session.store, payment.userId) }),
           el('td', {
             className: 'bo-trx-notes',

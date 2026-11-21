@@ -128,6 +128,8 @@ export interface HeldBill {
   readonly lines: readonly BillLine[];
   // Diskon Transaksi yang ikut ditahan bersama bill (persen atau nominal atas total).
   readonly discount?: LineDiscount | undefined;
+  // Biaya Kirim dalam rupiah yang ikut ditahan bersama bill; kosong bila tidak ada.
+  readonly shipping?: number | undefined;
 }
 
 export type PaymentMethod = 'tunai' | 'qris' | 'edc' | 'transfer' | 'dp' | 'piutang';
@@ -162,6 +164,8 @@ export interface Sale {
   readonly dp?: number | undefined;
   // Diskon Transaksi dalam rupiah (di luar diskon baris); total sudah dikurangi diskon ini.
   readonly discount?: number | undefined;
+  // Biaya Kirim dalam rupiah (di luar barang); total sudah ditambah biaya ini.
+  readonly shipping?: number | undefined;
   // Catatan opsional yang diisi kasir di layar pembayaran.
   readonly note?: string | undefined;
 }

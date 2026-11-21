@@ -112,10 +112,27 @@ export function splitTransactionDiscount(
   };
 }
 
-// Total yang harus dibayar: subtotal baris dikurangi Diskon Transaksi.
-export function netTotal(lines: readonly BillLine[], discount: LineDiscount | undefined): number {
+// Biaya Kirim paling banyak Rp 10.000.000 per pesanan.
+export const MAX_SHIPPING_FEE = 10_000_000;
+
+// Biaya Kirim dalam rupiah bulat, atau undefined bila bukan angka, negatif, atau melebihi batas.
+export function normalizeShippingFee(value: number): number | undefined {
+  if (!Number.isFinite(value) || value < 0) {
+    return undefined;
+  }
+  const rounded = Math.round(value);
+  return rounded > MAX_SHIPPING_FEE ? undefined : rounded;
+}
+
+// Total yang harus dibayar: subtotal baris dikurangi Diskon Transaksi, ditambah Biaya Kirim. Diskon
+// hanya mengurangi barang; biaya kirim ditambahkan sesudahnya.
+export function netTotal(
+  lines: readonly BillLine[],
+  discount: LineDiscount | undefined,
+  shipping = 0,
+): number {
   const subtotal = billTotal(lines);
-  return subtotal - transactionDiscountAmount(subtotal, discount);
+  return subtotal - transactionDiscountAmount(subtotal, discount) + Math.max(0, shipping);
 }
 
 export function itemCount(lines: readonly BillLine[]): number {

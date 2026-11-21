@@ -14,7 +14,6 @@ export const boBarangLabels = {
   boSatuanKe: 'Satuan {nomor}',
   boKonversiSatuan: 'Konversi satuan {nomor}',
   boPerbesarFoto: 'Perbesar foto',
-  boImporExcel: 'Impor Excel',
   boSegarkanDaftar: 'Segarkan daftar',
   boMatriksHarga: 'Matriks harga satuan',
   boPilihBarang: 'Pilih barang untuk melihat harga satuan',

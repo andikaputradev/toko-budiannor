@@ -35,10 +35,12 @@ function isRefundMethod(method: string): method is RefundMethod {
 // berdiskon dihitung proporsional dari subtotal setelah diskon dan tidak melebihi subtotal itu.
 export function itemsValue(sale: Sale, items: ReturnInput['items']): number {
   const raw = itemsLineValue(sale, items);
-  // Diskon Transaksi (di luar diskon baris) ikut dibagi rata menurut nilai baris yang diretur.
+  // Diskon Transaksi (di luar diskon baris) ikut dibagi rata menurut nilai baris yang diretur. Biaya
+  // Kirim bukan barang, jadi tidak ikut dikembalikan dan dikeluarkan dari total pembagi.
   const lineTotal = sale.lines.reduce((sum, line) => sum + lineSubtotal(line), 0);
   if ((sale.discount ?? 0) > 0 && lineTotal > 0) {
-    return Math.min(raw, Math.round((raw * sale.total) / lineTotal));
+    const goodsTotal = sale.total - (sale.shipping ?? 0);
+    return Math.min(raw, Math.round((raw * goodsTotal) / lineTotal));
   }
   return raw;
 }

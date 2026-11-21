@@ -1,4 +1,4 @@
-import type { Customer, Dataset, Supplier } from '../../../shared/data/types';
+import type { Customer, Dataset, InvoicePayment, Supplier } from '../../../shared/data/types';
 import type { PartyType, UnpaidInvoice } from './receivable-payable';
 
 // Pembayaran piutang pelanggan dan hutang pemasok (gambar klien 22 dan 23). Satu dokumen membayar
@@ -18,8 +18,32 @@ export function methodText(method: PayMethod): string {
   return PAY_METHODS.find((item) => item.value === method)?.text ?? method;
 }
 
+// Teks Metode Bayar dan Kas / Bank pada daftar: pembayaran Split memuat kedua bagian ("Tunai + Transfer",
+// "Kas + Bank"); teks yang sama ditulis sekali.
+function joined(values: readonly string[]): string {
+  return [...new Set(values)].join(' + ');
+}
+
+export function paymentMethodText(payment: DebtPayment): string {
+  const parts = payment.parts ?? [{ method: payment.method, account: payment.account, amount: 0 }];
+  return joined(parts.map((part) => methodText(part.method)));
+}
+
+export function paymentAccountText(payment: DebtPayment): string {
+  const parts = payment.parts ?? [{ method: payment.method, account: payment.account, amount: 0 }];
+  return joined(parts.map((part) => part.account));
+}
+
 export interface DebtAllocation {
   readonly invoiceNumber: string;
+  readonly amount: number;
+}
+
+// Satu bagian pembayaran: cara bayar, kas atau bank, dan nominalnya. Pembayaran biasa satu bagian;
+// pembayaran Split dua bagian, mis. tunai 75.000 dan transfer 25.000 untuk bayar 100.000.
+export interface DebtPaymentPart {
+  readonly method: PayMethod;
+  readonly account: string;
   readonly amount: number;
 }
 
@@ -35,6 +59,17 @@ export interface DebtPayment {
   readonly note: string;
   readonly userId: string;
   readonly allocations: readonly DebtAllocation[];
+  // Dua bagian bila dibayar Split; method dan account di atas mengikuti bagian pertama.
+  readonly parts?: readonly DebtPaymentPart[] | undefined;
+}
+
+// Isian Split pada formulir: bagian kedua (Cara Bayar, Kas / Bank, Nominal) dan nominal bagian pertama.
+// Jumlah kedua nominal harus sama dengan total pembayaran faktur.
+export interface SplitDraft {
+  readonly method: PayMethod | '';
+  readonly account: string;
+  readonly firstAmount: number;
+  readonly amount: number;
 }
 
 export interface DebtPaymentDraft {
@@ -46,6 +81,8 @@ export interface DebtPaymentDraft {
   readonly account: string;
   // Jumlah bayar per nomor faktur.
   readonly allocations: Readonly<Record<string, number>>;
+  // Kosong bila Split tidak dicentang.
+  readonly split?: SplitDraft | undefined;
 }
 
 export function numberPrefix(type: PartyType): string {
@@ -128,18 +165,21 @@ export function seedDebtPayments(dataset: Dataset, ownerId: string): readonly De
   ];
 }
 
-export type PaymentIssue = 'pihak' | 'tanggal' | 'nominal' | 'lebih';
+export type PaymentIssue = 'pihak' | 'tanggal' | 'nominal' | 'lebih' | 'splitCara' | 'splitJumlah';
 
 export type PaymentCheck =
   | {
       readonly ok: true;
       readonly total: number;
       readonly allocations: readonly DebtAllocation[];
+      // Hanya ada pada pembayaran Split.
+      readonly parts?: readonly DebtPaymentPart[];
     }
   | { readonly ok: false; readonly issue: PaymentIssue; readonly invoiceNumber?: string };
 
 // Pemeriksaan sebelum menyimpan: pihak terpilih, tanggal terisi, ada nominal, dan tiap alokasi tidak
-// melebihi sisa fakturnya.
+// melebihi sisa fakturnya. Pada Split, bagian kedua harus memilih cara bayar dan kas atau bank yang
+// berbeda dari bagian pertama, kedua nominal terisi, dan jumlahnya sama dengan total.
 export function checkPayment(
   draft: DebtPaymentDraft,
   invoices: readonly UnpaidInvoice[],
@@ -165,17 +205,47 @@ export function checkPayment(
   if (total <= 0) {
     return { ok: false, issue: 'nominal' };
   }
-  return { ok: true, total, allocations };
+  const split = draft.split;
+  if (split === undefined) {
+    return { ok: true, total, allocations };
+  }
+  if (
+    split.method === '' ||
+    split.account === '' ||
+    (split.method === draft.method && split.account === draft.account)
+  ) {
+    return { ok: false, issue: 'splitCara' };
+  }
+  const first = Math.round(split.firstAmount);
+  const second = Math.round(split.amount);
+  if (first <= 0 || second <= 0 || first + second !== total) {
+    return { ok: false, issue: 'splitJumlah' };
+  }
+  return {
+    ok: true,
+    total,
+    allocations,
+    parts: [
+      { method: draft.method, account: draft.account, amount: first },
+      { method: split.method, account: split.account, amount: second },
+    ],
+  };
 }
 
-// Pelanggan setelah pembayaran: `paid` tiap faktur bertambah sebesar alokasinya.
+// Pelanggan setelah pembayaran: `paid` tiap faktur bertambah sebesar alokasinya. Pada Split, faktur
+// dilunasi dengan bagian pertama dulu; bagian yang habis dilanjutkan dengan bagian berikutnya, jadi
+// satu faktur bisa memuat dua catatan bayar.
 export function applyToCustomer(
   customer: Customer,
   allocations: readonly DebtAllocation[],
   date: string,
-  method: PayMethod,
+  how: PayMethod | readonly DebtPaymentPart[],
 ): Customer {
   const byInvoice = new Map(allocations.map((item) => [item.invoiceNumber, item.amount]));
+  const queue =
+    typeof how === 'string'
+      ? [{ method: how, left: Number.POSITIVE_INFINITY }]
+      : how.map((part) => ({ method: part.method, left: part.amount }));
   return {
     ...customer,
     invoices: customer.invoices.map((invoice) => {
@@ -183,13 +253,24 @@ export function applyToCustomer(
       if (amount === undefined) {
         return invoice;
       }
+      const recorded: InvoicePayment[] = [];
+      let rest = amount;
+      for (const part of queue) {
+        const take = Math.min(rest, part.left);
+        if (take > 0) {
+          recorded.push({
+            method: part.method === 'edc' ? 'transfer' : part.method,
+            at: date,
+            amount: take,
+          });
+          part.left -= take;
+          rest -= take;
+        }
+      }
       return {
         ...invoice,
         paid: invoice.paid + amount,
-        payments: [
-          ...(invoice.payments ?? []),
-          { method: method === 'edc' ? 'transfer' : method, at: date, amount },
-        ],
+        payments: [...(invoice.payments ?? []), ...recorded],
       };
     }),
   };

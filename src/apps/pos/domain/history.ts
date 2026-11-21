@@ -165,11 +165,12 @@ export function visibleReceipts(
 }
 
 // Subtotal baris sebelum diskon, diskon baris (selisih terhadap total tersimpan di luar Diskon
-// Transaksi), Diskon Transaksi, dan grand total.
+// Transaksi dan Biaya Kirim), Diskon Transaksi, Biaya Kirim, dan grand total.
 export function saleBreakdown(sale: Sale): {
   readonly subtotal: number;
   readonly discount: number;
   readonly transactionDiscount: number;
+  readonly shipping: number;
   readonly grandTotal: number;
 } {
   const gross =
@@ -177,10 +178,12 @@ export function saleBreakdown(sale: Sale): {
       ? sale.total
       : sale.lines.reduce((sum, line) => sum + lineGross(line), 0);
   const transactionDiscount = Math.max(0, sale.discount ?? 0);
+  const shipping = Math.max(0, sale.shipping ?? 0);
   return {
     subtotal: gross,
-    discount: Math.max(0, gross - sale.total - transactionDiscount),
+    discount: Math.max(0, gross - (sale.total - shipping) - transactionDiscount),
     transactionDiscount,
+    shipping,
     grandTotal: sale.total,
   };
 }

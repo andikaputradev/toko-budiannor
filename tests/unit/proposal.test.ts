@@ -144,16 +144,20 @@ describe('barang proposal', () => {
     expect(engsel.minByWarehouse?.display).toBe(12);
   });
 
-  it('Grosir hanya berbeda pada Engsel', () => {
+  it('Engsel Bellucci SN 5 memuat harga Grosir dari Form Data Barang', () => {
     const engsel = product('ENGSEL BELLUCCI SN 5');
     expect(engsel.prices['PSG']?.grosir).toBe(55000);
     expect(engsel.prices['LSN']?.grosir).toBe(630000);
     expect(engsel.prices['DOS']?.grosir).toBe(6000000);
+  });
+
+  // Revisi tambahan POS: harga kartu mengikuti kategori pelanggan, jadi setiap satuan barang proposal
+  // harus punya harga Grosir yang terlihat berbeda (lebih rendah) dari Eceran, bukan sama.
+  it('setiap satuan barang proposal punya harga Grosir di bawah Eceran', () => {
     for (const item of PROPOSAL_PRODUCTS) {
-      for (const prices of Object.values(item.prices)) {
-        if (item !== engsel) {
-          expect(prices.grosir).toBe(prices.eceran);
-        }
+      for (const [unit, prices] of Object.entries(item.prices)) {
+        expect(prices.grosir, `${item.name} ${unit}`).toBeLessThan(prices.eceran);
+        expect(prices.grosir, `${item.name} ${unit}`).toBeGreaterThan(0);
       }
     }
   });

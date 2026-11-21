@@ -38,6 +38,13 @@ export function createPaySummary(session: PosSession): PaySummary {
     el('dt', { text: label('diskonTransaksiBaris') }),
     el('dd', {}, billDiscountValue),
   );
+  const shippingValue = el('output', { className: 'is-end pos-pay__shipping' });
+  const shippingRow = el(
+    'div',
+    { attrs: { hidden: '' } },
+    el('dt', { text: label('menuBiayaKirim') }),
+    el('dd', {}, shippingValue),
+  );
   const totalRow = el('output', { className: 'is-end' });
   const toggle = el(
     'button',
@@ -55,6 +62,7 @@ export function createPaySummary(session: PosSession): PaySummary {
     el('div', {}, el('dt', { text: label('kolomSubtotal') }), el('dd', {}, subtotalRow)),
     discountRow,
     billDiscountRow,
+    shippingRow,
     el(
       'div',
       { className: 'pos-pay__breakdown-total' },
@@ -106,6 +114,9 @@ export function createPaySummary(session: PosSession): PaySummary {
     const billDiscount = session.billDiscountAmount();
     billDiscountValue.textContent = `-${formatRupiah(billDiscount)}`;
     billDiscountRow.hidden = billDiscount === 0;
+    const shipping = session.shippingFee();
+    shippingValue.textContent = `+${formatRupiah(shipping)}`;
+    shippingRow.hidden = shipping === 0;
     totalRow.textContent = formatRupiah(session.summary().total);
   };
   return { element, paint };

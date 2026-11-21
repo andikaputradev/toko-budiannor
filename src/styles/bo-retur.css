@@ -1132,3 +1132,285 @@
   outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: 2px;
 }
+
+/* ---------- Tata letak Retur (revisi tambahan) ----------
+ * Keluhan klien: daftar barang yang diretur terlalu kecil dan mepet. Sebelumnya panel Penyelesaian
+ * memakai hampir separuh layar, jadi kolom kiri sempit dan tabel barang hanya satu baris. Sekarang
+ * panel Penyelesaian satu kolom sempit di kanan, Faktur Asal dua baris di atas tabel, dan tabel barang
+ * mengisi sisa tinggi layar dengan kolom yang lega. Awalan `.bo-ret` menaikkan spesifisitas supaya
+ * menang atas aturan lama di bo-fit, bo-rapi, dan bo-seragam tanpa bergantung pada urutan muat. */
+
+html[data-app='bo'] .bo-form-page.bo-ret {
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-head {
+  padding-block: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-head__main > div:not(.bo-ret-head__icon) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(380px, 31vw, 440px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-main {
+  gap: 8px;
+  overflow: hidden;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-card {
+  gap: 6px;
+  padding: 10px 14px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-card__title {
+  font-size: 15px;
+}
+
+/* Isian dan tombol di kartu Retur setinggi 34 px supaya tabel barang mendapat sisa tinggi layar. */
+html[data-app='bo'] .bo-ret .bo-ret-card .input,
+html[data-app='bo'] .bo-ret .bo-ret-card select {
+  height: 34px;
+  min-height: 34px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-card .btn {
+  height: 34px;
+  min-height: 34px;
+  padding-block: 0;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-reason {
+  height: auto;
+}
+
+/* Faktur Asal: Pelanggan di kolom sempit dan Faktur di kolom lebar; di bawahnya Cari Nomor Faktur di kiri
+   dan ringkasan faktur (dua kali dua) di kanan. */
+html[data-app='bo'] .bo-ret .bo-ret-source {
+  --bo-label-w: 7.4rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 4px 14px;
+  align-items: center;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-facts {
+  grid-column: 2;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  justify-content: space-between;
+  gap: 0 10px;
+  padding: 2px 10px;
+  border-radius: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-fact {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-fact dt,
+html[data-app='bo'] .bo-ret .bo-ret-fact dd {
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-fact dt {
+  flex: none;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-fact dd {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-paid {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-paid .badge {
+  min-height: 18px;
+  padding: 0 8px;
+  font-size: 11.5px;
+}
+
+/* Barang yang Diretur: mengisi sisa tinggi, kolom lega, nama barang satu baris dengan title. */
+html[data-app='bo'] .bo-ret .bo-ret-main > .bo-ret-card:last-child {
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table th {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13.5px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table td {
+  height: 44px;
+  padding: 4px 12px;
+  font-size: 14.5px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table .bo-ret-col-pick {
+  width: 56px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table .bo-ret-col-qty {
+  width: 168px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table th.bo-ret-num,
+html[data-app='bo'] .bo-ret .bo-ret-table td.bo-ret-num {
+  width: 112px;
+  text-align: right;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table th:last-child,
+html[data-app='bo'] .bo-ret .bo-ret-table td:last-child {
+  width: 124px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-table tbody td:nth-child(2) {
+  overflow: hidden;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-code {
+  font-size: 12.5px;
+}
+
+/* Baris Total Retur ikut tergulir di akhir daftar (tidak menempel) supaya satu baris barang lagi
+   terlihat; totalnya selalu tampak juga di kotak Nilai Retur. */
+html[data-app='bo'] .bo-ret .bo-ret-table tfoot td {
+  height: 36px;
+  font-size: 14.5px;
+}
+
+/* Penyelesaian Retur: satu kolom sempit di kanan; Nilai Retur dan tombol Simpan sebaris. */
+html[data-app='bo'] .bo-ret .bo-ret-aside {
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-aside > .bo-ret-card {
+  gap: 8px;
+  overflow-y: auto;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-aside .bo-ret-settle {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-settle__fields {
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-settle .field {
+  --bo-label-w: 9.2rem;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-reason {
+  min-height: 48px;
+  font-size: 13.5px;
+}
+
+/* Chip alasan melintang selebar panel di bawah isian Alasan (selektor panjang agar menang atas aturan
+   umum field di bo-seragam yang menaruh isi di kolom kedua). */
+html[data-app='bo'] .bo-ret .bo-ret-settle .field > .bo-ret-chips {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 4px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-reason-chip {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  padding: 8px 10px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-summary > .bo-ret-total {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 4px 12px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-summary > .bo-ret-save {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  width: auto;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-summary > .bo-ret-summary__title,
+html[data-app='bo'] .bo-ret .bo-ret-summary > .bo-ret-impact {
+  grid-column: 1 / -1;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-total__value {
+  font-size: 22px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-impact {
+  gap: 4px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-impact__row {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Layar sempit: satu kolom, halaman boleh menggulir seperti semula. */
+@media (max-width: 1100px) {
+  html[data-app='bo'] .bo-ret .bo-ret-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  html[data-app='bo'] .bo-ret .bo-ret-main {
+    overflow: visible;
+  }
+
+  html[data-app='bo'] .bo-ret .bo-ret-source {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-app='bo'] .bo-ret .bo-ret-facts {
+    grid-column: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-app='bo'] .bo-ret .bo-ret-main .bo-ret-table-wrap {
+    min-height: 260px;
+  }
+}

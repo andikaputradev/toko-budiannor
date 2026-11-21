@@ -245,6 +245,7 @@ describe('struk dari penjualan berdiskon dan konsistensi riwayat', () => {
       subtotal: 140000,
       discount: 0,
       transactionDiscount: 0,
+      shipping: 0,
       grandTotal: 140000,
     });
     expect(saleReceipt(session, sale, 'sale').items[0]).not.toHaveProperty('discount');

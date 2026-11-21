@@ -268,7 +268,7 @@ html[data-app='bo'] .bo-debt-form {
 
 html[data-app='bo'] .bo-debt-card--fields {
   align-content: start;
-  gap: 10px;
+  gap: 6px;
   overflow: auto;
 }
 
@@ -281,8 +281,8 @@ html[data-app='bo'] .bo-debt .field.bo-debt-field {
 }
 
 html[data-app='bo'] .bo-debt .field.bo-debt-field .input {
-  height: 36px;
-  min-height: 36px;
+  height: 34px;
+  min-height: 34px;
 }
 
 html[data-app='bo'] .bo-debt-sep {
@@ -290,6 +290,39 @@ html[data-app='bo'] .bo-debt-sep {
   margin: 2px 0;
   border: 0;
   border-top: 1px solid var(--color-border-default);
+}
+
+/* Split (revisi tambahan): label dan kotak centang di kiri, lalu bagian kedua dengan tiga isian yang
+   sama dengan bagian pertama. Isian kedua redup dan terkunci sampai Split dicentang. */
+html[data-app='bo'] .bo-debt-split {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 24px;
+}
+
+html[data-app='bo'] .bo-debt-split__label {
+  width: 6.5rem;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+html[data-app='bo'] .bo-debt-split__check {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-accent-default);
+  cursor: pointer;
+}
+
+html[data-app='bo'] .bo-debt-splitgroup {
+  display: grid;
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-debt-splitgroup.is-off {
+  opacity: 0.6;
 }
 
 html[data-app='bo'] .bo-debt-nominal {
@@ -314,8 +347,8 @@ html[data-app='bo'] .bo-debt-iconbtn {
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--color-border-default);
   background: var(--color-bg-surface);
   color: var(--color-text-primary);

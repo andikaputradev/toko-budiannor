@@ -86,6 +86,7 @@ export function saleReceipt(session: PosSession, sale: Sale, kind: ReceiptKind):
     ...(sale.discount === undefined || sale.discount <= 0
       ? {}
       : { transactionDiscount: sale.discount }),
+    ...(sale.shipping === undefined || sale.shipping <= 0 ? {} : { shipping: sale.shipping }),
     ...(sale.note === undefined ? {} : { note: sale.note }),
   };
 }
