@@ -1292,8 +1292,6 @@ export const labels = {
   labelSatuan2: 'Satuan 2',
   labelSatuan3: 'Satuan 3',
   judulModalImpor: 'Impor Data Excel',
-  btnMuatContohExcel: 'Muat Contoh 10 SKU Excel',
-  pesanImporBerhasil: 'Berhasil mengimpor {jumlah} barang.',
   // Tahap 4 - Form Penjualan, Form Pembelian, Surat Jalan Ekspedisi, Daftar Nota
   formPenjualanJudul: 'Form Faktur Penjualan',
   tombolBaru: 'Baru',

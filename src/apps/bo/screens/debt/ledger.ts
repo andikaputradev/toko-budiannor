@@ -48,7 +48,9 @@ export function recordPayment(session: BoSession, draft: DebtPaymentDraft): Debt
       return { ok: false, issue: 'pihak' };
     }
     partyName = customer.name;
-    store.saveCustomer(applyToCustomer(customer, check.allocations, draft.date, draft.method));
+    store.saveCustomer(
+      applyToCustomer(customer, check.allocations, draft.date, check.parts ?? draft.method),
+    );
   } else {
     const supplier = data.suppliers.find((item) => item.id === draft.partyId);
     if (supplier === undefined) {
@@ -70,6 +72,7 @@ export function recordPayment(session: BoSession, draft: DebtPaymentDraft): Debt
     note: draft.note.trim(),
     userId: session.state().user?.id ?? store.getState().userId,
     allocations: check.allocations,
+    ...(check.parts === undefined ? {} : { parts: check.parts }),
   });
   return { ok: true, number, total: check.total };
 }

@@ -98,3 +98,18 @@ export function refineA11y(root: HTMLElement): void {
   nameBareSelects(root);
   focusScrollRegions(root);
 }
+
+// Teks yang terpotong titik-titik (nama barang panjang di daftar dan tabel) diberi title saat kursor
+// menyentuhnya, sehingga tulisan selengkapnya muncul tanpa mengubah lebar kolom. Satu pendengar di
+// wadah isi cukup untuk semua layar; title dipasang sekali dan hanya bila teksnya memang terpotong.
+export function revealTruncatedText(host: HTMLElement): void {
+  host.addEventListener('mouseover', (event) => {
+    const cell =
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>('td, .vtable__cell')
+        : null;
+    if (cell !== null && !cell.hasAttribute('title') && cell.scrollWidth > cell.clientWidth) {
+      cell.title = cell.textContent.trim();
+    }
+  });
+}

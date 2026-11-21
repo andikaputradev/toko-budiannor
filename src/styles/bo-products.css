@@ -10,17 +10,19 @@
   min-height: 0;
 }
 
-/* Formulir lima kolom (gambar klien 51, final): Nama dan tiga baris Satuan; Barcode, Kategori, Merk, lalu
-   Catatan; stok minimum dan berat; Komisi, Promo, Rak, Kode; dan foto dengan jumlah barang. Grid
-   dengan penempatan eksplisit: urutan DOM (urutan kursor Tab dan Enter) mengikuti dokumen klien, yaitu
-   nama, satuan 1 sampai 3, barcode, kategori, merk, min stok all, min stok toko, berat, komisi, promo,
-   rak, catatan, foto; bukan urutan kolom. Empat baris setinggi isian, jadi tampilan tetap baku walau
-   barang hanya punya satu satuan. Tidak menggulir sendiri. */
+/* Formulir lima kolom (gambar klien 51, final): Nama dan tiga baris Satuan di kolom terlebar; Barcode,
+   Kategori, Merk di kolom sempit (barcode 8 sampai 12 karakter, kategori dan merk pendek); Catatan
+   memanjang ke kolom stok minimum di sebelahnya karena baris keempat kolom itu kosong; stok minimum dan
+   berat; Komisi, Promo, Rak, Kode; dan foto dengan jumlah barang. Grid dengan penempatan eksplisit:
+   urutan DOM (urutan kursor Tab dan Enter) mengikuti dokumen klien, yaitu nama, satuan 1 sampai 3,
+   barcode, kategori, merk, min stok all, min stok toko, berat, komisi, promo, rak, catatan, foto; bukan
+   urutan kolom. Empat baris setinggi isian, jadi tampilan tetap baku walau barang hanya punya satu
+   satuan. Tidak menggulir sendiri. */
 .bo-pd-form {
   display: grid;
   flex: none;
   grid-template-columns:
-    minmax(0, 1.35fr) minmax(0, 1.4fr) minmax(0, 0.95fr) minmax(0, 0.85fr)
+    minmax(0, 1.95fr) minmax(0, 1.05fr) minmax(0, 1.05fr) minmax(0, 0.95fr)
     132px;
   grid-template-rows: repeat(4, 32px);
   align-content: start;
@@ -88,7 +90,7 @@
 }
 
 .bo-pd-f--catatan {
-  grid-area: 4 / 2;
+  grid-area: 4 / 2 / 5 / 4;
 }
 
 .bo-pd-f--minall {
@@ -602,8 +604,8 @@ html[data-app='bo'] .bo-pd button.vtable__sort:focus-visible {
 }
 
 .bo-pd-search {
-  flex: 1 1 160px;
-  min-width: 120px;
+  flex: 1 1 320px;
+  min-width: 160px;
   height: 34px;
   padding: 0 12px;
   border: 1px solid var(--bo-line-strong);

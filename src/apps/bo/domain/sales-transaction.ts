@@ -177,7 +177,8 @@ export function salesDraftFromNumber(
         lastSalePrice: line.unitPrice,
       };
     });
-    const totals = calculateSalesTotals(lines, sale.discount ?? 0, 0);
+    // Biaya Kirim dari POS tampil sebagai ongkos kirim faktur supaya total faktur sama dengan total kasir.
+    const totals = calculateSalesTotals(lines, sale.discount ?? 0, sale.shipping ?? 0);
     return {
       ...emptyDraft(sale.number, sale.createdAt.slice(0, 10)),
       customerId: customer?.id,

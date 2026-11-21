@@ -2,7 +2,7 @@ import { el } from '../../shared/dom';
 import { label, message } from '../../shared/messages';
 import { createBanner } from '../../shared/ui/banner';
 import { closeAllModals } from '../../shared/ui/modal';
-import { refineA11y } from './a11y-refine';
+import { refineA11y, revealTruncatedText } from './a11y-refine';
 import {
   closeTab,
   initialTabs,
@@ -69,6 +69,7 @@ export function createWorkspace(
     },
   });
   shell.tabsHost.append(strip.element);
+  revealTruncatedText(shell.content);
 
   const dispose = (key: string): void => {
     const panel = panels.get(key);

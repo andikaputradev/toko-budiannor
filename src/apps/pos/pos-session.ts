@@ -28,6 +28,7 @@ import {
   MAX_BILL_LINES,
   mergeLines,
   netTotal,
+  normalizeShippingFee,
   removeLine,
   repriceLines,
   replaceLine,
@@ -129,6 +130,8 @@ export interface PosState {
   readonly lines: readonly BillLine[];
   // Diskon Transaksi atas seluruh pesanan (persen atau nominal); kosong bila tidak ada.
   readonly billDiscount: LineDiscount | undefined;
+  // Biaya Kirim atas pesanan dalam rupiah; 0 bila tidak ada. Menambah total di luar diskon.
+  readonly shippingFee: number;
   // Catatan opsional di layar pembayaran; ikut tersimpan pada penjualan.
   readonly paymentNote: string;
   readonly rows: readonly PaymentRow[];
@@ -243,8 +246,11 @@ export interface PosSession {
   subtotal(): number;
   billDiscountAmount(): number;
   setBillDiscount(discount: LineDiscount | undefined, authorized?: boolean): FlowResult;
+  // Biaya Kirim (menu titik tiga): dalam rupiah bulat, 0 menghapusnya.
+  shippingFee(): number;
+  setShippingFee(amount: number): FlowResult;
   setPaymentNote(note: string): void;
-  // Mengosongkan keranjang, pelanggan, diskon transaksi, dan pembayaran untuk pesanan baru.
+  // Mengosongkan keranjang, pelanggan, diskon transaksi, biaya kirim, dan pembayaran untuk pesanan baru.
   startNewOrder(): void;
   holdBill(): HeldBill | undefined;
   recallBill(id: string): FlowResult;
@@ -308,6 +314,7 @@ const EMPTY_ORDER = {
   lines: [] as readonly BillLine[],
   customerId: undefined as string | undefined,
   billDiscount: undefined as LineDiscount | undefined,
+  shippingFee: 0,
   paymentNote: '',
   ...EMPTY_PAYMENT,
 };
@@ -332,6 +339,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       customerId: undefined,
       lines: [],
       billDiscount: undefined,
+      shippingFee: 0,
       paymentNote: '',
       ...EMPTY_PAYMENT,
       heldBills: data.bills,
@@ -370,7 +378,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
     store.getState().data.customers.find((item) => item.id === state.customerId);
   const tier = (): Tier => customer()?.tier ?? 'eceran';
   const demoNow = (): Date => new Date(store.getState().data.referenceDate);
-  const total = (): number => netTotal(state.lines, state.billDiscount);
+  const total = (): number => netTotal(state.lines, state.billDiscount, state.shippingFee);
   const userName = (id: string): string =>
     store.getState().data.users.find((user) => user.id === id)?.name ?? id;
   const currentUser = (): string => userName(store.getState().userId);
@@ -392,11 +400,17 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         state = { ...state, billDiscount: undefined };
       }
     }
-    if (next.lines !== undefined || next.rows !== undefined || 'billDiscount' in next) {
-      state = {
-        ...state,
-        rows: syncReceivableRow(state.rows, netTotal(state.lines, state.billDiscount)),
-      };
+    // Biaya Kirim hanya berlaku untuk pesanan berisi barang.
+    if (state.shippingFee > 0 && state.lines.length === 0) {
+      state = { ...state, shippingFee: 0 };
+    }
+    if (
+      next.lines !== undefined ||
+      next.rows !== undefined ||
+      'billDiscount' in next ||
+      'shippingFee' in next
+    ) {
+      state = { ...state, rows: syncReceivableRow(state.rows, total()) };
     }
     store.reportQueue(
       state.queue.filter((item) => item.status === 'menunggu' || item.status === 'mengirim').length,
@@ -1010,6 +1024,22 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       commit({ billDiscount: discount, ownerApproved: false });
       return { ok: true };
     },
+    shippingFee: () => state.shippingFee,
+    setShippingFee: (amount) => {
+      const fee = normalizeShippingFee(amount);
+      if (fee === undefined) {
+        return fail('MSG-030');
+      }
+      if (fee === 0) {
+        commit({ shippingFee: 0, ownerApproved: false });
+        return { ok: true };
+      }
+      if (state.lines.length === 0) {
+        return fail('MSG-025');
+      }
+      commit({ shippingFee: fee, ownerApproved: false });
+      return { ok: true };
+    },
     setPaymentNote: (note) => {
       commit({ paymentNote: note.slice(0, PAYMENT_NOTE_MAX) });
     },
@@ -1029,6 +1059,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         customerId: state.customerId,
         lines: state.lines,
         ...(state.billDiscount === undefined ? {} : { discount: state.billDiscount }),
+        ...(state.shippingFee > 0 ? { shipping: state.shippingFee } : {}),
       };
       commit({ heldBills: [...state.heldBills, held], ...EMPTY_ORDER });
       return held;
@@ -1047,6 +1078,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         lines: bill.lines,
         customerId: bill.customerId,
         billDiscount: bill.discount,
+        shippingFee: bill.shipping ?? 0,
         billRef: bill.number,
       });
       return { ok: true };
@@ -1100,6 +1132,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
         lines: result.moved,
         ...(shared.moved === undefined ? {} : { discount: shared.moved }),
       };
+      // Biaya Kirim tetap di bill asal; bill hasil pecahan tidak membawa biaya kirim.
       commit({
         heldBills: [
           ...state.heldBills.map((item) =>
@@ -1136,7 +1169,14 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
       commit({
         heldBills: state.heldBills
           .filter((item) => item.id !== sourceId)
-          .map((item) => (item.id === targetId ? { ...item, lines } : item)),
+          .map((item) => {
+            if (item.id !== targetId) {
+              return item;
+            }
+            // Biaya Kirim kedua bill dijumlahkan supaya tidak hilang saat digabung.
+            const shipping = (item.shipping ?? 0) + (source.shipping ?? 0);
+            return { ...item, lines, ...(shipping > 0 ? { shipping } : {}) };
+          }),
         activity: [...state.activity, entry('Merge bill', `${source.number} ke ${target.number}`)],
       });
       return { ok: true };
@@ -1308,6 +1348,7 @@ export function createPosSession(store: Store, options: PosSessionOptions = {}):
             ? { dueDays: days, dueDate: dueDateOf(now(), days) }
             : undefined,
         ...(transactionDiscount > 0 ? { discount: transactionDiscount } : {}),
+        ...(state.shippingFee > 0 ? { shipping: state.shippingFee } : {}),
         ...(state.paymentNote.trim() === '' ? {} : { note: state.paymentNote.trim() }),
       };
       const deductions: Record<string, number> = {};

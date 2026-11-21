@@ -204,8 +204,9 @@ export function renderReturnForm(
     'section',
     { className: 'bo-panel bo-ret-card' },
     el('h2', { className: 'bo-ret-card__title', text: label('boReturFakturAsal') }),
-    el('div', { className: 'bo-ret-source' }, party.root, invoice.root, searchField),
-    facts,
+    // Ringkasan faktur ada di dalam grid yang sama dengan isian: baris pertama Pelanggan dan Faktur,
+    // baris kedua pencarian nomor di kiri dan ringkasan faktur di kanan (hemat tinggi, tabel lega).
+    el('div', { className: 'bo-ret-source' }, party.root, invoice.root, searchField, facts),
   );
 
   // ---------- Barang yang diretur ----------
@@ -473,7 +474,7 @@ export function renderReturnForm(
       el(
         'td',
         {},
-        el('strong', { className: 'bo-ret-name', text: line.name }),
+        el('strong', { className: 'bo-ret-name', text: line.name, attrs: { title: line.name } }),
         el('div', { className: 'bo-ret-code', text: line.code }),
       ),
       el('td', {

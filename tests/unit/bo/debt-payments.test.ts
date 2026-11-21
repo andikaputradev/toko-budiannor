@@ -7,6 +7,8 @@ import {
   distribute,
   formatPaymentNumber,
   nextPaymentSequence,
+  paymentAccountText,
+  paymentMethodText,
   sumAllocations,
   type DebtPayment,
   type DebtPaymentDraft,
@@ -124,5 +126,156 @@ describe('pembayaran piutang dan hutang', () => {
     expect(nextPaymentSequence([], 'pemasok')).toBe(1);
     expect(formatPaymentNumber('pelanggan', 7)).toBe('PP-0007');
     expect(formatPaymentNumber('pemasok', 12)).toBe('PH-0012');
+  });
+});
+
+describe('pembayaran Split (revisi tambahan)', () => {
+  const split = (patch: Partial<NonNullable<DebtPaymentDraft['split']>> = {}) => ({
+    method: 'transfer' as const,
+    account: 'Bank',
+    firstAmount: 750,
+    amount: 500,
+    ...patch,
+  });
+  const base = { 'FJ-1': 1_000, 'FJ-2': 250 };
+
+  it('membagi total ke dua cara bayar dan mengembalikan kedua bagian', () => {
+    expect(checkPayment(draft(base, { split: split() }), invoices)).toEqual({
+      ok: true,
+      total: 1_250,
+      allocations: [
+        { invoiceNumber: 'FJ-1', amount: 1_000 },
+        { invoiceNumber: 'FJ-2', amount: 250 },
+      ],
+      parts: [
+        { method: 'tunai', account: 'Kas Toko', amount: 750 },
+        { method: 'transfer', account: 'Bank', amount: 500 },
+      ],
+    });
+  });
+
+  it('contoh dokumen: bayar 100.000 dengan tunai 75.000 dan transfer 25.000', () => {
+    const wide: UnpaidInvoice[] = [invoice('FJ-9', 400_000, '2026-09-01')];
+    const result = checkPayment(
+      draft({ 'FJ-9': 100_000 }, { split: split({ firstAmount: 75_000, amount: 25_000 }) }),
+      wide,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      total: 100_000,
+      parts: [
+        { method: 'tunai', amount: 75_000 },
+        { method: 'transfer', amount: 25_000 },
+      ],
+    });
+  });
+
+  it('menolak bagian kedua tanpa cara bayar atau kas dan bank, atau yang sama persis', () => {
+    expect(checkPayment(draft(base, { split: split({ method: '' }) }), invoices)).toEqual({
+      ok: false,
+      issue: 'splitCara',
+    });
+    expect(checkPayment(draft(base, { split: split({ account: '' }) }), invoices)).toEqual({
+      ok: false,
+      issue: 'splitCara',
+    });
+    expect(
+      checkPayment(
+        draft(base, { split: split({ method: 'tunai', account: 'Kas Toko' }) }),
+        invoices,
+      ),
+    ).toEqual({ ok: false, issue: 'splitCara' });
+    // Cara sama dengan kas atau bank berbeda masih sah.
+    expect(
+      checkPayment(draft(base, { split: split({ method: 'tunai', account: 'Bank' }) }), invoices),
+    ).toMatchObject({ ok: true });
+  });
+
+  it('menolak jumlah bagian yang tidak sama dengan total atau salah satunya kosong', () => {
+    expect(checkPayment(draft(base, { split: split({ amount: 400 }) }), invoices)).toEqual({
+      ok: false,
+      issue: 'splitJumlah',
+    });
+    expect(
+      checkPayment(draft(base, { split: split({ firstAmount: 0, amount: 1_250 }) }), invoices),
+    ).toEqual({ ok: false, issue: 'splitJumlah' });
+    expect(
+      checkPayment(draft(base, { split: split({ firstAmount: 1_250, amount: 0 }) }), invoices),
+    ).toEqual({ ok: false, issue: 'splitJumlah' });
+  });
+
+  it('tanpa nominal faktur tetap ditolak sebagai nominal, bukan split', () => {
+    expect(checkPayment(draft({}, { split: split() }), invoices)).toEqual({
+      ok: false,
+      issue: 'nominal',
+    });
+  });
+
+  it('riwayat bayar tiap faktur memakai bagian pertama dulu, sisanya bagian berikutnya', () => {
+    const customer = {
+      id: 'C-1',
+      invoices: [
+        { id: 'FJ-1', issuedAt: '2026-09-01', dueAt: '2026-10-01', amount: 1_100, paid: 100 },
+        { id: 'FJ-2', issuedAt: '2026-09-09', dueAt: '2026-10-09', amount: 3_100, paid: 100 },
+      ],
+    } as unknown as Customer;
+    const next = applyToCustomer(
+      customer,
+      [
+        { invoiceNumber: 'FJ-1', amount: 1_000 },
+        { invoiceNumber: 'FJ-2', amount: 500 },
+      ],
+      '2026-10-19',
+      [
+        { method: 'tunai', account: 'Kas Toko', amount: 750 },
+        { method: 'transfer', account: 'Bank', amount: 750 },
+      ],
+    );
+    expect(next.invoices[0]).toMatchObject({
+      paid: 1_100,
+      payments: [
+        { method: 'tunai', amount: 750 },
+        { method: 'transfer', amount: 250 },
+      ],
+    });
+    expect(next.invoices[1]).toMatchObject({
+      paid: 600,
+      payments: [{ method: 'transfer', amount: 500 }],
+    });
+  });
+
+  it('teks daftar menggabungkan cara bayar dan kas bank kedua bagian', () => {
+    const payment: DebtPayment = {
+      number: 'PP-0001',
+      type: 'pelanggan',
+      date: '2026-10-19',
+      partyId: 'C-1',
+      partyName: 'x',
+      method: 'tunai',
+      account: 'Kas',
+      total: 100_000,
+      note: '',
+      userId: 'U-1',
+      allocations: [],
+      parts: [
+        { method: 'tunai', account: 'Kas', amount: 75_000 },
+        { method: 'transfer', account: 'Bank', amount: 25_000 },
+      ],
+    };
+    expect(paymentMethodText(payment)).toBe('Tunai + Transfer');
+    expect(paymentAccountText(payment)).toBe('Kas + Bank');
+    const single: DebtPayment = { ...payment, parts: undefined };
+    expect(paymentMethodText(single)).toBe('Tunai');
+    expect(paymentAccountText(single)).toBe('Kas');
+    // Cara bayar sama dengan akun berbeda ditulis sekali.
+    expect(
+      paymentMethodText({
+        ...payment,
+        parts: [
+          { method: 'transfer', account: 'Kas', amount: 1 },
+          { method: 'transfer', account: 'Bank', amount: 2 },
+        ],
+      }),
+    ).toBe('Transfer');
   });
 });

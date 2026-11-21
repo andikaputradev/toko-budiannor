@@ -11,7 +11,6 @@ import { createProductPhoto, productPhotoUrl } from '../../../shared/ui/product-
 import { showToast } from '../../../shared/ui/toast';
 import { createVirtualGrid, type SortDirection } from '../../../shared/ui/virtual-grid';
 import { BO_DEVICE, BO_IP, type BoSession } from '../bo-session';
-import { getSampleExcelProducts } from '../domain/import-excel';
 import {
   parseOpening,
   perUnit,
@@ -226,14 +225,6 @@ export function renderProducts(session: BoSession): ScreenHandle {
       },
     },
     icon('refresh-cw'),
-  );
-  const btnImpor = el(
-    'button',
-    {
-      className: 'bo-pd-btn bo-pd-btn--icon',
-      attrs: { type: 'button', 'aria-label': label('boImporExcel'), title: label('boImporExcel') },
-    },
-    icon('download'),
   );
   const filterSelect = (
     caption: string,
@@ -1176,39 +1167,6 @@ export function renderProducts(session: BoSession): ScreenHandle {
     });
   });
 
-  btnImpor.addEventListener('click', () => {
-    openModal({
-      title: label('judulModalImpor'),
-      body: 'Pilih opsi impor data barang massal via format Excel item-import apk.xlsx:',
-      actions: [
-        { text: label('batal'), variant: 'secondary' },
-        {
-          text: label('btnMuatContohExcel'),
-          variant: 'primary',
-          onClick: () => {
-            const sample = getSampleExcelProducts();
-            const existingCodes = new Set(products().map((item) => item.code));
-            const fresh = sample.filter((item) => !existingCodes.has(item.code));
-            if (fresh.length === 0) {
-              showToast({ kind: 'info', text: '10 SKU contoh sudah ada di dalam katalog.' });
-              return;
-            }
-            fresh.forEach((item) => {
-              store.saveProduct(item);
-            });
-            showToast({
-              kind: 'success',
-              text: label('pesanImporBerhasil', { jumlah: String(fresh.length) }),
-            });
-            selectedId = fresh[0]?.id;
-            refreshList();
-            fillForm(fresh[0]);
-          },
-        },
-      ],
-    });
-  });
-
   btnCetak.addEventListener('click', () => {
     void import('./product-print').then(({ openProductPrint }) => {
       openProductPrint(session, products(), store.getState().role);
@@ -1386,7 +1344,6 @@ export function renderProducts(session: BoSession): ScreenHandle {
       btnInfo,
       btnCetak,
       btnRefresh,
-      btnImpor,
       searchInput,
       filterKategori.element,
       filterMerk.element,

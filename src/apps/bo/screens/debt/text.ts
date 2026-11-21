@@ -118,6 +118,11 @@ export const DEBT_TEXT = {
   caraBayar: 'Cara Bayar',
   kasBank: 'Kas / Bank',
   nominal: 'Nominal',
+  split: 'Split',
+  splitGrup: 'Pembayaran Split',
+  splitCara:
+    'Pilih Cara Bayar dan Kas / Bank pembayaran kedua yang berbeda dari pembayaran pertama.',
+  splitJumlah: 'Nominal kedua pembayaran harus terisi dan jumlahnya sama dengan Total Bayar.',
   bagiOtomatis: 'Bagi otomatis ke faktur terlama',
   rincianFaktur: 'Rincian Faktur',
   kolomTotalFaktur: 'Total Faktur',

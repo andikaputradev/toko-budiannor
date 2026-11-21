@@ -1963,3 +1963,5 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2010: "Laba Rugi Kotor". Kunci menuLabaRugi.
 - TB-2011: "Price List". Kunci menuPricelist.
 - TB-2012: "Daftar Harga dan Katalog". Kunci menuDaftarHarga.
+- TB-2013: "Pengguna". Kunci profilPengguna.
+- TB-2014: "Biaya Kirim". Kunci menuBiayaKirim.

@@ -383,6 +383,16 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     open(false);
   };
 
+  const openShipping = (): void => {
+    if (session.state().lines.length === 0) {
+      fail(message('MSG-025'));
+      return;
+    }
+    void import('./shipping-fee').then(({ openShippingFee }) => {
+      openShippingFee({ session, onDone: refocus });
+    });
+  };
+
   // Mulai Pesanan Baru menghapus seluruh keranjang; konfirmasi lebih dulu karena tidak tersimpan.
   const startNew = (): void => {
     openModal({
@@ -421,11 +431,12 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
     const frontliner = role() === 'frontliner';
     const subtotal = session.subtotal();
     const discount = session.billDiscountAmount();
+    const shipping = session.shippingFee();
     const total = session.total();
-    const items = state.lines.map((line, position) => {
-      const product = session.product(line.productId);
+    const items = state.lines.map((orderLine, position) => {
+      const product = session.product(orderLine.productId);
       return createOrderItem({
-        line,
+        line: orderLine,
         product,
         short: product !== undefined && isShort(state.lines, product, 0),
         onOpen: () => {
@@ -438,7 +449,7 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       });
     });
 
-    // Tiga pilihan di titik tiga: Open Bill (sama dengan Tahan Bill), Diskon Transaksi, dan Mulai
+    // Pilihan di titik tiga: Open Bill (sama dengan Tahan Bill), Diskon Transaksi, Biaya Kirim, dan Mulai
     // Pesanan Baru. Frontliner tidak boleh memberi diskon dan memakai Cetak Struk Draf sebagai tambahan.
     const menuItems: MenuItem[] = [
       { text: label('menuOpenBill'), icon: 'clipboard-list', onSelect: hold },
@@ -450,7 +461,10 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
         onSelect: openDiscount,
       });
     }
-    menuItems.push({ text: label('menuPesananBaru'), icon: 'plus', onSelect: startNew });
+    menuItems.push(
+      { text: label('menuBiayaKirim'), icon: 'truck', onSelect: openShipping },
+      { text: label('menuPesananBaru'), icon: 'plus', onSelect: startNew },
+    );
     if (frontliner) {
       menuItems.push({ text: label('cetakStrukDraf'), icon: 'printer', onSelect: draftReceipt });
     }
@@ -481,8 +495,17 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
       el('span', { text: label('pesananJumlah', { jumlah: state.lines.length }) }),
       el('strong', { className: 'pos-order-bar__total', text: formatRupiah(total) }),
     );
+    // Tanpa diskon dan biaya kirim cukup satu baris Subtotal; selain itu rincian: Subtotal, Diskon
+    // Transaksi, Biaya Kirim, lalu Total.
+    const line = (text: string, value: string, extra = ''): HTMLElement =>
+      el(
+        'p',
+        { className: `pos-order__line ${extra}`.trim() },
+        el('span', { text }),
+        el('output', { text: value }),
+      );
     const summary =
-      discount === 0
+      discount === 0 && shipping === 0
         ? [
             el(
               'p',
@@ -492,18 +515,19 @@ export function renderSell(session: PosSession, go: (path: string) => void): Scr
             ),
           ]
         : [
-            el(
-              'p',
-              { className: 'pos-order__line' },
-              el('span', { text: label('kolomSubtotal') }),
-              el('output', { text: formatRupiah(subtotal) }),
-            ),
-            el(
-              'p',
-              { className: 'pos-order__line pos-order__line--discount' },
-              el('span', { text: label('diskonTransaksiBaris') }),
-              el('output', { text: `-${formatRupiah(discount)}` }),
-            ),
+            line(label('kolomSubtotal'), formatRupiah(subtotal)),
+            ...(discount === 0
+              ? []
+              : [
+                  line(
+                    label('diskonTransaksiBaris'),
+                    `-${formatRupiah(discount)}`,
+                    'pos-order__line--discount',
+                  ),
+                ]),
+            ...(shipping === 0
+              ? []
+              : [line(label('menuBiayaKirim'), `+${formatRupiah(shipping)}`)]),
             el(
               'p',
               { className: 'pos-order__subtotal' },

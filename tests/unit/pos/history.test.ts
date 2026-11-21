@@ -235,6 +235,7 @@ describe('ringkasan metode dan penerimaan', () => {
       subtotal: 100000,
       discount: 10000,
       transactionDiscount: 0,
+      shipping: 0,
       grandTotal: 90000,
     });
     // Diskon Transaksi dipisahkan dari diskon baris.
@@ -242,19 +243,30 @@ describe('ringkasan metode dan penerimaan', () => {
       subtotal: 100000,
       discount: 10000,
       transactionDiscount: 5000,
+      shipping: 0,
       grandTotal: 85000,
+    });
+    // Biaya Kirim ada di dalam total tetapi bukan diskon baris.
+    expect(saleBreakdown({ ...discounted, total: 115000, shipping: 25000 })).toEqual({
+      subtotal: 100000,
+      discount: 10000,
+      transactionDiscount: 0,
+      shipping: 25000,
+      grandTotal: 115000,
     });
     const full: Sale = { ...discounted, total: 100000 };
     expect(saleBreakdown(full)).toEqual({
       subtotal: 100000,
       discount: 0,
       transactionDiscount: 0,
+      shipping: 0,
       grandTotal: 100000,
     });
     expect(saleBreakdown(sale('T-6', '2026-10-19T03:00:00Z', 'tunai', 100000))).toEqual({
       subtotal: 100000,
       discount: 0,
       transactionDiscount: 0,
+      shipping: 0,
       grandTotal: 100000,
     });
   });

@@ -822,6 +822,9 @@ export function renderHistory(session: PosSession, go: (path: string) => void): 
         breakdown.transactionDiscount > 0
           ? row(label('diskonTransaksiBaris'), `-${formatRupiah(breakdown.transactionDiscount)}`)
           : false,
+        breakdown.shipping > 0
+          ? row(label('menuBiayaKirim'), `+${formatRupiah(breakdown.shipping)}`)
+          : false,
         el(
           'p',
           { className: 'pos-history__row pos-history__row--grand' },

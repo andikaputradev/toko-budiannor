@@ -352,7 +352,8 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
     const more = bill.lines.length - Math.min(bill.lines.length, VISIBLE_LINES);
     const subtotal = billTotal(bill.lines);
     const discount = transactionDiscountAmount(subtotal, bill.discount);
-    const total = netTotal(bill.lines, bill.discount);
+    const shipping = bill.shipping ?? 0;
+    const total = netTotal(bill.lines, bill.discount, shipping);
     const moreButton =
       more > 0
         ? el(
@@ -391,6 +392,14 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
             { className: 'pos-bill-card__sum' },
             el('span', { text: label('diskonTransaksiBaris') }),
             el('output', { text: `-${formatRupiah(discount)}` }),
+          )
+        : false,
+      shipping > 0
+        ? el(
+            'p',
+            { className: 'pos-bill-card__sum' },
+            el('span', { text: label('menuBiayaKirim') }),
+            el('output', { text: `+${formatRupiah(shipping)}` }),
           )
         : false,
       el(

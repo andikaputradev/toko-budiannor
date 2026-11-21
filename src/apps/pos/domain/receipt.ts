@@ -34,6 +34,8 @@ export interface ReceiptInput {
   readonly change: number;
   // Diskon Transaksi (di luar diskon baris) dan catatan kasir pada struk penjualan.
   readonly transactionDiscount?: number | undefined;
+  // Biaya Kirim (di luar barang) dicetak di atas total.
+  readonly shipping?: number | undefined;
   readonly note?: string | undefined;
 }
 
@@ -131,6 +133,9 @@ export function buildReceipt(input: ReceiptInput): string[] {
         width,
       ),
     );
+  }
+  if ((input.shipping ?? 0) > 0) {
+    lines.push(...pair(label('menuBiayaKirim'), formatRupiah(input.shipping ?? 0), width));
   }
   lines.push(...pair(label('totalHuruf'), formatRupiah(input.total), width));
   for (const payment of input.payments) {

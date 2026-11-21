@@ -242,7 +242,7 @@ test.describe('A. Pesanan Baru', () => {
     await expect(page.locator('.pos-order__amount')).toHaveText('Rp 55.000');
   });
 
-  test('A9: menu titik tiga berisi Open Bill, Diskon Transaksi, dan Mulai Pesanan Baru', async ({
+  test('A9: menu titik tiga berisi Open Bill, Diskon Transaksi, Biaya Kirim, dan Mulai Pesanan Baru', async ({
     page,
   }) => {
     await loginPos(page);
@@ -251,6 +251,7 @@ test.describe('A. Pesanan Baru', () => {
     await expect(page.getByRole('menuitem')).toHaveText([
       'Open Bill',
       'Diskon Transaksi',
+      'Biaya Kirim',
       'Mulai Pesanan Baru',
     ]);
     await page.keyboard.press('Escape');
