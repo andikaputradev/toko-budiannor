@@ -1,5 +1,6 @@
 import '../../../styles/mobile-owner.css';
 import { wibDate } from '../../../shared/data/receivable';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { label } from '../../../shared/messages';
@@ -20,8 +21,7 @@ const BACK = '/owner/transaksi';
 const MAX_ROWS = 40;
 
 function matches(text: string, ...fields: readonly string[]): boolean {
-  const needle = text.trim().toLowerCase();
-  return needle === '' || fields.some((field) => field.toLowerCase().includes(needle));
+  return matchesPhrase(fields.join(' '), text);
 }
 
 interface PickerSetup {

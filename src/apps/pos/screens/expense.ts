@@ -1,4 +1,5 @@
 import { append, el } from '../../../shared/dom';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { formatDate, formatRupiah, formatTime } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label } from '../../../shared/messages';
@@ -70,12 +71,9 @@ export function renderExpense(session: PosSession, go: (path: string) => void): 
   });
 
   const matches = (item: Expense): boolean => {
-    const needle = query.trim().toLowerCase();
-    return (
-      needle === '' ||
-      [expenseNumber(item.id), label(EXPENSE_KIND_LABELS[item.kind]), item.note].some((text) =>
-        text.toLowerCase().includes(needle),
-      )
+    return matchesPhrase(
+      `${expenseNumber(item.id)} ${label(EXPENSE_KIND_LABELS[item.kind])} ${item.note}`,
+      query,
     );
   };
 

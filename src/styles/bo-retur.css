@@ -334,11 +334,6 @@
   text-align: right;
 }
 
-.bo-ret-qty-box > span {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
 .bo-ret-table tbody tr.is-picked td {
   background: var(--color-accent-soft);
 }
@@ -1201,19 +1196,24 @@ html[data-app='bo'] .bo-ret .bo-ret-source {
   align-items: center;
 }
 
+/* Ringkasan faktur memakai satu grid empat kolom (label, isi, label, isi) dengan baris bersama:
+   "Tanggal Faktur" dan "Nilai Faktur" sejajar di kiri, "Pelanggan" dan "Sudah Dibayar" sejajar di
+   tengah, dan tiap baris terpusat tegak walau salah satu isinya memuat lencana. */
 html[data-app='bo'] .bo-ret .bo-ret-facts {
   grid-column: 2;
-  grid-template-columns: repeat(2, minmax(0, auto));
-  justify-content: space-between;
-  gap: 0 10px;
-  padding: 2px 10px;
+  grid-template-columns: max-content max-content max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 8px;
+  padding: 4px 10px;
   border-radius: 8px;
 }
 
 html[data-app='bo'] .bo-ret .bo-ret-fact {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 8px;
+  display: contents;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-fact:nth-child(even) dt {
+  margin-left: 12px;
 }
 
 html[data-app='bo'] .bo-ret .bo-ret-fact dt,
@@ -1271,18 +1271,40 @@ html[data-app='bo'] .bo-ret .bo-ret-table .bo-ret-col-pick {
 }
 
 html[data-app='bo'] .bo-ret .bo-ret-table .bo-ret-col-qty {
-  width: 168px;
+  width: 200px;
 }
 
 html[data-app='bo'] .bo-ret .bo-ret-table th.bo-ret-num,
 html[data-app='bo'] .bo-ret .bo-ret-table td.bo-ret-num {
-  width: 112px;
+  width: 100px;
   text-align: right;
 }
 
 html[data-app='bo'] .bo-ret .bo-ret-table th:last-child,
 html[data-app='bo'] .bo-ret .bo-ret-table td:last-child {
-  width: 124px;
+  width: 118px;
+}
+
+/* Jumlah retur dan satuannya (pilihan) sebaris; satuan boleh diganti, mis. faktur 3 Lusin diretur
+   10 Pcs. */
+html[data-app='bo'] .bo-ret .bo-ret-qty-box {
+  gap: 6px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-qty {
+  flex: none;
+  width: 72px;
+}
+
+html[data-app='bo'] .bo-ret .bo-ret-unit {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 34px;
+  min-height: 34px;
+  padding-right: 24px;
+  padding-left: 8px;
+  font-size: 14px;
 }
 
 html[data-app='bo'] .bo-ret .bo-ret-name {

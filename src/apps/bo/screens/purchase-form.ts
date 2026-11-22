@@ -21,7 +21,8 @@ import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
-import { itemCountText } from './trx/text';
+import { createPartySearch, supplierParties } from './trx/party-search';
+import { itemCountText, TRX_TEXT } from './trx/text';
 
 const EXPEDITIONS = [
   'JNE Cargo',
@@ -43,7 +44,8 @@ const TEXT = {
   ekspedisi: 'Ekspedisi',
   keterangan: 'Keterangan',
   kepala: 'Data faktur pembelian',
-  pilihPemasok: '-- Pilih Pemasok --',
+  daftarPemasok: 'Daftar pemasok',
+  pemasokKosong: 'Pemasok tidak ditemukan.',
   pilihPo: '-- Pilih PO Pending --',
   nomorSuratJalan: 'Nomor Surat Jalan / Faktur Supplier',
   catatan: 'Catatan penerimaan barang ...',
@@ -94,7 +96,17 @@ export function renderPurchaseForm(
     attrs: { type: 'text', readonly: 'true', tabindex: '-1', value: draft.invoiceNumber },
   });
   const poSelectEl = el('select', { className: 'input is-select' });
-  const supplierSelectEl = el('select', { className: 'input is-select' });
+  // Pemasok dicari seperti nama barang; memilih atau mengosongkannya memperbarui info hutang.
+  const supplierEl = createPartySearch({
+    parties: () => supplierParties(store.getState().data.suppliers),
+    placeholder: TRX_TEXT.cariPilih,
+    emptyText: TEXT.pemasokKosong,
+    listLabel: TEXT.daftarPemasok,
+    onChange: () => {
+      dataset = store.getState().data;
+      syncSupplierInfo();
+    },
+  });
   const supplierInvNoEl = el('input', {
     className: 'input',
     attrs: { type: 'text', placeholder: TEXT.nomorSuratJalan },
@@ -122,7 +134,14 @@ export function renderPurchaseForm(
       { key: 'invoice', label: TEXT.nomor, control: invoiceNumEl, col: 1, row: 1 },
       { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 2 },
       { key: 'po', label: TEXT.noPo, control: poSelectEl, col: 1, row: 3 },
-      { key: 'supplier', label: TEXT.pemasok, control: supplierSelectEl, col: 2, row: 1 },
+      {
+        key: 'supplier',
+        label: TEXT.pemasok,
+        control: supplierEl.root,
+        labelFor: supplierEl.input,
+        col: 2,
+        row: 1,
+      },
       { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 2, row: 2 },
       {
         key: 'tempo',
@@ -209,7 +228,7 @@ export function renderPurchaseForm(
     );
 
   function syncSupplierInfo(): void {
-    const supplier = dataset.suppliers.find((item) => item.id === supplierSelectEl.value);
+    const supplier = dataset.suppliers.find((item) => item.id === supplierEl.value());
     if (supplier === undefined) {
       debtBoxEl.replaceChildren(
         debtRow(label('labelTotalHutang'), formatRupiah(0)),
@@ -244,7 +263,7 @@ export function renderPurchaseForm(
     draft = source;
     invoiceNumEl.value = source.invoiceNumber;
     dateEl.value = source.date;
-    selectSupplier(source.supplierId, source.supplierName);
+    supplierEl.set(source.supplierId, source.supplierName);
     totals.discount.value = formatDecimal(source.invoiceDiscount, 2);
     supplierInvNoEl.value = source.supplierInvoiceNumber;
     notesEl.value = source.notes;
@@ -254,45 +273,6 @@ export function renderPurchaseForm(
     lines = source.lines.map(purchaseToDocLine);
     syncSupplierInfo();
     recalc();
-  }
-
-  // Nota contoh Daftar Nota memuat nama pemasok yang belum tentu ada di master: pilihannya
-  // bernilai "@Nama" supaya nama tetap tampil.
-  const NAMED = '@';
-
-  function selectSupplier(id: string | undefined, name: string): void {
-    if (id !== undefined && dataset.suppliers.some((item) => item.id === id)) {
-      supplierSelectEl.value = id;
-      return;
-    }
-    if (name === '') {
-      supplierSelectEl.value = '';
-      return;
-    }
-    const value = `${NAMED}${name}`;
-    if (![...supplierSelectEl.options].some((item) => item.value === value)) {
-      supplierSelectEl.append(option(name, value));
-    }
-    supplierSelectEl.value = value;
-  }
-
-  function refreshSupplierOptions(): void {
-    dataset = store.getState().data;
-    const chosen = supplierSelectEl.value;
-    const chosenText = supplierSelectEl.selectedOptions[0]?.textContent ?? '';
-    supplierSelectEl.replaceChildren(
-      option(TEXT.pilihPemasok, ''),
-      ...dataset.suppliers.map((s) => option(`${s.name} (${s.phone || '-'})`, s.id)),
-    );
-    if (chosen.startsWith(NAMED)) {
-      supplierSelectEl.append(option(chosenText, chosen));
-    }
-    supplierSelectEl.value = chosen;
-  }
-
-  function refreshDropdowns(): void {
-    refreshSupplierOptions();
-    refreshPoOptions();
   }
 
   function refreshPoOptions(): void {
@@ -357,9 +337,8 @@ export function renderPurchaseForm(
     },
   });
 
-  supplierSelectEl.addEventListener('focus', refreshSupplierOptions);
-  supplierSelectEl.addEventListener('change', () => {
-    syncSupplierInfo();
+  supplierEl.input.addEventListener('focus', () => {
+    dataset = store.getState().data;
   });
   poSelectEl.addEventListener('focus', refreshPoOptions);
   poSelectEl.addEventListener('change', () => {
@@ -372,7 +351,7 @@ export function renderPurchaseForm(
   });
 
   // --- Susun halaman ---
-  refreshDropdowns();
+  refreshPoOptions();
   syncSupplierInfo();
   recalc();
   const bar = el(

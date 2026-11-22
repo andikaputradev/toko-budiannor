@@ -849,11 +849,6 @@ html[data-app='bo'] .bo-pd button.vtable__sort:focus-visible {
   width: 220px;
 }
 
-.bo-info__hint {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-}
-
 .bo-info__table th {
   background: var(--color-accent-soft);
   text-align: center;
@@ -986,12 +981,15 @@ html[data-app='bo'] .bo-pd button.vtable__sort:focus-visible {
   height: 120px;
 }
 
-.bo-pd-prices__row {
+.bo-pd-prices__row,
+.bo-pd-opening__row {
   cursor: pointer;
 }
 
 .bo-pd-prices__row:hover td,
-.bo-pd-prices__row:focus-visible td {
+.bo-pd-prices__row:focus-visible td,
+.bo-pd-opening__row:hover td,
+.bo-pd-opening__row:focus-visible td {
   background: var(--color-accent-soft);
 }
 

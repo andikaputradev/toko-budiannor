@@ -5,6 +5,7 @@ import {
   remainingLimit,
 } from '../../../shared/data/receivable';
 import type { Customer, Tier } from '../../../shared/data/types';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { append, el } from '../../../shared/dom';
 import { formatDate, formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
@@ -69,14 +70,12 @@ export function renderCustomers(session: PosSession, go: (path: string) => void)
   });
 
   const matches = (customer: Customer): boolean => {
-    const needle = query.trim().toLowerCase();
-    if (needle === '') {
+    if (query.trim() === '') {
       return true;
     }
-    const digits = normalizePhone(needle);
+    const digits = normalizePhone(query.trim());
     return (
-      customer.name.toLowerCase().includes(needle) ||
-      customer.code.toLowerCase().includes(needle) ||
+      matchesPhrase(`${customer.name} ${customer.code}`, query) ||
       (digits !== '' && normalizePhone(customer.phone).includes(digits))
     );
   };

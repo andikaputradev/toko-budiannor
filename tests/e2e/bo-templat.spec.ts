@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pickParty } from './helpers/party';
 
 // Revisi Back-Office putaran kedelapan (dokumen klien 16 November, malam): templat halaman data
 // (gambar 31) dan halaman daftar (gambar 32), pencarian frasa, serta tampilan baku (gambar 30).
@@ -220,7 +221,7 @@ test.describe('Tampilan baku (gambar 30)', () => {
     await page.goto('/#/bo/penjualan');
     const box = panel(page).locator('.bo-trx-head__aside');
     const before = await box.boundingBox();
-    await panel(page).getByLabel('Pelanggan').first().selectOption({ index: 7 });
+    await pickParty(panel(page), 'Pelanggan', 6);
     const after = await box.boundingBox();
     expect(Math.round(after?.width ?? 0)).toBe(Math.round(before?.width ?? 1));
     expect(Math.round(after?.height ?? 0)).toBe(Math.round(before?.height ?? 1));

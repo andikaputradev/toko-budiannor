@@ -301,3 +301,22 @@ describe('ringkasan metode dan penerimaan', () => {
     expect(numbers('piutang').sort()).toEqual(['T-10', 'T-9']);
   });
 });
+
+describe('riwayat penjualan: pencarian frasa (penyesuaian akhir)', () => {
+  const find = (query: string): string[] =>
+    filterSales(sales, queue, { ...base, start: '2026-10-18', query }, name).map(
+      (item) => item.number,
+    );
+
+  it('mengenali potongan kata dan urutan bebas pada nomor dan nama pelanggan', () => {
+    expect(find('0102')).toEqual(['T-000102']);
+    expect(find('aju ko')).toEqual(['T-000102']);
+    expect(find('tok 000102')).toEqual(['T-000102']);
+    expect(find('maju 000102')).toEqual(['T-000102']);
+  });
+
+  it('kata yang tidak ada pada nomor atau nama menolak baris walau kata lain cocok', () => {
+    expect(find('maju 000101')).toEqual([]);
+    expect(find('000102 holcim')).toEqual([]);
+  });
+});

@@ -472,8 +472,11 @@
 }
 
 [data-app='bo'] .bo-dep-form--topup {
+  /* Label selebar teksnya dan tiga isian baris pertama berbobot menurut isinya (tanggal, "Transfer
+     Bank", nominal jutaan) supaya semua yang diketik terlihat utuh. */
+  --bo-label-w: max-content;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr) minmax(0, 1.2fr);
   gap: 8px 10px;
   align-items: end;
 }
@@ -482,21 +485,18 @@
   display: contents;
 }
 
-[data-app='bo'] .bo-dep-form--topup .bo-dep-form__row > *,
-[data-app='bo'] .bo-dep-form--topup > .field:nth-child(2) {
-  grid-column: span 2;
-}
-
 [data-app='bo'] .bo-dep-form--topup > .field:nth-child(3) {
-  grid-column: span 4;
+  grid-column: span 2;
 }
 
 [data-app='bo'] .bo-dep-form--topup > .bo-dep-error {
   grid-column: 1 / -1;
+  grid-row: 3;
 }
 
 [data-app='bo'] .bo-dep-form--topup > .bo-dep-actions {
-  grid-column: span 2;
+  grid-column: 3;
+  grid-row: 2;
 }
 
 [data-app='bo'] .bo-dep-form--topup .bo-dep-amount .input {

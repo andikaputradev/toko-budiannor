@@ -35,7 +35,6 @@ const TEXT = {
   gudangBesar: 'Gudang',
   tambah: 'Tambah',
   kurang: 'Kurang',
-  satuanDasar: 'Jumlah dalam satuan dasar: {satuan}',
 } as const;
 
 const KIND_TEXT: Readonly<Record<MutationHistoryRow['kind'], string>> = {
@@ -154,7 +153,6 @@ export function openProductInfo(session: BoSession, product: Product): void {
   for (const [value, text] of warehouseOptions) {
     warehouseSelect.append(el('option', { text, attrs: { value } }));
   }
-  const unitHint = el('span', { className: 'bo-info__hint' });
 
   // Label dan kontrol bersaudara (bukan bersarang) agar nama aksesibel kontrol hanya teks label.
   const partyGroup = (
@@ -174,7 +172,7 @@ export function openProductInfo(session: BoSession, product: Product): void {
   };
   const supplierGroup = partyGroup(TEXT.pemasok, supplierInput, supplierList);
   const customerGroup = partyGroup(TEXT.pelanggan, customerInput, customerList);
-  const warehouseGroup = partyGroup(TEXT.gudang, warehouseSelect, unitHint);
+  const warehouseGroup = partyGroup(TEXT.gudang, warehouseSelect);
 
   const specs: readonly {
     readonly key: TabKey;
@@ -276,7 +274,6 @@ export function openProductInfo(session: BoSession, product: Product): void {
       range,
       warehouse,
     });
-    unitHint.textContent = TEXT.satuanDasar.replace('{satuan}', result.unit);
     const rows = result.rows.map((row) => [
       shortDate(row.at),
       row.number,

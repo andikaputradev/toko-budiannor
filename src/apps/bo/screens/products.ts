@@ -12,10 +12,12 @@ import { showToast } from '../../../shared/ui/toast';
 import { createVirtualGrid, type SortDirection } from '../../../shared/ui/virtual-grid';
 import { BO_DEVICE, BO_IP, type BoSession } from '../bo-session';
 import {
+  draftOfEntry,
   parseOpening,
   perUnit,
   seedOpening,
   stockAfter,
+  stockReplaced,
   type OpeningDraft,
   type OpeningEntry,
   type OpeningIssue,
@@ -76,6 +78,9 @@ const TEXT = {
   simpanDulu: 'Barang baru belum tersimpan. Simpan barangnya dulu.',
   hargaTersimpan: 'Harga jual {kode} tersimpan.',
   saldoTersimpan: 'Saldo awal {kode} ditambahkan.',
+  saldoDiubah: 'Saldo awal {kode} diubah.',
+  klikSaldo: 'Klik baris untuk mengubah saldo awal (Owner).',
+  stokMinus: 'Stok gudang menjadi minus. Naikkan kuantitas saldo awal.',
   hargaDiBawahHpp: 'Harga di bawah HPP. Tetap simpan?',
   tetapSimpan: 'Tetap Simpan',
   imporSaldoJudul: 'Import Saldo Awal',
@@ -709,18 +714,36 @@ export function renderProducts(session: BoSession): ScreenHandle {
       );
       return;
     }
+    // Seperti baris harga jual: Owner mengklik baris untuk membuka kotak Isi Saldo Awal berisi catatannya.
     openingBody.replaceChildren(
-      ...list.map((entry) =>
-        el(
+      ...list.map((entry, index) => {
+        const row = el(
           'tr',
-          {},
+          isOwner
+            ? {
+                className: 'bo-pd-opening__row',
+                attrs: { tabindex: '0', title: TEXT.klikSaldo },
+              }
+            : {},
           el('td', { text: dateText(entry.date) }),
           el('td', { text: formatDecimal(entry.quantity, 3, 0) }),
           el('td', { text: entry.unit }),
           el('td', { text: warehouseText(entry.warehouse) }),
           isOwner ? el('td', { text: formatRupiah(entry.unitCost) }) : false,
-        ),
-      ),
+        );
+        if (isOwner) {
+          row.addEventListener('click', () => {
+            openOpeningDialogFor(false, index);
+          });
+          row.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              openOpeningDialogFor(false, index);
+            }
+          });
+        }
+        return row;
+      }),
     );
   }
 
@@ -738,7 +761,35 @@ export function renderProducts(session: BoSession): ScreenHandle {
     });
   }
 
-  function openOpeningDialogFor(sample: boolean): void {
+  // Mengganti satu catatan saldo awal: stok gudang menyesuaikan selisihnya. Mengembalikan teks galat.
+  function replaceOpening(
+    product: Product,
+    index: number,
+    entry: OpeningEntry,
+  ): string | undefined {
+    const list = openingFor(product);
+    const previous = list[index];
+    if (previous === undefined) {
+      return TEXT.pilihBarang;
+    }
+    const stock = stockReplaced(product, previous, entry);
+    if (stock.display < 0 || stock.besar < 0) {
+      return TEXT.stokMinus;
+    }
+    list[index] = entry;
+    store.setStock(product.id, stock);
+    store.logActivity({
+      at: session.now().toISOString(),
+      userId: session.state().user?.id ?? store.getState().userId,
+      device: BO_DEVICE,
+      ip: BO_IP,
+      kind: 'koreksi',
+      detail: `Ubah saldo awal ${product.code}: ${formatDecimal(entry.quantity, 3, 0)} ${entry.unit} ${warehouseText(entry.warehouse)}`,
+    });
+    return undefined;
+  }
+
+  function openOpeningDialogFor(sample: boolean, editIndex?: number): void {
     if (!isOwner) {
       showToast({ kind: 'error', text: TEXT.hanyaOwner });
       return;
@@ -751,7 +802,10 @@ export function renderProducts(session: BoSession): ScreenHandle {
     const done = (): void => {
       showToast({
         kind: 'success',
-        text: TEXT.saldoTersimpan.replace('{kode}', product.code),
+        text: (editIndex === undefined ? TEXT.saldoTersimpan : TEXT.saldoDiubah).replace(
+          '{kode}',
+          product.code,
+        ),
       });
       refreshList();
       fillForm(productById(product.id));
@@ -785,6 +839,15 @@ export function renderProducts(session: BoSession): ScreenHandle {
       });
       return;
     }
+    const editing = editIndex === undefined ? undefined : openingFor(product)[editIndex];
+    const initial =
+      editing === undefined
+        ? undefined
+        : draftOfEntry(
+            editing,
+            formatDecimal(editing.quantity, 3, 0),
+            formatDecimal(editing.unitCost, 0),
+          );
     void import('./product-dialogs').then(({ openOpeningDialog }) => {
       const unitCodes = product.units.map((unit) => unit.code);
       openOpeningDialog({
@@ -797,13 +860,21 @@ export function renderProducts(session: BoSession): ScreenHandle {
         ],
         defaultUnit: product.defaultUnit ?? unitCodes[0] ?? product.baseUnit,
         today: session.now().toISOString().slice(0, 10),
+        ...(initial === undefined ? {} : { initial }),
         save: (draft: OpeningDraft) => {
           const parsed = parseOpening(product, draft);
           if (!parsed.ok) {
             return TEXT.galat[parsed.issue];
           }
           openingFor(product);
-          applyOpening(product, parsed.entry);
+          if (editIndex === undefined) {
+            applyOpening(product, parsed.entry);
+          } else {
+            const problem = replaceOpening(product, editIndex, parsed.entry);
+            if (problem !== undefined) {
+              return problem;
+            }
+          }
           done();
           return undefined;
         },

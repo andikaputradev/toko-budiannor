@@ -30,7 +30,9 @@ import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
-import { itemCountText } from './trx/text';
+import { createPartySearch, customerParties, supplierParties } from './trx/party-search';
+import { createSalesSelect } from './trx/sales-select';
+import { itemCountText, TRX_TEXT } from './trx/text';
 import { ORDER_PATH } from './order-list';
 
 const EXPEDITIONS = [
@@ -46,7 +48,8 @@ const COPY = {
     judul: 'Data pesanan pembelian',
     nomor: 'No PO',
     pihak: 'Pemasok',
-    pilihPihak: '-- Pilih Pemasok --',
+    daftarPihak: 'Daftar pemasok',
+    pihakKosong: 'Pemasok tidak ditemukan.',
     petugas: 'Pemesan',
     pilihDulu: 'Pilih pemasok dahulu.',
     kosong: 'PO belum memiliki item barang.',
@@ -56,7 +59,8 @@ const COPY = {
     judul: 'Data pesanan penjualan',
     nomor: 'No SO',
     pihak: 'Pelanggan',
-    pilihPihak: '-- Pilih Pelanggan --',
+    daftarPihak: 'Daftar pelanggan',
+    pihakKosong: 'Pelanggan tidak ditemukan.',
     petugas: 'Sales',
     pilihDulu: 'Pilih pelanggan dahulu.',
     kosong: 'SO belum memiliki item barang.',
@@ -171,27 +175,27 @@ export function renderOrderForm(
     className: 'input is-readonly',
     attrs: { type: 'text', readonly: 'true', value: number },
   });
-  const partyEl = el('select', { className: 'input is-select' });
-  function refreshPartyOptions(): void {
-    dataset = store.getState().data;
-    const chosen = partyEl.value;
-    partyEl.replaceChildren(
-      option(copy.pilihPihak, ''),
-      ...(buy ? dataset.suppliers : dataset.customers).map((party) =>
-        option(`${party.name} (${party.phone || '-'})`, party.id),
-      ),
-    );
-    partyEl.value = chosen;
-  }
-  refreshPartyOptions();
-  partyEl.addEventListener('focus', refreshPartyOptions);
-  const staffEl = el('input', {
-    className: 'input',
-    attrs: {
-      type: 'text',
-      value: buy ? (session.state().user?.name ?? '') : 'Salahudin',
-    },
+  // Pemasok atau pelanggan dicari seperti nama barang lalu dipilih dari daftar.
+  const party = createPartySearch({
+    parties: () =>
+      buy
+        ? supplierParties(store.getState().data.suppliers)
+        : customerParties(store.getState().data.customers),
+    placeholder: TRX_TEXT.cariPilih,
+    emptyText: copy.pihakKosong,
+    listLabel: copy.daftarPihak,
   });
+  party.input.addEventListener('focus', () => {
+    dataset = store.getState().data;
+  });
+  // SO: Sales dipilih dari daftar Sales seperti Ekspedisi. PO: Pemesan tetap berupa nama pengguna.
+  const salesEl = buy ? undefined : createSalesSelect(store, 'Salahudin');
+  const staffEl =
+    salesEl?.select ??
+    el('input', {
+      className: 'input',
+      attrs: { type: 'text', value: session.state().user?.name ?? '' },
+    });
   // Cara Bayar menentukan Tempo: hutang atau piutang mengisi lama hari, tunai menonaktifkannya.
   const pay = createPaymentFields({ credit: buy ? 'hutang' : 'piutang', withChannel: false });
   const termsEl = pay.terms;
@@ -206,7 +210,14 @@ export function renderOrderForm(
     [
       { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 1 },
       { key: 'number', label: copy.nomor, control: numberEl, col: 1, row: 2 },
-      { key: 'party', label: copy.pihak, control: partyEl, col: 2, row: 1 },
+      {
+        key: 'party',
+        label: copy.pihak,
+        control: party.root,
+        labelFor: party.input,
+        col: 2,
+        row: 1,
+      },
       { key: 'staff', label: copy.petugas, control: staffEl, col: 2, row: 2 },
       { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 3, row: 1 },
       { key: 'tempo', label: TEXT.tempo, control: pay.tempoBox, labelFor: tempoEl, col: 3, row: 2 },
@@ -300,7 +311,7 @@ export function renderOrderForm(
 
   // --- Simpan dan Cetak ---
   function save(): void {
-    const issue = validateOrderDraft({ partyId: partyEl.value, lines: lines.length });
+    const issue = validateOrderDraft({ partyId: party.value(), lines: lines.length });
     if (issue === 'party') {
       showToast({ kind: 'info', text: copy.pilihDulu });
       return;
@@ -326,7 +337,7 @@ export function renderOrderForm(
         number: saved,
         createdAt,
         createdBy,
-        supplierId: partyEl.value,
+        supplierId: party.value(),
         warehouse: lines[0]?.warehouse === 'toko' ? 'display' : 'besar',
         lines: lines.map((line) => ({
           productId: line.productId,
@@ -348,7 +359,7 @@ export function renderOrderForm(
         number: saved,
         createdAt,
         createdBy,
-        customerId: partyEl.value,
+        customerId: party.value(),
         lines: lines.map((line) => ({
           productId: line.productId,
           unit: line.unit,
@@ -405,7 +416,7 @@ export function renderOrderForm(
       const rows: HTMLElement[] = [];
       let partyName = '';
       if (buy) {
-        const supplier = dataset.suppliers.find((item) => item.id === partyEl.value);
+        const supplier = dataset.suppliers.find((item) => item.id === party.value());
         if (supplier === undefined) {
           showToast({ kind: 'info', text: copy.pilihDulu });
           return;
@@ -417,7 +428,7 @@ export function renderOrderForm(
           stat(label('labelHutangJatuhTempo'), formatRupiah(debt.hutangJatuhTempo), 'is-warning'),
         );
       } else {
-        const customer = dataset.customers.find((item) => item.id === partyEl.value);
+        const customer = dataset.customers.find((item) => item.id === party.value());
         if (customer === undefined) {
           showToast({ kind: 'info', text: copy.pilihDulu });
           return;
@@ -458,15 +469,20 @@ export function renderOrderForm(
   if (existing !== undefined) {
     dateEl.value = wibDate(new Date(existing.createdAt));
     notesEl.value = existing.notes ?? '';
-    staffEl.value =
+    const creator =
       dataset.users.find((user) => user.id === existing.createdBy)?.name ?? existing.createdBy;
+    if (salesEl === undefined) {
+      staffEl.value = creator;
+    } else {
+      salesEl.set(creator);
+    }
     if ('supplierId' in existing) {
-      partyEl.value = existing.supplierId;
+      party.set(existing.supplierId, '');
       pay.setTerms(existing.payment ?? 'hutang');
       pay.tempo.value = pay.terms.value === 'tunai' ? '0' : String(existing.tempoDays ?? 30);
       lines = linesOfPurchaseOrder(existing, dataset);
     } else {
-      partyEl.value = existing.customerId ?? '';
+      party.set(existing.customerId, '');
       pay.setTerms(existing.payment === 'tunai' ? 'tunai' : 'piutang');
       pay.tempo.value = pay.terms.value === 'tunai' ? '0' : String(existing.tempoDays ?? 30);
       lines = linesOfSalesOrder(existing, dataset);
@@ -476,7 +492,7 @@ export function renderOrderForm(
   if (viewOnly) {
     for (const control of [
       dateEl,
-      partyEl,
+      party.input,
       staffEl,
       termsEl,
       tempoEl,

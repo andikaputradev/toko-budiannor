@@ -69,7 +69,7 @@ describe('indeks pencarian', () => {
     expect(byBarcode.hits[0]?.code).toBe('B0456');
   });
 
-  it('menerapkan semua kata kueri sebagai awalan dengan logika dan', () => {
+  it('menerapkan semua kata kueri dengan logika dan', () => {
     const result = index.search('semen pcc');
     expect(result.total).toBeGreaterThan(0);
     for (const product of result.hits) {
@@ -115,7 +115,8 @@ describe('indeks pencarian', () => {
   });
 });
 
-// Revisi BO (kolom pencarian): kata boleh berupa potongan di mana saja pada nama dan urutannya bebas.
+// Kolom pencarian POS, mobile, dan BO: kata boleh berupa potongan di mana saja pada nama dan
+// urutannya bebas.
 describe('pencarian frasa', () => {
   const name = 'SEMEN GRESIK PCC 40KG';
 
@@ -137,22 +138,21 @@ describe('pencarian frasa', () => {
     expect(matchesPhrase(name, '   ')).toBe(true);
   });
 
-  it('indeks mode potongan menemukan barang dari potongan kata, mode awal-kata tidak', () => {
+  it('indeks menemukan barang dari potongan kata dalam urutan apa pun', () => {
     const base = dataset.products[0];
     if (base === undefined) {
       throw new Error('data contoh kosong');
     }
     const semen = { ...base, id: 'X-1', code: 'X0001', barcode: '8990000009991', name };
     const products = [semen, ...dataset.products.slice(1, 200)];
-    const loose = createSearchIndex(products, { substring: true });
-    const strict = createSearchIndex(products);
+    const scoped = createSearchIndex(products);
     for (const query of ['men gre', 'se sik', 'cc kg', 'resik', 'eme esi', 'esi eme']) {
       expect(
-        loose.search(query).hits.some((hit) => hit.id === 'X-1'),
+        scoped.search(query).hits.some((hit) => hit.id === 'X-1'),
         query,
       ).toBe(true);
     }
-    expect(strict.search('resik').hits.some((hit) => hit.id === 'X-1')).toBe(false);
-    expect(loose.search('semen gresik pcc 40kg').hits[0]?.id).toBe('X-1');
+    expect(scoped.search('semen gresik pcc 40kg').hits[0]?.id).toBe('X-1');
+    expect(scoped.search('semen holcim').hits.some((hit) => hit.id === 'X-1')).toBe(false);
   });
 });

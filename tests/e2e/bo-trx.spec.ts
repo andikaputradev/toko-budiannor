@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { pickParty } from './helpers/party';
 
 // Layar Transaksi Back-Office sesuai gambar klien 8 sampai 13 (revisi putaran ketiga).
 // Berjalan pada build produksi: server dev membuang CSP.
@@ -243,7 +244,7 @@ test.describe('T3 Faktur Penjualan (gambar 9)', () => {
       'Diskon',
       'Total Harga',
     ]);
-    await root.getByLabel('Pelanggan', { exact: true }).selectOption({ index: 1 });
+    await pickParty(root, 'Pelanggan');
     await expect(card.getByText('Total Piutang')).toBeVisible();
   });
 
@@ -455,7 +456,7 @@ test.describe('T4 Faktur Pembelian (gambar 9, varian pembelian)', () => {
       'Total Harga',
     ]);
     await expect(countText(page)).toHaveText('0 Barang (0)');
-    await root.getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await pickParty(root, 'Pemasok');
     await expect(card.getByText('Total Hutang')).toBeVisible();
   });
 
@@ -632,10 +633,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     const root = active(page);
     await root.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(toast(page, 'Pilih pemasok dahulu.')).toBeVisible();
-    await root.getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
-    const supplier = await root
-      .getByLabel('Pemasok', { exact: true })
-      .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
+    const supplier = await pickParty(root, 'Pemasok');
     await root.getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(toast(page, 'PO belum memiliki item barang.')).toBeVisible();
 
@@ -644,7 +642,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
     await expect(orderList(page).locator('tbody tr:has(a.bo-trx-link)')).toHaveCount(0);
 
     await orderList(page).getByRole('button', { name: 'Tambah', exact: true }).click();
-    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pemasok');
     await addItem(page, 'semen', '2');
     await active(page).getByLabel('Keterangan').fill('Urgen Developer');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
@@ -662,7 +660,7 @@ test.describe('T5 dan T6 Daftar PO dan Input PO (gambar 10 dan 11)', () => {
   }) => {
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian/baru');
-    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pemasok');
     await addItem(page, 'semen', '1');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
@@ -736,7 +734,7 @@ test.describe('T7 dan T8 Daftar SO dan Input SO (padanan gambar 10 dan 11)', () 
     await openPage(page, '/bo/transaksi/so-penjualan/baru');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(toast(page, 'Pilih pelanggan dahulu.')).toBeVisible();
-    await active(page).getByLabel('Pelanggan', { exact: true }).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pelanggan');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(toast(page, 'SO belum memiliki item barang.')).toBeVisible();
     await addItem(page, 'semen', '3');
@@ -980,7 +978,7 @@ test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () 
     await page.setViewportSize({ width: 1280, height: 640 });
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian/baru');
-    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pemasok');
     await addItem(page, 'semen', '1');
     await active(page).getByLabel('Keterangan').fill('URGEN DITUNGGU DEVELOPER '.repeat(20));
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
@@ -1002,9 +1000,7 @@ test.describe('Fokus tinjauan: banyak baris dan teks panjang di satu layar', () 
 
 test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harga beli', () => {
   const customerShown = (page: Page): Promise<string> =>
-    active(page)
-      .getByLabel('Pelanggan', { exact: true })
-      .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
+    active(page).getByLabel('Pelanggan', { exact: true }).inputValue();
 
   test('nomor di Daftar Nota membuka faktur itu: penjualan POS memuat baris dan pelanggan', async ({
     page,
@@ -1039,9 +1035,7 @@ test.describe('Tinjauan akhir: tautan nota, diskon, data basi, Surat Jalan, harg
     await orderList(page).getByRole('link', { name: 'FB26101234', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/pembelian\?no=FB26101234$/);
     await expect(active(page).getByLabel('Nomor', { exact: true })).toHaveValue('FB26101234');
-    const supplier = await active(page)
-      .getByLabel('Pemasok', { exact: true })
-      .evaluate((node) => (node as HTMLSelectElement).selectedOptions[0]?.textContent ?? '');
+    const supplier = await active(page).getByLabel('Pemasok', { exact: true }).inputValue();
     expect(supplier).toContain('PT Sejati Raya');
   });
 
@@ -1216,7 +1210,7 @@ test.describe('Tinjauan akhir: formulir PO dan SO memakai tab sendiri dan tangga
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian/baru');
     await active(page).getByLabel('Tanggal', { exact: true }).fill('2026-10-01');
-    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pemasok');
     await addItem(page, 'semen', '1');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
@@ -1230,7 +1224,7 @@ test.describe('Tinjauan akhir: formulir PO dan SO memakai tab sendiri dan tangga
   }) => {
     await loginBo(page);
     await openPage(page, '/bo/transaksi/po-pembelian/baru');
-    await active(page).getByLabel('Pemasok', { exact: true }).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pemasok');
     await addItem(page, 'semen', '2');
     await active(page).getByRole('button', { name: 'Simpan', exact: true }).click();
     await expect(page).toHaveURL(/#\/bo\/transaksi\/po-pembelian$/);
