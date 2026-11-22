@@ -27,7 +27,14 @@ export function renderLogin(session: BoSession, go: (path: string) => void): Scr
   });
   const password = el('input', {
     className: 'input bo-login__input',
-    attrs: { id: passId, type: 'password', autocomplete: 'current-password' },
+    // data-keep-case: saat Tampilkan ditekan tipe isian berganti ke teks, dan sandi harus tampil
+    // apa adanya (huruf kecil dan kapital), tidak ikut aturan huruf kapital isian teks BO.
+    attrs: {
+      id: passId,
+      type: 'password',
+      autocomplete: 'current-password',
+      'data-keep-case': '',
+    },
   });
   const error = el('p', {
     className: 'bo-login__error',

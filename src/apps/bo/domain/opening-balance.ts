@@ -110,6 +110,34 @@ export function stockAfter(product: Product, entry: OpeningEntry): Stock {
   };
 }
 
+// Stok gudang setelah satu catatan saldo awal diganti: catatan lama dilepas, yang baru ditambahkan
+// (gudang dan satuannya boleh berbeda dari catatan lama).
+export function stockReplaced(product: Product, previous: OpeningEntry, next: OpeningEntry): Stock {
+  const removed = toBase(product, previous.unit, previous.quantity);
+  const added = toBase(product, next.unit, next.quantity);
+  const change = (warehouse: WarehouseId): number =>
+    (previous.warehouse === warehouse ? -removed : 0) + (next.warehouse === warehouse ? added : 0);
+  return {
+    display: round3(product.stock.display + change('display')),
+    besar: round3(product.stock.besar + change('besar')),
+  };
+}
+
+// Isian dialog Isi Saldo Awal untuk sebuah catatan, dipakai saat catatan itu diubah.
+export function draftOfEntry(
+  entry: OpeningEntry,
+  quantityText: string,
+  costText: string,
+): OpeningDraft {
+  return {
+    warehouse: entry.warehouse,
+    date: entry.date,
+    quantity: quantityText,
+    unit: entry.unit,
+    cost: costText,
+  };
+}
+
 // Harga beli akhir dan HPP rata-rata per satuan, dari nilai per satuan dasar.
 export function perUnit(base: number | undefined, factor: number): number {
   return Math.round((base ?? 0) * factor);

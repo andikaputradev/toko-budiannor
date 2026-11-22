@@ -1,4 +1,5 @@
 import { wibDate } from '../../../shared/data/receivable';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { lineGross } from './bill';
 import type { PaymentMethod, Sale, SalePayment, SyncItem } from '../../../shared/data/types';
 import type { ReturnRecord } from '../pos-session';
@@ -57,7 +58,6 @@ export function filterSales(
   filter: HistoryFilter,
   customerName: (id: string | undefined) => string,
 ): Sale[] {
-  const needle = filter.query.trim().toLowerCase();
   return sales
     .filter((sale) => {
       const day = saleDate(sale);
@@ -80,11 +80,7 @@ export function filterSales(
       if (filter.status === 'pending' && !pending) {
         return false;
       }
-      return (
-        needle === '' ||
-        sale.number.toLowerCase().includes(needle) ||
-        customerName(sale.customerId).toLowerCase().includes(needle)
-      );
+      return matchesPhrase(`${sale.number} ${customerName(sale.customerId)}`, filter.query);
     })
     .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
 }
@@ -253,7 +249,6 @@ export function filterHistory(
   filter: HistoryFilter,
   customerName: (id: string | undefined) => string,
 ): HistoryEntry[] {
-  const needle = filter.query.trim().toLowerCase();
   const numbers = returnDisplayNumbers(returns);
   const saleEntries: HistoryEntry[] = filterSales(sales, queue, filter, customerName).map(
     (sale) => ({ kind: 'sale', number: sale.number, createdAt: sale.createdAt, sale }),
@@ -283,11 +278,9 @@ export function filterHistory(
       if (filter.status === 'pending' || !matchesReturnMethod(entry.record, filter.method)) {
         return false;
       }
-      return (
-        needle === '' ||
-        entry.number.toLowerCase().includes(needle) ||
-        entry.record.saleNumber.toLowerCase().includes(needle) ||
-        customerName(entry.sale?.customerId).toLowerCase().includes(needle)
+      return matchesPhrase(
+        `${entry.number} ${entry.record.saleNumber} ${customerName(entry.sale?.customerId)}`,
+        filter.query,
       );
     });
   // Terbaru lebih dulu; pada waktu yang sama retur tampil di atas penjualannya.

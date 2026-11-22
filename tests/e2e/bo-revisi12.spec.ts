@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { pickParty } from './helpers/party';
 
 // Pencocokan ulang seluruh dokumen "Revisi Penyesuain Final POS&BO" dengan gambar klien (20 November):
 // selisih tampilan yang ditemukan saat layar nyata dibandingkan berdampingan dengan gambar.
@@ -138,8 +139,7 @@ test.describe('G4 Form PO, SO, dan Faktur: bilah tombol seperti gambar 42 sampai
     await bar.getByRole('button', { name: 'Info', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByText('Pilih pemasok dahulu.')).toBeVisible();
-    const supplier = active(page).locator('select.input.is-select').nth(0);
-    await supplier.selectOption({ index: 1 });
+    await pickParty(active(page), 'Pemasok');
     await bar.getByRole('button', { name: 'Info', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Info Hutang Pemasok' });
     await expect(dialog).toBeVisible();
@@ -153,7 +153,7 @@ test.describe('G4 Form PO, SO, dan Faktur: bilah tombol seperti gambar 42 sampai
     await page.goto('/#/bo/transaksi/so-penjualan');
     await active(page).getByRole('button', { name: 'Tambah', exact: true }).click();
     const bar = active(page).locator('.bo-trx__bar');
-    await active(page).locator('select.input.is-select').nth(0).selectOption({ index: 1 });
+    await pickParty(active(page), 'Pelanggan');
     await bar.getByRole('button', { name: 'Info', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Info Piutang Pelanggan' });
     await expect(dialog).toBeVisible();

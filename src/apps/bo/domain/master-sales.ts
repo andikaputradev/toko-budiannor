@@ -3,6 +3,7 @@ import type { AppUser } from '../../../shared/data/types';
 import { commissionPercent } from '../../../shared/domain/promo';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label, type LabelKey } from '../../../shared/messages';
+import type { Store } from '../../../shared/store/store';
 import { lineSubtotal } from '../../pos/domain/bill';
 import {
   NOTE_MAX,
@@ -77,7 +78,7 @@ function userRole(user: AppUser): SalesRole | undefined {
   return isSalesRole(user.role) ? user.role : undefined;
 }
 
-function ensureProfiles(ctx: MasterContext): SalesProfile[] {
+function ensureProfiles(ctx: Pick<MasterContext, 'store'>): SalesProfile[] {
   const registry = registryOf(ctx.store);
   for (const user of ctx.store.getState().data.users) {
     const role = userRole(user);
@@ -105,6 +106,13 @@ function ensureProfiles(ctx: MasterContext): SalesProfile[] {
     }
   }
   return [...registry.sales.values()];
+}
+
+// Nama semua Sales pada master, urut abjad; dipakai pilihan kolom Sales pada Faktur Penjualan dan SO.
+export function salesNames(store: Store): string[] {
+  return ensureProfiles({ store })
+    .map((profile) => profile.name)
+    .sort(compareNames);
 }
 
 // Dasar komisi: nilai baris beserta barangnya, supaya komisi dihitung per baris (persen barang

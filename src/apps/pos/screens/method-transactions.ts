@@ -1,4 +1,5 @@
 import { el } from '../../../shared/dom';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { formatDate, formatRupiah, formatTime } from '../../../shared/format';
 import { label } from '../../../shared/messages';
 import { createButton } from '../../../shared/ui/button';
@@ -74,9 +75,8 @@ export function openMethodTransactions(options: MethodTransactionsOptions): void
     );
   };
   const paint = (): void => {
-    const needle = search.value.trim().toLowerCase();
     list.replaceChildren(
-      ...rows.filter((item) => item.reference.toLowerCase().includes(needle)).map(line),
+      ...rows.filter((item) => matchesPhrase(item.reference, search.value)).map(line),
     );
   };
   search.addEventListener('input', paint);

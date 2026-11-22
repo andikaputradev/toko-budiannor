@@ -253,6 +253,8 @@ export async function openRoute(page: Page, route: RouteCase): Promise<void> {
   await expect(page).toHaveURL(new RegExp(`#${route.path.replace(/\//g, '\\/')}(\\?.*)?$`));
   await page.evaluate(() => document.fonts.ready);
   await expect(page.locator('#root > *').first()).toBeVisible();
+  // Layar BO dimuat malas: tunggu penanda muat hilang supaya pindai fokus dan axe melihat layar jadi.
+  await expect(page.locator('.bo-tabpanel:not([hidden]) .bo-loading')).toHaveCount(0);
 }
 
 export const OVERLAYS: readonly OverlayCase[] = [

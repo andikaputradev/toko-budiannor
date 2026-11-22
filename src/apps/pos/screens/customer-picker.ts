@@ -3,6 +3,7 @@ import { formatRupiah } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label } from '../../../shared/messages';
 import { remainingLimit } from '../../../shared/data/receivable';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import type { Customer, Tier } from '../../../shared/data/types';
 import { createButton } from '../../../shared/ui/button';
 import { openModal } from '../../../shared/ui/modal';
@@ -65,12 +66,8 @@ export function openCustomerPicker(
   };
 
   const fill = (): void => {
-    const needle = query.trim().toLowerCase();
-    const shown = all.filter(
-      (customer) =>
-        needle === '' ||
-        customer.name.toLowerCase().includes(needle) ||
-        customer.code.toLowerCase().includes(needle),
+    const shown = all.filter((customer) =>
+      matchesPhrase(`${customer.name} ${customer.code}`, query),
     );
     list.replaceChildren(row(undefined), ...shown.map(row));
   };

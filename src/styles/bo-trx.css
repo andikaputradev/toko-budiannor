@@ -229,6 +229,23 @@
   color: var(--color-text-secondary);
 }
 
+/* Kolom Pelanggan atau Pemasok di kepala dokumen: selebar kolomnya, tetapi daftar pilihan boleh
+   lebih lebar supaya nama panjang terbaca. */
+.bo-trx-search--party {
+  flex: none;
+}
+
+.bo-trx-search--party .bo-trx-search__list {
+  right: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: 420px;
+}
+
+.bo-trx-search--party .bo-trx-search__option {
+  padding: 6px 12px;
+}
+
 /* ===== Tabel baris ===== */
 .bo-trx .bo-trx__lines {
   flex: 1 1 0;

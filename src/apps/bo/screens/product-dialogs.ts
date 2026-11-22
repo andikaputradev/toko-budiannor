@@ -195,6 +195,8 @@ export interface OpeningDialogInput {
   readonly warehouses: readonly { readonly value: string; readonly text: string }[];
   readonly defaultUnit: string;
   readonly today: string;
+  // Isian awal saat dialog dipakai untuk mengubah catatan yang sudah ada.
+  readonly initial?: OpeningDraft;
   readonly save: (draft: OpeningDraft) => string | undefined;
 }
 
@@ -229,6 +231,13 @@ export function openOpeningDialog(input: OpeningDialogInput): void {
   unit.value = input.defaultUnit;
   const cost = textInput(costId, TEXT.biaya, 'numeric');
   const total = readonlyBox(formatRupiah(0), totalId);
+  if (input.initial !== undefined) {
+    warehouse.value = input.initial.warehouse;
+    date.value = input.initial.date;
+    quantity.value = input.initial.quantity;
+    unit.value = input.initial.unit;
+    cost.value = input.initial.cost;
+  }
   const recalc = (): void => {
     total.textContent = formatRupiah(
       totalCost(parseQuantity(quantity.value), parseCost(cost.value)),
@@ -236,6 +245,7 @@ export function openOpeningDialog(input: OpeningDialogInput): void {
   };
   quantity.addEventListener('input', recalc);
   cost.addEventListener('input', recalc);
+  recalc();
 
   const actions = actionRow(
     () => {

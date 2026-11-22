@@ -12,6 +12,7 @@ import {
   newValues,
   type MasterContext,
 } from '../../../src/apps/bo/domain/master-data';
+import { salesNames } from '../../../src/apps/bo/domain/master-sales';
 
 function createContext(): MasterContext {
   const store = createStore();
@@ -156,5 +157,23 @@ describe('Komisi Sales per barang', () => {
       sales: [sale([{ productId: 'T-HILANG', unit: 'Pcs', quantity: 1, unitPrice: 100_000 }])],
     });
     expect(commissionOf(ctx)).toBe('Rp 1.000');
+  });
+});
+
+describe('Daftar nama Sales untuk kolom Sales faktur dan SO', () => {
+  it('memuat Sales master dan akun sales atau frontliner, urut abjad tanpa duplikat', () => {
+    const ctx = createContext();
+    const names = salesNames(ctx.store);
+    expect(names).toContain('Salahudin');
+    const accounts = ctx.store
+      .getState()
+      .data.users.filter((user) => user.role === 'sales' || user.role === 'frontliner');
+    for (const account of accounts) {
+      expect(names).toContain(account.name);
+    }
+    expect(new Set(names).size).toBe(names.length);
+    expect([...names].sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }))).toEqual(
+      names,
+    );
   });
 });

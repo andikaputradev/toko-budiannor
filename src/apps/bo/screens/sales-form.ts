@@ -24,8 +24,10 @@ import { createItemSearch } from './trx/item-search';
 import { openLineDialog } from './trx/line-dialog';
 import { createLinesTable, createTotalsBox } from './trx/lines-table';
 import { createPaymentFields } from './trx/payment-fields';
+import { createPartySearch, customerParties } from './trx/party-search';
 import { openSalesPrintDialog } from './trx/print-dialog';
-import { itemCountText } from './trx/text';
+import { createSalesSelect } from './trx/sales-select';
+import { itemCountText, TRX_TEXT } from './trx/text';
 
 const TEXT = {
   tanggal: 'Tanggal',
@@ -39,7 +41,8 @@ const TEXT = {
   metode: 'Kas / Bank',
   sales: 'Sales',
   ekspedisi: 'Ekspedisi',
-  pilihPelanggan: '-- Pilih Pelanggan --',
+  daftarPelanggan: 'Daftar pelanggan',
+  pelangganKosong: 'Pelanggan tidak ditemukan.',
   pilihSo: '-- Pilih SO Pending --',
   catatan: 'Catatan pengiriman ...',
   simpan: 'Simpan',
@@ -103,15 +106,25 @@ export function renderSalesForm(
     attrs: { type: 'text', readonly: 'true', tabindex: '-1', value: draft.invoiceNumber },
   });
   const soSelectEl = el('select', { className: 'input is-select' });
-  const customerSelectEl = el('select', { className: 'input is-select' });
+  // Pelanggan dicari seperti nama barang; memilih atau mengosongkannya memperbarui info piutang.
+  const customerEl = createPartySearch({
+    parties: () => customerParties(store.getState().data.customers),
+    placeholder: TRX_TEXT.cariPilih,
+    emptyText: TEXT.pelangganKosong,
+    listLabel: TEXT.daftarPelanggan,
+    onChange: () => {
+      dataset = store.getState().data;
+      const customer = dataset.customers.find((item) => item.id === customerEl.value());
+      contact.address = customer?.address ?? '';
+      contact.phone = customer?.phone ?? '';
+      recalc();
+    },
+  });
   const notesEl = el('input', {
     className: 'input',
     attrs: { type: 'text', placeholder: TEXT.catatan },
   });
-  const salesPersonEl = el('input', {
-    className: 'input',
-    attrs: { type: 'text', value: draft.salesPerson },
-  });
+  const salesEl = createSalesSelect(store, draft.salesPerson);
   const expeditionEl = selectWith(EXPEDITIONS.map((name) => [name, name] as const));
   // Cara Bayar menentukan isian lain: piutang membuka Tempo, tunai membuka Kas / Bank.
   const pay = createPaymentFields({ credit: 'piutang', withChannel: true });
@@ -133,7 +146,14 @@ export function renderSalesForm(
       { key: 'invoice', label: TEXT.nomor, control: invoiceNumEl, col: 1, row: 1 },
       { key: 'date', label: TEXT.tanggal, control: dateEl, col: 1, row: 2 },
       { key: 'so', label: TEXT.noSo, control: soSelectEl, col: 1, row: 3 },
-      { key: 'customer', label: TEXT.pelanggan, control: customerSelectEl, col: 2, row: 1 },
+      {
+        key: 'customer',
+        label: TEXT.pelanggan,
+        control: customerEl.root,
+        labelFor: customerEl.input,
+        col: 2,
+        row: 1,
+      },
       { key: 'terms', label: TEXT.syaratBayar, control: termsEl, col: 2, row: 2 },
       {
         key: 'tempo',
@@ -144,7 +164,7 @@ export function renderSalesForm(
         row: 1,
       },
       { key: 'channel', label: TEXT.metode, control: channelEl, col: 3, row: 2 },
-      { key: 'sales', label: TEXT.sales, control: salesPersonEl, col: 4, row: 1 },
+      { key: 'sales', label: TEXT.sales, control: salesEl.select, col: 4, row: 1 },
       { key: 'expedition', label: TEXT.ekspedisi, control: expeditionEl, col: 4, row: 2 },
       { key: 'notes', label: TEXT.keterangan, control: notesEl, col: 2, row: 3, span: 3 },
     ],
@@ -226,7 +246,7 @@ export function renderSalesForm(
     );
 
   function syncCustomerInfo(grandTotal: number): void {
-    const customer = dataset.customers.find((item) => item.id === customerSelectEl.value);
+    const customer = dataset.customers.find((item) => item.id === customerEl.value());
     if (customer === undefined) {
       creditBoxEl.replaceChildren(
         creditRow(label('labelTotalPiutang'), formatRupiah(0)),
@@ -270,17 +290,16 @@ export function renderSalesForm(
     const values = totals.values();
     const invoiceLines = lines.map(fromDocLine);
     const sums = calculateSalesTotals(invoiceLines, values.discount, values.extra);
-    const customer = dataset.customers.find((item) => item.id === customerSelectEl.value);
-    const named = customerSelectEl.value.startsWith(NAMED);
+    const customer = dataset.customers.find((item) => item.id === customerEl.value());
     return {
       ...draft,
       date: dateEl.value,
       customerId: customer?.id,
-      customerName: named ? customerSelectEl.value.slice(NAMED.length) : (customer?.name ?? ''),
+      customerName: customer?.name ?? customerEl.name(),
       customerAddress: contact.address,
       customerPhone: contact.phone,
       notes: notesEl.value,
-      salesPerson: salesPersonEl.value,
+      salesPerson: salesEl.select.value,
       expedition: expeditionEl.value,
       paymentTerms: termsEl.value === 'tunai' ? 'tunai' : 'piutang',
       tempoDays: pay.tempoDays(),
@@ -294,7 +313,10 @@ export function renderSalesForm(
     draft = source;
     invoiceNumEl.value = source.invoiceNumber;
     dateEl.value = source.date;
-    selectCustomer(source.customerId, source.customerName);
+    customerEl.set(source.customerId, source.customerName);
+    if (source.salesPerson !== '') {
+      salesEl.set(source.salesPerson);
+    }
     totals.discount.value = formatDecimal(source.invoiceDiscount, 2);
     contact.address = source.customerAddress;
     contact.phone = source.customerPhone;
@@ -304,45 +326,6 @@ export function renderSalesForm(
     channelEl.value = source.paymentChannel;
     lines = source.lines.map((line) => toDocLine(line, codeOf(line.productId)));
     recalc();
-  }
-
-  // Nota contoh Daftar Nota memuat nama pelanggan yang belum tentu ada di master: pilihannya
-  // bernilai "@Nama" supaya nama tetap tampil dan ikut tersimpan pada salinan faktur.
-  const NAMED = '@';
-
-  function selectCustomer(id: string | undefined, name: string): void {
-    if (id !== undefined && dataset.customers.some((item) => item.id === id)) {
-      customerSelectEl.value = id;
-      return;
-    }
-    if (name === '') {
-      customerSelectEl.value = '';
-      return;
-    }
-    const value = `${NAMED}${name}`;
-    if (![...customerSelectEl.options].some((item) => item.value === value)) {
-      customerSelectEl.append(option(name, value));
-    }
-    customerSelectEl.value = value;
-  }
-
-  function refreshCustomerOptions(): void {
-    dataset = store.getState().data;
-    const chosen = customerSelectEl.value;
-    const chosenText = customerSelectEl.selectedOptions[0]?.textContent ?? '';
-    customerSelectEl.replaceChildren(
-      option(TEXT.pilihPelanggan, ''),
-      ...dataset.customers.map((c) => option(`${c.name} (${c.phone || '-'})`, c.id)),
-    );
-    if (chosen.startsWith(NAMED)) {
-      customerSelectEl.append(option(chosenText, chosen));
-    }
-    customerSelectEl.value = chosen;
-  }
-
-  function refreshDropdowns(): void {
-    refreshCustomerOptions();
-    refreshSoOptions();
   }
 
   function refreshSoOptions(): void {
@@ -415,12 +398,8 @@ export function renderSalesForm(
   });
 
   // --- Peristiwa kepala ---
-  customerSelectEl.addEventListener('focus', refreshCustomerOptions);
-  customerSelectEl.addEventListener('change', () => {
-    const customer = dataset.customers.find((item) => item.id === customerSelectEl.value);
-    contact.address = customer?.address ?? '';
-    contact.phone = customer?.phone ?? '';
-    recalc();
+  customerEl.input.addEventListener('focus', () => {
+    dataset = store.getState().data;
   });
   soSelectEl.addEventListener('focus', refreshSoOptions);
   soSelectEl.addEventListener('change', () => {
@@ -434,7 +413,7 @@ export function renderSalesForm(
   });
 
   // --- Susun halaman ---
-  refreshDropdowns();
+  refreshSoOptions();
   recalc();
   const bar = el(
     'div',

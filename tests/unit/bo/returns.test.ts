@@ -8,9 +8,12 @@ import {
   findSource,
   hasRoom,
   partyOptions,
+  pickValue,
   planSettlement,
+  returnedText,
   returnedValue,
   returnSources,
+  roomIn,
   settlementsFor,
   suggestWarehouse,
   UMUM_KEY,
@@ -28,6 +31,7 @@ const base = generateDataset();
 const sample = sampleProduct();
 const sak = need(sample.units.find((unit) => unit.name === 'Sak'));
 const KG_PER_SAK = sak.factor;
+const kg = need(sample.units.find((unit) => unit.name === 'Kg'));
 
 const customer: Customer = {
   id: 'C-T1',
@@ -451,5 +455,121 @@ describe('menyimpan retur pembelian', () => {
     );
     expect(result.ok ? '' : result.text).toContain('Rp 200.000');
     expect(store.getState().returnNotes).toHaveLength(0);
+  });
+});
+
+// Penyesuaian akhir: satuan retur boleh berbeda dari satuan faktur (faktur 3 Lusin, retur 10 Pcs).
+// Barang contoh: Kg (satuan dasar) dan Sak (40 Kg); faktur T-900001 memuat 4 Sak seharga 70.000.
+describe('retur dengan satuan berbeda dari satuan faktur', () => {
+  const lineOf = (store: ReturnType<typeof build>['store']) =>
+    need(need(draftOf(store, 'penjualan', 'T-900001').source).lines[0]);
+
+  it('menyediakan semua satuan barang dan sisa dalam satuan dasar', () => {
+    const { store } = build();
+    const line = lineOf(store);
+    expect(line.units.map((unit) => unit.name)).toEqual(['Kg', 'Sak']);
+    expect(line).toMatchObject({ returnedBase: 0, roomBase: 4 * KG_PER_SAK });
+    expect(roomIn(line, kg.code)).toBe(4 * KG_PER_SAK);
+    expect(roomIn(line, sak.code)).toBe(4);
+  });
+
+  it('menilai jumlah dari harga faktur menurut satuan yang dipilih', () => {
+    const { store } = build();
+    const line = lineOf(store);
+    expect(pickValue(line, sak.code, 1)).toBe(70_000);
+    expect(pickValue(line, kg.code, 10)).toBe(17_500);
+    expect(pickValue(line, kg.code, 4 * KG_PER_SAK)).toBe(280_000);
+  });
+
+  it('menolak jumlah melebihi sisa dengan pesan memakai satuan yang dipilih', () => {
+    const { store } = build();
+    const unit = kg.code;
+    const issue = (quantity: string) => {
+      const draft = draftOf(store, 'penjualan', 'T-900001', {
+        picks: [{ index: 0, quantity, unit }],
+      });
+      const found = validateReturn('penjualan', draft, productMap(store));
+      return found === undefined ? undefined : describeIssue(found);
+    };
+    expect(issue(String(4 * KG_PER_SAK))).toBeUndefined();
+    expect(issue(String(4 * KG_PER_SAK + 1))).toBe(
+      `Jumlah retur melebihi jumlah yang dibeli (${String(4 * KG_PER_SAK).replace('.', ',')},0 Kg).`,
+    );
+  });
+
+  it('satuan yang tidak dikenal barang dianggap satuan faktur', () => {
+    const { store } = build();
+    const draft = draftOf(store, 'penjualan', 'T-900001', {
+      picks: [{ index: 0, quantity: '4', unit: 'TIDAK-ADA' }],
+    });
+    expect(validateReturn('penjualan', draft, productMap(store))).toBeUndefined();
+    const lines = buildNoteLines(need(draft.source), draft.picks);
+    expect(lines[0]).toMatchObject({ unit: sak.code, quantity: 4, value: 280_000 });
+  });
+
+  it('menyimpan retur dalam satuan pilihan: stok bertambah dalam satuan dasar dan sisa menyusut', () => {
+    const { store, session } = build();
+    const first = saveReturn(
+      session,
+      'penjualan',
+      draftOf(store, 'penjualan', 'T-900001', {
+        picks: [{ index: 0, quantity: '10', unit: kg.code }],
+      }),
+    );
+    expect(first.ok).toBe(true);
+    const note = need(first.ok ? first.note : undefined);
+    expect(note.lines[0]).toMatchObject({ unit: kg.code, quantity: 10, value: 17_500 });
+    expect(note.total).toBe(17_500);
+    expect(stockOf(store)).toEqual({ display: 5 + 10, besar: 500 });
+
+    const line = lineOf(store);
+    expect(line).toMatchObject({ returnedBase: 10, roomBase: 4 * KG_PER_SAK - 10 });
+    expect(returnedText(line)).toBe('10 Kg');
+    expect(roomIn(line, sak.code)).toBe(3.75);
+
+    // Sisa 150 Kg: 3 Sak (120 Kg) lolos, sedangkan 4 Sak melebihi sisa.
+    const tooMuch = saveReturn(
+      session,
+      'penjualan',
+      draftOf(store, 'penjualan', 'T-900001', {
+        picks: [{ index: 0, quantity: '4', unit: sak.code }],
+      }),
+    );
+    expect(tooMuch.ok).toBe(false);
+    const rest = saveReturn(
+      session,
+      'penjualan',
+      draftOf(store, 'penjualan', 'T-900001', {
+        picks: [{ index: 0, quantity: '3', unit: sak.code }],
+      }),
+    );
+    expect(rest.ok).toBe(true);
+    expect(stockOf(store)).toEqual({ display: 5 + 10 + 3 * KG_PER_SAK, besar: 500 });
+    expect(returnedText(lineOf(store))).toBe('130 Kg');
+  });
+
+  it('retur pembelian mengurangi stok menurut satuan pilihan dan memeriksa stok dalam satuan itu', () => {
+    const { store, session } = build({ display: 5, besar: 500 });
+    const ok = saveReturn(
+      session,
+      'pembelian',
+      draftOf(store, 'pembelian', 'FB-T1', {
+        picks: [{ index: 0, quantity: '100', unit: kg.code }],
+        warehouse: 'besar',
+      }),
+    );
+    expect(ok.ok).toBe(true);
+    expect(stockOf(store)).toEqual({ display: 5, besar: 400 });
+    const low = build({ display: 5, besar: 30 });
+    const refused = saveReturn(
+      low.session,
+      'pembelian',
+      draftOf(low.store, 'pembelian', 'FB-T1', {
+        picks: [{ index: 0, quantity: '31', unit: kg.code }],
+        warehouse: 'besar',
+      }),
+    );
+    expect(refused.ok).toBe(false);
+    expect(refused.ok ? '' : refused.text).toContain('30,0 Kg');
   });
 });

@@ -2,6 +2,7 @@ import { el, nextId } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { icon, type IconName } from '../../../shared/icons';
 import type { HeldBill } from '../../../shared/data/types';
+import { matchesPhrase } from '../../../shared/data/search-index';
 import { label, message } from '../../../shared/messages';
 import { isAllowed } from '../../../shared/permissions';
 import { createButton } from '../../../shared/ui/button';
@@ -46,13 +47,9 @@ export function renderBills(session: PosSession, go: (path: string) => void): Sc
   const empty = el('div', { className: 'pos-bills__empty' });
 
   const visible = (): HeldBill[] => {
-    const needle = query.trim().toLowerCase();
     return [...session.state().heldBills]
-      .filter(
-        (bill) =>
-          needle === '' ||
-          bill.number.toLowerCase().includes(needle) ||
-          session.customerName(bill.customerId).toLowerCase().includes(needle),
+      .filter((bill) =>
+        matchesPhrase(`${bill.number} ${session.customerName(bill.customerId)}`, query),
       )
       .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
   };

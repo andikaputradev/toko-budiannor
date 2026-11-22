@@ -5,7 +5,7 @@ let cache: { readonly products: readonly Product[]; readonly index: SearchIndex 
 
 export function searchIndexFor(products: readonly Product[]): SearchIndex {
   if (cache?.products !== products) {
-    cache = { products, index: createSearchIndex(products, { substring: true }) };
+    cache = { products, index: createSearchIndex(products) };
   }
   return cache.index;
 }

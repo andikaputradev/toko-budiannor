@@ -4,6 +4,8 @@ export const TRX_TEXT = {
   // Kotak cari barang
   cariBarang: 'Cari/Pilih Barang & Jasa...',
   cariBarangNama: 'Cari atau pilih barang dan jasa',
+  // Kolom Pelanggan dan Pemasok kepala dokumen
+  cariPilih: 'Cari/Pilih',
   // Dialog Rincian Barang
   rincianBarang: 'Rincian Barang',
   kode: 'Kode #',

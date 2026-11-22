@@ -16,13 +16,16 @@ import {
   defaultSettlement,
   describeImpact,
   findSource,
+  fitsRoom,
   hasRoom,
   partyKey,
   partyOptions,
+  pickValue,
   planSettlement,
   REASON_PRESETS,
-  returnedValue,
+  returnedText,
   returnSources,
+  roomIn,
   SETTLEMENTS,
   settlementLabelKey,
   settlementsFor,
@@ -47,8 +50,16 @@ interface RowRef {
   readonly row: HTMLTableRowElement;
   readonly check: HTMLInputElement;
   readonly input: HTMLInputElement;
+  // Satuan jumlah retur: satuan faktur atau satuan lain barang (faktur 3 Lusin, retur 10 Pcs).
+  readonly unit: HTMLSelectElement;
   readonly value: HTMLElement;
+  // Memilih baris dengan seluruh sisa dalam satuan faktur asal.
+  pickWhole(): void;
+  clear(): void;
 }
+
+// Teks khusus layar ini dimuat malas bersama formulir; label bersama dimuat semua aplikasi.
+const UNIT_ARIA = (barang: string): string => `Satuan retur ${barang}`;
 
 const WAREHOUSES: readonly WarehouseId[] = ['display', 'besar'];
 const PATHS: Readonly<Record<ReturnKind, string>> = {
@@ -261,10 +272,7 @@ export function renderReturnForm(
     onClick: () => {
       for (const ref of rows) {
         if (ref.line.room > 0) {
-          ref.check.checked = true;
-          ref.input.disabled = false;
-          ref.input.value = quantityText(ref.line.room);
-          ref.row.classList.add('is-picked');
+          ref.pickWhole();
         }
       }
       update();
@@ -387,7 +395,7 @@ export function renderReturnForm(
   function currentPicks(): ReturnPick[] {
     return rows
       .filter((ref) => ref.check.checked)
-      .map((ref) => ({ index: ref.line.index, quantity: ref.input.value }));
+      .map((ref) => ({ index: ref.line.index, quantity: ref.input.value, unit: ref.unit.value }));
   }
 
   function selectedSettlement(): Settlement {
@@ -400,11 +408,7 @@ export function renderReturnForm(
 
   function clearPicks(): void {
     for (const ref of rows) {
-      ref.check.checked = false;
-      ref.input.value = '';
-      ref.input.disabled = true;
-      ref.input.removeAttribute('aria-invalid');
-      ref.row.classList.remove('is-picked');
+      ref.clear();
     }
   }
 
@@ -466,6 +470,21 @@ export function renderReturnForm(
         disabled: '',
       },
     });
+    const unit = el(
+      'select',
+      {
+        className: 'input bo-ret-unit',
+        attrs: { 'aria-label': UNIT_ARIA(line.name), disabled: '' },
+      },
+      ...line.units.map((item) => el('option', { text: item.name, attrs: { value: item.code } })),
+    );
+    unit.value = line.unit;
+    // Jumlah yang terisi otomatis (seluruh sisa) ikut berganti saat satuan diganti; angka ketikan tidak.
+    let whole = false;
+    const fillWhole = (): void => {
+      input.value = quantityText(roomIn(line, unit.value));
+      whole = true;
+    };
     const value = el('td', { className: 'bo-ret-num', text: '-' });
     const row = el(
       'tr',
@@ -481,22 +500,20 @@ export function renderReturnForm(
         className: 'bo-ret-num',
         text: `${formatDecimal(line.sold, 3, 0)} ${line.unitName}`,
       }),
-      el('td', {
-        className: 'bo-ret-num',
-        text: line.returned > 0 ? `${formatDecimal(line.returned, 3, 0)} ${line.unitName}` : '-',
-      }),
+      el('td', { className: 'bo-ret-num', text: returnedText(line) }),
       el(
         'td',
         { className: 'bo-ret-col-qty' },
-        el('div', { className: 'bo-ret-qty-box' }, input, el('span', { text: line.unitName })),
+        el('div', { className: 'bo-ret-qty-box' }, input, unit),
       ),
       value,
     );
     check.addEventListener('change', () => {
       input.disabled = !check.checked;
+      unit.disabled = !check.checked;
       row.classList.toggle('is-picked', check.checked);
       if (check.checked && input.value.trim() === '') {
-        input.value = quantityText(line.room);
+        fillWhole();
       }
       clearError();
       update();
@@ -506,14 +523,48 @@ export function renderReturnForm(
       }
     });
     input.addEventListener('input', () => {
+      whole = false;
       if (!check.checked && input.value !== '') {
         check.checked = true;
+        unit.disabled = false;
         row.classList.add('is-picked');
       }
       clearError();
       update();
     });
-    return { line, row, check, input, value };
+    unit.addEventListener('change', () => {
+      if (whole) {
+        fillWhole();
+      }
+      clearError();
+      update();
+    });
+    return {
+      line,
+      row,
+      check,
+      input,
+      unit,
+      value,
+      pickWhole: () => {
+        check.checked = true;
+        input.disabled = false;
+        unit.disabled = false;
+        unit.value = line.unit;
+        fillWhole();
+        row.classList.add('is-picked');
+      },
+      clear: () => {
+        check.checked = false;
+        input.value = '';
+        input.disabled = true;
+        unit.value = line.unit;
+        unit.disabled = true;
+        whole = false;
+        input.removeAttribute('aria-invalid');
+        row.classList.remove('is-picked');
+      },
+    };
   }
 
   function renderRows(): void {
@@ -532,7 +583,8 @@ export function renderReturnForm(
     let total = 0;
     for (const ref of rows) {
       const quantity = parseQuantity(ref.input.value);
-      const valid = quantity !== undefined && quantity > 0 && quantity <= ref.line.room;
+      const valid =
+        quantity !== undefined && quantity > 0 && fitsRoom(ref.line, ref.unit.value, quantity);
       if (ref.check.checked && quantity !== undefined && quantity > 0 && !valid) {
         ref.input.setAttribute('aria-invalid', 'true');
       } else {
@@ -540,7 +592,7 @@ export function renderReturnForm(
       }
       const amount =
         ref.check.checked && quantity !== undefined && quantity > 0
-          ? returnedValue(ref.line.line, quantity)
+          ? pickValue(ref.line, ref.unit.value, quantity)
           : 0;
       ref.value.textContent = amount > 0 ? formatRupiah(amount) : '-';
       total += amount;

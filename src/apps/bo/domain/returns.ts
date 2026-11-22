@@ -11,9 +11,10 @@ import type {
   ReturnNoteSettlement,
   Stock,
   Supplier,
+  UnitDef,
   WarehouseId,
 } from '../../../shared/data/types';
-import { fromBase, round3, toBase, validateQuantity } from '../../../shared/data/units';
+import { round3, validateQuantity } from '../../../shared/data/units';
 import { settleInvoices } from '../../../shared/domain/receivables';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import type { IconName } from '../../../shared/icons';
@@ -46,6 +47,12 @@ export interface SourceLine {
   readonly sold: number;
   readonly returned: number;
   readonly room: number;
+  // Satuan yang boleh dipakai saat meretur: satuan faktur dan satuan lain barang yang sama
+  // (mis. faktur 3 Lusin, retur 10 Pcs). `factor` adalah isi per satuan dasar.
+  readonly units: readonly UnitDef[];
+  // Sudah diretur dan sisa yang masih boleh diretur, dalam satuan dasar (acuan satuan mana pun).
+  readonly returnedBase: number;
+  readonly roomBase: number;
 }
 
 export interface ReturnSource {
@@ -69,6 +76,8 @@ export interface PartyOption {
 export interface ReturnPick {
   readonly index: number;
   readonly quantity: string;
+  // Kode satuan jumlah retur; kosong berarti satuan faktur asal.
+  readonly unit?: string | undefined;
 }
 
 export interface ReturnDraft {
@@ -121,6 +130,62 @@ function unitNameOf(product: Product | undefined, code: string): string {
   return product?.units.find((unit) => unit.code === code)?.name ?? code;
 }
 
+type UnitScope = Pick<SourceLine, 'unit' | 'units'>;
+
+// Isi satuan per satuan dasar; satuan yang tidak dikenal dianggap satuan faktur asal.
+function factorOf(line: UnitScope, code: string): number {
+  const own = line.units.find((unit) => unit.code === line.unit)?.factor ?? 1;
+  return line.units.find((unit) => unit.code === code)?.factor ?? own;
+}
+
+// Satuan pilihan retur: satuan yang dikenal barang, selain itu satuan faktur asal.
+export function pickUnit(line: SourceLine, pick: { readonly unit?: string | undefined }): string {
+  return line.units.some((unit) => unit.code === pick.unit) ? (pick.unit ?? line.unit) : line.unit;
+}
+
+export function unitLabel(line: SourceLine, code: string): string {
+  return line.units.find((unit) => unit.code === code)?.name ?? code;
+}
+
+// Jumlah dalam satuan dasar.
+export function pickBase(line: SourceLine, unit: string, quantity: number): number {
+  return round3(quantity * factorOf(line, unit));
+}
+
+// Sisa yang masih boleh diretur, dinyatakan dalam satuan yang dipilih.
+export function roomIn(line: SourceLine, unit: string): number {
+  return round3(line.roomBase / factorOf(line, unit));
+}
+
+// Jumlah retur dalam satuan faktur asal tanpa pembulatan, supaya nilai 10 Pcs dari faktur Lusin
+// dihitung dari 10/12 Lusin dan bukan dari 0,833.
+function inLineUnit(line: SourceLine, unit: string, quantity: number): number {
+  return (quantity * factorOf(line, unit)) / factorOf(line, line.unit);
+}
+
+// Jumlah dalam satuan pilihan masih tercakup sisa yang boleh diretur (toleransi pembulatan satuan).
+export function fitsRoom(line: SourceLine, unit: string, quantity: number): boolean {
+  return pickBase(line, unit, quantity) <= line.roomBase + 0.0005;
+}
+
+// Nilai retur sebuah baris: jumlah dalam satuan pilihan kali harga faktur asal.
+export function pickValue(line: SourceLine, unit: string, quantity: number): number {
+  return returnedValue(line.line, inLineUnit(line, unit, quantity));
+}
+
+// Teks "Sudah diretur": satuan faktur bila bulat, selain itu satuan dasar (10 Pcs, bukan 0,833 Lusin).
+export function returnedText(line: SourceLine): string {
+  if (line.returnedBase <= 0) {
+    return '-';
+  }
+  if (Number.isInteger(line.returned)) {
+    return `${formatDecimal(line.returned, 3, 0)} ${line.unitName}`;
+  }
+  const smallest = [...line.units].sort((first, second) => first.factor - second.factor)[0];
+  const amount = round3(line.returnedBase / (smallest?.factor ?? 1));
+  return `${formatDecimal(amount, 3, 0)} ${smallest?.name ?? line.unitName}`;
+}
+
 function toSource(
   kind: ReturnKind,
   header: {
@@ -138,16 +203,24 @@ function toSource(
   const related = notes.filter((note) => note.kind === kind && note.sourceNumber === header.number);
   const lines = rawLines.map((line, index): SourceLine => {
     const product = products.get(line.productId);
-    const returned = round3(
+    const units: readonly UnitDef[] = product?.units.some((unit) => unit.code === line.unit)
+      ? product.units
+      : [{ code: line.unit, name: line.unit, factor: 1 }];
+    const scope: UnitScope = { unit: line.unit, units };
+    const lineFactor = factorOf(scope, line.unit);
+    // Retur lama dicatat dalam satuan yang dipilih saat itu; semuanya dijumlah dalam satuan dasar.
+    const returnedBase = round3(
       related.reduce(
         (sum, note) =>
           sum +
           note.lines
             .filter((item) => item.index === index)
-            .reduce((inner, item) => inner + item.quantity, 0),
+            .reduce((inner, item) => inner + item.quantity * factorOf(scope, item.unit), 0),
         0,
       ),
     );
+    const soldBase = round3(line.quantity * lineFactor);
+    const roomBase = round3(Math.max(0, soldBase - returnedBase));
     return {
       index,
       line,
@@ -156,8 +229,11 @@ function toSource(
       unit: line.unit,
       unitName: unitNameOf(product, line.unit),
       sold: line.quantity,
-      returned,
-      room: round3(Math.max(0, line.quantity - returned)),
+      returned: round3(returnedBase / lineFactor),
+      room: round3(roomBase / lineFactor),
+      units,
+      returnedBase,
+      roomBase,
     };
   });
   return {
@@ -298,12 +374,13 @@ export function buildNoteLines(
     const line = source.lines[pick.index];
     const quantity = pickedQuantity(pick);
     if (line !== undefined && quantity !== undefined) {
+      const unit = pickUnit(line, pick);
       result.push({
         index: line.index,
         productId: line.line.productId,
-        unit: line.unit,
+        unit,
         quantity,
-        value: returnedValue(line.line, quantity),
+        value: pickValue(line, unit, quantity),
       });
     }
   }
@@ -417,12 +494,6 @@ export function potongSupplier(supplier: Supplier, amount: number): Supplier {
   };
 }
 
-function baseQuantity(product: Product, unit: string, quantity: number): number | undefined {
-  return product.units.some((item) => item.code === unit)
-    ? toBase(product, unit, quantity)
-    : undefined;
-}
-
 function baseNeeds(
   source: ReturnSource,
   picks: readonly ReturnPick[],
@@ -436,10 +507,8 @@ function baseNeeds(
     if (line === undefined || quantity === undefined || product === undefined) {
       continue;
     }
-    const base = baseQuantity(product, line.unit, quantity);
-    if (base !== undefined) {
-      needs.set(product.id, round3((needs.get(product.id) ?? 0) + base));
-    }
+    const base = pickBase(line, pickUnit(line, pick), quantity);
+    needs.set(product.id, round3((needs.get(product.id) ?? 0) + base));
   }
   return needs;
 }
@@ -527,11 +596,13 @@ export function validateReturn(
     if (issue === 'integer-only') {
       return { type: 'jumlah', index: pick.index, messageId: 'MSG-032' };
     }
-    if (quantity > line.room) {
+    const unit = pickUnit(line, pick);
+    // Dibandingkan dalam satuan dasar supaya 10 Pcs dari faktur 3 Lusin dinilai tepat.
+    if (!fitsRoom(line, unit, quantity)) {
       return {
         type: 'melebihi',
         index: pick.index,
-        room: `${formatDecimal(line.room, 3, 1)} ${line.unitName}`,
+        room: `${formatDecimal(roomIn(line, unit), 3, 1)} ${unitLabel(line, unit)}`,
       };
     }
   }
@@ -547,16 +618,16 @@ export function validateReturn(
       if (line === undefined || quantity === undefined || product === undefined) {
         continue;
       }
-      const base = baseQuantity(product, line.unit, quantity) ?? 0;
-      const cumulative = round3((used.get(product.id) ?? 0) + base);
+      const unit = pickUnit(line, pick);
+      const cumulative = round3((used.get(product.id) ?? 0) + pickBase(line, unit, quantity));
       used.set(product.id, cumulative);
       const available = product.stock[draft.warehouse];
       if (cumulative > available) {
-        const shown = fromBase(product, line.unit, Math.max(0, available));
+        const shown = round3(Math.max(0, available) / factorOf(line, unit));
         return {
           type: 'stok',
           index: pick.index,
-          available: `${formatDecimal(shown, 3, 1)} ${line.unitName}`,
+          available: `${formatDecimal(shown, 3, 1)} ${unitLabel(line, unit)}`,
         };
       }
     }
