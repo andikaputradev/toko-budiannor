@@ -286,14 +286,11 @@ export const OVERLAYS: readonly OverlayCase[] = [
     app: 'sales',
     open: async (page) => {
       await page.goto('/#/sales/order');
-      const picker = page.getByLabel('Cari atau pindai barang');
+      const picker = page.getByLabel('Cari barang');
       await picker.fill('B0001');
       await picker.press('Enter');
       await page.getByLabel('Pelanggan').selectOption('C-003');
-      await page
-        .getByRole('group', { name: 'Cara bayar' })
-        .getByRole('button', { name: 'Piutang', exact: true })
-        .click();
+      await page.getByLabel('Cara bayar').selectOption({ label: 'Piutang' });
       await page
         .locator('[data-line="0"]')
         .getByRole('textbox', { name: /^Jumlah/ })

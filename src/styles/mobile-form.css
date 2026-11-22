@@ -1,0 +1,114 @@
+/* ===== Bagian formulir SO dan PO yang dipakai Owner dan Sales: cari barang dan bilah total ===== */
+.trx-search {
+  position: relative;
+}
+
+.trx-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+}
+
+.trx-results:not(:empty) {
+  margin-top: var(--primitive-space-2);
+}
+
+.trx-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  min-height: 56px;
+  padding: var(--primitive-space-2) var(--primitive-space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  background: var(--color-bg-surface);
+  color: inherit;
+  text-align: left;
+}
+
+.trx-result:active {
+  background: var(--color-accent-soft);
+}
+
+.trx-result__name {
+  font-size: 16px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.trx-result__code {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.trx-results__empty,
+.trx-empty {
+  margin: 0;
+  padding: var(--primitive-space-3);
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  text-align: center;
+}
+
+/* Bilah total dan simpan yang menempel di bawah layar; pada isi pendek tetap berada di dasar layar. */
+.own-main:has(.trx-form) {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.own-main:has(.trx-form) .own-content {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.trx-form {
+  flex: 1 0 auto;
+}
+
+.trx-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: auto calc(-1 * var(--space-screen-margin)) 0;
+  padding: var(--primitive-space-3) var(--space-screen-margin);
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-bg-surface);
+  box-shadow: 0 -6px 18px rgb(0 0 0 / 0.08);
+}
+
+.trx-bar__row {
+  display: flex;
+  gap: var(--primitive-space-4);
+  align-items: center;
+}
+
+.trx-bar__total {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  max-width: 45%;
+}
+
+.trx-bar__label {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.trx-bar__value {
+  font-size: 22px;
+  font-weight: var(--primitive-font-weight-bold);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.trx-bar__save {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
+  padding: 0 var(--primitive-space-3);
+}

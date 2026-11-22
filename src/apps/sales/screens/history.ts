@@ -3,6 +3,7 @@ import { el } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { icon } from '../../../shared/icons';
 import { label, message } from '../../../shared/messages';
+import { mt } from '../../../shared/mobile-text';
 import type { SalesOrder } from '../../../shared/data/types';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
@@ -57,7 +58,7 @@ export function renderHistory(
 
   const card = (order: SalesOrder): HTMLElement => {
     const sent = session.state().sent[order.number] !== undefined;
-    return el(
+    const link = el(
       'a',
       {
         className: 'mob-card sls-so',
@@ -93,6 +94,17 @@ export function renderHistory(
         sent ? createMobBadge(label('salinanTerkirimBadge'), 'info', 'message-circle') : false,
       ),
     );
+    const send = el(
+      'button',
+      { className: 'mob-send', attrs: { type: 'button' } },
+      icon('message-circle'),
+      el('span', { text: mt('waKirimPdf') }),
+      el('span', { className: 'visually-hidden', text: ` ${order.number}` }),
+    );
+    send.addEventListener('click', () => {
+      openSend(order);
+    });
+    return el('div', { className: 'mob-send-row' }, link, send);
   };
 
   const openSend = (order: SalesOrder): void => {

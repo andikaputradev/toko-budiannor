@@ -10,6 +10,7 @@ import { formatRupiah } from '../../shared/format';
 import type { LabelKey, SystemMessageId } from '../../shared/messages';
 import { isAllowed } from '../../shared/permissions';
 import { checkSalesOrder, preferredUnit, type OrderLineDraft } from '../../shared/domain/orders';
+import { isValidPhone, normalizePhone } from '../../shared/domain/phone';
 import { parseQuantity } from '../../shared/domain/transfer';
 import { createEventBus } from '../../shared/store/event-bus';
 import type { Store } from '../../shared/store/store';
@@ -112,13 +113,7 @@ export interface SalesSessionOptions {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function normalizePhone(raw: string): string {
-  return raw.replace(/[\s-]/g, '');
-}
-
-export function isValidPhone(raw: string): boolean {
-  return /^(08\d{7,12}|\+?628\d{7,12})$/.test(normalizePhone(raw));
-}
+export { isValidPhone, normalizePhone };
 
 export function createSalesSession(store: Store, options: SalesSessionOptions = {}): SalesSession {
   const clock = options.clock ?? (() => Date.now());

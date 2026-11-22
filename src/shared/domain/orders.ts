@@ -34,6 +34,8 @@ export interface PurchaseLineDraft extends OrderLineDraft {
 export interface PurchaseOrderDraft {
   readonly supplierId: string;
   readonly warehouse: '' | WarehouseId;
+  /** Cara bayar PO; kosong berarti Tunai. */
+  readonly payment?: 'tunai' | 'hutang' | undefined;
   readonly lines: readonly PurchaseLineDraft[];
 }
 

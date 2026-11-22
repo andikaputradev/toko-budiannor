@@ -1,6 +1,7 @@
 import { balanceOf, outstanding, wibDate } from '../../shared/data/receivable';
 import type {
   Customer,
+  DebtPaymentRecord,
   PaymentMethod,
   Product,
   PurchaseOrder,
@@ -9,6 +10,7 @@ import type {
 } from '../../shared/data/types';
 import { round3, toBase } from '../../shared/data/units';
 import { formatRupiah, formatTime } from '../../shared/format';
+import { isValidPhone, normalizePhone } from '../../shared/domain/phone';
 import { isAllowed } from '../../shared/permissions';
 import type { LabelKey, MessageValues, SystemMessageId } from '../../shared/messages';
 import { INITIAL_GUARD, type PinGuard } from '../../shared/domain/pin';
@@ -30,6 +32,7 @@ import {
   type PurchaseOrderDraft,
   type SalesOrderDraft,
 } from './domain/orders';
+import { allocationsOf } from './domain/payment-history';
 import { applyPayablePayment, supplierBalance, validatePayablePayment } from './domain/payables';
 import { applyPayment, validatePayment } from './domain/receivables';
 
@@ -51,6 +54,8 @@ export interface OwnerState {
   readonly queue: readonly QueueItem[];
   readonly notifications: readonly OwnerNotification[];
   readonly push: OwnerNotification | undefined;
+  /** Nomor SO atau PO yang draf PDF-nya sudah dikirim lewat WA, beserta waktunya. */
+  readonly sent: Readonly<Record<string, string>>;
 }
 
 export type Failure =
@@ -76,6 +81,13 @@ export type SalesResult =
   | Failure;
 
 export type PayMethod = Exclude<PaymentMethod, 'dp' | 'piutang' | 'edc'>;
+
+export interface PaymentResult {
+  readonly ok: true;
+  readonly number: string;
+  readonly amount: number;
+  readonly remaining: number;
+}
 
 export type DocResult = { readonly ok: true; readonly number: string } | Failure;
 
@@ -111,13 +123,18 @@ export interface OwnerSession {
     raw: string,
     method: PayMethod,
     invoiceId?: string,
-  ): { readonly ok: true; readonly amount: number; readonly remaining: number } | Failure;
+  ): PaymentResult | Failure;
   payPayable(
     supplierId: string,
     raw: string,
     method: PayMethod,
     invoiceId?: string,
-  ): { readonly ok: true; readonly amount: number; readonly remaining: number } | Failure;
+  ): PaymentResult | Failure;
+  sendOrderCopy(
+    kind: 'so' | 'po',
+    number: string,
+    phone: string,
+  ): { readonly ok: true; readonly queued: boolean } | Failure;
   sendBill(customerId: string): { readonly ok: true; readonly queued: boolean } | Failure;
   simulatePush(kind: NotificationKind): OwnerNotification | undefined;
   markAllRead(): void;
@@ -164,6 +181,7 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
     queue: [],
     notifications: [],
     push: undefined,
+    sent: {},
   };
 
   const commit = (next: Partial<OwnerState>): void => {
@@ -196,6 +214,31 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
   } else if (stored !== undefined) {
     vault.clear();
   }
+
+  const receipt = (
+    number: string,
+    kind: DebtPaymentRecord['kind'],
+    partyId: string,
+    partyName: string,
+    method: PayMethod,
+    amount: number,
+    detail: {
+      readonly before: readonly { readonly id: string; readonly paid: number }[];
+      readonly after: readonly { readonly id: string; readonly paid: number }[];
+      readonly remaining: number;
+    },
+  ): DebtPaymentRecord => ({
+    number,
+    kind,
+    at: stamp(),
+    userId: state.userId ?? store.getState().userId,
+    partyId,
+    partyName,
+    method,
+    amount,
+    allocations: allocationsOf(detail.before, detail.after),
+    remaining: detail.remaining,
+  });
 
   const log = (kind: Parameters<Store['logActivity']>[0]['kind'], detail: string): void => {
     store.logActivity({
@@ -264,6 +307,7 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
       queue: [],
       notifications: state.userId === undefined ? [] : seedNotifications(),
       push: undefined,
+      sent: {},
     });
   });
 
@@ -418,6 +462,7 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
         lines: check.lines,
         total: check.total,
         status: 'dipesan',
+        payment: draft.payment ?? 'tunai',
       };
       store.addPurchaseOrder(order);
       log('transaksi', `${number} Dipesan ${formatRupiah(check.total)}`);
@@ -442,17 +487,22 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
         record: { method, at: wibDate(now()) },
       });
       store.saveCustomer({ ...customer, invoices });
+      const remaining = invoices.reduce((sum, invoice) => sum + balanceOf(invoice), 0);
+      const number = store.takeNumber('BPT');
+      store.addDebtPayment(
+        receipt(number, 'piutang', customer.id, customer.name, method, check.amount, {
+          before: customer.invoices,
+          after: invoices,
+          remaining,
+        }),
+      );
       log(
         'transaksi',
-        `Pembayaran piutang ${customer.code} ${formatRupiah(check.amount)} (${method})`,
+        `${number} Pembayaran piutang ${customer.code} ${formatRupiah(check.amount)} (${method})`,
       );
       enqueue(`Pembayaran piutang ${customer.name}`);
       commit({});
-      return {
-        ok: true,
-        amount: check.amount,
-        remaining: invoices.reduce((sum, invoice) => sum + balanceOf(invoice), 0),
-      };
+      return { ok: true, number, amount: check.amount, remaining };
     },
     payPayable: (supplierId, raw, method, invoiceId) => {
       // Bayar Hutang berada pada layar OWN-05 (Piutang dan Hutang) yang sama dengan Bayar Piutang.
@@ -474,13 +524,22 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
         record: { method, at: wibDate(now()) },
       });
       store.saveSupplier(updated);
+      const remaining = supplierBalance(updated);
+      const number = store.takeNumber('BHT');
+      store.addDebtPayment(
+        receipt(number, 'hutang', supplier.id, supplier.name, method, check.amount, {
+          before: supplier.invoices ?? [],
+          after: updated.invoices ?? [],
+          remaining,
+        }),
+      );
       log(
         'transaksi',
-        `Pembayaran hutang ${supplier.name} ${formatRupiah(check.amount)} (${method})`,
+        `${number} Pembayaran hutang ${supplier.name} ${formatRupiah(check.amount)} (${method})`,
       );
       enqueue(`Pembayaran hutang ${supplier.name}`);
       commit({});
-      return { ok: true, amount: check.amount, remaining: supplierBalance(updated) };
+      return { ok: true, number, amount: check.amount, remaining };
     },
     sendBill: (customerId) => {
       if (!isAllowed(role(), 'OWN-05', 'Kirim Tagihan WA (PDF)')) {
@@ -497,6 +556,30 @@ export function createOwnerSession(store: Store, options: OwnerSessionOptions = 
       );
       enqueue(`Tagihan WA ${customer.name}`);
       commit({});
+      return { ok: true, queued: !online };
+    },
+    sendOrderCopy: (kind, number, phone) => {
+      if (!isAllowed(role(), 'OWN-06', kind === 'so' ? 'Buat SO' : 'Buat PO')) {
+        return denied();
+      }
+      const current = store.getState();
+      const known =
+        kind === 'so'
+          ? current.salesOrders.some((item) => item.number === number)
+          : current.purchaseOrders.some((item) => item.number === number);
+      if (!known) {
+        return denied();
+      }
+      if (!isValidPhone(phone)) {
+        return { ok: false, messageId: 'MSG-044', values: {} };
+      }
+      const online = current.online;
+      log(
+        'cetak',
+        `Draf ${kind === 'so' ? 'SO' : 'PO'} ${number} (PDF) dikirim ke ${normalizePhone(phone)} via WA (simulasi)${online ? '' : ', menunggu sinkron'}`,
+      );
+      enqueue(`Draf ${number} via WA`);
+      commit({ sent: { ...state.sent, [number]: stamp() } });
       return { ok: true, queued: !online };
     },
     simulatePush: (kind) => {

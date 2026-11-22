@@ -483,57 +483,6 @@ html:not([data-pos-scheme='gelap']) .trx-tile--soft {
   gap: var(--primitive-space-2);
 }
 
-.trx-search {
-  position: relative;
-}
-
-.trx-results {
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-2);
-}
-
-.trx-results:not(:empty) {
-  margin-top: var(--primitive-space-2);
-}
-
-.trx-result {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-start;
-  min-height: 56px;
-  padding: var(--primitive-space-2) var(--primitive-space-4);
-  border: 1px solid var(--color-border-default);
-  border-radius: 14px;
-  background: var(--color-bg-surface);
-  color: inherit;
-  text-align: left;
-}
-
-.trx-result:active {
-  background: var(--color-accent-soft);
-}
-
-.trx-result__name {
-  font-size: 16px;
-  font-weight: var(--primitive-font-weight-semibold);
-}
-
-.trx-result__code {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.trx-results__empty,
-.trx-empty {
-  margin: 0;
-  padding: var(--primitive-space-3);
-  color: var(--color-text-secondary);
-  font-size: 15px;
-  text-align: center;
-}
-
 .trx-lines {
   display: flex;
   flex-direction: column;
@@ -680,141 +629,7 @@ html:not([data-pos-scheme='gelap']) .trx-tile--soft {
   font-weight: var(--primitive-font-weight-bold);
 }
 
-/* Bilah total dan simpan yang menempel di bawah layar; pada isi pendek tetap berada di dasar layar. */
-.own-main:has(.trx-form) {
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 0;
-}
-
-.own-main:has(.trx-form) .own-content {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-}
-
-.trx-form {
-  flex: 1 0 auto;
-}
-
-.trx-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-2);
-  margin: auto calc(-1 * var(--space-screen-margin)) 0;
-  padding: var(--primitive-space-3) var(--space-screen-margin);
-  border-top: 1px solid var(--color-border-default);
-  background: var(--color-bg-surface);
-  box-shadow: 0 -6px 18px rgb(0 0 0 / 0.08);
-}
-
-.trx-bar__row {
-  display: flex;
-  gap: var(--primitive-space-4);
-  align-items: center;
-}
-
-.trx-bar__total {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  max-width: 45%;
-}
-
-.trx-bar__label {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.trx-bar__value {
-  font-size: 22px;
-  font-weight: var(--primitive-font-weight-bold);
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
-
-.trx-bar__save {
-  flex: 1 1 0;
-  min-width: 0;
-  height: 56px;
-  padding: 0 var(--primitive-space-3);
-}
-
-/* ===== Kartu Stok ===== */
-.trx-stock {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--primitive-space-3);
-  padding: var(--primitive-space-4);
-  border: 1px solid var(--color-border-default);
-  border-radius: 16px;
-  background: var(--color-bg-surface);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    0 6px 16px rgb(0 0 0 / 0.05);
-}
-
-.trx-stock__main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-3);
-  min-width: 0;
-}
-
-.trx-stock__title {
-  margin: 0;
-}
-
-.trx-stock__open {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  justify-content: center;
-  min-height: var(--size-touch-target-min);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-
-/* Tombol nama memperluas area ketuk ke seluruh kartu; foto tetap tombol terpisah di atasnya. */
-.trx-stock__open::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-}
-
-/* Penanda fokus tetap pada tombolnya sendiri (cincin fokus bawaan), bukan pada elemen semu. */
-.trx-stock__name {
-  font-size: 17px;
-  font-weight: var(--primitive-font-weight-bold);
-  line-height: 1.3;
-}
-
-.trx-stock__code {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-}
-
-.trx-stock__photo {
-  position: relative;
-  z-index: 2;
-}
-
-.trx-stock__stocks {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--primitive-space-3);
-}
-
+/* Kolom stok pada lembar Detail Barang */
 .trx-stk {
   display: flex;
   flex-direction: column;
@@ -831,70 +646,6 @@ html:not([data-pos-scheme='gelap']) .trx-tile--soft {
 .trx-stk .mob-badge {
   padding: 5px 12px;
   font-size: 15px;
-}
-
-.trx-stock__prices {
-  grid-column: 1 / -1;
-}
-
-.trx-stock__prices-title {
-  margin: 0 0 var(--primitive-space-1);
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: var(--primitive-font-weight-bold);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.trx-prices {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 15px;
-}
-
-.trx-prices th,
-.trx-prices td {
-  padding: 8px 0;
-  border-top: 1px solid var(--color-border-default);
-  text-align: left;
-}
-
-.trx-prices thead th {
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: var(--primitive-font-weight-semibold);
-}
-
-.trx-prices thead tr:first-child th {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.trx-prices .is-end {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.trx-prices tbody th {
-  font-weight: var(--primitive-font-weight-regular);
-}
-
-.trx-prices tbody small {
-  display: block;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.trx-prices td {
-  font-weight: var(--primitive-font-weight-semibold);
-}
-
-.trx-prices td:nth-child(2) {
-  color: var(--color-accent-default);
-}
-
-.trx-prices td {
-  padding-left: 6px;
 }
 
 /* Lembar Detail Barang */
@@ -1131,4 +882,17 @@ html[data-app='owner'] .modal__actions .btn {
 .trx-detail:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus-ring);
   outline-offset: var(--focus-ring-offset);
+}
+
+/* Pratinjau isi PDF pada lembar kirim WA */
+.own-preview summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: var(--primitive-font-weight-semibold);
+  cursor: pointer;
+}
+
+.own-preview .own-pdf {
+  max-height: 40vh;
 }

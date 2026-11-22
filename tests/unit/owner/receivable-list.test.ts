@@ -91,6 +91,7 @@ describe('pembayaran piutang per invoice', () => {
     });
     expect(session.recordPayment(two.id, '400.000', 'qris', 'INV-901')).toEqual({
       ok: true,
+      number: 'BPT-001',
       amount: 400_000,
       remaining: 1_000_000,
     });

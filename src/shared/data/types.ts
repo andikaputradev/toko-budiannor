@@ -357,6 +357,28 @@ export interface DepositEntry {
   readonly note: string;
 }
 
+// Bukti pembayaran piutang pelanggan (BPT) atau hutang pemasok (BHT) yang dicatat di aplikasi Owner.
+export type DebtPaymentKind = 'piutang' | 'hutang';
+
+export interface DebtPaymentAllocation {
+  readonly invoiceId: string;
+  readonly amount: number;
+}
+
+export interface DebtPaymentRecord {
+  readonly number: string;
+  readonly kind: DebtPaymentKind;
+  readonly at: string;
+  readonly userId: string;
+  readonly partyId: string;
+  readonly partyName: string;
+  readonly method: InvoicePayment['method'];
+  readonly amount: number;
+  readonly allocations: readonly DebtPaymentAllocation[];
+  // Sisa piutang atau hutang pihak itu sesudah pembayaran.
+  readonly remaining: number;
+}
+
 export interface Dataset {
   readonly seed: number;
   readonly referenceDate: string;

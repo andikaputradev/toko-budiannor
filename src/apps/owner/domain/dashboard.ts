@@ -1,11 +1,11 @@
+import { createRandom } from '../../../shared/data/prng';
 import { wibDate } from '../../../shared/data/receivable';
 import { profitLoss, rangeDays } from '../../../shared/data/report';
-import type { Dataset, Product } from '../../../shared/data/types';
+import type { BillLine, Dataset, Product } from '../../../shared/data/types';
 import { totalStock } from '../../../shared/data/units';
 import { overdueRows, totalOverdue } from '../../../shared/domain/receivables';
 import { mostCritical } from '../../../shared/domain/stock';
 import {
-  dailyPoints,
   hourlyPoints,
   monthStart,
   topProducts,
@@ -13,7 +13,7 @@ import {
   type ProductRank,
   type SalesPoint,
 } from './reporting';
-import { percentChange, summarize } from './summary';
+import { percentChange, shiftDay, summarize } from './summary';
 
 /* ===== Omzet Live ===== */
 
@@ -48,7 +48,6 @@ export function revenueView(data: Dataset, now: Date, mode: RevenueMode): Revenu
     };
   }
   const from = monthStart(today);
-  const points = dailyPoints(data, { from, to: today });
   const days = data.dailyRevenue.filter((item) => item.date >= from && item.date <= today);
   const total = days.reduce((sum, item) => sum + item.revenue, 0);
   const earlier = data.dailyRevenue.filter((item) => item.date < from);
@@ -62,8 +61,85 @@ export function revenueView(data: Dataset, now: Date, mode: RevenueMode): Revenu
     comparison:
       earlier.length < MIN_COMPARE_DAYS ? undefined : percentChange(average, earlierAverage),
     compare: 'rata-bulan-lalu',
-    points,
+    points: monthlyPoints(data, today),
   };
+}
+
+/* ===== Omzet bulanan (grafik batang) ===== */
+
+export const MONTH_COUNT = 6;
+
+export const MONTH_NAMES: readonly string[] = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
+export const MONTH_SHORT: readonly string[] = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
+];
+
+// Nama bulan panjang dari kunci "2026-10", mis. "Oktober 2026".
+export function monthText(key: string): string {
+  return `${MONTH_NAMES[Number(key.slice(5, 7)) - 1] ?? ''} ${key.slice(0, 4)}`;
+}
+
+function daysInMonth(key: string): number {
+  return new Date(Date.UTC(Number(key.slice(0, 4)), Number(key.slice(5, 7)), 0)).getUTCDate();
+}
+
+function monthBefore(key: string, back: number): string {
+  const index = Number(key.slice(0, 4)) * 12 + (Number(key.slice(5, 7)) - 1) - back;
+  return `${String(Math.floor(index / 12))}-${String((index % 12) + 1).padStart(2, '0')}`;
+}
+
+// ASUMSI: data contoh hanya memuat 31 hari omzet harian, jadi bulan sebelum bulan berjalan diperkirakan
+// dari omzet harian rata-rata dikali jumlah hari bulan itu dengan faktor tetap per bulan (0,85 sampai
+// 1,15, deterministik dari seed). Bulan berjalan memakai omzet nyata sampai hari ini.
+export function monthlyPoints(data: Dataset, today: string, count = MONTH_COUNT): SalesPoint[] {
+  const current = today.slice(0, 7);
+  const known = data.dailyRevenue;
+  const dailyAverage =
+    known.reduce((sum, item) => sum + item.revenue, 0) / Math.max(1, known.length);
+  return Array.from({ length: count }, (_, index) => {
+    const key = monthBefore(current, count - 1 - index);
+    const label = MONTH_SHORT[Number(key.slice(5, 7)) - 1] ?? '';
+    if (key === current) {
+      const value = known
+        .filter((item) => item.date.startsWith(key) && item.date <= today)
+        .reduce((sum, item) => sum + item.revenue, 0);
+      return { key, label, value };
+    }
+    const random = createRandom(
+      data.seed * 53 + Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)),
+    );
+    const factor = 0.85 + random.next() * 0.3;
+    return {
+      key,
+      label,
+      value: Math.round((dailyAverage * daysInMonth(key) * factor) / 1000) * 1000,
+    };
+  });
 }
 
 /* ===== Laba rugi bulan ini ===== */
@@ -114,13 +190,56 @@ export function lowStockRows(data: Dataset, limit = LOW_STOCK_ROWS): LowStockRow
 
 /* ===== Produk terlaris ===== */
 
-export type RankPeriod = 'hari-ini' | 'bulan-ini';
+// Harian, mingguan, bulanan, dan triwulan: hari ini, 7, 30, dan 90 hari terakhir termasuk hari ini.
+export type RankPeriod = 'hari-ini' | 'minggu' | 'bulan' | 'triwulan';
+
+export const RANK_PERIODS: readonly RankPeriod[] = ['hari-ini', 'minggu', 'bulan', 'triwulan'];
+
+export const RANK_DAYS: Readonly<Record<RankPeriod, number>> = {
+  'hari-ini': 1,
+  minggu: 7,
+  bulan: 30,
+  triwulan: 90,
+};
 
 export const TOP_PRODUCT_ROWS = 5;
 
+export function parseRankPeriod(value: string): RankPeriod {
+  return RANK_PERIODS.find((period) => period === value) ?? 'hari-ini';
+}
+
 export function rankRange(now: Date, period: RankPeriod): DateRange {
   const today = wibDate(now);
-  return { from: period === 'hari-ini' ? today : monthStart(today), to: today };
+  return { from: shiftDay(today, 1 - RANK_DAYS[period]), to: today };
+}
+
+// ASUMSI: penjualan rinci hanya tercatat untuk kemarin dan hari ini. Untuk hari yang lebih lama pada
+// rentang mingguan, bulanan, dan triwulan, penjualan dibangkitkan deterministik dari seed (barang
+// populer lebih sering muncul) agar peringkat tiap periode berbeda dan stabil.
+export const DETAILED_DAYS = 2;
+const BACKFILL_POPULAR = 60;
+
+function backfillLines(data: Dataset, day: string): BillLine[] {
+  const products = data.products.filter((product) => product.active !== false);
+  const popular = products.slice(0, Math.min(BACKFILL_POPULAR, products.length));
+  if (popular.length === 0) {
+    return [];
+  }
+  const count = data.dailyRevenue.find((item) => item.date === day)?.count ?? 30;
+  const dayNumber = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
+  const random = createRandom(data.seed * 7919 + dayNumber);
+  return Array.from({ length: Math.max(3, Math.round(count / 3)) }, () => {
+    const product = popular[Math.floor(random.next() ** 2 * popular.length)] ?? popular[0];
+    if (product === undefined) {
+      throw new RangeError('Daftar barang kosong');
+    }
+    return {
+      productId: product.id,
+      unit: product.baseUnit,
+      quantity: product.allowDecimal ? random.int(1, 8) / 2 : random.int(1, 5),
+      unitPrice: product.prices[product.baseUnit]?.eceran ?? 0,
+    };
+  });
 }
 
 export function topProductRows(
@@ -129,7 +248,13 @@ export function topProductRows(
   period: RankPeriod,
   limit = TOP_PRODUCT_ROWS,
 ): ProductRank[] {
-  return topProducts(data, rankRange(now, period), limit);
+  const range = rankRange(now, period);
+  const detailedFrom = shiftDay(range.to, 1 - DETAILED_DAYS);
+  const extra: BillLine[] = [];
+  for (let day = range.from; day < detailedFrom && day <= range.to; day = shiftDay(day, 1)) {
+    extra.push(...backfillLines(data, day));
+  }
+  return topProducts(data, range, limit, extra);
 }
 
 /* ===== Monitoring HPP ===== */

@@ -4,15 +4,16 @@ import { icon } from '../../../shared/icons';
 import { checkReceivable } from '../../../shared/data/receivable';
 import { formatDecimal, formatRupiah } from '../../../shared/format';
 import { label, message, type LabelKey } from '../../../shared/messages';
+import { mt } from '../../../shared/mobile-text';
 import type { PaymentMethod, Product } from '../../../shared/data/types';
 import { preferredUnit, type OrderLineDraft } from '../../../shared/domain/orders';
 import { parseQuantity } from '../../../shared/domain/transfer';
+import { createActionBar } from '../../../shared/ui/action-bar';
 import { createBanner } from '../../../shared/ui/banner';
 import { createButton } from '../../../shared/ui/button';
-import { createEmptyState } from '../../../shared/ui/empty';
 import { createSelectField, createTextField } from '../../../shared/ui/field';
 import { createMobBadge, createMobCard } from '../../../shared/ui/mobile-card';
-import { createProductPicker } from '../../../shared/ui/product-picker';
+import { createProductSearch } from '../../../shared/ui/product-search';
 import { openSheet } from '../../../shared/ui/sheet';
 import { createStepper } from '../../../shared/ui/stepper';
 import { showToast } from '../../../shared/ui/toast';
@@ -44,7 +45,9 @@ const MAX_QUANTITY = 1_000_000;
 
 const isCredit = (method: PaymentMethod): boolean => method === 'piutang' || method === 'dp';
 
-export const renderOrder: SalesScreen = (session, go) => {
+export const renderOrder: SalesScreen = (session, go, _query, shell) => {
+  shell.setTitle(label('trxJudulSo'));
+  shell.setBack('/sales/katalog');
   const store = session.store;
   const lookup = (id: string): Product | undefined =>
     store.getState().data.products.find((item) => item.id === id);
@@ -66,35 +69,29 @@ export const renderOrder: SalesScreen = (session, go) => {
   const customerInfo = el('div', { className: 'sls-info' });
   const customerNotes = el('div', { className: 'sls-notes' });
   const linesBox = el('div', { className: 'sls-lines' });
-  const emptyBox = el('div');
-  const error = el('p', { className: 'own-hint sls-summary__error', attrs: { role: 'alert' } });
-  const total = el('output', { className: 'sls-summary__total' });
-  const count = el('span', { className: 'sls-summary__count' });
+  const emptyBox = el('p', { className: 'sls-empty', text: mt('slsBelumAdaBarang') });
+  const error = el('p', { className: 'own-hint', attrs: { role: 'alert' } });
+  const total = el('output', { className: 'trx-bar__value' });
   const payNote = el('p', { className: 'sls-note' });
   const offlineNote = el('p', { className: 'sls-summary__note' });
   const down = createTextField({ labelText: label('uangMuka'), inputMode: 'numeric' });
   down.input.value = draft().downPayment;
-  const payButtons = METHODS.map(([value, key]) => {
-    const button = el('button', {
-      className: 'sls-pay__button',
-      text: label(key),
-      attrs: { type: 'button', 'data-method': value },
-    });
-    button.addEventListener('click', () => {
-      session.setDraft({ payment: value });
-      error.textContent = '';
-      paintPayment();
-    });
-    return button;
+  const method = createSelectField({
+    labelText: label('caraBayar'),
+    options: METHODS.map(([value, key]) => ({ value, text: label(key) })),
+    value: draft().payment,
+  });
+  method.select.addEventListener('change', () => {
+    session.setDraft({ payment: method.select.value as PaymentMethod });
+    error.textContent = '';
+    paintPayment();
   });
 
   let shownNotes = '';
   const paintCustomer = (): void => {
     const selected = customerOf();
-    const tierName = label(TIER_LABELS[session.tier()]);
     const summary = selected === undefined ? undefined : creditSummary(selected, session.now());
     customerInfo.replaceChildren(
-      createMobBadge(label('tierHargaNilai', { tier: tierName }), 'info', 'tag'),
       ...(summary === undefined
         ? []
         : [
@@ -142,7 +139,6 @@ export const renderOrder: SalesScreen = (session, go) => {
   const paintSummary = (): void => {
     const sum = totals();
     total.textContent = formatRupiah(sum.total);
-    count.textContent = label('slsJumlahBarang', { jumlah: sum.items });
     const online = store.getState().online;
     offlineNote.textContent = online ? '' : label('slsOfflineSimpan');
     const method = draft().payment;
@@ -157,12 +153,7 @@ export const renderOrder: SalesScreen = (session, go) => {
   };
 
   const paintPayment = (): void => {
-    for (const button of payButtons) {
-      button.setAttribute(
-        'aria-pressed',
-        button.getAttribute('data-method') === draft().payment ? 'true' : 'false',
-      );
-    }
+    method.select.value = draft().payment;
     down.root.hidden = draft().payment !== 'dp';
     paintSummary();
   };
@@ -308,33 +299,12 @@ export const renderOrder: SalesScreen = (session, go) => {
   const renderLines = (): void => {
     const rows = lines();
     linesBox.replaceChildren(...rows.map(renderLine));
-    emptyBox.replaceChildren(
-      ...(rows.length === 0
-        ? [
-            createEmptyState({
-              icon: 'shopping-cart',
-              title: label('slsOrderKosong'),
-              description: label('slsOrderKosongIsi'),
-              action: createButton({
-                text: label('slsBukaKatalog'),
-                variant: 'secondary',
-                icon: 'package',
-                onClick: () => {
-                  go('/sales/katalog');
-                },
-              }),
-            }),
-          ]
-        : []),
-    );
-    const hasLines = rows.length > 0;
-    paymentCard.hidden = !hasLines;
-    summary.hidden = !hasLines;
+    emptyBox.hidden = rows.length > 0;
     paintSummary();
   };
 
-  const picker = createProductPicker(
-    label('cariBarang'),
+  const picker = createProductSearch(
+    label('trxCariBarang'),
     () => store.getState().data.products,
     (product) => {
       session.addLine(product, preferredUnit(product));
@@ -342,8 +312,6 @@ export const renderOrder: SalesScreen = (session, go) => {
       renderLines();
     },
   );
-
-  picker.input.placeholder = label('slsCariBarang');
 
   const finish = (number: string, approval: boolean): void => {
     showToast({
@@ -409,6 +377,8 @@ export const renderOrder: SalesScreen = (session, go) => {
     },
   });
 
+  save.classList.add('trx-bar__save');
+
   down.input.addEventListener('input', () => {
     session.setDraft({ downPayment: down.input.value });
     error.textContent = '';
@@ -420,50 +390,24 @@ export const renderOrder: SalesScreen = (session, go) => {
     renderLines();
   });
 
+  // Yang diisi lebih dahulu hanya nama pelanggan dan cara bayar, baru rincian barang (sama dengan Owner).
   const customerCard = createMobCard({
     className: 'sls-customer',
-    body: [customer.root, customerInfo, customerNotes],
+    body: [customer.root, method.root, down.root, payNote, customerInfo, customerNotes],
   });
-  const paymentCard = createMobCard({
-    className: 'sls-payment',
-    title: label('caraBayar'),
-    body: [
-      el(
-        'div',
-        { className: 'sls-pay', attrs: { role: 'group', 'aria-label': label('caraBayar') } },
-        ...payButtons,
-      ),
-      down.root,
-      payNote,
-    ],
-  });
-  const summary = el(
-    'div',
-    { className: 'sls-summary' },
-    error,
-    el(
-      'div',
-      { className: 'sls-summary__row' },
-      el(
-        'div',
-        { className: 'sls-summary__sum' },
-        el('span', { className: 'sls-summary__label', text: label('totalSo') }),
-        count,
-      ),
-      total,
-    ),
-    save,
-    offlineNote,
-  );
+  const summary = createActionBar(label('totalSo'), total, error, save, offlineNote);
 
   const element = el(
     'div',
-    { className: 'own-stack sls-screen' },
+    { className: 'own-stack sls-screen trx-form' },
     customerCard,
-    createMobCard({ className: 'sls-picker', body: [picker.root] }),
-    emptyBox,
+    createMobCard({
+      title: label('trxDaftarBarang'),
+      iconName: 'package',
+      className: 'sls-picker',
+      body: [el('div', { className: 'mob-stack' }, picker.root, emptyBox)],
+    }),
     linesBox,
-    paymentCard,
     summary,
   );
   const stop = store.subscribe(paintSummary);

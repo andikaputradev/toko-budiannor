@@ -3,6 +3,8 @@ import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { icon, type IconName } from '../../../shared/icons';
 import { label, type LabelKey } from '../../../shared/messages';
+import { mt } from '../../../shared/mobile-text';
+import { createMobBadge } from '../../../shared/ui/mobile-card';
 import { createButton } from '../../../shared/ui/button';
 import { createEmptyState } from '../../../shared/ui/empty';
 import {
@@ -13,14 +15,17 @@ import {
   saleRows,
   type DocRow,
 } from '../domain/bills';
+import { paymentRows, type PaymentRow } from '../domain/payment-history';
 import type { OwnerSession } from '../owner-session';
 import type { ScreenHandle } from '../screen';
 import type { OwnerShell } from '../shell';
 import { renderApprovals } from './approvals';
-import { docBubble, docStatusBadge, sectionTitle, stampText } from './doc-parts';
+import { docBubble, docStatusBadge, iconBubble, sectionTitle, stampText } from './doc-parts';
 import { renderPurchaseForm, renderSalesForm } from './forms';
 import { renderNotifications } from './notifications';
 import { renderPayPayable, renderPayReceivable } from './pay-pickers';
+import { renderPaymentDetail } from './payment-detail';
+import { openSendDoc } from './send-doc';
 import { renderTransactionDetail } from './transaction-detail';
 
 const SALES_PAGE = 15;
@@ -39,7 +44,7 @@ const TILES: readonly ActionTile[] = [
   { tab: 'bayar-piutang', text: 'trxBayarPiutang', icon: 'hand-coins', solid: false },
 ];
 
-function docRow(row: DocRow, fallback: string): HTMLElement {
+function docLink(row: DocRow, fallback: string): HTMLElement {
   const meta = [stampText(row.at), row.userName].filter((part) => part !== '').join(', ');
   return el(
     'a',
@@ -69,6 +74,63 @@ function docRow(row: DocRow, fallback: string): HTMLElement {
   );
 }
 
+// Draf SO dan PO punya tombol aksi "Kirim WA" di samping barisnya untuk mengirim PDF-nya.
+function docRow(row: DocRow, fallback: string, onSend: (row: DocRow) => void): HTMLElement {
+  const link = docLink(row, fallback);
+  if (row.kind !== 'so' && row.kind !== 'po') {
+    return link;
+  }
+  const send = el(
+    'button',
+    { className: 'mob-send', attrs: { type: 'button' } },
+    icon('message-circle'),
+    el('span', { text: mt('waKirimPdf') }),
+    el('span', { className: 'visually-hidden', text: ` ${row.number}` }),
+  );
+  send.addEventListener('click', () => {
+    onSend(row);
+  });
+  return el('div', { className: 'mob-send-row' }, link, send);
+}
+
+const PAYMENT_METHODS = {
+  tunai: 'metodeTunai',
+  transfer: 'metodeTransfer',
+  qris: 'metodeQris',
+} as const satisfies Record<PaymentRow['method'], LabelKey>;
+
+// Bukti pembayaran hutang atau piutang: ketuk membuka detail buktinya.
+function paymentLink(row: PaymentRow): HTMLElement {
+  const receivable = row.kind === 'piutang';
+  const meta = [stampText(row.at), row.userName].filter((part) => part !== '').join(', ');
+  return el(
+    'a',
+    {
+      className: 'trx-doc',
+      attrs: { href: `#/owner/transaksi?bukti=${encodeURIComponent(row.number)}` },
+    },
+    iconBubble(receivable ? 'hand-coins' : 'banknote', receivable ? 'sukses' : 'peringatan'),
+    el(
+      'span',
+      { className: 'trx-doc__main' },
+      el(
+        'span',
+        { className: 'trx-doc__top' },
+        el('span', { className: 'trx-doc__number', text: row.number }),
+        el('span', { className: 'trx-doc__total', text: formatRupiah(row.total) }),
+      ),
+      el('span', { className: 'trx-doc__meta', text: meta }),
+      el(
+        'span',
+        { className: 'trx-doc__foot' },
+        el('span', { className: 'trx-doc__party', text: row.partyName }),
+        createMobBadge(label(PAYMENT_METHODS[row.method]), 'info'),
+      ),
+    ),
+    icon('chevron-right'),
+  );
+}
+
 function renderHub(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
   shell?.setBack(undefined);
   const store = session.store;
@@ -90,6 +152,7 @@ function renderHub(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
     ),
   );
   const approvals = renderApprovals(session);
+  const payments = el('div', { className: 'own-stack' });
   const documents = el('div', { className: 'own-stack' });
 
   const paintDocuments = (): void => {
@@ -99,6 +162,9 @@ function renderHub(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
     const bills = heldBillRows(data);
     const orders = orderRows(data, state.salesOrders, state.purchaseOrders);
     const sales = saleRows(data);
+    const send = (row: DocRow): void => {
+      openSendDoc(session, row);
+    };
     const group = (title: string, rows: readonly DocRow[], more?: HTMLElement): HTMLElement =>
       el(
         'section',
@@ -106,7 +172,11 @@ function renderHub(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
         el('h3', { className: 'trx-group__title', text: title }),
         rows.length === 0
           ? createEmptyState({ icon: 'inbox', title: label('trxBelumAdaTransaksi') })
-          : el('div', { className: 'trx-doc-list' }, ...rows.map((row) => docRow(row, fallback))),
+          : el(
+              'div',
+              { className: 'trx-doc-list' },
+              ...rows.map((row) => docRow(row, fallback, send)),
+            ),
         more,
       );
     const more =
@@ -120,6 +190,17 @@ function renderHub(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
             },
           })
         : undefined;
+    const paid = paymentRows(data, state.debtPayments);
+    payments.replaceChildren(
+      el(
+        'section',
+        { className: 'trx-group' },
+        el('h3', { className: 'trx-group__title', text: mt('trxPembayaranHutangPiutang') }),
+        paid.length === 0
+          ? createEmptyState({ icon: 'inbox', title: mt('trxBelumAdaPembayaran') })
+          : el('div', { className: 'trx-doc-list' }, ...paid.map(paymentLink)),
+      ),
+    );
     documents.replaceChildren(
       sectionTitle(label('trxBillFaktur')),
       group(`${label('trxBillDitahan')} (${String(bills.length)})`, bills),
@@ -143,6 +224,7 @@ function renderHub(session: OwnerSession, shell?: OwnerShell): ScreenHandle {
       sectionTitle(label('trxBuatTransaksi')),
       tiles,
       approvals.element,
+      payments,
       documents,
       note,
     ),
@@ -162,6 +244,10 @@ export function renderTransactions(
   const key = docKeyFromQuery(query);
   if (key !== undefined) {
     return renderTransactionDetail(session, key, shell);
+  }
+  const receipt = query.get('bukti');
+  if (receipt !== null && receipt !== '') {
+    return renderPaymentDetail(session, receipt, shell);
   }
   const tab = query.get('tab');
   if (tab === 'so') {

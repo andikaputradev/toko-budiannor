@@ -523,92 +523,6 @@
   height: 16px;
 }
 
-.mob-viewer-dialog {
-  width: min(440px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-}
-
-.mob-viewer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-3);
-}
-
-.mob-viewer__stage {
-  display: grid;
-  max-height: 320px;
-  overflow: auto;
-  border-radius: 16px;
-  background: var(--color-bg-table-header);
-}
-
-.mob-viewer__image {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: none;
-}
-
-.mob-viewer__stage[data-zoom='2'] .mob-viewer__image {
-  width: 200%;
-}
-
-.mob-viewer__stage[data-zoom='3'] .mob-viewer__image {
-  width: 300%;
-}
-
-.mob-viewer__empty {
-  display: grid;
-  place-items: center;
-  min-height: 200px;
-  color: var(--color-text-secondary);
-}
-
-.mob-viewer__controls {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--primitive-space-2);
-}
-
-.mob-viewer__name {
-  margin: 0;
-  font-size: 18px;
-  font-weight: var(--primitive-font-weight-bold);
-}
-
-.mob-viewer__facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--primitive-space-1) var(--primitive-space-4);
-  margin: 0;
-  font-size: 15px;
-}
-
-.mob-viewer__facts dt {
-  color: var(--color-text-secondary);
-}
-
-.mob-viewer__facts dd {
-  margin: 0;
-  font-weight: var(--primitive-font-weight-medium);
-}
-
-.mob-viewer__stocks {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--primitive-space-2);
-}
-
-.mob-viewer__stock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--primitive-space-1);
-  padding: var(--primitive-space-3);
-  border: 1px solid var(--color-border-default);
-  border-radius: 12px;
-}
-
 /* ===== Tabel harga bertingkat ===== */
 .mob-tier-scroll {
   max-width: 100%;
@@ -823,6 +737,89 @@
 }
 
 .mob-area__hit:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+}
+
+/* ===== Baris daftar dengan tombol aksi "Kirim PDF via WA" di kaki kartunya ===== */
+.mob-send-row {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.05);
+}
+
+.mob-send-row > :first-child {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.mob-send {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--primitive-space-3);
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-accent-soft);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-semibold);
+  cursor: pointer;
+}
+
+.mob-send .icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent-default);
+}
+
+/* ===== Grafik batang ===== */
+.mob-bars {
+  margin: 0;
+}
+
+.mob-bars__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mob-bars__grid {
+  stroke: var(--color-border-default);
+  stroke-width: 1;
+}
+
+.mob-bars__tick {
+  fill: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.mob-bars__bar {
+  fill: var(--color-accent-default);
+  fill-opacity: 0.55;
+}
+
+.mob-bars__bar.is-selected {
+  fill-opacity: 1;
+}
+
+.mob-bars__hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.mob-bars__hit:focus-visible {
   outline: 2px solid var(--color-focus-ring);
 }
 
@@ -1064,4 +1061,15 @@
 [data-pos-scheme='gelap'] .mob-hero .mob-avatar {
   background: var(--color-accent-default);
   color: var(--color-text-on-accent);
+}
+
+/* ===== Aplikasi HP: tanpa bilah gulir di sisi kanan ===== */
+html[data-app='owner'] *,
+html[data-app='sales'] * {
+  scrollbar-width: none;
+}
+
+html[data-app='owner'] *::-webkit-scrollbar,
+html[data-app='sales'] *::-webkit-scrollbar {
+  display: none;
 }

@@ -353,7 +353,7 @@ test.describe('kerangka dan navigasi bawah', () => {
       await page.getByRole('dialog').getByRole('button', { name: 'Batal' }).click();
 
       await page.goto('/#/owner/stok');
-      await page.locator('.trx-stock__open').first().click();
+      await page.locator('.stk-card__open').first().click();
       await expectAccessible(page, 'stok: detail barang');
       await page.getByRole('dialog').getByRole('button', { name: 'Tutup' }).click();
       await page
@@ -361,7 +361,7 @@ test.describe('kerangka dan navigasi bawah', () => {
         .first()
         .click();
       await expectAccessible(page, 'stok: penampil foto');
-      await page.getByRole('dialog').getByRole('button', { name: 'Tutup' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Tutup gambar' }).click();
 
       await page.getByRole('button', { name: 'Akun dan Tampilan' }).click();
       await expectAccessible(page, 'akun dan tampilan');
@@ -388,7 +388,7 @@ test.describe('kerangka dan navigasi bawah', () => {
       ['transaksi?tab=bayar-piutang', []],
       ['transaksi?tab=bayar-hutang', ['.trx-party']],
       ['transaksi?tab=notifikasi', []],
-      ['stok', ['.trx-stock__open']],
+      ['stok', ['.stk-card__open']],
       ['stok', ['.mob-photo-button']],
       ['laporan', []],
       ['laporan?jenis=penjualan', []],
@@ -445,7 +445,7 @@ test.describe('kerangka dan navigasi bawah', () => {
     await page.locator('.trx-invoice').first().click();
     expect(await horizontalOverflow(page), 'detail invoice').toBeLessThanOrEqual(1);
     await page.goto('/#/owner/stok');
-    await page.locator('.trx-stock__open').first().click();
+    await page.locator('.stk-card__open').first().click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     const inner = await dialog.evaluate((node) => node.scrollWidth - node.clientWidth);
@@ -516,7 +516,7 @@ test.describe('tampilan: pemilih warna dan mode dari avatar', () => {
 });
 
 test.describe('OWN-02 Dashboard', () => {
-  test('Omzet Live: Harian per jam, Bulanan per hari, nilai titik, dan perbandingan', async ({
+  test('Omzet Live: Harian per jam, Bulanan berupa diagram batang per bulan, nilai, dan perbandingan', async ({
     page,
   }) => {
     await loginOwner(page);
@@ -543,12 +543,20 @@ test.describe('OWN-02 Dashboard', () => {
       'true',
     );
     await expect(live).toContainText(/Bulan ini, 1 \w+ 2026 sampai 19 \w+ 2026/);
-    await expect(live.locator('.mob-area__hit')).toHaveCount(19);
+    await expect(live.getByRole('heading', { name: 'Penjualan Bulanan' })).toBeVisible();
+    await expect(live.locator('.mob-area__svg')).toHaveCount(0);
+    await expect(live.locator('.mob-bars__bar')).toHaveCount(6);
+    await expect(live.locator('.mob-bars__hit')).toHaveCount(6);
+    await expect(live.locator('.mob-bars__svg .mob-bars__tick').last()).toHaveText('Okt');
     await expect(live.locator('.dash-compare')).toContainText(
       'dibanding rata-rata harian bulan lalu',
     );
-    await live.locator('.mob-area__hit').nth(3).click();
-    await expect(live.locator('.dash-readout')).toContainText(/^\d+ \w+: Rp /);
+    await live.locator('.mob-bars__hit').nth(3).click();
+    await expect(live.locator('.dash-readout')).toContainText(/^\w+ 2026: Rp /);
+    await expect(live.locator('.mob-bars__bar.is-selected')).toHaveCount(1);
+    await live.getByRole('button', { name: 'Harian' }).click();
+    await expect(live.getByRole('heading', { name: 'Penjualan Harian' })).toBeVisible();
+    await expect(live.locator('.mob-bars__svg')).toHaveCount(0);
     await expect(page.getByText(/^Diperbarui \d\d:\d\d$/)).toBeVisible();
   });
 
@@ -568,17 +576,24 @@ test.describe('OWN-02 Dashboard', () => {
 
     const top = cardOf(page, 'Produk Terlaris');
     await expect(top.locator('.mob-rank__item')).toHaveCount(5);
-    await expect(top.getByRole('button', { name: 'Hari ini' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await top.getByRole('button', { name: 'Bulan ini' }).click();
-    await expect(top.getByRole('button', { name: 'Bulan ini' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await expect(top.locator('.mob-rank__item')).toHaveCount(5);
-    await expect(top.locator('.mob-rank__value').first()).toContainText('Rp');
+    // Filter periode: harian, mingguan, bulanan, dan triwulan.
+    const period = top.getByLabel('Periode produk terlaris');
+    await expect(period.locator('option')).toHaveText([
+      'Hari ini',
+      'Seminggu Terakhir',
+      'Sebulan Terakhir',
+      '3 Bulan Terakhir',
+    ]);
+    await expect(period).toHaveValue('hari-ini');
+    const today = await top.locator('.mob-rank__name').allInnerTexts();
+    for (const choice of ['Seminggu Terakhir', 'Sebulan Terakhir', '3 Bulan Terakhir']) {
+      await period.selectOption({ label: choice });
+      await expect(top.locator('.mob-rank__item')).toHaveCount(5);
+      await expect(top.locator('.mob-rank__value').first()).toContainText('Rp');
+    }
+    expect(await top.locator('.mob-rank__name').allInnerTexts()).not.toEqual(today);
+    await period.selectOption({ label: 'Hari ini' });
+    expect(await top.locator('.mob-rank__name').allInnerTexts()).toEqual(today);
 
     const hpp = cardOf(page, 'Monitoring HPP');
     await expect(hpp.locator('.mob-rank__item')).toHaveCount(3);
@@ -593,10 +608,7 @@ test.describe('OWN-02 Dashboard', () => {
     await page.goBack();
     await cardOf(page, 'Stok Minim').getByRole('button', { name: 'Lihat' }).click();
     await expect(page).toHaveURL(/#\/owner\/stok\?filter=minimum$/);
-    await expect(page.getByRole('button', { name: 'Di bawah minimum' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(page.getByRole('button', { name: 'Hapus filter Di bawah minimum' })).toBeVisible();
   });
 
   test('auto-refresh 60 detik memperbarui waktu data', async ({ page }) => {
@@ -631,14 +643,15 @@ test.describe('OWN-02 Dashboard', () => {
 });
 
 test.describe('OWN-03 Cek Stok', () => {
-  test('30 kartu lalu 30 berikutnya, pencarian, dan filter di bawah minimum', async ({ page }) => {
+  test('30 kartu lalu 30 berikutnya, pencarian, dan kartu: harga, stok, Harga Beli, Hpp Avg', async ({
+    page,
+  }) => {
     await loginOwner(page);
     await page.goto('/#/owner/stok');
-    const cards = page.locator('.trx-stock');
+    const cards = page.locator('.stk-card');
     await expect(cards).toHaveCount(30);
     await page.getByRole('button', { name: /^Muat \d+ lagi$/ }).click();
     await expect(cards).toHaveCount(60);
-    const all = await cards.count();
     const search = page.getByRole('searchbox', { name: 'Cari' });
     await search.fill('a');
     await expect(page.getByText('Ketik minimal 2 karakter untuk mencari.')).toBeVisible();
@@ -647,60 +660,184 @@ test.describe('OWN-03 Cek Stok', () => {
     await search.fill('semen');
     const first = cards.first();
     await expect(first).toContainText('Semen');
-    await expect(first).toContainText('STOK TOKO');
-    await expect(first).toContainText('STOK GUDANG');
-    await expect(first).toContainText('Eceran');
-    await expect(first).toContainText('Grosir');
-    await expect(first.locator('.trx-prices tbody tr').first()).toContainText(/\d\.\d{3}/);
-    await search.fill('');
-    await page.getByRole('button', { name: 'Di bawah minimum' }).click();
-    await expect(cards.first()).toBeVisible();
-    expect(await cards.count()).toBeLessThan(all);
-    // Setiap kartu yang tersisa punya stok berwarna kuning atau merah di salah satu gudang.
-    const flagged = await cards.evaluateAll((nodes) =>
-      nodes.every(
-        (node) => node.querySelector('.mob-badge--peringatan, .mob-badge--bahaya') !== null,
-      ),
-    );
-    expect(flagged).toBe(true);
+    await expect(first).toContainText('Harga Eceran');
+    await expect(first).toContainText('Harga Grosir');
+    await expect(first).toContainText(/Toko [\d.,]+ \S+/);
+    await expect(first).toContainText(/Gudang [\d.,]+ \S+/);
+    // Owner melihat harga beli terakhir (dengan tanggal) dan Hpp Avg.
+    await expect(first).toContainText(/Harga Beli \[\d\d\/\d\d\/\d\d\]/);
+    await expect(first).toContainText('Hpp Avg');
+    await expect(first.locator('.stk-prices tbody tr')).toHaveCount(3);
+    await expect(first.locator('.stk-prices tbody tr').first()).toContainText(/Rp \d+\.\d{3}/);
   });
 
-  test('foto barang membuka penampil yang dapat diperbesar dan diperkecil', async ({ page }) => {
+  test('tulisan stok: hijau bila tersedia, merah bila kosong', async ({ page }) => {
     await loginOwner(page);
     await page.goto('/#/owner/stok');
-    const card = page.locator('.trx-stock').first();
-    const name = (await card.locator('.trx-stock__name').innerText()).trim();
-    await card.getByRole('button', { name: /^Perbesar foto / }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByRole('img', { name })).toBeVisible();
-    await expect(dialog).toContainText('Harga bertingkat');
-    await expect(dialog).toContainText('Toko');
-    await expect(dialog).toContainText('Gudang');
-    const stage = dialog.locator('.mob-viewer__stage');
-    const image = dialog.locator('.mob-viewer__image');
-    const widthAt = async (): Promise<number> => (await image.boundingBox())?.width ?? 0;
-    const zoomIn = dialog.getByRole('button', { name: 'Perbesar', exact: true });
-    const zoomOut = dialog.getByRole('button', { name: 'Perkecil', exact: true });
-    await expect(stage).toHaveAttribute('data-zoom', '1');
-    await expect(zoomOut).toBeDisabled();
-    const base = await widthAt();
-    await zoomIn.click();
-    await expect(stage).toHaveAttribute('data-zoom', '2');
-    expect(await widthAt()).toBeGreaterThan(base * 1.8);
-    await zoomIn.click();
-    await expect(stage).toHaveAttribute('data-zoom', '3');
-    await expect(zoomIn).toBeDisabled();
-    expect(await widthAt()).toBeGreaterThan(base * 2.8);
-    await zoomOut.click();
-    await expect(stage).toHaveAttribute('data-zoom', '2');
-    await dialog.getByRole('button', { name: 'Tutup' }).click();
+    const items = page.locator('.stk-card .stk-stock__item');
+    await expect(items.first()).toBeVisible();
+    const flags = await items.evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        ok: node.classList.contains('stk-stock__item--ada'),
+        out: node.classList.contains('stk-stock__item--habis'),
+        color: getComputedStyle(node).color,
+      })),
+    );
+    expect(flags.some((item) => item.ok)).toBe(true);
+    expect(flags.some((item) => item.out)).toBe(true);
+    // Setiap tulisan stok hijau atau merah, tidak keduanya, dan warnanya memang berbeda.
+    expect(flags.every((item) => item.ok !== item.out)).toBe(true);
+    const okColor = flags.find((item) => item.ok)?.color;
+    const outColor = flags.find((item) => item.out)?.color;
+    expect(okColor).not.toBe(outColor);
+  });
+
+  test('filter Gudang, Kategori, dan Merk menyaring daftar', async ({ page }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/stok');
+    const cards = page.locator('.stk-card');
+    await expect(cards).toHaveCount(30);
+    const gudang = page.getByLabel('Filter gudang');
+    const kategori = page.getByLabel('Filter kategori');
+    const merk = page.getByLabel('Filter merk');
+    await expect(gudang.locator('option')).toHaveText(['Semua Gudang', 'Toko', 'Gudang']);
+    await expect(kategori.locator('option').first()).toHaveText('Semua Kategori');
+    await expect(merk.locator('option').first()).toHaveText('Semua Merk');
+
+    await kategori.selectOption({ index: 1 });
+    await expect(page.locator('.stk-filter.is-active')).toHaveCount(1);
+    await expect(cards.first()).toBeVisible();
+    expect(await cards.count()).toBeGreaterThan(0);
+
+    await merk.selectOption({ index: 1 });
+    await expect(cards.first().or(page.getByText('Barang tidak ditemukan.'))).toBeVisible();
+    await merk.selectOption({ index: 0 });
+    await kategori.selectOption({ index: 0 });
+    await expect(cards).toHaveCount(30);
+
+    await gudang.selectOption('display');
+    await expect(cards.first()).toBeVisible();
+    const hasStock = await page.locator('.stk-card').evaluateAll((nodes) =>
+      nodes.every((node) => {
+        const toko = node.querySelector('.stk-stock__item--ada, .stk-stock__item--habis');
+        return toko?.classList.contains('stk-stock__item--ada') === true;
+      }),
+    );
+    expect(hasStock).toBe(true);
+  });
+
+  test('kolom cari dan filter menempel saat daftar digulir', async ({ page }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/stok');
+    const bar = page.locator('.stk-bar');
+    await expect(page.locator('.stk-card').first()).toBeVisible();
+    const scroller = page.locator('#own-main');
+    const before = await bar.boundingBox();
+    const top = (await scroller.boundingBox())?.y ?? 0;
+    await scroller.evaluate((node) => {
+      node.scrollTop = 1500;
+    });
+    await expect.poll(async () => scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(500);
+    const after = await bar.boundingBox();
+    expect(before).not.toBeNull();
+    expect(after).not.toBeNull();
+    // Setelah digulir jauh, bilah tetap menempel di tepi atas area gulir.
+    expect(Math.abs((after?.y ?? 999) - top)).toBeLessThan(2);
+    await expect(page.getByRole('searchbox', { name: 'Cari' })).toBeInViewport();
+    await expect(page.getByLabel('Filter gudang')).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Pindai barcode' })).toBeInViewport();
+  });
+
+  test('tombol pindai di samping kolom cari mencari lewat barcode', async ({ page }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/stok');
+    const scan = page.getByRole('button', { name: 'Pindai barcode' });
+    await expect(scan).toBeVisible();
+    const search = page.getByRole('searchbox', { name: 'Cari' });
+    const searchBox = await search.boundingBox();
+    const scanBox = await scan.boundingBox();
+    expect(scanBox?.x ?? 0).toBeGreaterThan((searchBox?.x ?? 0) + (searchBox?.width ?? 0) - 2);
+    expect(Math.abs((scanBox?.y ?? 0) - (searchBox?.y ?? 0))).toBeLessThan(12);
+    await scan.click();
+    const dialog = page.getByRole('dialog', { name: 'Pindai Barcode' });
+    await dialog.getByRole('button', { name: 'Cari' }).click();
+    await expect(dialog.getByText('Isi kode barcode terlebih dahulu.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Simulasikan pindai' }).click();
+    const code = await dialog.getByLabel('Kode barcode').inputValue();
+    expect(code).toMatch(/^\d{8,}$/);
+    await dialog.getByRole('button', { name: 'Cari' }).click();
     await expect(dialog).toBeHidden();
+    await expect(search).toHaveValue(code);
+    await expect(page.locator('.stk-card')).toHaveCount(1);
+  });
+
+  test('ketuk foto membuka layar Gambar Produk berisi nama barang saja', async ({ page }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/stok');
+    const card = page.locator('.stk-card').first();
+    const name = (await card.locator('.stk-card__name').innerText()).trim();
+    await card.getByRole('button', { name: /^Perbesar foto / }).click();
+    const dialog = page.getByRole('dialog', { name: 'Gambar Produk' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Tutup gambar' })).toBeVisible();
+    await expect(dialog.locator('.mob-gallery__name')).toHaveText(name);
+    await expect(dialog.locator('.mob-gallery__count')).toHaveText('1/1');
+    await expect(dialog.getByRole('img', { name })).toBeVisible();
+    // Tanpa keterangan stok, harga, dan tombol perbesar atau perkecil.
+    await expect(dialog).not.toContainText('Toko');
+    await expect(dialog).not.toContainText('Gudang');
+    await expect(dialog).not.toContainText('Rp');
+    await expect(dialog.getByRole('button', { name: 'Perbesar', exact: true })).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Tutup gambar' }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test('filter di bawah minimum dari Dashboard dapat dihapus lewat penanda', async ({ page }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/stok');
+    const cards = page.locator('.stk-card');
+    await expect(cards).toHaveCount(30);
+    // Sisa barang di luar 30 kartu pertama: dipakai untuk membandingkan jumlah daftar.
+    const more = page.getByRole('button', { name: /^Muat \d+ lagi$/ });
+    const remaining = async (): Promise<number> =>
+      (await more.count()) === 0 ? 0 : Number(/\d+/.exec(await more.innerText())?.[0] ?? '0');
+    const everything = await remaining();
+    expect(everything).toBeGreaterThan(0);
+    await page.goto('/#/owner/stok?filter=minimum');
+    const chip = page.getByRole('button', { name: 'Hapus filter Di bawah minimum' });
+    await expect(chip).toBeVisible();
+    await expect(cards.first()).toBeVisible();
+    expect(await remaining()).toBeLessThan(everything);
+    await chip.click();
+    await expect(chip).toBeHidden();
+    await expect(cards).toHaveCount(30);
+    expect(await remaining()).toBe(everything);
+  });
+
+  test('aplikasi HP tidak menampilkan bilah gulir di sisi kanan', async ({ page }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/stok');
+    await expect(page.locator('.stk-card').first()).toBeVisible();
+    const state = await page.evaluate(() => {
+      const main = document.getElementById('own-main');
+      if (main === null) {
+        throw new Error('area utama tidak ditemukan');
+      }
+      return {
+        width: getComputedStyle(main).scrollbarWidth,
+        gutter: main.offsetWidth - main.clientWidth,
+        scrolls: main.scrollHeight > main.clientHeight,
+      };
+    });
+    expect(state.scrolls).toBe(true);
+    expect(state.width).toBe('none');
+    expect(state.gutter).toBe(0);
   });
 
   test('Buat Mutasi memindahkan stok dan Buat PO membuka formulir terisi', async ({ page }) => {
     await loginOwner(page);
     await page.goto('/#/owner/stok');
-    await page.locator('.trx-stock__open').first().click();
+    await page.locator('.stk-card__open').first().click();
     const detail = page.getByRole('dialog', { name: 'Detail Barang' });
     await expect(detail).toContainText('Harga bertingkat');
     await expect(detail).toContainText(/HPP per /);
@@ -714,7 +851,7 @@ test.describe('OWN-03 Cek Stok', () => {
     await dialog.getByLabel('Jumlah mutasi').fill('1');
     await dialog.getByRole('button', { name: 'Simpan Mutasi' }).click();
     await expect(page.getByText('Mutasi M-0002 tersimpan.')).toBeVisible();
-    await page.locator('.trx-stock__open').first().click();
+    await page.locator('.stk-card__open').first().click();
     await page
       .getByRole('dialog', { name: 'Detail Barang' })
       .getByRole('button', { name: 'Buat PO' })
@@ -834,7 +971,7 @@ test.describe('OWN-05 Piutang dan Hutang', () => {
     await expect(page.getByText('Pembayaran Rp 1.000 tercatat.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Kirim Tagihan WA (PDF)' }).click();
-    await expect(page.locator('.own-pdf')).toContainText('TAGIHAN PIUTANG');
+    await expect(page.locator('.own-pdf')).toContainText('Tagihan Piutang');
     await page.getByRole('dialog').getByRole('button', { name: 'Kirim via WA' }).click();
     await expect(
       page.getByText(/Tagihan PDF terkirim ke 08\d+ via WA \(simulasi\)\./),
@@ -1146,9 +1283,6 @@ test.describe('OWN-06 Transaksi', () => {
     await page.getByRole('button', { name: 'Simpan Purchase Order' }).click();
     await expect(page.getByText('Pilih pemasok terlebih dahulu.')).toBeVisible();
     await page.getByLabel('Pemasok').selectOption('V-001');
-    await page.getByRole('button', { name: 'Simpan Purchase Order' }).click();
-    await expect(page.getByText('Pilih gudang penerima.')).toBeVisible();
-    await page.getByLabel('Gudang penerima').selectOption('besar');
     await page.locator('.trx-price__input').fill('0');
     await page.getByRole('button', { name: 'Simpan Purchase Order' }).click();
     await expect(page.getByText('Harga beli wajib diisi dan lebih dari 0.')).toBeVisible();
@@ -1189,6 +1323,165 @@ test.describe('OWN-06 Transaksi', () => {
     await expect(page.locator('.own-chip')).toContainText('Offline, 1 menunggu');
     await simulate(page, 'Online');
     await expect(page.locator('.own-chip')).toContainText('Tersinkron', { timeout: 8000 });
+  });
+
+  test('Input SO: lebih dulu hanya nama pelanggan dan cara bayar, baru daftar barang', async ({
+    page,
+  }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/transaksi?tab=so');
+    const customer = page.getByLabel('Pelanggan');
+    const method = page.getByLabel('Cara bayar');
+    await expect(customer).toBeVisible();
+    await expect(method).toBeVisible();
+    await expect(method).toHaveValue('tunai');
+    await expect(page.getByLabel('Uang muka (DP)')).toBeHidden();
+    // Urutan dari atas: pelanggan, cara bayar, lalu Daftar Barang; tidak ada kartu Pembayaran lagi.
+    const customerY = (await customer.boundingBox())?.y ?? 0;
+    const methodY = (await method.boundingBox())?.y ?? 0;
+    const listY =
+      (await page.getByRole('heading', { name: 'Daftar Barang' }).boundingBox())?.y ?? 0;
+    expect(customerY).toBeLessThan(methodY);
+    expect(methodY).toBeLessThan(listY);
+    await expect(page.getByRole('heading', { name: 'Pembayaran', exact: true })).toHaveCount(0);
+    await expect(page.getByText(/^Kategori harga/)).toHaveCount(0);
+    await method.selectOption('dp');
+    await expect(page.getByLabel('Uang muka (DP)')).toBeVisible();
+    await method.selectOption('qris');
+    await expect(page.getByLabel('Uang muka (DP)')).toBeHidden();
+  });
+
+  test('Input PO: hanya pemasok dan cara bayar (Tunai atau Hutang), tanpa gudang penerima', async ({
+    page,
+  }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/transaksi?tab=po&barang=B0002');
+    await expect(page.getByLabel('Pemasok')).toBeVisible();
+    const method = page.getByLabel('Cara bayar');
+    await expect(method.locator('option')).toHaveText(['Tunai', 'Hutang']);
+    await expect(page.getByLabel('Gudang penerima')).toHaveCount(0);
+    await page.getByLabel('Pemasok').selectOption('V-001');
+    await method.selectOption('hutang');
+    await page.locator('.trx-price__input').fill('25000');
+    await page.getByRole('button', { name: 'Simpan Purchase Order' }).click();
+    await expect(page.getByText('Purchase Order PO-0001 tersimpan.')).toBeVisible();
+    await page.locator('.trx-doc', { hasText: 'PO-0001' }).click();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Detail Purchase Order' }),
+    ).toBeVisible();
+    await expect(page.locator('.mob-row', { hasText: 'Cara bayar' })).toContainText('Hutang');
+  });
+
+  test('draf SO dan PO punya tombol Kirim WA di daftar dan detail untuk kirim PDF', async ({
+    page,
+  }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/transaksi?tab=so');
+    const picker = page.getByLabel('Cari barang');
+    await picker.fill('B0001');
+    await picker.press('Enter');
+    await page.getByRole('button', { name: 'Simpan Sales Order' }).click();
+    await expect(page.getByText('Sales Order SO-0001 tersimpan sebagai Draf.')).toBeVisible();
+    await page.getByRole('link', { name: 'Input Purchase Order' }).click();
+    await page.getByLabel('Pemasok').selectOption('V-001');
+    const second = page.getByLabel('Cari barang');
+    await second.fill('B0002');
+    await second.press('Enter');
+    await page.locator('.trx-price__input').fill('25000');
+    await page.getByRole('button', { name: 'Simpan Purchase Order' }).click();
+    await expect(page.getByText('Purchase Order PO-0001 tersimpan.')).toBeVisible();
+
+    // Daftar: tombol aksi pada baris SO dan PO, bukan pada transaksi lain.
+    const soSend = page.getByRole('button', { name: /^Kirim PDF via WA SO-0001/ });
+    const poSend = page.getByRole('button', { name: /^Kirim PDF via WA PO-0001/ });
+    await expect(soSend).toBeVisible();
+    await expect(poSend).toBeVisible();
+    await expect(page.locator('.mob-send')).toHaveCount(2);
+    await soSend.click();
+    const dialog = page.getByRole('dialog', { name: 'Kirim SO-0001 via WA' });
+    await expect(dialog).toContainText('Simulasi');
+    await dialog.getByLabel('Nomor WhatsApp pelanggan').fill('12');
+    await dialog.getByRole('button', { name: 'Kirim via WA' }).click();
+    await expect(dialog.getByText(/Nomor telepon tidak valid/)).toBeVisible();
+    await dialog.locator('summary', { hasText: 'Pratinjau PDF' }).click();
+    await expect(dialog.locator('.own-pdf')).toContainText('SALINAN SALES ORDER');
+    await expect(dialog.locator('.own-pdf')).toContainText('No. SO: SO-0001');
+    await dialog.getByLabel('Nomor WhatsApp pelanggan').fill('081234567890');
+    await dialog.getByRole('button', { name: 'Kirim via WA' }).click();
+    await expect(
+      page.getByText('Draf SO-0001 (PDF) terkirim ke 081234567890 via WA (simulasi).'),
+    ).toBeVisible();
+
+    await poSend.click();
+    const poDialog = page.getByRole('dialog', { name: 'Kirim PO-0001 via WA' });
+    await expect(poDialog.getByLabel('Nomor WhatsApp pemasok')).toBeVisible();
+    await poDialog.getByRole('button', { name: 'Batal' }).click();
+
+    // Detail: kartu Kirim ke WhatsApp dengan tombol Kirim PDF via WA dan penanda sudah terkirim.
+    await page.locator('.trx-doc', { hasText: 'SO-0001' }).click();
+    await expect(page.getByText(/^Draf dikirim ke WA pada /)).toBeVisible();
+    await page.getByRole('button', { name: 'Kirim PDF via WA' }).click();
+    await expect(page.getByRole('dialog', { name: 'Kirim SO-0001 via WA' })).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Batal' }).click();
+    await backLink(page).click();
+    await page.locator('.trx-doc', { hasText: 'PO-0001' }).click();
+    await expect(page.getByRole('button', { name: 'Kirim PDF via WA' })).toBeVisible();
+    await expect(page.getByText(/^Draf dikirim ke WA pada /)).toHaveCount(0);
+  });
+
+  test('daftar bukti pembayaran hutang piutang berada di antara approval dan Bill dan Faktur', async ({
+    page,
+  }) => {
+    await loginOwner(page);
+    await page.goto('/#/owner/transaksi');
+    const heading = page.getByRole('heading', { name: 'Pembayaran Hutang Piutang' });
+    await expect(heading).toBeVisible();
+    await expect(page.getByText('Belum ada pembayaran hutang atau piutang.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Bayar Piutang' }).click();
+    await page.locator('.trx-party').first().click();
+    const dialog = page.getByRole('dialog', { name: 'Catat Bayar Piutang' });
+    await dialog.getByLabel('Jumlah bayar').fill('2000');
+    await dialog.getByRole('button', { name: 'Simpan Pembayaran' }).click();
+    await expect(page.getByText('Pembayaran Rp 2.000 tercatat.')).toBeVisible();
+    await backLink(page).click();
+    await page.getByRole('link', { name: 'Bayar Hutang' }).click();
+    await page.locator('.trx-party').first().click();
+    await page.locator('.trx-invoice').first().click();
+    const payable = page.getByRole('dialog', { name: 'Bayar Hutang' });
+    await payable.getByLabel('Jumlah bayar').fill('3000');
+    await payable.getByRole('button', { name: 'Simpan Pembayaran' }).click();
+    await expect(page.getByText('Pembayaran hutang Rp 3.000 tercatat.')).toBeVisible();
+
+    await page.goto('/#/owner/transaksi');
+    const rows = page.locator('.trx-doc', { hasText: /^(BPT|BHT)-/ });
+    await expect(rows).toHaveCount(2);
+    // Terbaru lebih dulu: hutang (BHT-001) di atas piutang (BPT-001).
+    await expect(rows.nth(0)).toContainText('BHT-001');
+    await expect(rows.nth(0)).toContainText('Rp 3.000');
+    await expect(rows.nth(1)).toContainText('BPT-001');
+    await expect(rows.nth(1)).toContainText('Rp 2.000');
+    await expect(rows.nth(1)).toContainText(/Tunai|Transfer|QRIS/);
+
+    // Letaknya di antara daftar approval dan judul Bill dan Faktur.
+    const approvalsY = (await page.locator('.trx-approval').first().boundingBox())?.y ?? 0;
+    const payY = (await heading.boundingBox())?.y ?? 0;
+    const billY =
+      (await page.getByRole('heading', { name: 'Bill dan Faktur' }).boundingBox())?.y ?? 0;
+    expect(approvalsY).toBeLessThan(payY);
+    expect(payY).toBeLessThan(billY);
+
+    await rows.nth(1).click();
+    await expect(page).toHaveURL(/#\/owner\/transaksi\?bukti=BPT-001$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Bukti Pembayaran' })).toBeVisible();
+    await expect(page.locator('.trx-head__number')).toHaveText('BPT-001');
+    await expect(page.getByText('Pembayaran Piutang')).toBeVisible();
+    await expect(page.locator('.mob-row--strong', { hasText: 'Total dibayar' })).toContainText(
+      'Rp 2.000',
+    );
+    await expect(page.getByText('Sisa piutang')).toBeVisible();
+    await backLink(page).click();
+    await expect(page).toHaveURL(/#\/owner\/transaksi$/);
   });
 
   test('peran bukan Owner dari Panel Simulasi melihat penolakan', async ({ page }) => {

@@ -127,13 +127,10 @@ test.describe('F-10 Sales membuat SO offline lalu sinkron, Draf di BO-09, kirim 
     await page.getByRole('button', { name: 'Masuk' }).click();
     await expect(page).toHaveURL(/#\/sales\/katalog$/);
 
-    await page
-      .locator('.sls-card')
-      .first()
-      .getByRole('button', { name: /^Tambah ke Order/ })
-      .click();
+    await page.locator('.stk-card').first().locator('.stk-card__open').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Tambah ke Order' }).click();
     await expect(page.getByText(/ditambahkan ke order\./)).toBeVisible();
-    await page.getByRole('button', { name: 'Lihat Order' }).click();
+    await page.locator('.own-nav__link', { hasText: 'Order (1)' }).click();
     await expect(page.locator('.sls-line')).toHaveCount(1);
     await page
       .locator('[data-line="0"]')

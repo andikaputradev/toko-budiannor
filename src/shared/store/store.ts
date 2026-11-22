@@ -10,6 +10,7 @@ import {
   type Role,
   type Stock,
   type ApprovalRequest,
+  type DebtPaymentRecord,
   type DepositEntry,
   type PurchaseOrder,
   type ReturnNote,
@@ -51,6 +52,7 @@ export interface AppState extends Omit<Session, 'version' | 'stockOverrides'> {
   readonly purchaseOrders: readonly PurchaseOrder[];
   readonly returnNotes: readonly ReturnNote[];
   readonly depositEntries: readonly DepositEntry[];
+  readonly debtPayments: readonly DebtPaymentRecord[];
   readonly counters: Readonly<Record<string, number>>;
 }
 
@@ -101,6 +103,7 @@ export interface Store {
   removePurchaseOrder(number: string): void;
   saveReturnNote(note: ReturnNote): void;
   addDepositEntry(entry: DepositEntry): void;
+  addDebtPayment(record: DebtPaymentRecord): void;
   peekNumber(kind: DocumentKind): string;
   takeNumber(kind: DocumentKind): string;
   triggerLimitRejected(): ScenarioEvent | undefined;
@@ -267,6 +270,7 @@ export function createStore(options: StoreOptions = {}): Store {
     purchaseOrders: [],
     returnNotes: [],
     depositEntries: [],
+    debtPayments: [],
     counters: INITIAL_COUNTERS,
   };
 
@@ -471,6 +475,10 @@ export function createStore(options: StoreOptions = {}): Store {
       state = { ...state, depositEntries: [...state.depositEntries, entry] };
       publish(false);
     },
+    addDebtPayment: (record) => {
+      state = { ...state, debtPayments: [...state.debtPayments, record] };
+      publish(false);
+    },
     peekNumber: (kind) => formatDocumentNumber(kind, (state.counters[kind] ?? 0) + 1),
     takeNumber: (kind) => {
       const next = (state.counters[kind] ?? 0) + 1;
@@ -539,6 +547,7 @@ export function createStore(options: StoreOptions = {}): Store {
         purchaseOrders: [],
         returnNotes: [],
         depositEntries: [],
+        debtPayments: [],
         counters: INITIAL_COUNTERS,
       };
       bus.emit('reset', { seed: baseData.seed });
