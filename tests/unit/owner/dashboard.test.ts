@@ -9,7 +9,10 @@ import {
   hppMonitor,
   lowStockRows,
   monthProfit,
+  monthlyPoints,
+  monthText,
   payableSnapshot,
+  RANK_PERIODS,
   rankRange,
   receivableSnapshot,
   revenueView,
@@ -54,11 +57,43 @@ describe('omzet live harian', () => {
 describe('omzet live bulanan', () => {
   const view = revenueView(data, now, 'bulanan');
 
-  it('memberi satu titik per hari sejak tanggal 1 sampai hari ini', () => {
-    expect(view.points).toHaveLength(19);
-    expect(view.points[0]?.key).toBe('2026-10-01');
-    expect(view.points[18]?.key).toBe('2026-10-19');
-    expect(view.points.reduce((sum, point) => sum + point.value, 0)).toBe(view.total);
+  it('memberi satu batang per bulan, enam bulan berakhir di bulan berjalan', () => {
+    expect(view.points.map((point) => point.key)).toEqual([
+      '2026-05',
+      '2026-06',
+      '2026-07',
+      '2026-08',
+      '2026-09',
+      '2026-10',
+    ]);
+    expect(view.points.map((point) => point.label)).toEqual([
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+    ]);
+    expect(monthText('2026-10')).toBe('Oktober 2026');
+  });
+
+  it('batang bulan berjalan sama dengan total bulan ini dan tidak pernah negatif', () => {
+    expect(view.points[5]?.value).toBe(view.total);
+    expect(view.points.every((point) => point.value >= 0)).toBe(true);
+  });
+
+  it('perkiraan bulan lalu deterministik dan berkisar di sekitar omzet harian rata-rata', () => {
+    expect(monthlyPoints(data, '2026-10-19')).toEqual(monthlyPoints(data, '2026-10-19'));
+    const average =
+      data.dailyRevenue.reduce((sum, item) => sum + item.revenue, 0) / data.dailyRevenue.length;
+    const september = view.points[4]?.value ?? 0;
+    expect(september).toBeGreaterThan(average * 30 * 0.8);
+    expect(september).toBeLessThan(average * 30 * 1.2);
+  });
+
+  it('melewati tahun: Januari memuat Agustus sampai Desember tahun sebelumnya', () => {
+    const keys = monthlyPoints(data, '2027-01-05').map((point) => point.key);
+    expect(keys).toEqual(['2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01']);
   });
 
   it('menjumlahkan omzet bulan ini dari omzet harian', () => {
@@ -75,14 +110,14 @@ describe('omzet live bulanan', () => {
     expect(revenueView(short, now, 'bulanan').comparison).toBeUndefined();
   });
 
-  it('mengisi nol untuk hari tanpa catatan', () => {
+  it('bulan berjalan bernilai nol bila belum ada omzet harian di bulan itu', () => {
     const sparse = {
       ...data,
-      dailyRevenue: data.dailyRevenue.filter((item) => item.date > '2026-10-10'),
+      dailyRevenue: data.dailyRevenue.filter((item) => item.date < '2026-10-01'),
     };
     const points = revenueView(sparse, now, 'bulanan').points;
-    expect(points).toHaveLength(19);
-    expect(points[0]?.value).toBe(0);
+    expect(points).toHaveLength(6);
+    expect(points[5]?.value).toBe(0);
   });
 });
 
@@ -137,11 +172,30 @@ describe('produk terlaris', () => {
     expect([...amounts].sort((first, second) => second - first)).toEqual(amounts);
   });
 
-  it('bulan ini mencakup sedikitnya semua penjualan hari ini', () => {
-    const today = topProductRows(data, now, 'hari-ini', 50);
-    const month = topProductRows(data, now, 'bulan-ini', 50);
-    expect(month.length).toBeGreaterThanOrEqual(today.length);
-    expect(rankRange(now, 'bulan-ini')).toEqual({ from: '2026-10-01', to: '2026-10-19' });
+  it('memberi rentang hari ini, 7, 30, dan 90 hari terakhir termasuk hari ini', () => {
+    expect(rankRange(now, 'hari-ini')).toEqual({ from: '2026-10-19', to: '2026-10-19' });
+    expect(rankRange(now, 'minggu')).toEqual({ from: '2026-10-13', to: '2026-10-19' });
+    expect(rankRange(now, 'bulan')).toEqual({ from: '2026-09-20', to: '2026-10-19' });
+    expect(rankRange(now, 'triwulan')).toEqual({ from: '2026-07-22', to: '2026-10-19' });
+    expect(RANK_PERIODS).toEqual(['hari-ini', 'minggu', 'bulan', 'triwulan']);
+  });
+
+  it('periode lebih panjang mencakup sedikitnya semua penjualan periode yang lebih pendek', () => {
+    const totals = RANK_PERIODS.map((period) =>
+      topProductRows(data, now, period, 500).reduce((sum, row) => sum + row.amount, 0),
+    );
+    for (let index = 1; index < totals.length; index += 1) {
+      expect(totals[index]).toBeGreaterThanOrEqual(totals[index - 1] ?? 0);
+    }
+    expect(totals[3]).toBeGreaterThan(totals[0] ?? 0);
+  });
+
+  it('peringkat mingguan sampai triwulan berbeda dari hari ini tetapi tetap stabil', () => {
+    const today = topProductRows(data, now, 'hari-ini').map((row) => row.productId);
+    const quarter = topProductRows(data, now, 'triwulan').map((row) => row.productId);
+    expect(quarter).not.toEqual(today);
+    expect(topProductRows(data, now, 'triwulan').map((row) => row.productId)).toEqual(quarter);
+    expect(topProductRows(data, now, 'minggu')[0]?.percent).toBe(100);
   });
 
   it('menjumlahkan jumlah dalam satuan dasar dan nilai baris tanpa diskon ganda', () => {

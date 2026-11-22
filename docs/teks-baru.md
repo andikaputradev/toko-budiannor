@@ -1965,3 +1965,49 @@ Teks berikut tidak ada di Lampiran C spesifikasi dan menunggu persetujuan klien.
 - TB-2012: "Daftar Harga dan Katalog". Kunci menuDaftarHarga.
 - TB-2013: "Pengguna". Kunci profilPengguna.
 - TB-2014: "Biaya Kirim". Kunci menuBiayaKirim.
+- TB-2015: "Semua Merk". Kunci stbSemuaMerk.
+- TB-2016: "Filter gudang". Kunci stbFilterGudang.
+- TB-2017: "Filter kategori". Kunci stbFilterKategori.
+- TB-2018: "Filter merk". Kunci stbFilterMerk.
+- TB-2019: "Toko {nilai}". Kunci stbStokToko.
+- TB-2020: "Gudang {nilai}". Kunci stbStokGudang.
+- TB-2021: "Harga Beli [{tanggal}]". Kunci stbHargaBeli.
+- TB-2022: "Hpp Avg". Kunci stbHppAvg.
+- TB-2023: "Hapus filter Di bawah minimum". Kunci stbHapusMinimum.
+- TB-2024: "Pindai barcode". Kunci stbPindai.
+- TB-2025: "Pindai Barcode". Kunci scnJudul.
+- TB-2026: "Arahkan kamera ke barcode barang, atau ketik kodenya di bawah.". Kunci scnPetunjuk.
+- TB-2027: "Kode barcode". Kunci scnKode.
+- TB-2028: "Contoh: 8991234567890". Kunci scnPlaceholder.
+- TB-2029: "Simulasikan pindai". Kunci scnSimulasi.
+- TB-2030: "Simulasi: kamera tidak dibuka. Pakai tombol Simulasikan pindai, atau pemindai Bluetooth yang menekan Enter.". Kunci scnSimulasiKet.
+- TB-2031: "Isi kode barcode terlebih dahulu.". Kunci scnKodeKosong.
+- TB-2032: "Penjualan Harian". Kunci dashJudulGrafikHarian.
+- TB-2033: "Penjualan Bulanan". Kunci dashJudulGrafikBulanan.
+- TB-2034: "Omzet per bulan". Kunci omzetPerBulan.
+- TB-2035: "Seminggu Terakhir". Kunci periodeSeminggu.
+- TB-2036: "Sebulan Terakhir". Kunci periodeSebulan.
+- TB-2037: "3 Bulan Terakhir". Kunci periodeTriwulan.
+- TB-2038: "No. PO". Kunci noPo.
+- TB-2039: "SALINAN PURCHASE ORDER". Kunci salinanPoJudul.
+- TB-2040: "Kirim {nomor} via WA". Kunci waKirimJudul.
+- TB-2041: "Kirim ke WhatsApp". Kunci waKartuJudul.
+- TB-2042: "Kirim PDF via WA". Kunci waKirimPdf.
+- TB-2043: "Nomor WhatsApp pemasok". Kunci waNomorPemasok.
+- TB-2044: "Draf {nomor} (PDF) terkirim ke {telepon} via WA (simulasi).". Kunci waDrafTerkirim.
+- TB-2045: "Offline: draf {nomor} dikirim ke {telepon} saat internet pulih.". Kunci waDrafAntre.
+- TB-2046: "Draf dikirim ke WA pada {waktu}". Kunci waDrafTerkirimPada.
+- TB-2047: "Kirim draf yang sudah disimpan sebagai PDF ke WA pelanggan atau pemasok.". Kunci waKirimKet.
+- TB-2048: "Pembayaran Hutang Piutang". Kunci trxPembayaranHutangPiutang.
+- TB-2049: "Belum ada pembayaran hutang atau piutang.". Kunci trxBelumAdaPembayaran.
+- TB-2050: "Bukti Pembayaran". Kunci trxDetailBukti.
+- TB-2051: "Bukti pembayaran tidak ditemukan.". Kunci trxBuktiTidakAda.
+- TB-2052: "Faktur dibayar". Kunci trxFakturDilunasi.
+- TB-2053: "Pembayaran ini tidak memuat rincian faktur.". Kunci trxTanpaRincianFaktur.
+- TB-2054: "Total dibayar". Kunci trxTotalDibayar.
+- TB-2055: "Sisa piutang". Kunci trxSisaPiutangPihak.
+- TB-2056: "Sisa hutang". Kunci trxSisaHutangPihak.
+- TB-2057: "Gambar Produk". Kunci gambarProduk.
+- TB-2058: "Tutup gambar". Kunci tutupGambar.
+- TB-2059: "{nomor}/{total}". Kunci gambarKe.
+- TB-2060: "Pratinjau PDF". Kunci waPratinjau.

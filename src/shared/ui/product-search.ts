@@ -1,7 +1,8 @@
-import { el, nextId } from '../../../shared/dom';
-import type { Product } from '../../../shared/data/types';
-import { label, message } from '../../../shared/messages';
-import { findProducts } from '../search';
+import '../../styles/mobile-form.css';
+import type { Product } from '../data/types';
+import { el, nextId } from '../dom';
+import { label, message } from '../messages';
+import { findProducts } from './product-picker';
 
 const DEBOUNCE_MS = 200;
 const MAX_RESULTS = 6;

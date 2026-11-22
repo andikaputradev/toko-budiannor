@@ -68,6 +68,8 @@ export interface DocDetail {
   readonly warehouse: WarehouseId | undefined;
   /** Cara bayar yang dipilih pada transaksi atau SO. */
   readonly method: PaymentMethod | undefined;
+  /** Cara bayar PO (Tunai atau Hutang); kosong pada dokumen lain. */
+  readonly poPayment: 'tunai' | 'hutang' | undefined;
   readonly synced: boolean | undefined;
 }
 
@@ -268,6 +270,7 @@ export function findDocument(sources: DocSources, key: DocKey): DocDetail | unde
       dueDate: undefined,
       warehouse: undefined,
       method: undefined,
+      poPayment: undefined,
       synced: undefined,
     };
   }
@@ -297,6 +300,7 @@ export function findDocument(sources: DocSources, key: DocKey): DocDetail | unde
       dueDate: sale.terms?.dueDate,
       warehouse: undefined,
       method: sale.payment,
+      poPayment: undefined,
       synced: undefined,
     };
   }
@@ -326,6 +330,7 @@ export function findDocument(sources: DocSources, key: DocKey): DocDetail | unde
       dueDate: undefined,
       warehouse: undefined,
       method: order.payment,
+      poPayment: undefined,
       synced: order.synced,
     };
   }
@@ -361,6 +366,7 @@ export function findDocument(sources: DocSources, key: DocKey): DocDetail | unde
     dueDate: undefined,
     warehouse: order.warehouse,
     method: undefined,
+    poPayment: order.payment,
     synced: undefined,
   };
 }

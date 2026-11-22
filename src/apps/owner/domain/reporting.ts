@@ -319,19 +319,23 @@ export interface ProductRank {
 }
 
 // Peringkat menurut nilai penjualan; jumlah dinyatakan dalam satuan dasar barang.
-export function topProducts(data: Dataset, range: DateRange, limit = 5): ProductRank[] {
+export function topProducts(
+  data: Dataset,
+  range: DateRange,
+  limit = 5,
+  extra: readonly BillLine[] = [],
+): ProductRank[] {
   const products = new Map(data.products.map((product) => [product.id, product]));
   const totals = new Map<string, { quantity: number; amount: number }>();
-  for (const sale of salesIn(data, range)) {
-    for (const line of sale.lines) {
-      const factor =
-        products.get(line.productId)?.units.find((unit) => unit.code === line.unit)?.factor ?? 1;
-      const current = totals.get(line.productId) ?? { quantity: 0, amount: 0 };
-      totals.set(line.productId, {
-        quantity: current.quantity + line.quantity * factor,
-        amount: current.amount + lineAmount(line),
-      });
-    }
+  const lines = [...salesIn(data, range).flatMap((sale) => sale.lines), ...extra];
+  for (const line of lines) {
+    const factor =
+      products.get(line.productId)?.units.find((unit) => unit.code === line.unit)?.factor ?? 1;
+    const current = totals.get(line.productId) ?? { quantity: 0, amount: 0 };
+    totals.set(line.productId, {
+      quantity: current.quantity + line.quantity * factor,
+      amount: current.amount + lineAmount(line),
+    });
   }
   const rows = [...totals.entries()]
     .map(([productId, total]) => {

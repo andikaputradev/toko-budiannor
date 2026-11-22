@@ -1,0 +1,496 @@
+/* ===== Stok Barang (Owner) dan Katalog (Sales): satu tampilan, dua peran ===== */
+
+/* Warna teks stok: hijau bila tersedia, merah bila kosong. Varian gelap memakai warna yang lebih terang
+   agar tetap lolos kontras 4,5 : 1 di atas permukaan gelap. */
+[data-app='owner'],
+[data-app='sales'] {
+  --stk-ok: #1f7a4d;
+  --stk-out: #b3261e;
+}
+
+[data-app='owner'][data-pos-scheme='gelap'],
+[data-app='sales'][data-pos-scheme='gelap'] {
+  --stk-ok: #4ade80;
+  --stk-out: #f87171;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-app='owner']:not([data-theme='light']):not([data-pos-mode]),
+  [data-app='sales']:not([data-theme='light']):not([data-pos-mode]) {
+    --stk-ok: #4ade80;
+    --stk-out: #f87171;
+  }
+}
+
+/* Kolom cari dan filter menempel di atas: tidak ikut tergulir bersama daftar. */
+.stk-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  margin: 0 calc(-1 * var(--space-screen-margin));
+  padding: var(--primitive-space-2) var(--space-screen-margin);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-page);
+}
+
+.stk-search {
+  display: flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+}
+
+.stk-search__field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stk-search__field > .icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-secondary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.stk-search__input {
+  width: 100%;
+  padding-left: 40px;
+}
+
+.stk-scan {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-accent-default);
+}
+
+.stk-scan .icon {
+  width: 30px;
+  height: 30px;
+}
+
+/* Lebar kolom mengikuti panjang teks "Semua ...", agar ketiganya terbaca utuh di HP 360 px. */
+.stk-filters {
+  display: grid;
+  grid-template-columns: 1.06fr 1.2fr 0.92fr;
+  gap: 4px;
+}
+
+.stk-filter {
+  position: relative;
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 18px 0 7px;
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.stk-filter:focus-within {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.stk-filter.is-active {
+  border-color: var(--color-accent-default);
+  box-shadow: inset 0 0 0 1px var(--color-accent-default);
+}
+
+.stk-filter__text {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  pointer-events: none;
+}
+
+.stk-filter__control {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.stk-filter > .icon {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-secondary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.stk-below:empty {
+  display: none;
+}
+
+.stk-below__chip {
+  display: inline-flex;
+  gap: var(--primitive-space-2);
+  align-items: center;
+  min-height: 48px;
+  padding: 0 var(--primitive-space-3);
+  border: 1px solid var(--color-accent-default);
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+}
+
+.stk-below__chip .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Kartu barang */
+.stk-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.stk-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-2);
+  padding: var(--primitive-space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: 16px;
+  background: var(--color-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 6px 16px rgb(0 0 0 / 0.05);
+}
+
+.stk-card__title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.stk-card__name {
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.stk-card__code {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: var(--primitive-font-weight-regular);
+}
+
+.stk-card__open {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.stk-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--primitive-space-2);
+  align-items: start;
+}
+
+.stk-prices {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.stk-prices th,
+.stk-prices td {
+  padding: 3px 4px 3px 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.stk-prices thead th {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--primitive-font-weight-regular);
+  white-space: normal;
+}
+
+/* Judul "Harga Eceran" dan "Harga Grosir" selalu dua baris agar semua kartu sama lebar kolomnya. */
+.stk-prices__head {
+  display: block;
+  width: min-content;
+}
+
+.stk-prices tbody th {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.stk-prices td {
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.stk-prices__blank td {
+  color: var(--color-text-secondary);
+  font-weight: var(--primitive-font-weight-regular);
+}
+
+.stk-card__photo {
+  position: relative;
+  z-index: 1;
+}
+
+.stk-card__photo .mob-photo--md {
+  width: 76px;
+  height: 76px;
+}
+
+/* HP sempit: foto lebih kecil agar tabel harga dengan angka jutaan tidak menyentuh foto. */
+@media (max-width: 380px) {
+  .stk-card__photo .mob-photo--md {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+.stk-stock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-1) var(--primitive-space-4);
+  font-size: 15px;
+  font-weight: var(--primitive-font-weight-semibold);
+}
+
+.stk-stock__item--ada {
+  color: var(--stk-ok);
+}
+
+.stk-stock__item--habis {
+  color: var(--stk-out);
+}
+
+.stk-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-1) var(--primitive-space-4);
+  justify-content: space-between;
+  padding-top: var(--primitive-space-2);
+  border-top: 1px solid var(--color-border-default);
+  font-size: 14px;
+}
+
+.stk-cost__item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--primitive-space-1);
+  align-items: baseline;
+  margin: 0;
+}
+
+.stk-cost__label {
+  color: var(--color-text-secondary);
+}
+
+.stk-stamp {
+  margin: 0;
+  text-align: center;
+}
+
+/* ===== Lembar pindai barcode (simulasi) ===== */
+.scn-view {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  border-radius: 12px;
+  background: var(--color-bg-table-header);
+}
+
+.scn-view__frame {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 96px;
+  border: 3px dashed var(--color-accent-default);
+  border-radius: 12px;
+  color: var(--color-accent-default);
+}
+
+.scn-view__frame .icon {
+  width: 48px;
+  height: 48px;
+}
+
+/* ===== Layar Gambar Produk ===== */
+.modal-overlay:has(.mob-gallery-dialog) {
+  padding: 0;
+}
+
+.mob-gallery-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100%);
+  height: min(100%, 880px);
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.mob-gallery-dialog .modal__title {
+  margin: 0;
+  padding: var(--primitive-space-4) 64px;
+  background: var(--color-accent-default);
+  color: var(--color-text-on-accent);
+  font-size: 18px;
+  text-align: center;
+}
+
+.mob-gallery-dialog .modal__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+}
+
+.mob-gallery-dialog .modal__actions {
+  display: none;
+}
+
+.mob-gallery__close {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-on-accent);
+}
+
+.mob-gallery__close .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.mob-gallery {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+  align-items: center;
+  min-height: 0;
+  padding: var(--primitive-space-4);
+}
+
+.mob-gallery__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--primitive-font-weight-semibold);
+  text-align: center;
+}
+
+.mob-gallery__stage {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.mob-gallery__image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.mob-gallery__empty {
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 160px;
+  border-radius: 16px;
+  background: var(--color-bg-table-header);
+  color: var(--color-text-secondary);
+}
+
+.mob-gallery__empty .icon {
+  width: 64px;
+  height: 64px;
+}
+
+.mob-gallery__count {
+  margin: 0;
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: var(--color-bg-table-header);
+  font-size: 14px;
+}
+
+/* ===== Lembar detail barang Sales ===== */
+.sls-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+
+.sls-detail-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--primitive-space-3);
+}
+
+.sls-detail-sheet__head {
+  display: flex;
+  gap: var(--primitive-space-3);
+  align-items: flex-start;
+}
+
+.sls-detail-sheet__head .sls-facts {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sls-detail-sheet__head .sls-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.sls-detail-sheet__head .sls-facts dd {
+  margin: 0 0 var(--primitive-space-1);
+  overflow-wrap: anywhere;
+}

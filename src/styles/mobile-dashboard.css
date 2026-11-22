@@ -503,3 +503,60 @@
   -webkit-line-clamp: 2;
   white-space: normal;
 }
+
+/* ===== Judul grafik dan pilihan periode Produk Terlaris ===== */
+.dash-chart__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: var(--primitive-font-weight-bold);
+}
+
+.dash-rank__head {
+  flex-wrap: wrap;
+  gap: 0 var(--primitive-space-2);
+}
+
+.dash-rank__head .mob-card__title {
+  white-space: nowrap;
+}
+
+.dash-rank__head .dash-period {
+  margin-left: auto;
+}
+
+.dash-period {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--color-accent-default);
+}
+
+.dash-period > .icon {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.dash-period > .icon:first-child {
+  left: 4px;
+}
+
+.dash-period > .icon:last-child {
+  right: 2px;
+}
+
+.dash-period__control {
+  min-height: 48px;
+  padding: 0 24px 0 28px;
+  border: 0;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+  appearance: none;
+  cursor: pointer;
+}

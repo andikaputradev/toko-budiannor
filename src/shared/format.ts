@@ -17,7 +17,21 @@ const MONTHS_FULL = [
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 export type DocumentKind =
-  'T' | 'B' | 'M' | 'SJ' | 'PO' | 'R' | 'BY' | 'OT' | 'OP' | 'SO' | 'RJ' | 'RB' | 'DEP';
+  | 'T'
+  | 'B'
+  | 'M'
+  | 'SJ'
+  | 'PO'
+  | 'R'
+  | 'BY'
+  | 'OT'
+  | 'OP'
+  | 'SO'
+  | 'RJ'
+  | 'RB'
+  | 'DEP'
+  | 'BPT'
+  | 'BHT';
 
 const DOCUMENT_WIDTH: Readonly<Record<DocumentKind, number>> = {
   T: 6,
@@ -33,6 +47,8 @@ const DOCUMENT_WIDTH: Readonly<Record<DocumentKind, number>> = {
   RJ: 4,
   RB: 4,
   DEP: 4,
+  BPT: 3,
+  BHT: 3,
 };
 
 function group(integer: string): string {

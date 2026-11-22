@@ -69,6 +69,12 @@ export function createSalesShell(
     ...links.map((item) => item.link),
   );
   const titleNode = el('h1', { className: 'own-top__title', text: label(title) });
+  // Judul panjang (mis. Input Sales Order) memberi ruang dengan menyembunyikan teks chip sinkron di HP sempit.
+  const header = el('header', { className: 'own-top' });
+  const fitTitle = (text: string): void => {
+    header.classList.toggle('own-top--tight', text.length > 14);
+  };
+  fitTitle(label(title));
   const backLink = el('a', { className: 'mob-back', attrs: { 'aria-label': label('kembali') } });
   backLink.append(icon('chevron-left'));
   const setBack = (path: string | undefined): void => {
@@ -86,20 +92,12 @@ export function createSalesShell(
     createAvatar(initials),
     el('span', { className: 'visually-hidden', text: label('akunDanTampilan') }),
   );
-  const element = el(
-    'div',
-    { className: 'own' },
-    skip,
-    el(
-      'header',
-      { className: 'own-top' },
-      backLink,
-      titleNode,
-      el('div', { className: 'own-top__tools' }, chip, avatarButton),
-    ),
-    banner,
-    main,
-    nav,
+  const element = el('div', { className: 'own' }, skip, header, banner, main, nav);
+
+  header.append(
+    backLink,
+    titleNode,
+    el('div', { className: 'own-top__tools' }, chip, avatarButton),
   );
 
   const openAccount = (): void => {
@@ -224,6 +222,7 @@ export function createSalesShell(
     content,
     setTitle: (text) => {
       titleNode.textContent = text;
+      fitTitle(text);
     },
     setBack,
     destroy: () => {

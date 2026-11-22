@@ -2,7 +2,9 @@ import '../../../styles/mobile-owner.css';
 import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
 import { label, type LabelKey } from '../../../shared/messages';
+import { mt } from '../../../shared/mobile-text';
 import type { PaymentMethod } from '../../../shared/data/types';
+import { createButton } from '../../../shared/ui/button';
 import { createEmptyState } from '../../../shared/ui/empty';
 import { createMobBadge, createMobCard } from '../../../shared/ui/mobile-card';
 import { findDocument, type DocDetail, type DocKey, type DocKind } from '../domain/bills';
@@ -18,6 +20,7 @@ import {
   roleLabel,
   stampText,
 } from './doc-parts';
+import { openSendDoc } from './send-doc';
 
 const BACK = '/owner/transaksi';
 
@@ -69,6 +72,14 @@ function summaryCard(detail: DocDetail): HTMLElement {
         ...(detail.method === undefined
           ? []
           : [kvRow(label('caraBayar'), label(METHOD_LABELS[detail.method]))]),
+        ...(detail.poPayment === undefined
+          ? []
+          : [
+              kvRow(
+                label('caraBayar'),
+                detail.poPayment === 'hutang' ? mt('metodeHutang') : label('metodeTunai'),
+              ),
+            ]),
         ...(detail.warehouse === undefined
           ? []
           : [
@@ -106,6 +117,36 @@ function itemsCard(detail: DocDetail): HTMLElement {
             ]
           : []),
         kvRow(label('kolomTotal'), formatRupiah(detail.total), true),
+      ),
+    ],
+  });
+}
+
+// Draf SO atau PO yang sudah disimpan dapat dikirim sebagai PDF ke WA pelanggan atau pemasok.
+function sendCard(session: OwnerSession, detail: DocDetail): HTMLElement {
+  const sentAt = session.state().sent[detail.number];
+  return createMobCard({
+    title: mt('waKartuJudul'),
+    iconName: 'send',
+    body: [
+      el(
+        'div',
+        { className: 'mob-stack' },
+        el('p', { className: 'mob-muted', text: mt('waKirimKet') }),
+        sentAt === undefined
+          ? false
+          : createMobBadge(
+              mt('waDrafTerkirimPada', { waktu: stampText(sentAt) }),
+              'sukses',
+              'circle-check',
+            ),
+        createButton({
+          text: mt('waKirimPdf'),
+          icon: 'send',
+          onClick: () => {
+            openSendDoc(session, { kind: detail.kind, ref: detail.ref });
+          },
+        }),
       ),
     ],
   });
@@ -170,11 +211,19 @@ export function renderTransactionDetail(
             summaryCard(detail),
             itemsCard(detail),
             ...(detail.kind === 'po' ? [] : [paymentCard(detail)]),
+            ...(detail.kind === 'so' || detail.kind === 'po' ? [sendCard(session, detail)] : []),
           ]),
     );
   };
 
-  const stop = store.subscribe(paint);
+  const stops = [store.subscribe(paint), session.subscribe(paint)];
   paint();
-  return { element: root, destroy: stop };
+  return {
+    element: root,
+    destroy: () => {
+      for (const stop of stops) {
+        stop();
+      }
+    },
+  };
 }

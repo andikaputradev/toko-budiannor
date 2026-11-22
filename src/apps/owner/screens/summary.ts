@@ -3,9 +3,11 @@ import { el } from '../../../shared/dom';
 import { formatDate, formatDecimal, formatRupiah, formatTime } from '../../../shared/format';
 import { icon, type IconName } from '../../../shared/icons';
 import { label, type LabelKey } from '../../../shared/messages';
+import { mt } from '../../../shared/mobile-text';
 import { wibDate } from '../../../shared/data/receivable';
 import { navigate } from '../../../shared/router';
 import { createAreaChart } from '../../../shared/ui/area-chart';
+import { createMobBarChart } from '../../../shared/ui/mob-bar-chart';
 import { createMobBadge, createMobCard, type MobTone } from '../../../shared/ui/mobile-card';
 import { createRankList } from '../../../shared/ui/rank-list';
 import {
@@ -14,7 +16,10 @@ import {
   hppMonitor,
   lowStockRows,
   monthProfit,
+  monthText,
+  parseRankPeriod,
   payableSnapshot,
+  RANK_PERIODS,
   receivableSnapshot,
   revenueView,
   topProductRows,
@@ -30,7 +35,7 @@ import { compactRupiah, juta, signedRupiah } from '../domain/money';
 import { monthStart, type ProductRank } from '../domain/reporting';
 import type { OwnerSession } from '../owner-session';
 import type { ScreenHandle } from '../screen';
-import { createPanel, createToggle, dayShort, dayText, emptyNote, navLink } from './dash-parts';
+import { createPanel, createToggle, dayText, emptyNote, navLink } from './dash-parts';
 
 const COMPARE_TEXT: Readonly<Record<RevenueCompare, LabelKey>> = {
   kemarin: 'dibandingKemarin',
@@ -47,6 +52,13 @@ const HPP_TONE: Readonly<Record<HppLevel, MobTone>> = {
   aman: 'sukses',
   waspada: 'peringatan',
   lewat: 'bahaya',
+};
+
+const RANK_LABELS: Readonly<Record<RankPeriod, () => string>> = {
+  'hari-ini': () => label('periodeHariIni'),
+  minggu: () => mt('periodeSeminggu'),
+  bulan: () => mt('periodeSebulan'),
+  triwulan: () => mt('periodeTriwulan'),
 };
 
 const CHART_WIDTH = 326;
@@ -77,14 +89,6 @@ interface RankModel {
 interface DebtModel {
   readonly receivable: { readonly amount: number; readonly parties: number };
   readonly payable: { readonly amount: number; readonly parties: number };
-}
-
-function cardHead(text: string, iconName: IconName): HTMLElement {
-  return el(
-    'div',
-    { className: 'mob-card__head' },
-    el('h2', { className: 'mob-card__title' }, icon(iconName), el('span', { text })),
-  );
 }
 
 export function renderSummary(
@@ -130,25 +134,47 @@ export function renderSummary(
         : el(
             'div',
             { className: 'dash-chart' },
-            el('p', { className: 'dash-unit', text: label('dashSatuanJuta') }),
-            createAreaChart({
-              title: label(hourly ? 'omzetPerJam' : 'omzetPerHari'),
-              data: model.points.map((point) => ({
-                label: point.label,
-                value: point.value,
-                caption: formatRupiah(point.value),
-              })),
-              axisLabel: juta,
-              width: CHART_WIDTH,
-              height: CHART_HEIGHT,
-              minTop: 1_000_000,
-              labelEvery: every,
-              selectedIndex: model.selected,
-              onSelect: (_datum, index) => {
-                selected = index;
-                paintLive(true);
-              },
+            el('h3', {
+              className: 'dash-chart__title',
+              text: mt(hourly ? 'dashJudulGrafikHarian' : 'dashJudulGrafikBulanan'),
             }),
+            el('p', { className: 'dash-unit', text: label('dashSatuanJuta') }),
+            hourly
+              ? createAreaChart({
+                  title: label('omzetPerJam'),
+                  data: model.points.map((point) => ({
+                    label: point.label,
+                    value: point.value,
+                    caption: formatRupiah(point.value),
+                  })),
+                  axisLabel: juta,
+                  width: CHART_WIDTH,
+                  height: CHART_HEIGHT,
+                  minTop: 1_000_000,
+                  labelEvery: every,
+                  selectedIndex: model.selected,
+                  onSelect: (_datum, index) => {
+                    selected = index;
+                    paintLive(true);
+                  },
+                })
+              : createMobBarChart({
+                  title: mt('omzetPerBulan'),
+                  data: model.points.map((point) => ({
+                    label: point.label,
+                    value: point.value,
+                    caption: formatRupiah(point.value),
+                  })),
+                  axisLabel: juta,
+                  width: CHART_WIDTH,
+                  height: CHART_HEIGHT,
+                  minTop: 1_000_000,
+                  selectedIndex: model.selected,
+                  onSelect: (_datum, index) => {
+                    selected = index;
+                    paintLive(true);
+                  },
+                }),
           ),
     ];
   });
@@ -192,7 +218,7 @@ export function renderSummary(
     const today = formatDate(now);
     const points = view.points.map((point) => ({
       label: point.label,
-      read: hourly ? `${label('jam')} ${point.label}` : dayShort(point.key),
+      read: hourly ? `${label('jam')} ${point.label}` : monthText(point.key),
       value: point.value,
     }));
     if (selected !== undefined && selected >= points.length) {
@@ -220,7 +246,7 @@ export function renderSummary(
         ? label('dashKetukTitik')
         : `${picked.read}: ${formatRupiah(picked.value)}`;
     if (focused && selected !== undefined) {
-      const hit = liveCard.querySelectorAll<SVGElement>('.mob-area__hit')[selected];
+      const hit = liveCard.querySelectorAll<SVGElement>('.mob-area__hit, .mob-bars__hit')[selected];
       hit?.focus();
     }
   };
@@ -335,23 +361,35 @@ export function renderSummary(
           })),
         ),
   ]);
-  const rankToggle = createToggle<RankPeriod>({
-    name: label('dashPeriodeTerlaris'),
-    items: [
-      ['hari-ini', label('periodeHariIni')],
-      ['bulan-ini', label('periodeBulanIni')],
-    ],
-    value: rankPeriod,
-    onChange: (value) => {
-      rankPeriod = value;
-      paintRank();
+  const rankSelect = el(
+    'select',
+    {
+      className: 'dash-period__control',
+      attrs: { 'aria-label': label('dashPeriodeTerlaris') },
     },
+    ...RANK_PERIODS.map((period) =>
+      el('option', { text: RANK_LABELS[period](), attrs: { value: period } }),
+    ),
+  );
+  rankSelect.value = rankPeriod;
+  rankSelect.addEventListener('change', () => {
+    rankPeriod = parseRankPeriod(rankSelect.value);
+    paintRank();
   });
   const rankCard = el(
     'section',
     { className: 'mob-card' },
-    cardHead(label('dashProdukTerlaris'), 'chart-column'),
-    rankToggle.element,
+    el(
+      'div',
+      { className: 'mob-card__head dash-rank__head' },
+      el(
+        'h2',
+        { className: 'mob-card__title' },
+        icon('chart-column'),
+        el('span', { text: label('dashProdukTerlaris') }),
+      ),
+      el('div', { className: 'dash-period' }, icon('calendar'), rankSelect, icon('chevron-down')),
+    ),
     rankPanel.element,
   );
   const paintRank = (): void => {

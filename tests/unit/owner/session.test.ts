@@ -190,7 +190,7 @@ describe('dokumen dari HP', () => {
       messageId: 'MSG-087',
     });
     const result = session.recordPayment(customer.id, '400.000', 'transfer');
-    expect(result).toEqual({ ok: true, amount: 400_000, remaining: 600_000 });
+    expect(result).toEqual({ ok: true, number: 'BPT-001', amount: 400_000, remaining: 600_000 });
     const saved = need(store.getState().data.customers.find((item) => item.id === customer.id));
     expect(saved.invoices[0]?.paid).toBe(400_000);
     expect(store.getState().activity.at(-1)?.detail).toContain(

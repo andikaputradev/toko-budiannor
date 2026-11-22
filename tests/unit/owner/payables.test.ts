@@ -146,7 +146,12 @@ describe('store.saveSupplier dan session.payPayable', () => {
       labelKey: 'htgMelebihiSaldo',
     });
     const result = session.payPayable(supplier.id, '500.000', 'transfer');
-    expect(result).toEqual({ ok: true, amount: 500_000, remaining: before - 500_000 });
+    expect(result).toEqual({
+      ok: true,
+      number: 'BHT-001',
+      amount: 500_000,
+      remaining: before - 500_000,
+    });
     const saved = need(store.getState().data.suppliers.find((item) => item.id === supplier.id));
     expect(saved.payable).toBe(before - 500_000);
     expect(supplierBalance(saved)).toBe(saved.payable);

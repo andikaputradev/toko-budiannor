@@ -1,12 +1,14 @@
 import '../../../styles/mobile-owner.css';
-import type { PaymentMethod, Product, Tier, WarehouseId } from '../../../shared/data/types';
-import { remainingLimit } from '../../../shared/data/receivable';
+import type { PaymentMethod, Product, Tier } from '../../../shared/data/types';
 import { el } from '../../../shared/dom';
 import { formatRupiah } from '../../../shared/format';
-import { label, message, type LabelKey } from '../../../shared/messages';
-import { createMobBadge, createMobCard } from '../../../shared/ui/mobile-card';
+import { label, message } from '../../../shared/messages';
+import { mt } from '../../../shared/mobile-text';
+import { createMobCard } from '../../../shared/ui/mobile-card';
+import { createActionBar } from '../../../shared/ui/action-bar';
 import { createButton } from '../../../shared/ui/button';
 import { createSelectField, createTextField } from '../../../shared/ui/field';
+import { createProductSearch } from '../../../shared/ui/product-search';
 import { showToast } from '../../../shared/ui/toast';
 import { failureText } from '../failure';
 import { suggestedCost, type SalesOrderDraft } from '../domain/orders';
@@ -15,7 +17,6 @@ import type { ScreenHandle } from '../screen';
 import type { OwnerShell } from '../shell';
 import { openOwnerPin } from './approvals';
 import { createLineEditor, type LineEditor } from './line-editor';
-import { createProductSearch } from './product-search';
 
 const BACK = '/owner/transaksi';
 
@@ -29,36 +30,6 @@ const METHODS: readonly (readonly [
   ['dp', 'metodeDp'],
   ['piutang', 'metodePiutang'],
 ];
-
-const TIER_LABELS: Readonly<Record<Tier, LabelKey>> = {
-  eceran: 'tierEceran',
-  grosir: 'tierGrosir',
-};
-
-// Bilah bawah yang menempel: total dan tombol simpan tetap terlihat saat daftar barang panjang.
-function createActionBar(
-  totalLabel: string,
-  total: HTMLElement,
-  error: HTMLElement,
-  save: HTMLElement,
-): HTMLElement {
-  return el(
-    'div',
-    { className: 'trx-bar' },
-    error,
-    el(
-      'div',
-      { className: 'trx-bar__row' },
-      el(
-        'div',
-        { className: 'trx-bar__total' },
-        el('span', { className: 'trx-bar__label', text: totalLabel }),
-        total,
-      ),
-      save,
-    ),
-  );
-}
 
 export function renderSalesForm(
   session: OwnerSession,
@@ -82,7 +53,6 @@ export function renderSalesForm(
       ...data().customers.map((item) => ({ value: item.id, text: `${item.name} (${item.code})` })),
     ],
   });
-  const customerInfo = el('div', { className: 'trx-chips' });
   const method = createSelectField({
     labelText: label('caraBayar'),
     options: METHODS.map(([value, key]) => ({ value, text: label(key) })),
@@ -94,21 +64,6 @@ export function renderSalesForm(
   const paintTotal = (): void => {
     total.textContent = formatRupiah(ref.editor?.total() ?? 0);
     error.textContent = '';
-  };
-
-  const paintInfo = (): void => {
-    const current = customerOf();
-    customerInfo.replaceChildren(
-      createMobBadge(label('trxKategoriHarga', { tier: label(TIER_LABELS[tierOf()]) }), 'info'),
-      ...(current === undefined
-        ? []
-        : [
-            createMobBadge(
-              label('trxSisaLimit', { nilai: formatRupiah(Math.max(0, remainingLimit(current))) }),
-              remainingLimit(current) > 0 ? 'netral' : 'bahaya',
-            ),
-          ]),
-    );
   };
 
   const lines = createLineEditor({
@@ -192,30 +147,24 @@ export function renderSalesForm(
     error.textContent = '';
   });
   customer.select.addEventListener('change', () => {
-    paintInfo();
     lines.refresh();
   });
 
   const element = el(
     'div',
     { className: 'own-stack trx-form' },
+    // Yang diisi lebih dahulu hanya nama pelanggan dan cara bayar, baru rincian barang.
     createMobCard({
-      body: [el('div', { className: 'mob-stack' }, customer.root, customerInfo)],
+      body: [el('div', { className: 'mob-stack' }, customer.root, method.root, down.root)],
     }),
     createMobCard({
       title: label('trxDaftarBarang'),
       iconName: 'package',
       body: [el('div', { className: 'mob-stack' }, picker.root, lines.element)],
     }),
-    createMobCard({
-      title: label('trxPembayaran'),
-      iconName: 'wallet',
-      body: [el('div', { className: 'mob-stack' }, method.root, down.root)],
-    }),
     createActionBar(label('kolomTotal'), total, error, save),
   );
   syncMethod();
-  paintInfo();
   paintTotal();
   return { element, destroy: () => undefined };
 }
@@ -239,12 +188,12 @@ export function renderPurchaseForm(
       ...data().suppliers.map((item) => ({ value: item.id, text: item.name })),
     ],
   });
-  const warehouse = createSelectField({
-    labelText: label('gudangPenerima'),
+  const method = createSelectField({
+    labelText: label('caraBayar'),
+    // Cara bayar Purchase Order: tunai atau hutang (dibayar kemudian).
     options: [
-      { value: '', text: label('pilihGudangPenerima') },
-      { value: 'display', text: label('namaGudangDisplay') },
-      { value: 'besar', text: label('namaGudangBesar') },
+      { value: 'tunai', text: label('metodeTunai') },
+      { value: 'hutang', text: mt('metodeHutang') },
     ],
   });
   const total = el('output', { className: 'trx-bar__value', text: formatRupiah(0) });
@@ -278,7 +227,9 @@ export function renderPurchaseForm(
       error.textContent = '';
       const result = session.savePurchaseOrder({
         supplierId: supplier.select.value,
-        warehouse: warehouse.select.value as '' | WarehouseId,
+        // Barang pembelian masuk ke Gudang; pilihan gudang tidak ditanyakan di formulir HP.
+        warehouse: 'besar',
+        payment: method.select.value === 'hutang' ? 'hutang' : 'tunai',
         lines: lines.lines().map((line) => {
           const product = data().products.find((item) => item.id === line.productId);
           return {
@@ -310,7 +261,7 @@ export function renderPurchaseForm(
     'div',
     { className: 'own-stack trx-form' },
     createMobCard({
-      body: [el('div', { className: 'mob-stack' }, supplier.root, warehouse.root)],
+      body: [el('div', { className: 'mob-stack' }, supplier.root, method.root)],
     }),
     createMobCard({
       title: label('trxDaftarBarang'),

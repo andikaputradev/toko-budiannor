@@ -28,7 +28,7 @@ async function simulate(page: Page, action: string): Promise<void> {
 }
 
 async function addByCode(page: Page, code: string): Promise<void> {
-  const picker = page.getByLabel('Cari atau pindai barang');
+  const picker = page.getByLabel('Cari barang');
   await picker.fill(code);
   await picker.press('Enter');
 }
@@ -49,10 +49,7 @@ function priceOf(page: Page, index = 0): Locator {
 }
 
 async function payWith(page: Page, method: string): Promise<void> {
-  await page
-    .getByRole('group', { name: 'Cara bayar' })
-    .getByRole('button', { name: method, exact: true })
-    .click();
+  await page.getByLabel('Cara bayar').selectOption({ label: method });
 }
 
 async function save(page: Page): Promise<void> {
@@ -119,7 +116,7 @@ test.describe('SALES-01 Login dan mode offline', () => {
     await submit.click();
     await expect(page).toHaveURL(/#\/sales\/katalog$/);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Katalog', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Stok Barang', exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Status sinkronisasi/ }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Keluar' }).click();
     await expect(page).toHaveURL(/#\/sales$/);
@@ -219,9 +216,9 @@ test.describe('kerangka Sales', () => {
       .getByRole('button', { name: /^Perbesar foto/ })
       .first()
       .click();
-    await expect(page.locator('.mob-viewer')).toBeVisible();
+    await expect(page.locator('.mob-gallery')).toBeVisible();
     await expectNoViolations(page, 'penampil foto');
-    await page.getByRole('dialog').getByRole('button', { name: 'Tutup' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Tutup gambar' }).click();
 
     await page.goto('/#/sales/order');
     await addByCode(page, 'B0001');
@@ -261,7 +258,7 @@ test.describe('kerangka Sales', () => {
       .first()
       .click();
     await expectNoViolations(page, 'penampil foto gelap');
-    await page.getByRole('dialog').getByRole('button', { name: 'Tutup' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Tutup gambar' }).click();
 
     await page.goto('/#/sales/order');
     await expectNoViolations(page, 'order kosong gelap');
@@ -344,7 +341,7 @@ test.describe('kerangka Sales', () => {
     );
     await dialog.getByRole('button', { name: 'Tutup' }).click();
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Katalog', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Stok Barang', exact: true })).toBeVisible();
     await expect(html).toHaveAttribute('data-pos-theme', 'ungu');
     const again = await openAccount(page);
     await expect(again.getByRole('button', { name: 'Ungu', exact: true })).toHaveAttribute(
@@ -365,7 +362,7 @@ test.describe('kerangka Sales', () => {
     await expect(html).toHaveAttribute('data-pos-scheme', 'gelap');
     await dialog.getByRole('button', { name: 'Tutup' }).click();
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Katalog', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Stok Barang', exact: true })).toBeVisible();
     await expect(html).toHaveAttribute('data-pos-scheme', 'gelap');
   });
 
@@ -386,130 +383,138 @@ test.describe('kerangka Sales', () => {
 });
 
 test.describe('SALES-02 Katalog dan cek stok', () => {
-  test('30 kartu, stok toko dan gudang, harga dua tier, satuan, filter gudang, pencarian, dan tambah ke order', async ({
+  test('Katalog sama dengan Stok Owner: kartu, harga dua tier, stok hijau atau merah, tanpa harga beli', async ({
     page,
   }) => {
     await loginSales(page);
-    const cards = page.locator('.sls-card');
+    const cards = page.locator('.stk-card');
     await expect(cards).toHaveCount(30);
     const first = cards.first();
-    await expect(first.locator('.sls-stock__label')).toHaveText(['STOK TOKO', 'STOK GUDANG']);
-    await expect(first.locator('.sls-price__tier')).toHaveText(['Eceran', 'Grosir']);
-    const active = first.locator('.sls-price[data-active="true"]');
-    await expect(active.locator('.sls-price__tier')).toHaveText('Eceran');
-    const eceran = await active.locator('.sls-price__value').innerText();
-    await page.getByRole('button', { name: 'Grosir', exact: true }).click();
-    await expect(active.locator('.sls-price__tier')).toHaveText('Grosir');
-    const grosir = await active.locator('.sls-price__value').innerText();
-    expect(grosir).not.toBe(eceran);
+    await expect(first).toContainText('Harga Eceran');
+    await expect(first).toContainText('Harga Grosir');
+    await expect(first).toContainText(/Toko [\d.,]+ \S+/);
+    await expect(first).toContainText(/Gudang [\d.,]+ \S+/);
+    await expect(first.locator('.stk-prices tbody tr')).toHaveCount(3);
+    // Sales tidak melihat harga beli maupun Hpp Avg.
+    await expect(page.locator('.stk-card .stk-cost')).toHaveCount(0);
+    await expect(page.getByText('Hpp Avg')).toHaveCount(0);
+    await expect(page.getByText(/Harga Beli/)).toHaveCount(0);
+    const flags = await page
+      .locator('.stk-card .stk-stock__item')
+      .evaluateAll((nodes) => nodes.map((node) => node.classList.contains('stk-stock__item--ada')));
+    expect(flags.some(Boolean)).toBe(true);
+    expect(flags.every(Boolean)).toBe(false);
+  });
 
-    const unit = first.getByRole('combobox', { name: /^Satuan/ });
-    const options = await unit.locator('option').allInnerTexts();
-    expect(options.length).toBeGreaterThan(1);
-    const before = await first.locator('.sls-prices').innerText();
-    const current = /Harga per (\S+)/.exec(before)?.[1];
-    const other = options.find((option) => option !== current);
-    await unit.selectOption(other ?? '');
-    await expect(first.locator('.sls-prices')).not.toHaveText(before);
-    await expect(first.locator('.sls-prices__head')).toContainText(`Harga per ${other ?? ''}`);
-
-    const stockOf = (index: 0 | 1): Promise<string[]> =>
-      cards.evaluateAll(
-        (nodes, position) =>
-          nodes.map(
-            (node) => node.querySelectorAll('.sls-stock__value')[position]?.textContent ?? '',
-          ),
-        index,
-      );
-    expect((await stockOf(0)).some((text) => text.startsWith('0 '))).toBe(true);
-    expect((await stockOf(1)).some((text) => text.startsWith('0 '))).toBe(true);
-    await page.getByRole('button', { name: 'Display (toko)' }).click();
-    await expect(page.getByRole('button', { name: 'Display (toko)' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect((await stockOf(0)).filter((text) => text.startsWith('0 '))).toEqual([]);
-    await page.getByRole('button', { name: 'Besar (gudang)' }).click();
-    expect((await stockOf(1)).filter((text) => text.startsWith('0 '))).toEqual([]);
-    await page.getByRole('button', { name: 'Semua', exact: true }).click();
-    await page.getByRole('button', { name: 'Di bawah minimum' }).click();
-    await expect(cards.first()).toContainText('Di bawah minimum');
-    expect(await cards.filter({ hasNotText: 'Di bawah minimum' }).count()).toBe(0);
-    await page.getByRole('button', { name: 'Di bawah minimum' }).click();
-
+  test('pencarian, tombol pindai, dan filter Gudang, Kategori, Merk seperti Owner', async ({
+    page,
+  }) => {
+    await loginSales(page);
+    const cards = page.locator('.stk-card');
+    await expect(cards).toHaveCount(30);
     const search = page.getByRole('searchbox', { name: 'Cari' });
     await search.fill('a');
     await expect(page.getByText('Ketik minimal 2 karakter untuk mencari.')).toBeVisible();
     await search.fill('semen');
     await expect(cards.first()).toContainText('Semen');
-    await page.getByLabel('Pelanggan').selectOption('C-003');
-    await expect(page.getByText(/Tier harga mengikuti pelanggan/)).toBeVisible();
-    await expect(
-      cards.first().locator('.sls-price[data-active="true"] .sls-price__tier'),
-    ).toHaveText('Grosir');
-    await cards
-      .first()
-      .getByRole('button', { name: /^Tambah ke Order/ })
-      .click();
+    await search.fill('');
+
+    await expect(page.getByRole('button', { name: 'Pindai barcode' })).toBeVisible();
+    await expect(page.getByLabel('Filter gudang').locator('option')).toHaveText([
+      'Semua Gudang',
+      'Toko',
+      'Gudang',
+    ]);
+    await expect(page.getByLabel('Filter kategori').locator('option').first()).toHaveText(
+      'Semua Kategori',
+    );
+    await expect(page.getByLabel('Filter merk').locator('option').first()).toHaveText('Semua Merk');
+    await page.getByLabel('Filter kategori').selectOption({ index: 1 });
+    await expect(cards.first()).toBeVisible();
+    await page.getByLabel('Filter kategori').selectOption({ index: 0 });
+    await page.getByLabel('Filter gudang').selectOption('besar');
+    await expect(cards.first()).toBeVisible();
+    const hasStock = await page
+      .locator('.stk-card')
+      .evaluateAll((nodes) =>
+        nodes.every((node) => node.querySelectorAll('.stk-stock__item--ada').length >= 1),
+      );
+    expect(hasStock).toBe(true);
+  });
+
+  test('kolom cari dan filter menempel, serta tanpa bilah gulir di sisi kanan', async ({
+    page,
+  }) => {
+    await loginSales(page);
+    await expect(page.locator('.stk-card').first()).toBeVisible();
+    const scroller = page.locator('#own-main');
+    const top = (await scroller.boundingBox())?.y ?? 0;
+    await scroller.evaluate((node) => {
+      node.scrollTop = 1500;
+    });
+    await expect.poll(async () => scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(500);
+    const bar = await page.locator('.stk-bar').boundingBox();
+    expect(Math.abs((bar?.y ?? 999) - top)).toBeLessThan(2);
+    await expect(page.getByRole('searchbox', { name: 'Cari' })).toBeInViewport();
+    const state = await page.evaluate(() => {
+      const main = document.getElementById('own-main');
+      return {
+        width: main === null ? '' : getComputedStyle(main).scrollbarWidth,
+        gutter: main === null ? -1 : main.offsetWidth - main.clientWidth,
+      };
+    });
+    expect(state).toEqual({ width: 'none', gutter: 0 });
+  });
+
+  test('ketuk nama barang membuka detail tanpa harga beli dan menambah ke order', async ({
+    page,
+  }) => {
+    await loginSales(page);
+    await page.getByRole('searchbox', { name: 'Cari' }).fill('semen');
+    const first = page.locator('.stk-card').first();
+    await expect(first).toContainText('Semen');
+    await first.locator('.stk-card__open').click();
+    const detail = page.getByRole('dialog');
+    await expect(detail).toBeVisible();
+    await expect(detail.getByRole('table', { name: 'Harga bertingkat' })).toBeVisible();
+    await expect(detail).not.toContainText('Hpp');
+    await expect(detail).not.toContainText('HPP');
+    await expect(detail).not.toContainText('Harga Beli');
+    await detail.getByRole('button', { name: 'Tambah ke Order' }).click();
+    await expect(detail).toBeHidden();
     await expect(page.getByText(/ditambahkan ke order\./)).toBeVisible();
     await expect(page.locator('.own-nav__link', { hasText: 'Order (1)' })).toBeVisible();
-    await page.getByRole('button', { name: 'Lihat Order' }).click();
+    await page.locator('.own-nav__link', { hasText: 'Order (1)' }).click();
     await expect(page).toHaveURL(/#\/sales\/order$/);
     await expect(page.locator('.sls-line')).toHaveCount(1);
   });
 
-  test('foto barang membuka penampil yang dapat diperbesar dan menampilkan harga dua tier', async ({
-    page,
-  }) => {
+  test('ketuk foto membuka Gambar Produk: gambar penuh dan nama barang saja', async ({ page }) => {
     await loginSales(page);
-    const first = page.locator('.sls-card').first();
-    const name = await first.locator('.sls-card__name').innerText();
+    const first = page.locator('.stk-card').first();
+    const name = (await first.locator('.stk-card__name').innerText()).trim();
     await first.getByRole('button', { name: `Perbesar foto ${name}` }).click();
-    const viewer = page.getByRole('dialog', { name });
+    const viewer = page.getByRole('dialog', { name: 'Gambar Produk' });
     await expect(viewer).toBeVisible();
     await expect(viewer.getByRole('img', { name })).toBeVisible();
-
-    const table = viewer.getByRole('table', { name: 'Harga bertingkat' });
-    await expect(table.getByRole('columnheader')).toHaveText(['Satuan', 'Eceran', 'Grosir']);
-    const sak = table.getByRole('row', { name: /^Sak/ });
-    await expect(sak).toContainText('Rp 54.900');
-    await expect(sak).toContainText('Rp 51.000');
-    await expect(table.getByRole('row')).toHaveCount(3);
-    await expect(viewer.locator('.mob-tier th[data-active="true"]')).toHaveText('Eceran');
-
-    const stage = viewer.locator('.mob-viewer__stage');
-    const image = viewer.locator('.mob-viewer__image');
-    const zoomIn = viewer.getByRole('button', { name: 'Perbesar', exact: true });
-    const zoomOut = viewer.getByRole('button', { name: 'Perkecil', exact: true });
-    const ratio = async (): Promise<number> =>
-      Math.round(
-        (await image.evaluate((node) => node.getBoundingClientRect().width)) /
-          (await stage.evaluate((node) => node.clientWidth)),
-      );
-    await expect(zoomOut).toBeDisabled();
-    expect(await ratio()).toBe(1);
-    await zoomIn.click();
-    await expect(stage).toHaveAttribute('data-zoom', '2');
-    expect(await ratio()).toBe(2);
-    await zoomIn.click();
-    await expect(stage).toHaveAttribute('data-zoom', '3');
-    await expect(zoomIn).toBeDisabled();
-    expect(await ratio()).toBe(3);
-    await zoomOut.click();
-    await expect(stage).toHaveAttribute('data-zoom', '2');
-
-    await viewer.getByRole('button', { name: 'Tambah ke Order' }).click();
+    await expect(viewer.locator('.mob-gallery__name')).toHaveText(name);
+    await expect(viewer.locator('.mob-gallery__count')).toHaveText('1/1');
+    // Tanpa keterangan stok, harga, tabel, dan tombol tambah.
+    await expect(viewer).not.toContainText('Rp');
+    await expect(viewer).not.toContainText('Toko');
+    await expect(viewer).not.toContainText('Gudang');
+    await expect(viewer.getByRole('table')).toHaveCount(0);
+    await expect(viewer.getByRole('button', { name: 'Tambah ke Order' })).toHaveCount(0);
+    await viewer.getByRole('button', { name: 'Tutup gambar' }).click();
     await expect(viewer).toBeHidden();
-    await expect(page.getByText(`${name} ditambahkan ke order.`)).toBeVisible();
-    await expect(page.locator('.own-nav__link', { hasText: 'Order (1)' })).toBeVisible();
   });
 
-  test('penampil foto ditutup dengan tombol Tutup dan tombol Escape', async ({ page }) => {
+  test('layar Gambar Produk ditutup dengan tombol X dan tombol Escape', async ({ page }) => {
     await loginSales(page);
     const trigger = page.getByRole('button', { name: /^Perbesar foto/ }).first();
     await trigger.click();
     const viewer = page.getByRole('dialog');
-    await viewer.getByRole('button', { name: 'Tutup' }).click();
+    await viewer.getByRole('button', { name: 'Tutup gambar' }).click();
     await expect(viewer).toBeHidden();
     await trigger.click();
     await expect(viewer).toBeVisible();
@@ -524,9 +529,19 @@ test.describe('SALES-03 Sales Order dan SALES-05 salinan', () => {
   }) => {
     await loginSales(page);
     await page.goto('/#/sales/order');
-    await expect(page.getByText('Belum ada barang di order')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Buka Katalog' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Simpan Sales Order' })).toBeHidden();
+    // Seperti Owner: yang diisi lebih dahulu hanya nama pelanggan dan cara bayar, lalu barang.
+    await expect(page.getByRole('heading', { level: 1, name: 'Input Sales Order' })).toBeVisible();
+    await expect(page.getByLabel('Pelanggan')).toHaveValue('');
+    await expect(page.getByLabel('Cara bayar')).toHaveValue('tunai');
+    await expect(
+      page.getByText('Belum ada barang. Cari barang di atas untuk menambahkan.'),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Simpan Sales Order' })).toBeVisible();
+    await expect(page.locator('.trx-bar__value')).toHaveText('Rp 0');
+    await save(page);
+    await expect(
+      page.getByText('Bill masih kosong. Tambahkan barang terlebih dahulu.'),
+    ).toBeVisible();
 
     // Stepper tidak menerima nol: barang tanpa desimal berminimum 1, barang berdesimal 0,001.
     await addByCode(page, 'Lampu LED 5 W');
@@ -539,9 +554,11 @@ test.describe('SALES-03 Sales Order dan SALES-05 salinan', () => {
       .click();
 
     await addByCode(page, 'B0001');
-    await expect(page.getByText('Belum ada barang di order')).toBeHidden();
+    await expect(
+      page.getByText('Belum ada barang. Cari barang di atas untuk menambahkan.'),
+    ).toBeHidden();
     const quantity = quantityOf(page);
-    const total = page.locator('.sls-summary__total');
+    const total = page.locator('.trx-bar__value');
     await expect(total).toHaveText('Rp 54.900');
     await quantity.fill('0');
     await quantity.blur();
@@ -555,8 +572,10 @@ test.describe('SALES-03 Sales Order dan SALES-05 salinan', () => {
     await orderLine(page).getByRole('button', { name: 'Kurangi jumlah' }).click();
     await expect(quantity).toHaveValue('1');
     await orderLine(page).getByRole('button', { name: 'Hapus Semen PCC Karya Mandiri' }).click();
-    await expect(page.getByText('Belum ada barang di order')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Simpan Sales Order' })).toBeHidden();
+    await expect(
+      page.getByText('Belum ada barang. Cari barang di atas untuk menambahkan.'),
+    ).toBeVisible();
+    await expect(page.locator('.trx-bar__value')).toHaveText('Rp 0');
   });
 
   test('harga yang diubah tampil sebagai Harga diubah, total berubah, dan dapat dipulihkan', async ({
@@ -566,7 +585,7 @@ test.describe('SALES-03 Sales Order dan SALES-05 salinan', () => {
     await page.goto('/#/sales/order');
     await addByCode(page, 'B0001');
     const line = orderLine(page);
-    const total = page.locator('.sls-summary__total');
+    const total = page.locator('.trx-bar__value');
     const price = priceOf(page);
     await expect(price).toHaveValue('54.900');
     await expect(line.getByText('Harga tier Eceran: Rp 54.900')).toBeVisible();
@@ -602,10 +621,7 @@ test.describe('SALES-03 Sales Order dan SALES-05 salinan', () => {
     await addByCode(page, 'B0001');
     await quantityOf(page).fill('2');
     await payWith(page, 'QRIS');
-    await expect(page.getByRole('button', { name: 'QRIS', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(page.getByLabel('Cara bayar')).toHaveValue('qris');
     await save(page);
     await expect(page).toHaveURL(/#\/sales\/riwayat\?so=SO-0001$/);
     await expect(page.getByText('Sales Order SO-0001 tersimpan sebagai Draf.')).toBeVisible();
@@ -678,14 +694,14 @@ test.describe('SALES-03 Sales Order dan SALES-05 salinan', () => {
       'Piutang hanya untuk pelanggan terdaftar. Pilih atau daftarkan pelanggan.',
     );
     await save(page);
-    await expect(page.locator('.sls-summary__error')).toHaveText(
+    await expect(page.locator('.trx-bar .own-hint')).toHaveText(
       'Piutang hanya untuk pelanggan terdaftar. Pilih atau daftarkan pelanggan.',
     );
     await payWith(page, 'DP');
     await expect(page.getByLabel('Uang muka (DP)')).toBeVisible();
     await page.getByLabel('Pelanggan').selectOption('C-001');
     await save(page);
-    await expect(page.locator('.sls-summary__error')).toHaveText('Jumlah harus lebih dari 0.');
+    await expect(page.locator('.trx-bar .own-hint')).toHaveText('Jumlah harus lebih dari 0.');
   });
 });
 
